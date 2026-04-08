@@ -1,0 +1,14 @@
+{
+  "name": "dealpam-platform",
+  "version": "5.0.0",
+  "description": "DEALPAM — Full platform (Admin + Client + Flask API)",
+  "scripts": {
+    "dev": "concurrently --names \"ADMIN,CLIENT\" --prefix-colors \"cyan,magenta\" \"npm run dev --prefix admin\" \"npm run dev --prefix client\"",
+    "install:all": "npm install --prefix admin && npm install --prefix client",
+    "admin": "npm run dev --prefix admin",
+    "client": "npm run dev --prefix client"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

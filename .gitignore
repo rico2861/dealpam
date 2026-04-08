@@ -1,1 +1,87 @@
-test
+# ==============================
+# OS / SYSTEM
+# ==============================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ==============================
+# ENV FILES (IMPORTANT 🔐)
+# ==============================
+.env
+.env.*
+!.env.example
+
+# ==============================
+# NODE (ADMIN + CLIENT)
+# ==============================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Vite / React build
+dist/
+build/
+.cache/
+
+# ==============================
+# PYTHON (FLASK BACKEND)
+# ==============================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual env
+.venv/
+venv/
+env/
+
+# Flask
+instance/
+*.db
+*.sqlite3
+
+# ==============================
+# LOGS
+# ==============================
+logs/
+*.log
+
+# ==============================
+# IDE / EDITORS
+# ==============================
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# ==============================
+# TEMP FILES
+# ==============================
+*.tmp
+*.temp
+*.bak
+
+# ==============================
+# COVERAGE / TEST
+# ==============================
+coverage/
+.pytest_cache/
+
+# ==============================
+# UPLOADS (if you store images locally)
+# ==============================
+uploads/
+media/
+
+# ==============================
+# LOCK FILES (OPTIONAL)
+# ==============================
+# Uncomment if you don't want to track them
+# package-lock.json
+# yarn.lock

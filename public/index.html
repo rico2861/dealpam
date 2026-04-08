@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>DEALPAM — Gestion d'entreprise</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%2300D9FF'/><stop offset='1' stop-color='%238B5CF6'/></linearGradient></defs><rect width='100' height='100' rx='22' fill='url(%23g)'/><text y='.9em' font-size='60' font-weight='900' fill='black' font-family='Arial'>D</text></svg>"/>
+  <link rel="stylesheet" href="/css/style.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav id="sidebar">
+  <div class="logo-wrap">
+    <div class="logo-wordmark">
+      <div class="logo-icon">D</div>
+      <div class="logo-text">
+        <div class="name">DEALPAM</div>
+        <div class="tagline">Business Management</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="overflow-y:auto;flex:1;padding-bottom:8px">
+    <div class="nav-group-label">Principal</div>
+    <div class="nav-item active" data-page="dashboard">
+      <div class="nav-icon">⬡</div><span>Tableau de bord</span>
+    </div>
+    <div class="nav-item" data-page="rapports">
+      <div class="nav-icon">◈</div><span>Rapports & CA</span>
+    </div>
+
+    <div class="nav-group-label">Gestion</div>
+    <div class="nav-item" data-page="produits">
+      <div class="nav-icon">◻</div><span>Produits</span>
+    </div>
+    <div class="nav-item" data-page="ventes">
+      <div class="nav-icon">◆</div><span>Ventes</span>
+    </div>
+    <div class="nav-item" data-page="clients">
+      <div class="nav-icon">◉</div><span>Clients</span>
+    </div>
+    <div class="nav-item" data-page="depenses">
+      <div class="nav-icon">▣</div><span>Dépenses</span>
+    </div>
+
+    <div class="nav-group-label">Administration</div>
+    <div class="nav-item" data-page="utilisateurs">
+      <div class="nav-icon">◎</div><span>Utilisateurs</span>
+    </div>
+    <div class="nav-item" data-page="parametres">
+      <div class="nav-icon">⊡</div><span>Paramètres</span>
+    </div>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="user-card" onclick="App.nav('parametres')">
+      <div class="user-ava" id="user-ava">A</div>
+      <div>
+        <div class="user-name" id="user-name">Admin</div>
+        <div class="user-role" id="user-role">Administrateur</div>
+      </div>
+      <div class="user-dots">⋯</div>
+    </div>
+  </div>
+</nav>
+
+<!-- MAIN CONTENT -->
+<div id="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div>
+        <div class="topbar-title" id="page-title">Tableau de bord</div>
+        <div class="topbar-sub" id="page-sub">Vue générale de votre activité</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <span class="rate-pill" id="rate-pill">Taux: 136 HTG/USD</span>
+      <button class="btn btn-primary btn-sm" id="action-btn" style="display:none" onclick="App.openNewSaleModal()">
+        + Nouvelle vente
+      </button>
+    </div>
+  </div>
+  <div class="content" id="content">
+    <div class="loading"><div class="spinner"></div> Chargement...</div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="overlay" id="overlay">
+  <div class="modal" id="modal">
+    <div class="modal-head">
+      <div class="modal-title" id="modal-title">—</div>
+      <button class="close-btn" onclick="App.closeModal()">×</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-foot" id="modal-foot">
+      <button class="btn btn-ghost" onclick="App.closeModal()">Annuler</button>
+      <button class="btn btn-primary" id="modal-confirm">Confirmer</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOASTS -->
+<div id="toasts"></div>
+
+<script src="/js/app.js"></script>
+</body>
+</html>
