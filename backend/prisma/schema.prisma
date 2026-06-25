@@ -508,13 +508,24 @@ model Payment {
   adCampaign     AdCampaign?
   method         PaymentMethod
   status         PaymentStatus       @default(PENDING)
-  amountHTG      Decimal             @map("amount_htg") @db.Decimal(10, 2)
-  transactionId  String?             @map("transaction_id")
-  gatewayData    Json?               @map("gateway_data")
-  paidAt         DateTime?           @map("paid_at")
-  createdAt      DateTime            @default(now()) @map("created_at")
-  updatedAt      DateTime            @updatedAt @map("updated_at")
+  amountHTG            Decimal             @map("amount_htg") @db.Decimal(10, 2)
 
+  // Référence interne plateforme (UUID envoyé à MonCash comme orderId)
+  transactionId        String?             @unique @map("transaction_id")
+  // moncash_order_id retourné par l'API MonCash lors de l'initiation
+  moncashOrderId       String?             @unique @map("moncash_order_id")
+  // transaction_id final confirmé par MonCash (webhook / confirm endpoint)
+  moncashTransactionId String?             @unique @map("moncash_transaction_id")
+
+  gatewayData          Json?               @map("gateway_data")
+  paidAt               DateTime?           @map("paid_at")
+  failureReason        String?             @map("failure_reason")
+  createdAt            DateTime            @default(now()) @map("created_at")
+  updatedAt            DateTime            @updatedAt @map("updated_at")
+
+  @@index([transactionId])
+  @@index([moncashOrderId])
+  @@index([status])
   @@map("payments")
 }
 
