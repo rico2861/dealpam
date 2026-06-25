@@ -21,7 +21,7 @@ export class UsersService {
     });
   }
 
-  update(id: string, data: any) {
+  update(id: string, data: { firstName?: string; lastName?: string; phone?: string; avatar?: string; city?: string; department?: string }) {
     return this.prisma.user.update({
       where: { id }, data,
       select: { id: true, email: true, firstName: true, lastName: true, phone: true, avatar: true, city: true, department: true },
@@ -42,7 +42,7 @@ export class UsersService {
     const tempPassword = `${w()}${w()}${d()}`;
 
     const hash = await bcrypt.hash(tempPassword, 12);
-    await this.prisma.user.update({ where: { id: userId }, data: { password: hash, mustChangePassword: true } });
+    await this.prisma.user.update({ where: { id: userId }, data: { passwordHash: hash, mustChangePassword: true } });
 
     await this.mail.sendAdminPasswordReset(user.email, user.firstName, tempPassword);
     return { message: `Mot de passe temporaire envoyé à ${user.email}` };

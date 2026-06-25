@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
@@ -8,14 +8,22 @@ export class SubscriptionsService {
   getPlans() { return this.prisma.subscriptionPlan.findMany({ where: { isActive: true }, orderBy: { priceHTG: 'asc' } }); }
 
   async subscribe(userId: string, planId: string) {
+    const plan = await this.prisma.subscriptionPlan.findFirst({ where: { id: planId, isActive: true } });
+    if (!plan) throw new NotFoundException('Plan introuvable ou inactif');
+
     const seller = await this.prisma.seller.findUnique({ where: { userId } });
-    await this.prisma.sellerSubscription.updateMany({ where: { sellerId: seller.id, isActive: true }, data: { isActive: false } });
+    if (!seller) throw new NotFoundException('Profil vendeur introuvable');
+
     const startDate = new Date();
     const endDate = new Date();
     endDate.setMonth(endDate.getMonth() + 1);
-    return this.prisma.sellerSubscription.create({
-      data: { sellerId: seller.id, planId, startDate, endDate, isActive: true },
-      include: { plan: true }
+
+    return this.prisma.$transaction(async (tx) => {
+      await tx.sellerSubscription.updateMany({ where: { sellerId: seller.id, isActive: true }, data: { isActive: false } });
+      return tx.sellerSubscription.create({
+        data: { sellerId: seller.id, planId, startDate, endDate, isActive: true },
+        include: { plan: true }
+      });
     });
   }
 

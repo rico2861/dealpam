@@ -64,8 +64,8 @@ async function bootstrap() {
     }),
   );
 
-  // ── Swagger (dev only) ────────────────────────────────────────────────────
-  if (process.env.NODE_ENV !== 'production') {
+  // ── Swagger ───────────────────────────────────────────────────────────────
+  {
     const config = new DocumentBuilder()
       .setTitle('Dealpam API')
       .setDescription('API REST de la plateforme e-commerce Dealpam — Haïti')
@@ -79,8 +79,6 @@ async function bootstrap() {
   const port = process.env.PORT || 3000;
   await app.listen(port, '0.0.0.0');
   console.log(`Server running on port ${port}`);
-  if (process.env.NODE_ENV !== 'production') {
-    console.log(`Swagger: http://localhost:${port}/api/docs`);
-  }
+  console.log(`Swagger: https://api.dealpam.com/api/docs`);
 }
 bootstrap();

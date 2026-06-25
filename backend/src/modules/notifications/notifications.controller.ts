@@ -11,6 +11,6 @@ import { NotificationsService } from './notifications.service';
 export class NotificationsController {
   constructor(private ns: NotificationsService) {}
   @Get() getAll(@CurrentUser() u: any) { return this.ns.findMine(u.id); }
-  @Patch(':id/read') markRead(@Param('id') id: string) { return this.ns.markRead(id); }
+  @Patch(':id/read') markRead(@Param('id') id: string, @CurrentUser() u: any) { return this.ns.markRead(id, u.id); }
   @Patch('read-all') markAllRead(@CurrentUser() u: any) { return this.ns.markAllRead(u.id); }
 }

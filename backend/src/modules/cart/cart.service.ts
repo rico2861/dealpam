@@ -35,6 +35,8 @@ export class CartService {
   async updateItem(userId: string, itemId: string, quantity: number) {
     const cart = await this.prisma.cart.findUnique({ where: { userId } });
     if (!cart) throw new NotFoundException();
+    const item = await this.prisma.cartItem.findFirst({ where: { id: itemId, cartId: cart.id } });
+    if (!item) throw new NotFoundException('Article introuvable dans votre panier');
     if (quantity <= 0) return this.prisma.cartItem.delete({ where: { id: itemId } });
     return this.prisma.cartItem.update({ where: { id: itemId }, data: { quantity } });
   }
@@ -42,6 +44,8 @@ export class CartService {
   async removeItem(userId: string, itemId: string) {
     const cart = await this.prisma.cart.findUnique({ where: { userId } });
     if (!cart) throw new NotFoundException();
+    const item = await this.prisma.cartItem.findFirst({ where: { id: itemId, cartId: cart.id } });
+    if (!item) throw new NotFoundException('Article introuvable dans votre panier');
     await this.prisma.cartItem.delete({ where: { id: itemId } });
     return { message: 'Article retiré' };
   }

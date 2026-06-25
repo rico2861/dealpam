@@ -183,7 +183,6 @@ export class AdsService {
       },
       include: {
         product: {
-          where: { status: 'PUBLISHED', stock: { gt: 0 } },
           include: {
             images: { where: { isPrimary: true }, take: 1 },
             store: { select: { name: true, slug: true, isVerified: true } },
@@ -195,7 +194,7 @@ export class AdsService {
 
     // Score each campaign based on user match + remaining budget
     const scored = campaigns
-      .filter(c => c.product) // product must exist and be published
+      .filter(c => c.product && (c.product as any).status === 'PUBLISHED' && (c.product as any).stock > 0)
       .map(c => {
         let score = 100;
         const remaining = Number(c.totalBudget) - Number(c.spent);

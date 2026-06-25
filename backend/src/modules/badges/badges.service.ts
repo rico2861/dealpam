@@ -54,9 +54,10 @@ export class BadgesService {
     });
     if (!store) return [];
 
-    const complaintCount = await this.prisma.complaint.count({
-      where: { storeId, status: { in: ['CONFIRMED', 'RESOLVED_AGAINST_SELLER'] } },
-    });
+    const sellerId = store.seller?.id;
+    const complaintCount = sellerId ? await this.prisma.complaint.count({
+      where: { sellerId, status: { in: ['CONFIRMED', 'RESOLVED_AGAINST_SELLER'] } },
+    }) : 0;
 
     const subscriptionTier = store.seller?.subscriptions?.[0]?.plan?.tier || null;
     const ageInDays = Math.floor((Date.now() - store.createdAt.getTime()) / 86400000);
@@ -81,7 +82,7 @@ export class BadgesService {
     else if (stats.totalSales >= 100)                         badges.push(BADGE.SALES_100);
     if (stats.avgRating >= 4.8 && stats.totalReviews >= 20)  badges.push(BADGE.EXCELLENT);
     if (stats.avgResponseTime !== null && stats.avgResponseTime <= 60) badges.push(BADGE.FAST_REPLY);
-    if (subscriptionTier === 'PREMIUM' || subscriptionTier === 'ENTERPRISE') badges.push(BADGE.PREMIUM_SHOP);
+    if (subscriptionTier === 'PREMIUM' || subscriptionTier === 'ELITE') badges.push(BADGE.PREMIUM_SHOP);
     if (stats.totalSales >= 50 && stats.avgRating >= 4.5 && stats.complaintCount === 0) badges.push(BADGE.TRUSTED);
     if (stats.totalSales >= 200 && stats.avgRating >= 4.7 && stats.isVerified) badges.push(BADGE.TOP_SELLER);
     if (ageInDays <= 30 && stats.totalSales === 0)            badges.push(BADGE.NEW_SELLER);
@@ -138,9 +139,10 @@ export class BadgesService {
       const store = await this.prisma.store.findUnique({ where: { id: storeId } });
       if (!store) return;
 
-      const complaintCount = await this.prisma.complaint.count({
-        where: { storeId, status: { in: ['CONFIRMED', 'RESOLVED_AGAINST_SELLER'] } },
-      });
+      const storeSeller = await this.prisma.seller.findFirst({ where: { store: { id: storeId } } });
+      const complaintCount = storeSeller ? await this.prisma.complaint.count({
+        where: { sellerId: storeSeller.id, status: { in: ['CONFIRMED', 'RESOLVED_AGAINST_SELLER'] } },
+      }) : 0;
 
       const unrespondedOrders = await this.prisma.order.count({
         where: { storeId, status: 'PENDING', createdAt: { lt: new Date(Date.now() - 24 * 3600000) } },
