@@ -10,9 +10,11 @@ build/
 # Prisma generated client (regenerated on deploy)
 backend/node_modules/
 
-# Environment files — JAMAIS commités
+# Environment files — secrets JAMAIS commités
 .env
-.env.*
+.env.local
+.env.*.local
+# .env.production est commitable (URLs publiques uniquement, pas de secrets)
 
 # Logs
 *.log
