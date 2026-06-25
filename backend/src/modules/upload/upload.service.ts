@@ -97,7 +97,7 @@ export class UploadService {
   private async processAndUpload(buffer: Buffer, key: string, width: number): Promise<string> {
     const processed = await sharp(buffer)
       .resize(width, width, { fit: 'inside', withoutEnlargement: true })
-      .webp({ quality: width <= 300 ? 75 : 80, effort: 4 })
+      .webp({ quality: width <= 300 ? 85 : 92, effort: 4 })
       .toBuffer();
 
     await this.s3.send(new PutObjectCommand({
