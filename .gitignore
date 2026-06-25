@@ -10,10 +10,9 @@ build/
 # Prisma generated client (regenerated on deploy)
 backend/node_modules/
 
-# Environment files — NEVER commit real .env
-.env
+# Environment files locaux uniquement
 .env.local
-.env.production
+.env.development
 
 # Logs
 *.log
