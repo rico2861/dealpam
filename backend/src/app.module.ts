@@ -24,6 +24,7 @@ import { AppointmentsModule } from './modules/appointments/appointments.module';
 import { ComplaintsModule } from './modules/complaints/complaints.module';
 import { AdsModule } from './modules/ads/ads.module';
 import { BadgesModule } from './modules/badges/badges.module';
+import { MoncashModule } from './modules/moncash/moncash.module';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { BadgesModule } from './modules/badges/badges.module';
     ComplaintsModule,
     AdsModule,
     BadgesModule,
+    MoncashModule,
   ],
 })
 export class AppModule {}
