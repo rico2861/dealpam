@@ -28,6 +28,7 @@ const theme = createTheme({
   components: {
     MuiButton: { styleOverrides: { root: { borderRadius: 8, textTransform: 'none', fontWeight: 600 } } },
     MuiCard: { styleOverrides: { root: { borderRadius: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.08)' } } },
+    // @ts-ignore — MuiDataGrid augmentation via @mui/x-data-grid
     MuiDataGrid: { styleOverrides: { root: { border: 'none', borderRadius: 12, '& .MuiDataGrid-columnHeaders': { backgroundColor: '#f8f9fa' } } } },
   },
 });

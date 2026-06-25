@@ -13,7 +13,7 @@ import { MailService } from '../mail/mail.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 
-const MAX_FAILED_ATTEMPTS = 2;
+const MAX_FAILED_ATTEMPTS = 5;
 const LOCK_DURATION_MS = 30 * 60 * 1000; // 30 minutes
 const RESET_TOKEN_EXPIRES_MS = 60 * 60 * 1000; // 1 hour
 
@@ -114,7 +114,7 @@ export class AuthService {
         this.mailService.sendAccountLocked(user.email, user.firstName, resetUrl).catch(() => null);
 
         throw new ForbiddenException(
-          'Compte bloqué après 2 tentatives échouées. Un email de réinitialisation vous a été envoyé.',
+          'Compte bloqué après 5 tentatives échouées. Un email de réinitialisation vous a été envoyé.',
         );
       }
 

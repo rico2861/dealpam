@@ -94,7 +94,9 @@ enum AppointmentStatus {
 enum ComplaintStatus {
   OPEN
   UNDER_REVIEW
+  CONFIRMED
   RESOLVED
+  RESOLVED_AGAINST_SELLER
   DISMISSED
 }
 

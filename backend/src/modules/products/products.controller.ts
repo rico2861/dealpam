@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, UseInterceptors, UploadedFiles } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, UseInterceptors, UploadedFiles, NotFoundException } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { ApiTags, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
@@ -7,6 +7,7 @@ import { RolesGuard } from '../../shared/guards/roles.guard';
 import { Roles } from '../../shared/decorators/roles.decorator';
 import { CurrentUser } from '../../shared/decorators/current-user.decorator';
 import { ProductsService } from './products.service';
+import { PrismaService } from '../../prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { FilterProductsDto } from './dto/filter-products.dto';
@@ -14,7 +15,7 @@ import { FilterProductsDto } from './dto/filter-products.dto';
 @ApiTags('Products')
 @Controller('products')
 export class ProductsController {
-  constructor(private productsService: ProductsService) {}
+  constructor(private productsService: ProductsService, private prisma: PrismaService) {}
 
   @Get() findAll(@Query() filter: FilterProductsDto) { return this.productsService.findAll(filter); }
   @Get('featured') getFeatured() { return this.productsService.getFeatured(); }
@@ -82,8 +83,8 @@ export class ProductsController {
   reject(@Param('id') id: string, @Body('reason') reason: string) { return this.productsService.reject(id, reason); }
 
   private async getSeller(userId: string) {
-    const { PrismaService } = require('../../prisma/prisma.service');
-    // This is handled via injection in real impl — simplified here
-    return { id: userId };
+    const seller = await this.prisma.seller.findUnique({ where: { userId } });
+    if (!seller) throw new NotFoundException('Profil vendeur introuvable');
+    return seller;
   }
 }

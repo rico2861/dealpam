@@ -19,7 +19,7 @@ export class StoresService {
     return store;
   }
 
-  async updateMe(userId: string, data: any) {
+  async updateMe(userId: string, data: { name?: string; description?: string; logoUrl?: string; bannerUrl?: string; phone?: string; email?: string; whatsapp?: string; address?: string; city?: string; department?: string }) {
     const seller = await this.prisma.seller.findUnique({ where: { userId } });
     if (!seller) throw new NotFoundException();
     return this.prisma.store.update({ where: { sellerId: seller.id }, data });

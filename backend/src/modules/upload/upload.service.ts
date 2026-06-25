@@ -68,7 +68,11 @@ export class UploadService {
     if (!file) throw new BadRequestException('Aucun fichier fourni');
     if (file.size > MAX_SIZE_BYTES) throw new BadRequestException('Fichier trop grand (max 10MB)');
 
-    const ext = path.extname(file.originalname).toLowerCase() || '.bin';
+    const ALLOWED_DOC_MIME = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
+    const ALLOWED_DOC_EXT = ['.pdf', '.jpg', '.jpeg', '.png', '.webp'];
+    if (!ALLOWED_DOC_MIME.includes(file.mimetype)) throw new BadRequestException('Seuls PDF et images (JPG, PNG) sont acceptés');
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (!ALLOWED_DOC_EXT.includes(ext)) throw new BadRequestException('Extension de fichier non autorisée');
     const publicId = this.generateId();
     const key = `${folder}/${publicId}${ext}`;
 

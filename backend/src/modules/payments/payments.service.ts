@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
@@ -12,9 +12,12 @@ export class PaymentsService {
     });
   }
 
-  async initiate(orderId: string, method: string, amountHTG: number) {
+  async initiate(orderId: string, userId: string, method: string) {
+    const order = await this.prisma.order.findFirst({ where: { id: orderId, userId } });
+    if (!order) throw new NotFoundException('Commande introuvable');
+    if (order.status !== 'PENDING') throw new ForbiddenException('Commande déjà traitée');
     return this.prisma.payment.create({
-      data: { orderId, method: method as any, amountHTG, status: 'PENDING' }
+      data: { orderId, method: method as any, amountHTG: order.totalHTG, status: 'PENDING' }
     });
   }
 

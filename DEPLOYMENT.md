@@ -1,145 +1,122 @@
-# 🚀 Guide de Déploiement — Dealpam
+# Guide de Déploiement — Dealpam (Hostinger)
 
 ## Architecture de production
 
 ```
-[Hostinger]           [Hostinger VPS / Railway]     [Supabase]         [Cloudinary]
-frontend-user/dist ──→ Backend NestJS (Port 3000) ──→ PostgreSQL DB ──→ Images CDN
-frontend-admin/dist ──→     + Nginx Reverse Proxy
+Hostinger Shared Hosting          Hostinger VPS
+─────────────────────             ──────────────────────────────────
+dealpam.com                       api.dealpam.com
+  └── frontend-user/dist/           └── NestJS (PM2, port 3000)
+                                        └── Nginx reverse proxy
+admin.dealpam.com
+  └── frontend-admin/dist/
+
+         │                                    │
+         └──────── VITE_API_URL ──────────────┘
+                   https://api.dealpam.com/v1
+
+Services externes
+─────────────────
+Supabase → PostgreSQL
+Cloudflare R2 → Images & documents
 ```
 
 ---
 
-## ÉTAPE 1 — Supabase (Base de données)
+## ÉTAPE 1 — Supabase (Base de données PostgreSQL)
 
 1. Créez un compte sur https://supabase.com
-2. New Project → choisissez un nom et mot de passe fort
+2. New Project → nom + mot de passe fort
 3. Settings → Database → copiez l'URL de connexion :
    ```
    postgresql://postgres:[PASSWORD]@db.[PROJECT_REF].supabase.co:5432/postgres
    ```
-4. Mettez cette URL dans `backend/.env` → `DATABASE_URL=...`
+4. Notez cette URL, vous en aurez besoin à l'étape 4
 
 ---
 
-## ÉTAPE 2 — Cloudinary (Hébergement des images produits)
+## ÉTAPE 2 — Cloudflare R2 (Stockage des images)
 
-> **Comment ça marche :** quand un vendeur uploade une photo, le backend NestJS
-> reçoit le fichier en mémoire (multer), puis l'envoie directement à Cloudinary via
-> leur API. L'URL Cloudinary (ex: `https://res.cloudinary.com/...`) est enregistrée
-> en base de données. Les images ne touchent JAMAIS votre serveur ni votre dossier.
-
-1. Créez un compte gratuit sur https://cloudinary.com
-2. Dashboard → copiez : Cloud Name, API Key, API Secret
-3. Ajoutez dans `backend/.env` :
-   ```
-   CLOUDINARY_CLOUD_NAME=votre_cloud_name
-   CLOUDINARY_API_KEY=votre_api_key
-   CLOUDINARY_API_SECRET=votre_api_secret
-   CLOUDINARY_FOLDER=dealpam
-   ```
-
-**Plan gratuit Cloudinary :** 25 GB stockage, 25 GB bande passante/mois — suffisant pour démarrer.
+1. Compte Cloudflare → R2 → Create Bucket → nom : `dealpam`
+2. R2 → Manage R2 API Tokens → Create Token (Read & Write)
+3. Copiez : Account ID, Access Key ID, Secret Access Key
+4. Optionnel : activez un domaine public pour le bucket (Custom Domain)
 
 ---
 
-## ÉTAPE 3 — Déployer le Backend (Hostinger VPS)
+## ÉTAPE 3 — Build local (sur votre PC)
 
-### Option A — Hostinger VPS (recommandé)
+Remplissez d'abord les fichiers `.env` :
 
-```bash
-# 1. Connectez-vous à votre VPS
-ssh root@VOTRE_IP_HOSTINGER
-
-# 2. Installer Docker
-curl -fsSL https://get.docker.com | sh
-
-# 3. Uploader le dossier backend (via SFTP ou Git)
-git clone https://github.com/VOTRE_REPO dealpam
-cd dealpam/backend
-
-# 4. Créer le fichier .env
-cp .env.example .env
-nano .env   # ← remplissez toutes les variables
-
-# 5. Lancer avec Docker Compose
-docker compose up -d
-
-# 6. Initialiser la base de données
-docker compose exec backend npx prisma migrate deploy
-docker compose exec backend npx ts-node prisma/seed.ts
+**`frontend-user/.env`**
+```env
+VITE_API_URL=https://api.dealpam.com/v1
 ```
 
-### Option B — Railway.app (plus simple, gratuit pour tester)
+**`frontend-admin/.env`**
+```env
+VITE_API_URL=https://api.dealpam.com/v1
+```
 
-1. https://railway.app → New Project → Deploy from GitHub
-2. Sélectionnez le dossier `backend/`
-3. Variables d'environnement → ajoutez toutes les variables du `.env.example`
-4. Railway génère automatiquement une URL (ex: `https://dealpam-backend.up.railway.app`)
+Puis lancez le build :
+```bash
+bash build.sh
+```
+
+Cela génère :
+- `backend/dist/` — le backend compilé
+- `frontend-user/dist/` — le site principal
+- `frontend-admin/dist/` — le panneau admin
 
 ---
 
-## ÉTAPE 4 — Déployer les Frontends sur Hostinger
+## ÉTAPE 4 — VPS Hostinger (Backend NestJS)
 
-### Préparation du build
+### 4.1 — Connexion et installation
 
 ```bash
-# Frontend User
-cd frontend-user
-cp .env.example .env
-# Éditez .env : VITE_API_URL=https://api.dealpam.com/v1
-npm install
+ssh root@VOTRE_IP_VPS
+
+# Node.js 20 LTS
+curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+apt install -y nodejs nginx certbot python3-certbot-nginx
+
+# PM2
+npm install -g pm2
+```
+
+### 4.2 — Uploader le backend
+
+Via SFTP (FileZilla ou WinSCP), uploadez ces dossiers/fichiers vers `/var/www/dealpam/` :
+```
+backend/dist/
+backend/node_modules/     (ou relancez npm ci sur le VPS)
+backend/package.json
+backend/prisma/
+backend/ecosystem.config.js
+backend/.env              (créez-le sur le VPS, voir 4.3)
+```
+
+Ou via Git :
+```bash
+git clone https://github.com/VOTRE_REPO /var/www/dealpam
+cd /var/www/dealpam/backend
+npm ci --omit=dev
+npm run prisma:generate
 npm run build
-# → Le dossier dist/ est créé
-
-# Frontend Admin
-cd ../frontend-admin
-cp .env.example .env
-# Éditez .env : VITE_API_URL=https://api.dealpam.com/v1
-npm install
-npm run build
-# → Le dossier dist/ est créé
 ```
 
-### Upload sur Hostinger
+### 4.3 — Fichier .env backend (sur le VPS)
 
-1. **cPanel Hostinger** → File Manager
-2. Pour le site principal (`dealpam.com`) :
-   - Uploadez le contenu de `frontend-user/dist/` dans `public_html/`
-   - Uploadez aussi `frontend-user/.htaccess` dans `public_html/`
-3. Pour le sous-domaine admin (`admin.dealpam.com`) :
-   - Domains → Add Subdomain : `admin`
-   - Uploadez `frontend-admin/dist/` dans le dossier du sous-domaine
-   - Uploadez aussi `frontend-admin/.htaccess`
-
-> **Important :** Le fichier `.htaccess` est OBLIGATOIRE pour que React Router fonctionne.
-> Sans lui, actualiser une page donnera une erreur 404.
-
----
-
-## ÉTAPE 5 — SSL & Domaine
-
-### Backend sur VPS
 ```bash
-# Installer Certbot
-apt install certbot python3-certbot-nginx -y
-certbot --nginx -d api.dealpam.com
+nano /var/www/dealpam/backend/.env
 ```
-
-### Frontends sur Hostinger
-Hostinger active le SSL automatiquement → cPanel → SSL/TLS → Let's Encrypt.
-
----
-
-## ÉTAPE 6 — Variables d'environnement backend
-
-Créez `backend/.env` avec toutes ces valeurs :
 
 ```env
 DATABASE_URL="postgresql://postgres:PASSWORD@db.PROJECT.supabase.co:5432/postgres"
 
-JWT_SECRET="CHANGEZ_CE_SECRET_32_CHARS_MINIMUM"
-JWT_REFRESH_SECRET="CHANGEZ_CE_REFRESH_SECRET_32_CHARS"
+JWT_SECRET="MINIMUM_32_CARACTERES_ALEATOIRES"
+JWT_REFRESH_SECRET="AUTRE_SECRET_32_CARACTERES"
 JWT_EXPIRES_IN="15m"
 JWT_REFRESH_EXPIRES_IN="7d"
 
@@ -148,59 +125,153 @@ NODE_ENV=production
 FRONTEND_URL="https://dealpam.com"
 ADMIN_URL="https://admin.dealpam.com"
 
-CLOUDINARY_CLOUD_NAME="votre_cloud_name"
-CLOUDINARY_API_KEY="votre_api_key"
-CLOUDINARY_API_SECRET="votre_api_secret"
-CLOUDINARY_FOLDER="dealpam"
+R2_ENDPOINT="https://ACCOUNT_ID.r2.cloudflarestorage.com"
+R2_ACCESS_KEY_ID="votre_access_key"
+R2_SECRET_ACCESS_KEY="votre_secret_key"
+R2_BUCKET_NAME="dealpam"
+R2_PUBLIC_URL="https://pub-XXXX.r2.dev"
 
 SMTP_HOST="smtp.gmail.com"
 SMTP_PORT=587
 SMTP_USER="votre@gmail.com"
-SMTP_PASS="votre_app_password_gmail"
+SMTP_PASS="votre_app_password"
+SMTP_FROM="Dealpam <noreply@dealpam.com>"
 
 MONCASH_CLIENT_ID="votre_client_id"
 MONCASH_SECRET_KEY="votre_secret"
 MONCASH_MODE="sandbox"
+
+STRIPE_SECRET_KEY="sk_live_..."
+STRIPE_WEBHOOK_SECRET="whsec_..."
+```
+
+### 4.4 — Migration base de données
+
+```bash
+cd /var/www/dealpam/backend
+npx prisma migrate deploy
+npx ts-node prisma/seed.ts   # optionnel : données initiales
+```
+
+### 4.5 — Démarrer avec PM2
+
+```bash
+cd /var/www/dealpam/backend
+mkdir -p logs
+pm2 start ecosystem.config.js
+pm2 save
+pm2 startup   # copier-coller la commande affichée
+```
+
+### 4.6 — Nginx reverse proxy
+
+```bash
+nano /etc/nginx/sites-available/api.dealpam.com
+```
+
+```nginx
+server {
+    listen 80;
+    server_name api.dealpam.com;
+
+    client_max_body_size 20M;
+
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+```
+
+```bash
+ln -s /etc/nginx/sites-available/api.dealpam.com /etc/nginx/sites-enabled/
+nginx -t && systemctl reload nginx
+
+# SSL automatique
+certbot --nginx -d api.dealpam.com
 ```
 
 ---
 
-## Compte administrateur par défaut
+## ÉTAPE 5 — Hostinger Shared Hosting (Frontends)
 
-Après le seed :
+### 5.1 — Frontend User (dealpam.com)
+
+1. Hostinger hPanel → File Manager
+2. Allez dans `public_html/`
+3. Supprimez tout ce qui s'y trouve (ou créez un sous-dossier)
+4. Uploadez **tout le contenu** de `frontend-user/dist/`
+5. Uploadez aussi `frontend-user/.htaccess` à la racine de `public_html/`
+
+### 5.2 — Frontend Admin (admin.dealpam.com)
+
+1. hPanel → Domains → Subdomains → créez `admin.dealpam.com`
+   - Document root : `/public_html/admin/` (ou le chemin proposé)
+2. File Manager → allez dans le dossier du sous-domaine
+3. Uploadez **tout le contenu** de `frontend-admin/dist/`
+4. Uploadez aussi `frontend-admin/.htaccess`
+
+> **Important :** Le `.htaccess` est obligatoire — sans lui, React Router donne des erreurs 404 lors des rafraichissements de page.
+
+### 5.3 — SSL
+
+hPanel → SSL → Let's Encrypt → activez pour `dealpam.com` et `admin.dealpam.com`
+
+---
+
+## ÉTAPE 6 — DNS (si domaine chez Hostinger)
+
+| Type | Nom | Valeur |
+|------|-----|--------|
+| A | @ | IP Shared Hosting |
+| A | admin | IP Shared Hosting |
+| A | api | IP VPS |
+
+---
+
+## Vérification finale
+
+```bash
+# API répond ?
+curl https://api.dealpam.com/v1/health
+
+# Logs PM2
+pm2 logs dealpam-api --lines 50
+```
+
+| URL | Description |
+|-----|-------------|
+| https://dealpam.com | Site principal |
+| https://admin.dealpam.com | Panneau admin |
+| https://api.dealpam.com | API backend |
+| https://api.dealpam.com/api/docs | Documentation Swagger |
+
+---
+
+## Compte admin par défaut (après seed)
+
 - **Email :** admin@dealpam.com
 - **Mot de passe :** Admin@2024!
 
-⚠️ **Changez immédiatement ce mot de passe en production !**
+**Changez ce mot de passe immédiatement après le premier login.**
 
 ---
 
-## URLs de production
+## Commandes utiles sur le VPS
 
-| Service | URL |
-|---------|-----|
-| Frontend User | https://dealpam.com |
-| Frontend Admin | https://admin.dealpam.com |
-| API Backend | https://api.dealpam.com |
-| API Docs (Swagger) | https://api.dealpam.com/api/docs |
-| Supabase Dashboard | https://app.supabase.com |
-| Cloudinary Dashboard | https://cloudinary.com/console |
+```bash
+pm2 status                        # état du backend
+pm2 restart dealpam-api           # redémarrer
+pm2 logs dealpam-api              # logs en direct
+pm2 monit                         # monitoring CPU/RAM
 
----
-
-## Plans d'abonnement vendeurs
-
-| Plan | Prix/mois | Produits | Images | Avantages |
-|------|-----------|----------|--------|-----------|
-| STARTER | 500 HTG | 50 | 5 | Basique |
-| BUSINESS | 1 000 HTG | 130 | 10 | Badge vérifié + Stats |
-| PREMIUM | 2 500 HTG | 300 | 10 | Badge + Priorité recherche |
-| ELITE | 5 000 HTG | Illimité | 15 | Tout + Page accueil + Sponsorisé |
-
----
-
-## Support & Questions
-
-- Documentation API Swagger : `/api/docs`
-- Logs Docker : `docker compose logs -f backend`
-- Logs Railway : Dashboard → Deployments → Logs
+cd /var/www/dealpam/backend
+npx prisma studio                 # interface DB (port 5555)
+```

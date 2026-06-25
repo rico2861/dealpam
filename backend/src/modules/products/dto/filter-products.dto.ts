@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsNumber, IsBoolean } from 'class-validator';
+import { IsOptional, IsString, IsNumber, IsBoolean, Min, Max } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Type, Transform } from 'class-transformer';
 
@@ -15,6 +15,6 @@ export class FilterProductsDto {
   @IsOptional() @Transform(({ value }) => value === 'true') @IsBoolean() featured?: boolean;
   @IsOptional() @Transform(({ value }) => value === 'true') @IsBoolean() sponsored?: boolean;
   @IsOptional() @Type(() => Number) @IsNumber() minRating?: number;
-  @IsOptional() @Type(() => Number) @IsNumber() page?: number;
-  @IsOptional() @Type(() => Number) @IsNumber() limit?: number;
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(1) page?: number;
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(1) @Max(100) limit?: number;
 }
