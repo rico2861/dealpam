@@ -10,7 +10,7 @@ import { MoncashService }  from '../moncash/moncash.service';
 import { Decimal }         from '@prisma/client/runtime/library';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Paiements sur la plateforme = vendeurs seulement
+// Paiements sur la plateforme = VENDEURS SEULEMENT
 //   • Abonnements  (STARTER / BUSINESS / PREMIUM / ELITE)
 //   • Campagnes pub (Ad Campaigns)
 // Les clients ne paient PAS sur la plateforme.
@@ -19,16 +19,26 @@ import { Decimal }         from '@prisma/client/runtime/library';
 @Injectable()
 export class PaymentsService {
   constructor(
-    private prisma:   PrismaService,
-    private moncash:  MoncashService,
+    private prisma:  PrismaService,
+    private moncash: MoncashService,
   ) {}
 
   // ── Admin : tous les paiements ────────────────────────────────────────────
   findAll(page = 1) {
     return this.prisma.payment.findMany({
       include: {
-        subscription: { include: { plan: { select: { name: true, tier: true } }, seller: { include: { user: { select: { firstName: true, lastName: true } } } } } },
-        adCampaign:   { select: { name: true, seller: { select: { user: { select: { firstName: true, lastName: true } } } } } },
+        subscription: {
+          include: {
+            plan:   { select: { name: true, tier: true } },
+            seller: { include: { user: { select: { firstName: true, lastName: true } } } },
+          },
+        },
+        adCampaign: {
+          select: {
+            name:   true,
+            seller: { select: { user: { select: { firstName: true, lastName: true } } } },
+          },
+        },
       },
       skip: (page - 1) * 20, take: 20, orderBy: { createdAt: 'desc' },
     });
@@ -47,26 +57,27 @@ export class PaymentsService {
 
     // Plan gratuit → activer directement sans MonCash
     if (Number(plan.priceHTG) === 0) {
-      return this._activateSubscription(seller.id, planId, 0);
+      return this._activateFreeSubscription(seller.id, planId);
     }
 
     const amountHTG = Number(plan.priceHTG);
-
-    // Créer l'abonnement en DB avec statut inactif, en attente de paiement
     const startDate = new Date();
     const endDate   = new Date(); endDate.setMonth(endDate.getMonth() + 1);
 
+    // Créer abonnement inactif en attente de paiement
     const sub = await this.prisma.$transaction(async (tx) => {
-      // Désactiver l'abonnement actif existant
-      await tx.sellerSubscription.updateMany({ where: { sellerId: seller.id, isActive: true }, data: { isActive: false } });
+      await tx.sellerSubscription.updateMany({
+        where: { sellerId: seller.id, isActive: true },
+        data:  { isActive: false },
+      });
       return tx.sellerSubscription.create({
         data: { sellerId: seller.id, planId, startDate, endDate, isActive: false },
       });
     });
 
-    // Initier paiement MonCash
-    const internalRef = `sub-${sub.id}`;
-    const { redirectUrl } = await this.moncash.createPayment(amountHTG, internalRef);
+    // orderId envoyé à MonCash = référence interne que MonCash nous renverra dans "reference"
+    const moncashRef = `sub-${sub.id}`;
+    const { redirectUrl } = await this.moncash.createPayment(amountHTG, moncashRef);
 
     await this.prisma.payment.create({
       data: {
@@ -74,8 +85,8 @@ export class PaymentsService {
         method:         'MONCASH',
         status:         'PENDING',
         amountHTG:      new Decimal(amountHTG),
-        transactionId:  internalRef,
-        moncashOrderId: internalRef,
+        transactionId:  moncashRef,
+        moncashOrderId: moncashRef,
       },
     });
 
@@ -99,21 +110,19 @@ export class PaymentsService {
       where: { id: campaignId, sellerId: seller.id, status: 'PENDING_PAYMENT' },
     });
     if (!campaign) throw new NotFoundException('Campagne introuvable ou déjà payée');
-
-    // Vérifier qu'aucun paiement existant n'est en cours
     if (campaign.paymentId) throw new ConflictException('Paiement déjà initié pour cette campagne');
 
     const amountHTG = Number(campaign.totalBudget);
-    const internalRef = `ad-${campaign.id}`;
-    const { redirectUrl } = await this.moncash.createPayment(amountHTG, internalRef);
+    const moncashRef = `ad-${campaign.id}`;
+    const { redirectUrl } = await this.moncash.createPayment(amountHTG, moncashRef);
 
     const payment = await this.prisma.payment.create({
       data: {
         method:         'MONCASH',
         status:         'PENDING',
         amountHTG:      new Decimal(amountHTG),
-        transactionId:  internalRef,
-        moncashOrderId: internalRef,
+        transactionId:  moncashRef,
+        moncashOrderId: moncashRef,
       },
     });
 
@@ -131,63 +140,43 @@ export class PaymentsService {
   }
 
   // ══════════════════════════════════════════════════════════════════════════
-  //  VÉRIFICATION MONCASH (abonnement OU campagne)
+  //  VÉRIFICATION MONCASH — appelée après retour de MonCash
+  //  MonCash redirige vers : dealpam.com?transactionId=2039151087
+  //  MonCash retourne dans "reference" notre orderId interne (sub-xxx ou ad-xxx)
   // ══════════════════════════════════════════════════════════════════════════
 
   async verifySellerPayment(moncashTransactionId: string, userId: string) {
-    // Anti-replay
-    const existing = await this.prisma.payment.findUnique({ where: { moncashTransactionId } });
-    if (existing?.status === 'COMPLETED') {
+    // Anti-replay : déjà traité ?
+    const alreadyDone = await this.prisma.payment.findUnique({
+      where: { moncashTransactionId },
+    });
+    if (alreadyDone?.status === 'COMPLETED') {
       throw new ConflictException('Transaksyon deja konfime — double crédit bloqué');
     }
 
-    // Trouver le paiement par moncashOrderId (notre ref interne)
-    // On cherche par transactionId car c'est ce qu'on a stocké
-    const payment = await this.prisma.payment.findFirst({
-      where:   { status: 'PENDING' },
-      include: {
-        subscription: { include: { seller: { select: { userId: true } } } },
-        adCampaign:   { select: { id: true, sellerId: true, seller: { select: { userId: true } } } },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    // Confirmer avec MonCash — le montant vient de MonCash, jamais du client
+    // Appel MonCash pour confirmation
     const mc = await this.moncash.verifyByTransactionId(moncashTransactionId);
     if (mc.message !== 'successful') {
       throw new BadRequestException(`Pèman echwe: ${mc.message}`);
     }
 
-    const confirmedAmount = new Decimal(mc.cost);
+    // mc.reference = l'orderId qu'on a envoyé à MonCash = notre ref interne (sub-xxx ou ad-xxx)
+    const moncashRef = mc.reference;
 
-    // Déterminer le type : abonnement ou campagne
-    const pendingPayment = await this.prisma.payment.findFirst({
-      where: {
-        status: 'PENDING',
-        OR: [
-          { moncashOrderId: `sub-${payment?.subscriptionId ?? ''}` },
-          { moncashOrderId: `ad-${payment?.adCampaign?.id ?? ''}` },
-        ],
-      },
-      include: {
-        subscription: true,
-        adCampaign:   true,
-      },
-    });
-
-    // Utiliser la ref interne pour trouver le bon paiement
-    const refPayment = await this.prisma.payment.findFirst({
-      where:   { status: 'PENDING', moncashTransactionId: null },
+    // Trouver le paiement en DB par moncashOrderId = notre référence interne
+    const payment = await this.prisma.payment.findFirst({
+      where:   { moncashOrderId: moncashRef, status: 'PENDING' },
       include: { subscription: true, adCampaign: true },
     });
+    if (!payment) throw new NotFoundException(`Paiement pending introuvable pour ref ${moncashRef}`);
 
-    if (!refPayment) throw new NotFoundException('Paiement pending introuvable');
+    const confirmedAmount = new Decimal(mc.cost); // montant vient de MonCash, jamais du client
 
     return this.prisma.$transaction(async (tx) => {
-      // Confirmer le paiement
+      // Marquer le paiement comme complété
       await tx.payment.update({
-        where: { id: refPayment.id },
-        data: {
+        where: { id: payment.id },
+        data:  {
           status:              'COMPLETED',
           amountHTG:           confirmedAmount,
           moncashTransactionId,
@@ -196,29 +185,39 @@ export class PaymentsService {
         },
       });
 
-      // Activer l'abonnement si c'est un sub
-      if (refPayment.subscriptionId) {
+      // Activer l'abonnement
+      if (payment.subscriptionId) {
         await tx.sellerSubscription.update({
-          where: { id: refPayment.subscriptionId },
+          where: { id: payment.subscriptionId },
           data:  { isActive: true },
         });
-        return { type: 'subscription', amount_htg: Number(confirmedAmount), transaction_id: moncashTransactionId };
+        return {
+          type:           'subscription',
+          amount_htg:     Number(confirmedAmount),
+          transaction_id: moncashTransactionId,
+          payer:          mc.payer,
+        };
       }
 
-      // Activer la campagne si c'est une pub
-      if (refPayment.adCampaign) {
+      // Activer la campagne (→ admin review)
+      if (payment.adCampaign) {
         await tx.adCampaign.update({
-          where: { id: refPayment.adCampaign.id },
-          data:  { status: 'PENDING_REVIEW' }, // admin doit reviewer avant activation
+          where: { id: payment.adCampaign.id },
+          data:  { status: 'PENDING_REVIEW' },
         });
-        return { type: 'ad_campaign', amount_htg: Number(confirmedAmount), transaction_id: moncashTransactionId };
+        return {
+          type:           'ad_campaign',
+          amount_htg:     Number(confirmedAmount),
+          transaction_id: moncashTransactionId,
+          payer:          mc.payer,
+        };
       }
 
       throw new BadRequestException('Type de paiement inconnu');
     });
   }
 
-  // ── Vérification par orderId interne (depuis return URL) ─────────────────
+  // ── Vérifier par orderId MonCash (fallback — si transactionId pas dispo) ─
   async verifyByOrderId(moncashOrderId: string, userId: string) {
     const mc = await this.moncash.verifyByOrderId(moncashOrderId);
     if (mc.message !== 'successful') throw new BadRequestException(`Pèman echwe: ${mc.message}`);
@@ -257,23 +256,18 @@ export class PaymentsService {
     return { data, total, page };
   }
 
-  // ── Private : activer un abonnement gratuit ───────────────────────────────
-  private async _activateSubscription(sellerId: string, planId: string, amount: number) {
+  // ── Activer un abonnement GRATUIT sans MonCash ────────────────────────────
+  private async _activateFreeSubscription(sellerId: string, planId: string) {
     const startDate = new Date();
     const endDate   = new Date(); endDate.setMonth(endDate.getMonth() + 1);
 
     return this.prisma.$transaction(async (tx) => {
       await tx.sellerSubscription.updateMany({ where: { sellerId, isActive: true }, data: { isActive: false } });
       const sub = await tx.sellerSubscription.create({
-        data: { sellerId, planId, startDate, endDate, isActive: true },
+        data:    { sellerId, planId, startDate, endDate, isActive: true },
         include: { plan: true },
       });
-      if (amount > 0) {
-        await tx.payment.create({
-          data: { subscriptionId: sub.id, method: 'MONCASH', status: 'COMPLETED', amountHTG: new Decimal(amount), paidAt: new Date() },
-        });
-      }
-      return { type: 'subscription', subscription: sub, amount_htg: amount };
+      return { type: 'subscription', subscription: sub, amount_htg: 0 };
     });
   }
 }
