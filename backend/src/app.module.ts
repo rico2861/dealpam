@@ -32,7 +32,7 @@ import { MoncashModule } from './modules/moncash/moncash.module';
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', '..', 'frontend-user', 'dist'),
+      rootPath: join(__dirname, 'public'),
       exclude: ['/v1/*', '/health', '/api/*'],
     }),
     ScheduleModule.forRoot(),
