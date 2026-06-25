@@ -5,121 +5,188 @@ import {
   ConflictException,
   BadRequestException,
 } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { MoncashService } from '../moncash/moncash.service';
-import { ConfigService } from '@nestjs/config';
-import { Decimal } from '@prisma/client/runtime/library';
+import { PrismaService }   from '../../prisma/prisma.service';
+import { MoncashService }  from '../moncash/moncash.service';
+import { Decimal }         from '@prisma/client/runtime/library';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Paiements sur la plateforme = vendeurs seulement
+//   • Abonnements  (STARTER / BUSINESS / PREMIUM / ELITE)
+//   • Campagnes pub (Ad Campaigns)
+// Les clients ne paient PAS sur la plateforme.
+// ─────────────────────────────────────────────────────────────────────────────
 
 @Injectable()
 export class PaymentsService {
   constructor(
-    private prisma: PrismaService,
-    private moncash: MoncashService,
-    private config: ConfigService,
+    private prisma:   PrismaService,
+    private moncash:  MoncashService,
   ) {}
 
-  // ── Admin : liste tous les paiements ─────────────────────────────────────
+  // ── Admin : tous les paiements ────────────────────────────────────────────
   findAll(page = 1) {
     return this.prisma.payment.findMany({
       include: {
-        order: {
-          include: { user: { select: { firstName: true, lastName: true } } },
-        },
+        subscription: { include: { plan: { select: { name: true, tier: true } }, seller: { include: { user: { select: { firstName: true, lastName: true } } } } } },
+        adCampaign:   { select: { name: true, seller: { select: { user: { select: { firstName: true, lastName: true } } } } } },
       },
-      skip: (page - 1) * 20,
-      take: 20,
-      orderBy: { createdAt: 'desc' },
+      skip: (page - 1) * 20, take: 20, orderBy: { createdAt: 'desc' },
     });
   }
 
-  // ── Initier un paiement MonCash pour une commande ─────────────────────────
-  async initiateOrderPayment(orderId: string, userId: string) {
-    // Vérification ownership + statut
-    const order = await this.prisma.order.findFirst({
-      where: { id: orderId, userId },
-    });
-    if (!order) throw new NotFoundException('Commande introuvable');
-    if (order.status !== 'PENDING') throw new ForbiddenException('Commande déjà traitée');
+  // ══════════════════════════════════════════════════════════════════════════
+  //  ABONNEMENTS
+  // ══════════════════════════════════════════════════════════════════════════
 
-    // Vérifier qu'aucun paiement pending n'existe déjà
-    const existing = await this.prisma.payment.findUnique({ where: { orderId } });
-    if (existing?.status === 'COMPLETED') {
-      throw new ConflictException('Commande déjà payée');
+  async initiateSubscriptionPayment(userId: string, planId: string) {
+    const plan = await this.prisma.subscriptionPlan.findFirst({ where: { id: planId, isActive: true } });
+    if (!plan) throw new NotFoundException('Plan introuvable ou inactif');
+
+    const seller = await this.prisma.seller.findUnique({ where: { userId } });
+    if (!seller) throw new NotFoundException('Profil vendeur introuvable');
+
+    // Plan gratuit → activer directement sans MonCash
+    if (Number(plan.priceHTG) === 0) {
+      return this._activateSubscription(seller.id, planId, 0);
     }
 
-    const amountHTG = Number(order.totalHTG);
+    const amountHTG = Number(plan.priceHTG);
 
-    // Créer le paiement MonCash (le transactionId est notre référence interne)
-    const internalRef = `dealpam-${orderId}`;
-    const { redirectUrl, paymentToken } = await this.moncash.createPayment(
-      amountHTG,
-      internalRef,
-    );
+    // Créer l'abonnement en DB avec statut inactif, en attente de paiement
+    const startDate = new Date();
+    const endDate   = new Date(); endDate.setMonth(endDate.getMonth() + 1);
 
-    // Créer/mettre à jour le paiement en DB avec statut PENDING
-    const payment = await this.prisma.payment.upsert({
-      where:  { orderId },
-      create: {
-        orderId,
-        method:        'MONCASH',
-        status:        'PENDING',
-        amountHTG:     new Decimal(amountHTG),
-        transactionId: internalRef,
+    const sub = await this.prisma.$transaction(async (tx) => {
+      // Désactiver l'abonnement actif existant
+      await tx.sellerSubscription.updateMany({ where: { sellerId: seller.id, isActive: true }, data: { isActive: false } });
+      return tx.sellerSubscription.create({
+        data: { sellerId: seller.id, planId, startDate, endDate, isActive: false },
+      });
+    });
+
+    // Initier paiement MonCash
+    const internalRef = `sub-${sub.id}`;
+    const { redirectUrl } = await this.moncash.createPayment(amountHTG, internalRef);
+
+    await this.prisma.payment.create({
+      data: {
+        subscriptionId: sub.id,
+        method:         'MONCASH',
+        status:         'PENDING',
+        amountHTG:      new Decimal(amountHTG),
+        transactionId:  internalRef,
         moncashOrderId: internalRef,
-        gatewayData:   { paymentToken } as any,
-      },
-      update: {
-        status:        'PENDING',
-        transactionId: internalRef,
-        moncashOrderId: internalRef,
-        gatewayData:   { paymentToken } as any,
       },
     });
 
     return {
+      redirect_url:    redirectUrl,
+      subscription_id: sub.id,
+      amount_htg:      amountHTG,
+      plan:            plan.name,
+    };
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  CAMPAGNES PUB
+  // ══════════════════════════════════════════════════════════════════════════
+
+  async initiateAdCampaignPayment(userId: string, campaignId: string) {
+    const seller = await this.prisma.seller.findUnique({ where: { userId } });
+    if (!seller) throw new NotFoundException('Profil vendeur introuvable');
+
+    const campaign = await this.prisma.adCampaign.findFirst({
+      where: { id: campaignId, sellerId: seller.id, status: 'PENDING_PAYMENT' },
+    });
+    if (!campaign) throw new NotFoundException('Campagne introuvable ou déjà payée');
+
+    // Vérifier qu'aucun paiement existant n'est en cours
+    if (campaign.paymentId) throw new ConflictException('Paiement déjà initié pour cette campagne');
+
+    const amountHTG = Number(campaign.totalBudget);
+    const internalRef = `ad-${campaign.id}`;
+    const { redirectUrl } = await this.moncash.createPayment(amountHTG, internalRef);
+
+    const payment = await this.prisma.payment.create({
+      data: {
+        method:         'MONCASH',
+        status:         'PENDING',
+        amountHTG:      new Decimal(amountHTG),
+        transactionId:  internalRef,
+        moncashOrderId: internalRef,
+      },
+    });
+
+    await this.prisma.adCampaign.update({
+      where: { id: campaignId },
+      data:  { paymentId: payment.id },
+    });
+
+    return {
       redirect_url: redirectUrl,
+      campaign_id:  campaignId,
       payment_id:   payment.id,
-      order_id:     orderId,
       amount_htg:   amountHTG,
     };
   }
 
-  // ── Vérifier un paiement MonCash après retour (par transactionId MonCash) ──
-  async verifyByTransactionId(moncashTransactionId: string, userId: string) {
-    // Anti-replay : déjà traité ?
-    const existing = await this.prisma.payment.findUnique({
-      where: { moncashTransactionId },
-    });
+  // ══════════════════════════════════════════════════════════════════════════
+  //  VÉRIFICATION MONCASH (abonnement OU campagne)
+  // ══════════════════════════════════════════════════════════════════════════
+
+  async verifySellerPayment(moncashTransactionId: string, userId: string) {
+    // Anti-replay
+    const existing = await this.prisma.payment.findUnique({ where: { moncashTransactionId } });
     if (existing?.status === 'COMPLETED') {
-      throw new ConflictException('Transaksyon deja kredite — double crédit bloqué');
+      throw new ConflictException('Transaksyon deja konfime — double crédit bloqué');
     }
 
-    // Appel MonCash pour confirmation
+    // Trouver le paiement par moncashOrderId (notre ref interne)
+    // On cherche par transactionId car c'est ce qu'on a stocké
+    const payment = await this.prisma.payment.findFirst({
+      where:   { status: 'PENDING' },
+      include: {
+        subscription: { include: { seller: { select: { userId: true } } } },
+        adCampaign:   { select: { id: true, sellerId: true, seller: { select: { userId: true } } } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // Confirmer avec MonCash — le montant vient de MonCash, jamais du client
     const mc = await this.moncash.verifyByTransactionId(moncashTransactionId);
-
     if (mc.message !== 'successful') {
-      // Enregistrer l'échec
-      if (existing) {
-        await this.prisma.payment.update({
-          where: { id: existing.id },
-          data:  {
-            status:              'FAILED',
-            moncashTransactionId,
-            failureReason:       mc.message,
-            gatewayData:         mc as any,
-          },
-        });
-      }
-      throw new BadRequestException(`Paiement échoué: ${mc.message}`);
+      throw new BadRequestException(`Pèman echwe: ${mc.message}`);
     }
 
-    // Le montant vient de MonCash, jamais du frontend
     const confirmedAmount = new Decimal(mc.cost);
 
-    // Mettre à jour le paiement et confirmer la commande en transaction atomique
-    const payment = await this.prisma.$transaction(async (tx) => {
-      const updated = await tx.payment.update({
-        where: { id: existing!.id },
+    // Déterminer le type : abonnement ou campagne
+    const pendingPayment = await this.prisma.payment.findFirst({
+      where: {
+        status: 'PENDING',
+        OR: [
+          { moncashOrderId: `sub-${payment?.subscriptionId ?? ''}` },
+          { moncashOrderId: `ad-${payment?.adCampaign?.id ?? ''}` },
+        ],
+      },
+      include: {
+        subscription: true,
+        adCampaign:   true,
+      },
+    });
+
+    // Utiliser la ref interne pour trouver le bon paiement
+    const refPayment = await this.prisma.payment.findFirst({
+      where:   { status: 'PENDING', moncashTransactionId: null },
+      include: { subscription: true, adCampaign: true },
+    });
+
+    if (!refPayment) throw new NotFoundException('Paiement pending introuvable');
+
+    return this.prisma.$transaction(async (tx) => {
+      // Confirmer le paiement
+      await tx.payment.update({
+        where: { id: refPayment.id },
         data: {
           status:              'COMPLETED',
           amountHTG:           confirmedAmount,
@@ -129,57 +196,84 @@ export class PaymentsService {
         },
       });
 
-      // Confirmer la commande
-      if (existing?.orderId) {
-        await tx.order.update({
-          where: { id: existing.orderId },
-          data:  { status: 'CONFIRMED' },
+      // Activer l'abonnement si c'est un sub
+      if (refPayment.subscriptionId) {
+        await tx.sellerSubscription.update({
+          where: { id: refPayment.subscriptionId },
+          data:  { isActive: true },
         });
+        return { type: 'subscription', amount_htg: Number(confirmedAmount), transaction_id: moncashTransactionId };
       }
 
-      return updated;
-    });
+      // Activer la campagne si c'est une pub
+      if (refPayment.adCampaign) {
+        await tx.adCampaign.update({
+          where: { id: refPayment.adCampaign.id },
+          data:  { status: 'PENDING_REVIEW' }, // admin doit reviewer avant activation
+        });
+        return { type: 'ad_campaign', amount_htg: Number(confirmedAmount), transaction_id: moncashTransactionId };
+      }
 
-    return {
-      status:          'completed',
-      amount_htg:      Number(confirmedAmount),
-      transaction_id:  moncashTransactionId,
-      payer:           mc.payer,
-      payment_id:      payment.id,
-      order_id:        existing?.orderId,
-    };
+      throw new BadRequestException('Type de paiement inconnu');
+    });
   }
 
-  // ── Vérifier par orderId interne (fallback depuis le dashboard) ───────────
-  async verifyByOrderId(internalOrderId: string, userId: string) {
-    const payment = await this.prisma.payment.findFirst({
-      where: { moncashOrderId: internalOrderId },
-      include: { order: { select: { userId: true } } },
-    });
-    if (!payment) throw new NotFoundException('Paiement introuvable');
-    if (payment.order?.userId !== userId) throw new ForbiddenException();
-
-    if (payment.status === 'COMPLETED') {
-      throw new ConflictException('Paiement déjà confirmé');
-    }
-
-    const mc = await this.moncash.verifyByOrderId(internalOrderId);
-
-    if (mc.message !== 'successful') {
-      throw new BadRequestException(`Paiement échoué: ${mc.message}`);
-    }
-
-    return this.verifyByTransactionId(mc.transaction_id, userId);
+  // ── Vérification par orderId interne (depuis return URL) ─────────────────
+  async verifyByOrderId(moncashOrderId: string, userId: string) {
+    const mc = await this.moncash.verifyByOrderId(moncashOrderId);
+    if (mc.message !== 'successful') throw new BadRequestException(`Pèman echwe: ${mc.message}`);
+    return this.verifySellerPayment(mc.transaction_id, userId);
   }
 
-  // ── Historique des paiements d'un utilisateur ─────────────────────────────
-  findMine(userId: string, page = 1) {
-    return this.prisma.payment.findMany({
-      where:   { order: { userId } },
-      include: { order: { select: { id: true, status: true, totalHTG: true } } },
-      skip:    (page - 1) * 20,
-      take:    20,
-      orderBy: { createdAt: 'desc' },
+  // ── Historique paiements du vendeur ──────────────────────────────────────
+  async findMine(userId: string, page = 1) {
+    const seller = await this.prisma.seller.findUnique({ where: { userId } });
+    if (!seller) return { data: [], total: 0 };
+
+    const [data, total] = await Promise.all([
+      this.prisma.payment.findMany({
+        where: {
+          OR: [
+            { subscription: { sellerId: seller.id } },
+            { adCampaign:   { sellerId: seller.id } },
+          ],
+        },
+        include: {
+          subscription: { include: { plan: { select: { name: true, tier: true } } } },
+          adCampaign:   { select: { name: true } },
+        },
+        skip: (page - 1) * 20, take: 20, orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.payment.count({
+        where: {
+          OR: [
+            { subscription: { sellerId: seller.id } },
+            { adCampaign:   { sellerId: seller.id } },
+          ],
+        },
+      }),
+    ]);
+
+    return { data, total, page };
+  }
+
+  // ── Private : activer un abonnement gratuit ───────────────────────────────
+  private async _activateSubscription(sellerId: string, planId: string, amount: number) {
+    const startDate = new Date();
+    const endDate   = new Date(); endDate.setMonth(endDate.getMonth() + 1);
+
+    return this.prisma.$transaction(async (tx) => {
+      await tx.sellerSubscription.updateMany({ where: { sellerId, isActive: true }, data: { isActive: false } });
+      const sub = await tx.sellerSubscription.create({
+        data: { sellerId, planId, startDate, endDate, isActive: true },
+        include: { plan: true },
+      });
+      if (amount > 0) {
+        await tx.payment.create({
+          data: { subscriptionId: sub.id, method: 'MONCASH', status: 'COMPLETED', amountHTG: new Decimal(amount), paidAt: new Date() },
+        });
+      }
+      return { type: 'subscription', subscription: sub, amount_htg: amount };
     });
   }
 }

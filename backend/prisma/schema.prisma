@@ -230,6 +230,10 @@ model Store {
   phone        String?
   email        String?
   whatsapp     String?
+  // Méthodes de paiement que le vendeur accepte (MONCASH, NATCASH, CASH, BANK_TRANSFER, OTHER)
+  acceptedPaymentMethods String[] @default([]) @map("accepted_payment_methods")
+  // Numéro MonCash du vendeur (pour que le client sache où payer)
+  moncashPhone String?  @map("moncash_phone")
   avgRating        Float     @default(0) @map("avg_rating")
   totalReviews     Int       @default(0) @map("total_reviews")
   totalSales       Int       @default(0) @map("total_sales")
@@ -471,10 +475,11 @@ model Order {
   subtotalHTG    Decimal     @map("subtotal_htg") @db.Decimal(10, 2)
   shippingHTG    Decimal     @default(0) @map("shipping_htg") @db.Decimal(10, 2)
   totalHTG       Decimal     @map("total_htg") @db.Decimal(10, 2)
-  notes          String?
-  trackingNumber String?     @map("tracking_number")
+  notes                String?
+  trackingNumber       String?  @map("tracking_number")
+  // Méthode de paiement choisie par le client (parmi celles du vendeur)
+  chosenPaymentMethod  String?  @map("chosen_payment_method")
   items          OrderItem[]
-  payment        Payment?
   createdAt      DateTime    @default(now()) @map("created_at")
   updatedAt      DateTime    @updatedAt @map("updated_at")
 
@@ -501,8 +506,7 @@ model OrderItem {
 
 model Payment {
   id             String              @id @default(uuid())
-  orderId        String?             @unique @map("order_id")
-  order          Order?              @relation(fields: [orderId], references: [id])
+  // Payments = vendeurs seulement (abonnements + pub). Pas de paiement client sur plateforme.
   subscriptionId String?             @unique @map("subscription_id")
   subscription   SellerSubscription? @relation(fields: [subscriptionId], references: [id])
   adCampaign     AdCampaign?
