@@ -29,6 +29,7 @@ import WishlistPage from './pages/customer/WishlistPage';
 import ProfilePage from './pages/customer/ProfilePage';
 import CartPage from './pages/customer/CartPage';
 import CheckoutPage from './pages/customer/CheckoutPage';
+import MoncashReturnHandler from './components/MoncashReturnHandler';
 
 // Seller pages
 import SellerDashboard from './pages/seller/DashboardPage';
@@ -68,6 +69,7 @@ export default function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <BrowserRouter>
+        <MoncashReturnHandler />
         <Routes>
           {/* Public */}
           <Route path="/" element={<MainLayout />}>
