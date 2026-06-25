@@ -1,0 +1,9 @@
+{
+  "name": "dealpam",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "cd frontend-user && npm install && npm run build && cd ../backend && npm install && npm run build",
+    "start": "cd backend && node dist/main.js"
+  }
+}
