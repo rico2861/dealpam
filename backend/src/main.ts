@@ -17,12 +17,12 @@ async function bootstrap() {
         directives: {
           defaultSrc: ["'self'"],
           scriptSrc: ["'self'"],
-          styleSrc: ["'self'", "'unsafe-inline'"],
-          imgSrc: ["'self'", 'data:', 'https:'],
-          connectSrc: ["'self'"],
-          fontSrc: ["'self'", 'https:'],
+          styleSrc:  ["'self'", "'unsafe-inline'"],
+          imgSrc:    ["'self'", 'data:', 'https:'],
+          connectSrc:["'self'", 'wss:', 'ws:'],
+          fontSrc:   ["'self'", 'https:'],
           objectSrc: ["'none'"],
-          frameSrc: ["'none'"],
+          frameSrc:  ["'none'"],
           upgradeInsecureRequests: [],
         },
       },
@@ -35,50 +35,57 @@ async function bootstrap() {
 
   // ── CORS ──────────────────────────────────────────────────────────────────
   const allowedOrigins = [
-    process.env.FRONTEND_URL || 'http://localhost:5173',
-    process.env.ADMIN_URL    || 'http://localhost:5174',
-  ].filter(Boolean);
+    process.env.FRONTEND_URL,
+    process.env.ADMIN_URL,
+    'http://localhost:5173',
+    'http://localhost:5174',
+  ].filter(Boolean) as string[];
 
   app.enableCors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (mobile apps, curl, Postman in dev)
       if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
       callback(new Error(`CORS: origin ${origin} not allowed`));
     },
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    methods:        ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-    credentials: true,
-    maxAge: 86400, // 24h preflight cache
+    credentials:    true,
+    maxAge:         86400,
   });
 
   // ── Global prefix ─────────────────────────────────────────────────────────
-  app.setGlobalPrefix('v1');
+  app.setGlobalPrefix('v1', {
+    exclude: ['health'], // /health sans préfixe pour Hostinger healthcheck
+  });
 
-  // ── Validation pipeline ───────────────────────────────────────────────────
+  // ── Validation ────────────────────────────────────────────────────────────
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true,           // Strip unknown properties
-      forbidNonWhitelisted: true, // Reject requests with extra fields
-      transform: true,           // Auto-transform to DTO types
-      transformOptions: { enableImplicitConversion: true },
+      whitelist:            true,
+      forbidNonWhitelisted: true,
+      transform:            true,
+      transformOptions:     { enableImplicitConversion: true },
     }),
   );
 
   // ── Swagger ───────────────────────────────────────────────────────────────
-  {
-    const config = new DocumentBuilder()
-      .setTitle('Dealpam API')
-      .setDescription('API REST de la plateforme e-commerce Dealpam — Haïti')
-      .setVersion('1.0')
-      .addBearerAuth()
-      .build();
-    const document = SwaggerModule.createDocument(app, config);
-    SwaggerModule.setup('api/docs', app, document);
-  }
+  const config = new DocumentBuilder()
+    .setTitle('Dealpam API')
+    .setDescription('API REST — Marketplace Dealpam Haïti')
+    .setVersion('1.0')
+    .addBearerAuth()
+    .build();
+  SwaggerModule.setup('api/docs', app, SwaggerModule.createDocument(app, config));
 
-  const port = process.env.PORT || 3000;
+  // ── Health check (utilisé par Hostinger pour vérifier que l'app tourne) ──
+  const httpAdapter = app.getHttpAdapter();
+  httpAdapter.get('/health', (_req: any, res: any) => {
+    res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+  });
+
+  const port = process.env.PORT ?? 3000;
   await app.listen(port, '0.0.0.0');
-  console.log(`Server running on port ${port}`);
-  console.log(`Swagger: https://api.dealpam.com/api/docs`);
+  console.log(`✅ Dealpam API démarré sur le port ${port}`);
+  console.log(`📖 Swagger : https://api.dealpam.com/api/docs`);
 }
+
 bootstrap();
