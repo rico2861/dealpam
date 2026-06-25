@@ -1,0 +1,69 @@
+import { PrismaService } from '../../prisma/prisma.service';
+export declare class CategoriesService {
+    private prisma;
+    constructor(prisma: PrismaService);
+    findAll(): import(".prisma/client").Prisma.PrismaPromise<({
+        children: {
+            id: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            slug: string;
+            imageUrl: string | null;
+            icon: string | null;
+            parentId: string | null;
+            sortOrder: number;
+        }[];
+        _count: {
+            products: number;
+        };
+    } & {
+        id: string;
+        name: string;
+        isActive: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+        slug: string;
+        imageUrl: string | null;
+        icon: string | null;
+        parentId: string | null;
+        sortOrder: number;
+    })[]>;
+    create(data: any): import(".prisma/client").Prisma.Prisma__CategoryClient<{
+        id: string;
+        name: string;
+        isActive: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+        slug: string;
+        imageUrl: string | null;
+        icon: string | null;
+        parentId: string | null;
+        sortOrder: number;
+    }, never, import("@prisma/client/runtime/library").DefaultArgs>;
+    update(id: string, data: any): import(".prisma/client").Prisma.Prisma__CategoryClient<{
+        id: string;
+        name: string;
+        isActive: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+        slug: string;
+        imageUrl: string | null;
+        icon: string | null;
+        parentId: string | null;
+        sortOrder: number;
+    }, never, import("@prisma/client/runtime/library").DefaultArgs>;
+    remove(id: string): import(".prisma/client").Prisma.Prisma__CategoryClient<{
+        id: string;
+        name: string;
+        isActive: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+        slug: string;
+        imageUrl: string | null;
+        icon: string | null;
+        parentId: string | null;
+        sortOrder: number;
+    }, never, import("@prisma/client/runtime/library").DefaultArgs>;
+}
