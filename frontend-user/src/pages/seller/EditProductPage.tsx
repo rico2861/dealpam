@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Container, Typography, Card, CardContent, TextField, Button, Grid, Box, Alert, CircularProgress, FormControl, InputLabel, Select, MenuItem, Chip } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
@@ -41,10 +41,10 @@ export default function EditProductPage() {
     setLoading(true); setError('');
     try {
       await api.patch(`/products/${id}`, form);
-      enqueueSnackbar('Produit mis à jour !', { variant: 'success' });
+      enqueueSnackbar('Produit mis a jour !', { variant: 'success' });
       navigate('/seller/products');
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Erreur lors de la mise à jour');
+      setError(e.response?.data?.message || 'Erreur lors de la mise a jour');
     } finally {
       setLoading(false);
     }

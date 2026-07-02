@@ -3,7 +3,8 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
-import * as compression from 'compression';
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const compression = require('compression');
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -20,7 +21,7 @@ async function bootstrap() {
           scriptSrc:  ["'self'", "'unsafe-inline'"],
           styleSrc:   ["'self'", "'unsafe-inline'"],
           imgSrc:     ["'self'", 'data:', 'https:'],
-          connectSrc: ["'self'", 'wss:', 'ws:'],
+          connectSrc: ["'self'", 'wss:', 'ws:', 'https:', 'http:'],
           fontSrc:    ["'self'", 'https:', 'data:'],
           objectSrc:  ["'none'"],
           frameSrc:   ["'none'"],
@@ -33,17 +34,38 @@ async function bootstrap() {
   // ── Compression ───────────────────────────────────────────────────────────
   app.use(compression());
 
+  // ── Body size limits (prevent large payload attacks) ─────────────────────
+  app.use(require('express').json({ limit: '5mb' }));
+  app.use(require('express').urlencoded({ extended: true, limit: '5mb' }));
+
   // ── CORS ──────────────────────────────────────────────────────────────────
   const allowedOrigins = [
     process.env.FRONTEND_URL,
     process.env.ADMIN_URL,
     'http://localhost:5173',
     'http://localhost:5174',
+    'http://localhost:5175',
+    'http://localhost:5176',
+    'http://localhost:4173',
+    'http://192.168.48.1:5173',
+    'http://192.168.48.1:5174',
+    'http://192.168.111.1:5173',
+    'http://192.168.111.1:5174',
+    'http://172.20.10.2:5173',
+    'http://172.20.10.2:5174',
+    'http://172.20.64.1:5173',
+    'http://172.20.64.1:5174',
   ].filter(Boolean) as string[];
 
   app.enableCors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      // Autoriser les IPs réseau local en dev (mobile sur WiFi)
+      if (process.env.NODE_ENV !== 'production' &&
+        /^http:\/\/(192\.168\.|172\.|10\.)/.test(origin)) {
+        return callback(null, true);
+      }
       callback(new Error(`CORS: origin ${origin} not allowed`));
     },
     methods:        ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],

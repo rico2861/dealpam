@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { ComplaintType } from '@prisma/client';
+type ComplaintType = string;
 
 @Injectable()
 export class ComplaintsService {

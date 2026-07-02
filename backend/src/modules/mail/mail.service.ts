@@ -214,18 +214,24 @@ export class MailService {
     await this.send(to, '❌ Vérification refusée — DealPam', this.layout('Vérification refusée', 'Votre dossier vendeur n\'a pas pu être validé.', body));
   }
 
-  // ── 5. PASSWORD RESET ──────────────────────────────────────────────────────
+  // ── 5. PASSWORD RESET (code 6 chiffres) ───────────────────────────────────
+
+  async sendPasswordResetCode(to: string, firstName: string, code: string): Promise<void> {
+    const body = `
+      ${this.hero('🔐', '#FFF8EC', 'Code de vérification', 'Réinitialisation de votre mot de passe')}
+      ${this.greeting(firstName)}
+      ${this.para('Vous avez demandé à réinitialiser votre mot de passe. Utilisez le code ci-dessous :')}
+      <div style="background:#F9FAFB;border:2px solid ${BRAND.orange};border-radius:14px;padding:24px;text-align:center;margin:0 0 24px;">
+        <p style="margin:0 0 6px;color:#9CA3AF;font-size:11px;text-transform:uppercase;letter-spacing:2px;font-weight:700;">Code de vérification</p>
+        <p style="margin:0;font-size:40px;font-weight:900;color:${BRAND.dark};letter-spacing:10px;font-family:monospace;">${this.esc(code)}</p>
+      </div>
+      ${this.alert('Ce code expire dans <strong>15 minutes</strong> et ne peut être utilisé qu\'une seule fois. Si vous n\'avez pas fait cette demande, ignorez cet email.', 'warning')}
+    `;
+    await this.send(to, 'Votre code de réinitialisation — DealPam', this.layout('Code de réinitialisation', 'Votre code de réinitialisation DealPam.', body));
+  }
 
   async sendPasswordReset(to: string, firstName: string, resetUrl: string): Promise<void> {
-    const body = `
-      ${this.hero('🔑', '#FFF8EC', 'Réinitialisation du mot de passe', 'Nous avons reçu votre demande')}
-      ${this.greeting(firstName)}
-      ${this.para('Vous avez demandé à réinitialiser votre mot de passe DealPam. Cliquez sur le bouton ci-dessous pour choisir un nouveau mot de passe sécurisé.')}
-      ${this.btn('Réinitialiser mon mot de passe', resetUrl)}
-      ${this.alert('⏱️ Ce lien expire dans <strong>1 heure</strong> et ne peut être utilisé qu\'une seule fois. Si vous n\'avez pas fait cette demande, ignorez cet email — votre compte est en sécurité.', 'warning')}
-      ${this.linkNote(resetUrl)}
-    `;
-    await this.send(to, '🔑 Réinitialisez votre mot de passe — DealPam', this.layout('Réinitialisation mot de passe', 'Réinitialisez votre mot de passe DealPam.', body));
+    return this.sendPasswordResetCode(to, firstName, resetUrl);
   }
 
   // ── 6. ADMIN RESET — temp password ─────────────────────────────────────────
@@ -440,7 +446,49 @@ export class MailService {
     await this.send(to, `🎊 Abonnement ${planName} renouvelé — DealPam`, this.layout('Abonnement renouvelé', `Votre abonnement DealPam a été renouvelé jusqu'au ${end}.`, body));
   }
 
-  // ── 16. RAW / CUSTOM ──────────────────────────────────────────────────────
+  // ── 16. NEWSLETTER WELCOME ────────────────────────────────────────────────
+
+  async sendNewsletterWelcome(to: string, unsubscribeToken: string): Promise<void> {
+    const unsubUrl = `${BRAND.url}/api/newsletter/unsubscribe?token=${unsubscribeToken}`;
+    const body = `
+      <div style="text-align:center;margin-bottom:32px;">
+        <div style="width:68px;height:68px;background:#FFF8EC;border-radius:50%;margin:0 auto 18px;display:flex;align-items:center;justify-content:center;">
+          <span style="font-size:30px;line-height:68px;">✉</span>
+        </div>
+        <h1 style="margin:0 0 8px;color:${BRAND.dark};font-size:24px;font-weight:800;letter-spacing:-0.5px;">Bienvenue dans la newsletter DealPam !</h1>
+        <p style="margin:0;color:${BRAND.muted};font-size:15px;line-height:1.6;">Vous recevrez en avant-première nos meilleures offres.</p>
+      </div>
+      ${this.para(`Merci de vous être abonné à la newsletter <strong>DealPam</strong> — la marketplace haïtienne. Vous serez parmi les premiers informés de :`)}
+      <table cellpadding="0" cellspacing="0" style="margin:0 0 24px;width:100%;">
+        ${[
+          ['Nouvelles promotions &amp; ventes flash', '#FF9900'],
+          ['Arrivée de nouveaux vendeurs et boutiques', '#10B981'],
+          ['Conseils exclusifs pour acheteurs', '#6366F1'],
+          ['Événements spéciaux DealPam', '#EC4899'],
+        ].map(([text, color]) => `
+        <tr>
+          <td style="padding:8px 0;vertical-align:top;width:24px;">
+            <div style="width:8px;height:8px;background:${color};border-radius:50%;margin-top:6px;"></div>
+          </td>
+          <td style="padding:8px 0 8px 10px;color:${BRAND.text};font-size:14.5px;line-height:1.6;">${text}</td>
+        </tr>`).join('')}
+      </table>
+      ${this.btn('Découvrir DealPam', BRAND.url)}
+      ${this.divider()}
+      <p style="margin:0;color:${BRAND.muted};font-size:12px;text-align:center;line-height:1.8;">
+        Vous recevez cet email car vous vous êtes abonné sur <a href="${BRAND.url}" style="color:${BRAND.orange};">dealpam.com</a>.<br/>
+        Pour vous désabonner à tout moment, cliquez ici :<br/>
+        <a href="${unsubUrl}" style="color:#9CA3AF;font-size:11px;text-decoration:underline;">Se désabonner de la newsletter</a>
+      </p>
+    `;
+    await this.send(
+      to,
+      'Bienvenue dans la newsletter DealPam',
+      this.layout('Newsletter DealPam', 'Bienvenue ! Vous recevrez nos meilleures offres en avant-première.', body),
+    );
+  }
+
+  // ── 17. RAW / CUSTOM ──────────────────────────────────────────────────────
 
   async sendRaw(to: string, subject: string, bodyHtml: string): Promise<void> {
     await this.send(to, subject, this.layout(subject, subject, bodyHtml));

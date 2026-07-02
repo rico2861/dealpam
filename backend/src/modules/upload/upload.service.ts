@@ -10,9 +10,9 @@ const MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
 
 export interface UploadedImage {
   publicId: string;
-  urlFull: string;   // 800px WebP
-  urlMedium: string; // 600px WebP
-  urlThumb: string;  // 300px WebP
+  urlFull: string;   // 1400px WebP — product detail page hero
+  urlMedium: string; // 700px  WebP — search results / hover zoom
+  urlThumb: string;  // 380px  WebP — card grids / carousels
 }
 
 @Injectable()
@@ -45,9 +45,9 @@ export class UploadService {
     const keyBase = `${folder}/${publicId}`;
 
     const [full, medium, thumb] = await Promise.all([
-      this.processAndUpload(file.buffer, `${keyBase}_full.webp`, 800),
-      this.processAndUpload(file.buffer, `${keyBase}_medium.webp`, 600),
-      this.processAndUpload(file.buffer, `${keyBase}_thumb.webp`, 300),
+      this.processAndUpload(file.buffer, `${keyBase}_full.webp`,   1400, 90),
+      this.processAndUpload(file.buffer, `${keyBase}_medium.webp`,  700, 85),
+      this.processAndUpload(file.buffer, `${keyBase}_thumb.webp`,   380, 78),
     ]);
 
     return {
@@ -98,10 +98,10 @@ export class UploadService {
 
   // ── Private helpers ───────────────────────────────────────────────────────
 
-  private async processAndUpload(buffer: Buffer, key: string, width: number): Promise<string> {
+  private async processAndUpload(buffer: Buffer, key: string, width: number, quality = 85): Promise<string> {
     const processed = await sharp(buffer)
       .resize(width, width, { fit: 'inside', withoutEnlargement: true })
-      .webp({ quality: width <= 300 ? 85 : 92, effort: 4 })
+      .webp({ quality, effort: 4, smartSubsample: true })
       .toBuffer();
 
     await this.s3.send(new PutObjectCommand({

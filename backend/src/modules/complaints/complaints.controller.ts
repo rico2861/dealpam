@@ -4,7 +4,7 @@ import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
 import { RolesGuard } from '../../shared/guards/roles.guard';
 import { Roles } from '../../shared/decorators/roles.decorator';
 import { ComplaintsService } from './complaints.service';
-import { ComplaintType } from '@prisma/client';
+type ComplaintType = string;
 
 @ApiTags('Complaints')
 @ApiBearerAuth()

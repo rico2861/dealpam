@@ -3,7 +3,8 @@ import { Type } from 'class-transformer';
 
 export class CreateCampaignDto {
   @IsString() name: string;
-  @IsString() productId: string;
+  @IsString() @IsOptional() productId?: string;
+  @IsString() @IsOptional() storeId?: string;
   @IsIn(['AWARENESS', 'TRAFFIC', 'CONVERSIONS']) @IsOptional() objective?: string;
 
   @Type(() => Number) @IsNumber() @Min(500) totalBudget: number;   // HTG

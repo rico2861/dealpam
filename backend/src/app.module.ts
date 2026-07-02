@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD, APP_FILTER } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
-import { ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { AllExceptionsFilter } from './shared/filters/all-exceptions.filter';
 import { ScheduleModule } from '@nestjs/schedule';
 import { PrismaModule } from './prisma/prisma.module';
 import { MailModule } from './modules/mail/mail.module';
@@ -23,8 +25,16 @@ import { ChatModule } from './modules/chat/chat.module';
 import { AppointmentsModule } from './modules/appointments/appointments.module';
 import { ComplaintsModule } from './modules/complaints/complaints.module';
 import { AdsModule } from './modules/ads/ads.module';
+import { FlashSaleModule } from './modules/flash-sale/flash-sale.module';
 import { BadgesModule } from './modules/badges/badges.module';
 import { MoncashModule } from './modules/moncash/moncash.module';
+import { WishlistModule } from './modules/wishlist/wishlist.module';
+import { BannersModule } from './modules/banners/banners.module';
+import { EventsModule } from './modules/events/events.module';
+import { AlgoModule } from './modules/algo/algo.module';
+import { NewsletterModule } from './modules/newsletter/newsletter.module';
+import { PlatformStoreModule } from './modules/platform-store/platform-store.module';
+import { WalletModule } from './modules/wallet/wallet.module';
 
 @Module({
   imports: [
@@ -52,8 +62,20 @@ import { MoncashModule } from './modules/moncash/moncash.module';
     AppointmentsModule,
     ComplaintsModule,
     AdsModule,
+    FlashSaleModule,
     BadgesModule,
     MoncashModule,
+    WishlistModule,
+    BannersModule,
+    EventsModule,
+    AlgoModule,
+    NewsletterModule,
+    PlatformStoreModule,
+    WalletModule,
+  ],
+  providers: [
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_FILTER, useClass: AllExceptionsFilter },
   ],
 })
 export class AppModule {}

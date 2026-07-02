@@ -9,12 +9,21 @@ export class RegisterDto {
   @Transform(({ value }) => value?.toLowerCase()?.trim())
   email: string;
 
+  @ApiProperty({ example: 'marie_jean', description: 'Username unique (3-30 chars, letters/numbers/_-)' })
+  @IsOptional()
+  @IsString()
+  @MinLength(3, { message: 'Username trop court (min 3 caractères)' })
+  @MaxLength(30, { message: 'Username trop long (max 30 caractères)' })
+  @Matches(/^[a-z0-9_.-]+$/i, { message: 'Username: lettres, chiffres, _ . - uniquement' })
+  @Transform(({ value }) => value?.toLowerCase()?.trim())
+  username?: string;
+
   @ApiProperty({ minLength: 8 })
   @IsString()
   @MinLength(8, { message: 'Mot de passe trop court (min 8 caractères)' })
   @MaxLength(128, { message: 'Mot de passe trop long' })
-  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, {
-    message: 'Le mot de passe doit contenir au moins une minuscule, une majuscule et un chiffre',
+  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()\-_=+\[\]{}|;:,.<>?/\\~`"'])/, {
+    message: "Le mot de passe doit contenir une minuscule, une majuscule, un chiffre et un caractère spécial (!@#$%…)",
   })
   password: string;
 

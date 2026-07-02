@@ -1,512 +1,1183 @@
-import { useState, useRef, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+﻿import { useState, useEffect, useRef, useCallback } from 'react';
+import { Link, useNavigate, useSearchParams, useLocation as useRLocation } from 'react-router-dom';
 import {
   Typography, IconButton, Box, Button,
-  InputBase, Avatar, Menu, MenuItem, Drawer, List, ListItem,
-  ListItemText, useMediaQuery, useTheme, Divider, Paper, alpha,
+  InputBase, Avatar, Drawer,
+  useMediaQuery, useTheme, Divider, Paper, alpha, Chip, Badge,
+  Fade, Grow, Tooltip,
 } from '@mui/material';
 import {
   Search, ShoppingCart, Menu as MenuIcon,
-  Logout, Close, KeyboardArrowDown,
+  Person, Logout, Close, KeyboardArrowDown, KeyboardArrowRight,
   Checkroom, PhoneAndroid, Home as HomeIcon,
   SportsEsports, FitnessCenter, LocalFlorist, Diamond,
   DirectionsCar, RestaurantMenu, WorkOutline, MiscellaneousServices,
-  DirectionsRun, FlashOn, Room, Apps,
+  DirectionsRun, FlashOn, MyLocation, Dashboard,
+  TrendingUp, FavoriteBorder, GridView, CheckCircle,
+  ShoppingBag, Inventory, BarChart as BarChartIcon,
+  GpsFixed, StorefrontOutlined, ArrowForward, ReceiptLongOutlined,
 } from '@mui/icons-material';
 import { useAuthStore } from '../../store/auth.store';
 import { useCartStore } from '../../store/cart.store';
+import { useGeolocation } from '../../hooks/useGeolocation';
+import api from '../../api/axios';
+import { useLocationState } from '../../hooks/useLocationState';
+import LocationModal from '../location/LocationModal';
 
-// ─── CONSTANTS ────────────────────────────────────────────────────────────────
+// ─── Brand tokens ──────────────────────────────────────────────────────────────
+const ORANGE   = '#FF6B00';
+const ORANGE_D = '#E05A00';
+const ORANGE_L = '#FFF4ED';
+const BG       = '#0F172A';
+const NAV_BG   = '#0F172A';
+const BORDER   = 'rgba(255,255,255,0.07)';
 
-const BG = '#131921';           // Amazon dark navy
-const BG2 = '#232F3E';          // Amazon secondary bar
-const BG3 = '#37475A';          // Amazon bottom bar
-const ORANGE = '#FF9900';       // Amazon orange
-const ORANGE_HOVER = '#FFB703';
+// ─── Global keyframes (injected once) ─────────────────────────────────────────
+const GLOBAL_CSS = `
+@keyframes dp-pulse { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.25);opacity:0.7} }
+@keyframes dp-shimmer { 0%{background-position:-200% center} 100%{background-position:200% center} }
+@keyframes dp-blink { 0%,100%{opacity:1} 50%{opacity:0.4} }
+@keyframes dp-slideDown { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
+@keyframes dp-fadeIn { from{opacity:0} to{opacity:1} }
+@keyframes dp-scaleIn { from{opacity:0;transform:scale(0.97)} to{opacity:1;transform:scale(1)} }
+@media (prefers-reduced-motion: reduce) {
+  *,.dp-no-motion { animation-duration:0ms!important; transition-duration:0ms!important; }
+}
+/* iOS global fixes */
+* { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+html { overflow-x: hidden; }
+body { background-color: #0F172A; overscroll-behavior-y: none; -webkit-text-size-adjust: 100%; }
+button, a, [role=button] { touch-action: manipulation; }
+img { -webkit-user-drag: none; user-select: none; }
+`;
 
-const NAV_LINKS = [
-  { label: 'Ventes Flash', path: '/products?sale=true', hot: true },
-  { label: "Nouveautes", path: '/products?sort=latest' },
-  { label: 'Mode Femme', path: '/products?category=mode' },
-  { label: 'Mode Homme', path: '/products?category=mode&gender=homme' },
+const CATS = [
+  { label: 'Mode',         sub: 'Vetements, Robes',  icon: Checkroom,            color: '#EC4899', bg: '#2D1B2E', path: '/products?category=mode' },
+  { label: 'Electronique', sub: 'PC, TV, Audio',     icon: PhoneAndroid,          color: '#60A5FA', bg: '#1B2440', path: '/products?category=electronique' },
+  { label: 'Maison',       sub: 'Deco, Mobilier',    icon: HomeIcon,              color: '#34D399', bg: '#1B2E2A', path: '/products?category=maison' },
+  { label: 'Beaute',       sub: 'Soin, Maquillage',  icon: LocalFlorist,          color: '#FBBF24', bg: '#2D2510', path: '/products?category=beaute' },
+  { label: 'Bijoux',       sub: 'Bagues, Colliers',  icon: Diamond,               color: '#A78BFA', bg: '#231B3A', path: '/products?category=bijoux' },
+  { label: 'Sport',        sub: 'Fitness, Outdoor',  icon: FitnessCenter,         color: '#F87171', bg: '#2D1B1B', path: '/products?category=sport' },
+  { label: 'Vehicules',    sub: 'Autos, Motos',      icon: DirectionsCar,         color: '#22D3EE', bg: '#1B2A30', path: '/products?category=vehicules' },
+  { label: 'Alimentation', sub: 'Epicerie, Boisson', icon: RestaurantMenu,        color: '#86EFAC', bg: '#1A2D20', path: '/products?category=alimentation' },
+  { label: 'Sacs',         sub: 'Pochettes, Valises',icon: WorkOutline,            color: '#FB923C', bg: '#2D2010', path: '/products?category=sacs' },
+  { label: 'Chaussures',   sub: 'Sneakers, Sandales',icon: DirectionsRun,         color: '#2DD4BF', bg: '#1B2D2C', path: '/products?category=chaussures' },
+  { label: 'Jeux',         sub: 'Console, Jouets',   icon: SportsEsports,         color: '#C084FC', bg: '#241B38', path: '/products?category=jeux' },
+  { label: 'Services',     sub: 'Pro, Artisanat',    icon: MiscellaneousServices, color: '#818CF8', bg: '#1E1B38', path: '/products?category=services' },
+];
+
+const NAV = [
+  { label: 'Nouveautes',   path: '/products?sort=latest' },
+  { label: 'Mode',         path: '/products?category=mode' },
   { label: 'Electronique', path: '/products?category=electronique' },
-  { label: 'Maison & Deco', path: '/products?category=maison' },
-  { label: 'Beaute', path: '/products?category=beaute' },
-  { label: 'Chaussures', path: '/products?category=chaussures' },
-  { label: 'Bijoux', path: '/products?category=bijoux' },
-  { label: 'Sport', path: '/products?category=sport' },
-  { label: 'Vehicules', path: '/products?category=vehicules' },
+  { label: 'Maison',       path: '/products?category=maison' },
+  { label: 'Beaute',       path: '/products?category=beaute' },
+  { label: 'Chaussures',   path: '/products?category=chaussures' },
+  { label: 'Bijoux',       path: '/products?category=bijoux' },
+  { label: 'Sport',        path: '/products?category=sport' },
   { label: 'Alimentation', path: '/products?category=alimentation' },
-  { label: 'Services', path: '/products?category=services' },
+  { label: 'Services',     path: '/products?category=services' },
 ];
 
-const CATS_MENU = [
-  { label: 'Mode', icon: Checkroom, color: '#EC4899', path: '/products?category=mode' },
-  { label: 'Electronique', icon: PhoneAndroid, color: '#3B82F6', path: '/products?category=electronique' },
-  { label: 'Maison', icon: HomeIcon, color: '#10B981', path: '/products?category=maison' },
-  { label: 'Beaute', icon: LocalFlorist, color: '#F59E0B', path: '/products?category=beaute' },
-  { label: 'Bijoux', icon: Diamond, color: '#8B5CF6', path: '/products?category=bijoux' },
-  { label: 'Sport', icon: FitnessCenter, color: '#EF4444', path: '/products?category=sport' },
-  { label: 'Vehicules', icon: DirectionsCar, color: '#06B6D4', path: '/products?category=vehicules' },
-  { label: 'Alimentation', icon: RestaurantMenu, color: '#84CC16', path: '/products?category=alimentation' },
-  { label: 'Sacs', icon: WorkOutline, color: '#F97316', path: '/products?category=sacs' },
-  { label: 'Chaussures', icon: DirectionsRun, color: '#14B8A6', path: '/products?category=chaussures' },
-  { label: 'Jeux', icon: SportsEsports, color: '#A855F7', path: '/products?category=jeux' },
-  { label: 'Services', icon: MiscellaneousServices, color: '#6366F1', path: '/products?category=services' },
-];
+const DEPTS = ['Ouest','Nord','Nord-Est','Nord-Ouest','Artibonite','Centre','Sud','Sud-Est',"Grand'Anse",'Nippes'];
 
-// ─── HOVERABLE BUTTON (Amazon style border on hover) ──────────────────────────
-
-function HBtn({ children, onClick, sx = {}, component, to }: any) {
-  const [hov, setHov] = useState(false);
-  const props: any = { onClick, onMouseEnter: () => setHov(true), onMouseLeave: () => setHov(false) };
-  if (component) { props.component = component; props.to = to; }
+// ─── Zone Dropdown ─────────────────────────────────────────────────────────────
+function ZoneDropdown({ city, geoLoading, detectGeo, setCity, onClose }: {
+  city: string; geoLoading: boolean; detectGeo: () => void; setCity: (v: string) => void; onClose: () => void;
+}) {
   return (
-    <Box {...props} sx={{
-      cursor: 'pointer', borderRadius: 0.5, px: 0.8, py: 0.4,
-      border: hov ? '1px solid white' : '1px solid transparent',
-      display: 'flex', alignItems: 'center', gap: 0.4, userSelect: 'none',
-      ...sx,
+    <Box sx={{
+      position: 'absolute', top: 'calc(100% + 8px)', left: 0,
+      width: 340, bgcolor: 'white', borderRadius: '16px',
+      boxShadow: '0 8px 32px rgba(0,0,0,0.14), 0 2px 8px rgba(0,0,0,0.08)',
+      overflow: 'hidden', zIndex: 9999,
+      animation: 'dp-slideDown 150ms ease forwards',
+      border: '1px solid rgba(0,0,0,0.06)',
     }}>
-      {children}
+      {/* Detect position button */}
+      <Box onClick={() => { detectGeo(); onClose(); }} sx={{
+        display: 'flex', alignItems: 'center', gap: 1.5,
+        px: 2, py: 1.6, cursor: 'pointer',
+        background: geoLoading
+          ? 'linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%)'
+          : 'linear-gradient(135deg, #FFF4E6 0%, #FFE8CC 100%)',
+        borderBottom: '1px solid rgba(255,107,0,0.12)',
+        transition: 'filter 0.15s',
+        '&:hover': { filter: 'brightness(0.97)' },
+      }}>
+        <Box sx={{
+          width: 36, height: 36, borderRadius: '50%',
+          bgcolor: alpha(ORANGE, 0.15),
+          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+        }}>
+          <GpsFixed sx={{
+            fontSize: 18, color: ORANGE,
+            animation: geoLoading ? 'dp-pulse 1s ease-in-out infinite' : 'none',
+          }} />
+        </Box>
+        <Box>
+          <Typography fontWeight={700} fontSize={13.5} color={ORANGE} lineHeight={1.3}>
+            Detecter ma position
+          </Typography>
+          <Typography fontSize={11.5} color="#D97706" lineHeight={1.4}>
+            {geoLoading ? 'Localisation en cours...' : 'Via GPS automatique'}
+          </Typography>
+        </Box>
+      </Box>
+
+      {/* Clear */}
+      <Box onClick={() => { setCity(''); onClose(); }} sx={{
+        px: 2, py: 1.2, cursor: 'pointer', borderBottom: '1px solid #F5F5F5',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        '&:hover': { bgcolor: '#FAFAFA' }, transition: 'background 0.12s',
+      }}>
+        <Typography fontSize={13.5} color={!city ? '#0F172A' : '#64748B'} fontWeight={!city ? 700 : 400}>
+          Tout Haiti
+        </Typography>
+        {!city && <CheckCircle sx={{ fontSize: 18, color: ORANGE }} />}
+      </Box>
+
+      {/* Departments – 2 columns */}
+      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', p: 1.2, gap: 0.5 }}>
+        {DEPTS.map(d => (
+          <Box key={d} onClick={() => { setCity(d); onClose(); }} sx={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            px: 1.4, py: 1, borderRadius: '10px', cursor: 'pointer',
+            bgcolor: d === city ? alpha(ORANGE, 0.08) : 'transparent',
+            border: `1.5px solid ${d === city ? alpha(ORANGE, 0.4) : 'transparent'}`,
+            transition: 'all 0.13s',
+            '&:hover': { bgcolor: d === city ? alpha(ORANGE, 0.1) : '#F8FAFC', border: `1.5px solid ${d === city ? alpha(ORANGE, 0.5) : '#E2E8F0'}` },
+          }}>
+            <Typography fontSize={13} fontWeight={d === city ? 700 : 400} color={d === city ? ORANGE : '#374151'} noWrap>
+              {d}
+            </Typography>
+            {d === city && <CheckCircle sx={{ fontSize: 14, color: ORANGE, flexShrink: 0 }} />}
+          </Box>
+        ))}
+      </Box>
     </Box>
   );
 }
 
-// ─── MAIN HEADER ──────────────────────────────────────────────────────────────
+function CatDropdown({ activeCat, onPick, onClose }: {
+  activeCat: string; onPick: (label: string, path: string) => void; onClose: () => void;
+}) {
+  const DARK = '#161B2E';
+  const CARD = '#1E2440';
+  const BORDER_COL = 'rgba(255,255,255,0.07)';
+
+  return (
+    <>
+    {/* Backdrop */}
+    <Box onClick={onClose} sx={{
+      position: 'fixed', inset: 0, zIndex: 9998,
+      bgcolor: 'rgba(0,0,0,0.55)',
+      backdropFilter: 'blur(3px)',
+      animation: 'dp-fadeIn 150ms ease forwards',
+    }} />
+
+    {/* Modal panel — fixed pour éviter le clipping du parent */}
+    <Box sx={{
+      position: 'fixed',
+      top: 116,
+      left: 16,
+      width: 620,
+      maxHeight: 'calc(100vh - 130px)',
+      overflowY: 'auto',
+      bgcolor: DARK, borderRadius: '22px',
+      boxShadow: '0 32px 80px rgba(0,0,0,0.7), 0 4px 24px rgba(0,0,0,0.4)',
+      border: `1px solid ${BORDER_COL}`,
+      zIndex: 9999,
+      animation: 'dp-slideDown 180ms cubic-bezier(0.16,1,0.3,1) forwards',
+      '&::-webkit-scrollbar': { display: 'none' },
+      scrollbarWidth: 'none',
+    }}>
+
+      {/* Header */}
+      <Box sx={{
+        px: { xs: 1.5, sm: 2.2 }, pt: { xs: 1.6, sm: 2 }, pb: { xs: 1.2, sm: 1.6 },
+        borderBottom: `1px solid ${BORDER_COL}`,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        background: `linear-gradient(180deg, rgba(255,255,255,0.04) 0%, transparent 100%)`,
+      }}>
+        <Box>
+          <Typography fontSize={{ xs: 15, sm: 16 }} fontWeight={800} color="white" letterSpacing={-0.4} lineHeight={1.2}>
+            Toutes les Categories
+          </Typography>
+          <Typography fontSize={11} color="rgba(255,255,255,0.35)" mt={0.2}>
+            12 categories disponibles
+          </Typography>
+        </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box component={Link} to="/products?sort=latest" onClick={onClose}
+            sx={{
+              fontSize: 11.5, fontWeight: 600, color: 'rgba(255,255,255,0.5)',
+              textDecoration: 'none', px: 1.2, py: 0.4, borderRadius: '20px',
+              border: `1px solid rgba(255,255,255,0.1)`,
+              '&:hover': { color: 'white', borderColor: 'rgba(255,255,255,0.3)', bgcolor: 'rgba(255,255,255,0.06)' },
+              transition: 'all 0.15s',
+            }}>
+            Nouveautes
+          </Box>
+          <Box component={Link} to="/categories" onClick={onClose}
+            sx={{
+              display: 'flex', alignItems: 'center', gap: 0.2,
+              fontSize: 12, fontWeight: 700, color: ORANGE, textDecoration: 'none',
+              px: 1.2, py: 0.4, borderRadius: '20px',
+              bgcolor: alpha(ORANGE, 0.12), border: `1px solid ${alpha(ORANGE, 0.25)}`,
+              '&:hover': { bgcolor: alpha(ORANGE, 0.2) }, transition: 'all 0.15s',
+            }}>
+            Voir tout <KeyboardArrowRight sx={{ fontSize: 14 }} />
+          </Box>
+        </Box>
+      </Box>
+
+      {/* Category grid — 3 colonnes pour tout voir sans scroll */}
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', p: 1.5, gap: 1 }}>
+        {CATS.map(({ label, sub, icon: Icon, color, bg, path }) => {
+          const active = activeCat === label;
+          return (
+            <Box key={label} onClick={() => { onPick(label, path); onClose(); }}
+              sx={{
+                display: 'flex', alignItems: 'center', gap: 1.3,
+                px: { xs: 1, sm: 1.4 }, py: { xs: 0.9, sm: 1.1 },
+                borderRadius: '16px', cursor: 'pointer',
+                bgcolor: active ? alpha(color, 0.18) : CARD,
+                border: `1.5px solid ${active ? alpha(color, 0.55) : BORDER_COL}`,
+                transition: 'all 0.18s cubic-bezier(0.16,1,0.3,1)',
+                '&:hover': {
+                  bgcolor: alpha(color, 0.14),
+                  border: `1.5px solid ${alpha(color, 0.45)}`,
+                  transform: 'translateY(-1px)',
+                  boxShadow: `0 6px 20px rgba(0,0,0,0.25)`,
+                },
+              }}>
+              <Box sx={{
+                width: { xs: 34, sm: 40 }, height: { xs: 34, sm: 40 },
+                borderRadius: '12px', bgcolor: bg, flexShrink: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: `0 3px 10px rgba(0,0,0,0.35)`,
+              }}>
+                <Icon sx={{ fontSize: { xs: 17, sm: 20 }, color }} />
+              </Box>
+              <Box sx={{ minWidth: 0 }}>
+                <Typography fontSize={{ xs: 12.5, sm: 13.5 }} fontWeight={active ? 800 : 600}
+                  color={active ? color : 'rgba(255,255,255,0.92)'} lineHeight={1.25} noWrap>
+                  {label}
+                </Typography>
+                <Typography fontSize={{ xs: 10, sm: 11 }} color="rgba(255,255,255,0.38)" lineHeight={1.3} noWrap>
+                  {sub}
+                </Typography>
+              </Box>
+            </Box>
+          );
+        })}
+      </Box>
+
+      {/* Ventes Flash banner */}
+      <Box sx={{ px: 1.5, pb: 1.5 }}>
+        <Box component={Link} to="/ventes-flash" onClick={onClose}
+          sx={{
+            display: 'flex', alignItems: 'center', gap: 1.5,
+            px: 1.8, py: 1.2, borderRadius: '14px',
+            background: 'linear-gradient(135deg, #FF6B00 0%, #FF9A00 100%)',
+            textDecoration: 'none',
+            boxShadow: '0 4px 20px rgba(255,107,0,0.4)',
+            transition: 'filter 0.15s, transform 0.15s',
+            '&:hover': { filter: 'brightness(1.08)', transform: 'scale(1.01)' },
+          }}>
+          <Box sx={{
+            width: 36, height: 36, borderRadius: '10px',
+            bgcolor: 'rgba(255,255,255,0.2)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+          }}>
+            <FlashOn sx={{ fontSize: 20, color: 'white' }} />
+          </Box>
+          <Box sx={{ flex: 1 }}>
+            <Typography fontSize={13.5} fontWeight={800} color="white" lineHeight={1.2}>Ventes Flash</Typography>
+            <Typography fontSize={11} color="rgba(255,255,255,0.75)" lineHeight={1.3}>Offres du jour</Typography>
+          </Box>
+          <KeyboardArrowRight sx={{ fontSize: 18, color: 'rgba(255,255,255,0.6)' }} />
+        </Box>
+      </Box>
+    </Box>
+    </>
+  );
+}
+
+// ─── Account Dropdown ──────────────────────────────────────────────────────────
+function AccountDropdown({ user, isSeller, navigate, onClose, logout }: any) {
+  const go = (path: string) => { navigate(path); onClose(); };
+
+  const buyerItems = [
+    { label: 'Mon profil',     path: '/account',          Icon: Person },
+    { label: 'Mes commandes',  path: '/account/orders',   Icon: ReceiptLongOutlined },
+    { label: 'Mes favoris',    path: '/account/wishlist', Icon: FavoriteBorder },
+  ];
+
+  const sellerItems = [
+    { label: 'Dashboard',    path: '/seller' },
+    { label: 'Produits',     path: '/seller/products' },
+    { label: 'Commandes',    path: '/seller/orders' },
+    { label: 'Boutique',     path: '/seller/store' },
+    { label: 'Statistiques', path: '/seller/stats' },
+    { label: 'Abonnement',   path: '/seller/subscription' },
+  ];
+
+  return (
+    <Box sx={{
+      position: 'absolute', top: 'calc(100% + 10px)', right: 0,
+      width: 300,
+      background: 'rgba(10,16,30,0.97)',
+      backdropFilter: 'blur(20px)',
+      borderRadius: '20px',
+      border: '1px solid rgba(255,255,255,0.08)',
+      boxShadow: '0 24px 64px rgba(0,0,0,0.45), 0 4px 16px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.06)',
+      overflow: 'hidden', zIndex: 9999,
+      animation: 'dp-slideDown 160ms cubic-bezier(0.4,0,0.2,1) forwards',
+    }}>
+
+      {/* ── Header ── */}
+      <Box sx={{ px: 2.5, pt: 2.5, pb: 2, position: 'relative' }}>
+        {/* Accent top */}
+        <Box sx={{ position: 'absolute', top: 0, left: '20%', right: '20%', height: '2px',
+          background: `linear-gradient(90deg, transparent, ${ORANGE}, transparent)`, opacity: 0.6 }} />
+
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Avatar sx={{
+            width: 46, height: 46, bgcolor: ORANGE, color: 'white',
+            fontSize: 18, fontWeight: 900,
+            border: `2px solid ${alpha(ORANGE, 0.35)}`,
+            boxShadow: `0 4px 14px ${alpha(ORANGE, 0.35)}`,
+          }}>
+            {user?.firstName?.[0]}
+          </Avatar>
+          <Box sx={{ minWidth: 0, flex: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, mb: 0.25 }}>
+              <Typography fontWeight={800} color="white" fontSize={14.5} noWrap sx={{ flex: 1, letterSpacing: '-0.2px' }}>
+                {user?.firstName} {user?.lastName}
+              </Typography>
+              {isSeller && (
+                <Box sx={{ px: 1, py: 0.25, borderRadius: '8px', bgcolor: alpha(ORANGE, 0.15), border: `1px solid ${alpha(ORANGE, 0.3)}` }}>
+                  <Typography sx={{ fontSize: 9.5, fontWeight: 800, color: ORANGE, letterSpacing: '0.5px', textTransform: 'uppercase' }}>Vendeur</Typography>
+                </Box>
+              )}
+            </Box>
+            <Typography fontSize={11.5} color="rgba(255,255,255,0.35)" noWrap>{user?.email}</Typography>
+          </Box>
+        </Box>
+      </Box>
+
+      {/* ── Buyer menu ── */}
+      <Box sx={{ px: 1.5, pb: 1 }}>
+        {buyerItems.map(({ label, path, Icon }) => (
+          <Box key={path} onClick={() => go(path)} sx={{
+            display: 'flex', alignItems: 'center', gap: 1.5, px: 1.5, py: 1.1,
+            borderRadius: '12px', cursor: 'pointer',
+            transition: 'all 0.15s',
+            '&:hover': { bgcolor: 'rgba(255,255,255,0.06)', '& .dd-icon': { color: ORANGE }, '& .dd-label': { color: 'white' } },
+          }}>
+            <Icon className="dd-icon" sx={{ fontSize: 17, color: 'rgba(255,255,255,0.3)', transition: 'color 0.15s' }} />
+            <Typography className="dd-label" fontSize={13.5} color="rgba(255,255,255,0.65)" fontWeight={500} sx={{ flex: 1, transition: 'color 0.15s' }}>
+              {label}
+            </Typography>
+            <KeyboardArrowRight sx={{ fontSize: 15, color: 'rgba(255,255,255,0.15)' }} />
+          </Box>
+        ))}
+      </Box>
+
+      {/* ── Seller section or Upgrade CTA ── */}
+      {isSeller ? (
+        <>
+          <Box sx={{ mx: 2, height: '1px', bgcolor: 'rgba(255,255,255,0.07)', mb: 1.5 }} />
+          <Box sx={{ px: 1.5, pb: 1.5 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.2, px: 1 }}>
+              <StorefrontOutlined sx={{ fontSize: 13, color: ORANGE }} />
+              <Typography sx={{ fontSize: 10, fontWeight: 800, color: alpha(ORANGE, 0.8), textTransform: 'uppercase', letterSpacing: '1px' }}>
+                Espace Vendeur
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.7 }}>
+              {sellerItems.map(({ label, path: p }) => (
+                <Box key={p} onClick={() => go(p)} sx={{
+                  px: 1.2, py: 0.9, borderRadius: '10px', cursor: 'pointer',
+                  border: '1px solid rgba(255,255,255,0.07)',
+                  bgcolor: 'rgba(255,255,255,0.03)',
+                  transition: 'all 0.15s',
+                  '&:hover': { bgcolor: alpha(ORANGE, 0.12), borderColor: alpha(ORANGE, 0.35), '& .sl-label': { color: ORANGE } },
+                }}>
+                  <Typography className="sl-label" fontSize={12.5} fontWeight={600} color="rgba(255,255,255,0.5)" sx={{ transition: 'color 0.15s' }}>
+                    {label}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
+          </Box>
+        </>
+      ) : (
+        <Box onClick={() => go('/become-seller')} sx={{
+          mx: 1.5, mb: 1, px: 1.5, py: 1.1, borderRadius: '12px', cursor: 'pointer',
+          display: 'flex', alignItems: 'center', gap: 1.5,
+          border: `1px solid ${alpha(ORANGE, 0.22)}`,
+          bgcolor: alpha(ORANGE, 0.07),
+          transition: 'all 0.15s',
+          '&:hover': { bgcolor: alpha(ORANGE, 0.13), borderColor: alpha(ORANGE, 0.4), '& .bs-icon': { color: ORANGE }, '& .bs-label': { color: 'white' } },
+        }}>
+          <StorefrontOutlined className="bs-icon" sx={{ fontSize: 17, color: alpha(ORANGE, 0.7), transition: 'color 0.15s' }} />
+          <Typography className="bs-label" fontSize={13.5} fontWeight={600} color={alpha(ORANGE, 0.85)} sx={{ flex: 1, transition: 'color 0.15s' }}>
+            Devenir vendeur
+          </Typography>
+          <KeyboardArrowRight sx={{ fontSize: 15, color: alpha(ORANGE, 0.4) }} />
+        </Box>
+      )}
+
+      {/* ── Logout ── */}
+      <Box sx={{ px: 1.5, pb: 1.5 }}>
+        <Box sx={{ height: '1px', bgcolor: 'rgba(255,255,255,0.07)', mb: 1.5 }} />
+        <Box onClick={() => { logout(); onClose(); navigate('/'); }} sx={{
+          display: 'flex', alignItems: 'center', gap: 1.5, px: 1.5, py: 1.1,
+          borderRadius: '12px', cursor: 'pointer',
+          transition: 'all 0.15s',
+          '&:hover': { bgcolor: 'rgba(239,68,68,0.08)' },
+        }}>
+          <Logout sx={{ fontSize: 17, color: '#F87171' }} />
+          <Typography fontSize={13.5} color="#F87171" fontWeight={600} sx={{ flex: 1 }}>Déconnexion</Typography>
+        </Box>
+      </Box>
+    </Box>
+  );
+}
 
 export default function Header() {
   const { user, logout } = useAuthStore();
   const { count } = useCartStore();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const navigate    = useNavigate();
+  const theme       = useTheme();
+  const isMobile    = useMediaQuery(theme.breakpoints.down('md'));
+  const isMobileOnly = useMediaQuery(theme.breakpoints.down('sm')); // < 600px
+  const isTablet    = useMediaQuery(theme.breakpoints.between('sm', 'md')); // 600–899px
+  const rLocationForBg = useRLocation();
+  const isHeroPage = rLocationForBg.pathname === '/home' || rLocationForBg.pathname === '/';
 
-  const [search, setSearch] = useState('');
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [catAnchor, setCatAnchor] = useState<null | HTMLElement>(null);
-  const [cityAnchor, setCityAnchor] = useState<null | HTMLElement>(null);
-  const [searchCat, setSearchCat] = useState('Tous');
-  const [searchCatAnchor, setSearchCatAnchor] = useState<null | HTMLElement>(null);
-  const [selectedCity, setSelectedCity] = useState<string>(() => {
-    const saved = localStorage.getItem('dealpam_city');
-    if (saved) return saved;
-    // Use user's department/city if logged in (set after mount via useEffect)
-    return '';
-  });
+  const [searchParams] = useSearchParams();
+  const rLocation      = useRLocation();
 
-  // Sync with user profile on login
+  const { dept: city, loading: geoLoading, detect: detectGeo, setDept: setCity } = useGeolocation();
+  const { location: dpLocation }                                                = useLocationState();
+  const locationModalOpen = searchParams.get('modal') === 'location';
+  const openLocationModal  = () => { const p = new URLSearchParams(searchParams.toString()); p.set('modal', 'location'); navigate('?' + p, { replace: true }); };
+  const closeLocationModal = () => { const p = new URLSearchParams(searchParams.toString()); p.delete('modal'); navigate('?' + p, { replace: true }); };
+
+  // Label affiché dans le chip (ville si dispo, sinon département)
+  const displayCity = dpLocation?.city || dpLocation?.department || city;
+  // Params API corrects — toujours utiliser les vrais champs
+  const locDept = dpLocation?.department || '';
+  const locCity = dpLocation?.city || '';
+
+  // Sync header city pill avec le store Zustand (display seulement)
+  useEffect(() => {
+    if (dpLocation?.city) setCity(dpLocation.city);
+    else if (dpLocation?.department) setCity(dpLocation.department);
+  }, [dpLocation]);
+
+  const [search,      setSearch]     = useState('');
+  const [showCity,    setShowCity]   = useState(false);
+  const [showCat,     setShowCat]    = useState(false);
+  const [showAccount, setShowAccount]= useState(false);
+  const [activeCat,   setActiveCat]  = useState('');
+  const [sCat,        setSCat]       = useState('Tous');
+  const [sCatOpen,    setSCatOpen]   = useState(false);
+  const [drawerOpen,  setDrawerOpen] = useState(false);
+  const [drawerShowAllCats, setDrawerShowAllCats] = useState(false);
+  const [mSearch,     setMSearch]    = useState(false);
+  const [suggs,       setSuggs]      = useState<any[]>([]);
+  const [showSuggs,   setShowSuggs]  = useState(false);
+  const [activeCategory, setActiveCategory] = useState('');
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    let rafId = 0;
+    const onScroll = () => {
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        const isScrolled = window.scrollY > 10;
+        setScrolled(prev => prev === isScrolled ? prev : isScrolled);
+      });
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => { window.removeEventListener('scroll', onScroll); cancelAnimationFrame(rafId); };
+  }, []);
+
+  // Sync URL params â†' search bar and active category chip
+  useEffect(() => {
+    const q   = searchParams.get('q') || searchParams.get('search') || '';
+    const cat = searchParams.get('category') || '';
+    setSearch(q);
+    setActiveCategory(cat);
+  }, [rLocation.search]);
+
+  const debRef    = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const sBoxRef   = useRef<HTMLDivElement>(null);
+  const cityRef   = useRef<HTMLDivElement>(null);
+  const catRef    = useRef<HTMLDivElement>(null);
+  const accountRef= useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
+  const [hH, setHH] = useState(0);
+
+  // inject global keyframes once
+  useEffect(() => {
+    const id = 'dp-global-css';
+    if (!document.getElementById(id)) {
+      const s = document.createElement('style'); s.id = id; s.textContent = GLOBAL_CSS;
+      document.head.appendChild(s);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!headerRef.current) return;
+    const ro = new ResizeObserver(e => setHH(e[0].contentRect.height));
+    ro.observe(headerRef.current);
+    return () => ro.disconnect();
+  }, []);
+
+  const fetchSuggs = useCallback((q: string) => {
+    if (q.length < 2) { setSuggs([]); setShowSuggs(false); return; }
+    const p = new URLSearchParams({ search: q, limit: '6' });
+    if (locDept) p.set('department', locDept);
+    if (locCity) p.set('city', locCity);
+    if (sCat !== 'Tous') p.set('category', sCat.toLowerCase());
+    api.get('/products?' + p).then(r => { setSuggs(r.data?.data || []); setShowSuggs(true); }).catch(() => setSuggs([]));
+  }, [locDept, locCity, sCat]);
+
+  const onType = (v: string) => {
+    setSearch(v);
+    if (debRef.current) clearTimeout(debRef.current);
+    debRef.current = setTimeout(() => fetchSuggs(v), 280);
+  };
+
+  // Close dropdowns on outside click
+  useEffect(() => {
+    const h = (e: MouseEvent) => {
+      const t = e.target as Node;
+      if (sBoxRef.current && !sBoxRef.current.contains(t)) setShowSuggs(false);
+      if (cityRef.current && !cityRef.current.contains(t)) setShowCity(false);
+      if (catRef.current && !catRef.current.contains(t)) setShowCat(false);
+      if (accountRef.current && !accountRef.current.contains(t)) setShowAccount(false);
+    };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, []);
+
   useEffect(() => {
     if (user && !localStorage.getItem('dealpam_city')) {
-      const dept = user.department || user.city || '';
-      if (dept) { setSelectedCity(dept); localStorage.setItem('dealpam_city', dept); }
+      const d = (user as any).department || (user as any).city || '';
+      if (d) setCity(d);
     }
   }, [user]);
 
-  const DEPARTMENTS = ['Ouest', 'Nord', 'Nord-Est', 'Nord-Ouest', 'Artibonite', 'Centre', 'Sud', 'Sud-Est', 'Grand Anse', 'Nippes'];
+  const isSeller = user?.role === 'SELLER';
 
-  const handleCitySelect = (dept: string) => {
-    setSelectedCity(dept);
-    localStorage.setItem('dealpam_city', dept);
-    setCityAnchor(null);
-  };
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
+  const doSearch = (e?: React.FormEvent) => {
+    e?.preventDefault();
     const q = search.trim();
-    if (q || searchCat !== 'Tous') {
-      const cat = searchCat !== 'Tous' ? `&category=${encodeURIComponent(searchCat.toLowerCase())}` : '';
-      navigate(`/search?q=${encodeURIComponent(q)}${cat}`);
-      setMobileOpen(false);
+    setShowSuggs(false); setMSearch(false); setSCatOpen(false);
+    if (q || sCat !== 'Tous') {
+      const p = new URLSearchParams();
+      if (q) p.set('q', q);
+      if (sCat !== 'Tous') p.set('category', sCat.toLowerCase());
+      if (locDept) p.set('department', locDept);
+      if (locCity) p.set('city', locCity);
+      navigate('/search?' + p); setDrawerOpen(false);
     }
   };
 
-  const isActive = (p: string) => location.pathname === p.split('?')[0];
+  const toProd = (slug: string) => { setShowSuggs(false); setSearch(''); setMSearch(false); navigate('/products/' + slug); };
 
-  // Main bar: 60px (xs) | 64px (md)
-  // Sub-nav: 38px (desktop only)
-  const spacerH = isMobile ? 56 : 64 + 44;
+  // SearchBox is rendered inline (not as a sub-component) to avoid focus loss on re-render
 
   return (
     <>
-      {/* ══════════════════════════════════════════════
-          MAIN BAR
-      ══════════════════════════════════════════════ */}
-      <Box sx={{
-        position: 'fixed', top: 0, left: 0, right: 0,
-        zIndex: theme.zIndex.appBar + 1,
-        bgcolor: BG,
-        boxShadow: '0 2px 8px rgba(0,0,0,0.5)',
-      }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', height: { xs: 56, md: 64 }, px: { xs: 1, md: 2 }, gap: 1 }}>
+      <Box ref={headerRef} sx={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: theme.zIndex.appBar + 1, boxShadow: (isMobile && isHeroPage && !scrolled) ? 'none' : '0 1px 0 ' + BORDER, transform: 'translateZ(0)', willChange: 'transform', transition: 'box-shadow 0.3s, background-color 0.3s' }}>
 
-          {/* Mobile menu */}
-          {isMobile && (
-            <IconButton onClick={() => setMobileOpen(true)} sx={{ color: 'white', p: 0.8 }}>
-              <MenuIcon />
+        {/* â•â•â• MAIN BAR â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+        {/* ══ MOBILE BAR (< 600px) ═══════════════════════════════════════════ */}
+        {isMobileOnly && (
+          <Box sx={{
+            bgcolor: (isHeroPage && !scrolled) ? 'transparent' : BG,
+            height: 58, display: 'flex', alignItems: 'center', px: 1.5, gap: 0.5, position: 'relative',
+            transition: 'background-color 0.25s ease',
+          }}>
+            {mSearch ? (
+              <>
+                <IconButton onClick={() => { setMSearch(false); setSearch(''); setSuggs([]); }}
+                  sx={{ color: 'rgba(255,255,255,0.8)', flexShrink: 0, borderRadius: '10px' }}>
+                  <Close sx={{ fontSize: 20 }} />
+                </IconButton>
+                <Box sx={{ flex: 1, position: 'relative' }}>
+                  <Box component="form" onSubmit={doSearch} sx={{
+                    display: 'flex', alignItems: 'center', height: 40, borderRadius: '12px',
+                    bgcolor: 'rgba(255,255,255,0.1)', border: '1.5px solid rgba(255,255,255,0.18)',
+                    '&:focus-within': { bgcolor: 'white', border: `1.5px solid ${ORANGE}`, '& input': { color: '#0F172A' }, '& input::placeholder': { color: '#94A3B8' } },
+                  }}>
+                    <InputBase placeholder="Rechercher..." value={search} onChange={e => onType(e.target.value)}
+                      onFocus={() => search.length >= 2 && setShowSuggs(true)} autoFocus
+                      sx={{ flex: 1, px: 1.5, fontSize: 14, '& input': { color: 'rgba(255,255,255,0.9)' }, '& input::placeholder': { color: 'rgba(255,255,255,0.35)', opacity: 1 } }} />
+                    <Button type="submit" disableElevation sx={{ bgcolor: ORANGE, color: 'white', borderRadius: '0 10px 10px 0', minWidth: 44, height: '100%', '&:hover': { bgcolor: ORANGE_D } }}>
+                      <Search sx={{ fontSize: 17 }} />
+                    </Button>
+                  </Box>
+                  {showSuggs && suggs.length > 0 && (
+                    <Paper elevation={0} sx={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0, zIndex: 9999, borderRadius: '14px', overflow: 'hidden', border: '1px solid #E2E8F0', boxShadow: '0 16px 48px rgba(0,0,0,0.18)', animation: 'dp-slideDown 150ms ease forwards' }}>
+                      {suggs.map((p: any, i: number) => {
+                        const img = p.images?.[0]?.urlMedium || p.images?.[0]?.url;
+                        const price = p.salePrice ? Number(p.salePrice) : Number(p.price);
+                        return (
+                          <Box key={p.id} onClick={() => toProd(p.slug)} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 1.5, py: 1, cursor: 'pointer', borderBottom: i < suggs.length - 1 ? '1px solid #F8FAFC' : 'none', '&:hover': { bgcolor: '#F8FAFC' } }}>
+                            <Box sx={{ width: 38, height: 38, borderRadius: '8px', overflow: 'hidden', bgcolor: '#F1F5F9', flexShrink: 0 }}>
+                              {img && <Box component="img" src={img} alt={p.name} sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+                            </Box>
+                            <Box sx={{ flex: 1, minWidth: 0 }}>
+                              <Typography fontSize={12.5} fontWeight={600} color="#0F172A" noWrap>{p.name}</Typography>
+                              <Typography fontSize={11} color="#94A3B8" noWrap>{p.store?.name}</Typography>
+                            </Box>
+                            <Typography fontSize={12} fontWeight={800} color={ORANGE} noWrap>{price.toLocaleString()} G</Typography>
+                          </Box>
+                        );
+                      })}
+                      <Box onClick={() => doSearch()} sx={{ px: 1.5, py: 1, bgcolor: '#F8FAFC', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 1, borderTop: '1px solid #E2E8F0' }}>
+                        <Search sx={{ fontSize: 13, color: '#64748B' }} />
+                        <Typography fontSize={12} color="#475569" fontWeight={500}>Voir tous les resultats pour <strong style={{ color: '#0F172A' }}>"{search}"</strong></Typography>
+                      </Box>
+                    </Paper>
+                  )}
+                </Box>
+              </>
+            ) : (
+              <>
+                <IconButton onClick={() => setDrawerOpen(true)}
+                  sx={{ color: 'white', borderRadius: '10px', flexShrink: 0, width: 40, height: 40, '&:hover': { bgcolor: 'rgba(255,255,255,0.08)' }, '&:active': { bgcolor: 'rgba(255,255,255,0.14)', transform: 'scale(0.95)' }, transition: 'background 0.15s, transform 0.12s' }}
+                  aria-label="Menu">
+                  <MenuIcon sx={{ fontSize: 23 }} />
+                </IconButton>
+
+                {/* Logo centré */}
+                <Box sx={{ position: 'absolute', left: 0, right: 0, display: 'flex', justifyContent: 'center', pointerEvents: 'none' }}>
+                  <Box component={Link} to="/home" sx={{ textDecoration: 'none', pointerEvents: 'auto' }}>
+                    <Typography sx={{ fontWeight: 900, fontSize: 21, letterSpacing: '-0.8px', lineHeight: 1, color: 'white' }}>
+                      Deal<span style={{ color: ORANGE }}>Pam</span>
+                    </Typography>
+                  </Box>
+                </Box>
+
+                <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 0 }}>
+                  <IconButton onClick={() => openLocationModal()} sx={{ borderRadius: '10px', width: 36, height: 36 }}>
+                    <MyLocation sx={{ fontSize: 19, color: dpLocation ? ORANGE : 'rgba(255,255,255,0.45)', animation: dpLocation?.source === 'gps' ? 'dp-pulse 2s ease infinite' : 'none' }} />
+                  </IconButton>
+                  <IconButton onClick={() => setMSearch(true)} sx={{ color: 'rgba(255,255,255,0.8)', borderRadius: '10px', width: 36, height: 36 }}>
+                    <Search sx={{ fontSize: 21 }} />
+                  </IconButton>
+                  <IconButton component={Link} to="/cart" sx={{ color: 'white', borderRadius: '10px', width: 36, height: 36 }}>
+                    <Badge badgeContent={count > 99 ? '99+' : count} max={999}
+                      sx={{ '& .MuiBadge-badge': { bgcolor: ORANGE, color: 'white', fontWeight: 900, fontSize: 9, minWidth: 17, height: 17, border: `2px solid ${BG}` } }}>
+                      <ShoppingCart sx={{ fontSize: 21 }} />
+                    </Badge>
+                  </IconButton>
+                </Box>
+              </>
+            )}
+          </Box>
+        )}
+
+        {/* ══ TABLET BAR (600–899px) ════════════════════════════════════════════ */}
+        {isTablet && (
+          <Box sx={{
+            bgcolor: (isHeroPage && !scrolled) ? 'transparent' : BG,
+            height: 64, display: 'flex', alignItems: 'center', px: 2, gap: 1.5,
+            transition: 'background-color 0.25s ease',
+          }}>
+            {/* Hamburger */}
+            <IconButton onClick={() => setDrawerOpen(true)}
+              sx={{ color: 'white', borderRadius: '12px', flexShrink: 0, width: 42, height: 42, '&:hover': { bgcolor: 'rgba(255,255,255,0.08)' }, '&:active': { transform: 'scale(0.93)' }, transition: 'background 0.15s, transform 0.12s' }}
+              aria-label="Menu">
+              <MenuIcon sx={{ fontSize: 22 }} />
+            </IconButton>
+
+            {/* Logo */}
+            <Box component={Link} to="/home" sx={{ textDecoration: 'none', flexShrink: 0 }}>
+              <Typography sx={{ fontWeight: 900, fontSize: 22, letterSpacing: '-0.8px', lineHeight: 1, color: 'white' }}>
+                Deal<span style={{ color: ORANGE }}>Pam</span>
+              </Typography>
+            </Box>
+
+            {/* Search bar — inline visible sur tablette */}
+            <Box ref={sBoxRef} sx={{ flex: 1, position: 'relative', minWidth: 0 }}>
+              <Box component="form" onSubmit={doSearch} sx={{
+                display: 'flex', alignItems: 'center', height: 42, borderRadius: '12px',
+                bgcolor: 'rgba(255,255,255,0.08)', border: '1.5px solid rgba(255,255,255,0.12)',
+                transition: 'all 0.2s',
+                '&:focus-within': { bgcolor: 'white', border: `1.5px solid ${ORANGE}`, boxShadow: `0 0 0 3px ${alpha(ORANGE, 0.15)}`, '& input': { color: '#0F172A' }, '& input::placeholder': { color: '#94A3B8' } },
+              }}>
+                <InputBase placeholder="Rechercher produits, boutiques..." value={search}
+                  onChange={e => onType(e.target.value)}
+                  onFocus={() => search.length >= 2 && setShowSuggs(true)}
+                  sx={{ flex: 1, px: 1.5, fontSize: 13.5, '& input': { color: 'rgba(255,255,255,0.88)', transition: 'color 0.2s' }, '& input::placeholder': { color: 'rgba(255,255,255,0.28)', opacity: 1 } }} />
+                <Button type="submit" disableElevation sx={{ bgcolor: ORANGE, color: 'white', borderRadius: '0 10px 10px 0', minWidth: 48, height: '100%', '&:hover': { bgcolor: ORANGE_D } }}>
+                  <Search sx={{ fontSize: 18 }} />
+                </Button>
+              </Box>
+              {showSuggs && suggs.length > 0 && (
+                <Paper elevation={0} sx={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0, zIndex: 9999, borderRadius: '14px', overflow: 'hidden', border: '1px solid #E2E8F0', boxShadow: '0 16px 48px rgba(0,0,0,0.18)', animation: 'dp-slideDown 150ms ease forwards' }}>
+                  {suggs.map((p: any, i: number) => {
+                    const img = p.images?.[0]?.urlMedium || p.images?.[0]?.url;
+                    const price = p.salePrice ? Number(p.salePrice) : Number(p.price);
+                    return (
+                      <Box key={p.id} onClick={() => toProd(p.slug)} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 1.5, py: 1, cursor: 'pointer', borderBottom: i < suggs.length - 1 ? '1px solid #F8FAFC' : 'none', '&:hover': { bgcolor: '#F8FAFC' } }}>
+                        <Box sx={{ width: 40, height: 40, borderRadius: '8px', overflow: 'hidden', bgcolor: '#F1F5F9', flexShrink: 0 }}>
+                          {img && <Box component="img" src={img} alt={p.name} sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+                        </Box>
+                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                          <Typography fontSize={13} fontWeight={600} color="#0F172A" noWrap>{p.name}</Typography>
+                          <Typography fontSize={11} color="#94A3B8" noWrap>{p.store?.name}</Typography>
+                        </Box>
+                        <Typography fontSize={12.5} fontWeight={800} color={ORANGE} noWrap>{price.toLocaleString()} G</Typography>
+                      </Box>
+                    );
+                  })}
+                  <Box onClick={() => doSearch()} sx={{ px: 1.5, py: 1, bgcolor: '#F8FAFC', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 1, borderTop: '1px solid #E2E8F0' }}>
+                    <Search sx={{ fontSize: 13, color: '#64748B' }} />
+                    <Typography fontSize={12.5} color="#475569" fontWeight={500}>Voir tous les resultats pour <strong style={{ color: '#0F172A' }}>"{search}"</strong></Typography>
+                  </Box>
+                </Paper>
+              )}
+            </Box>
+
+            {/* Right actions */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3, flexShrink: 0 }}>
+              {/* Location chip */}
+              <Box onClick={() => openLocationModal()} sx={{
+                display: 'flex', alignItems: 'center', gap: 0.5, px: 1.2, py: 0.6, borderRadius: '10px',
+                cursor: 'pointer', border: '1px solid rgba(255,255,255,0.1)',
+                transition: 'all 0.15s', '&:hover': { bgcolor: 'rgba(255,255,255,0.06)', borderColor: ORANGE },
+              }}>
+                <MyLocation sx={{ fontSize: 14, color: dpLocation ? ORANGE : 'rgba(255,255,255,0.4)', animation: dpLocation?.source === 'gps' ? 'dp-pulse 2s ease infinite' : 'none', flexShrink: 0 }} />
+                <Typography sx={{ fontSize: 12, fontWeight: 600, color: dpLocation ? 'white' : 'rgba(255,255,255,0.4)', maxWidth: 90, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {dpLocation ? (dpLocation.city || dpLocation.department) : 'Zone'}
+                </Typography>
+              </Box>
+
+              {/* Account */}
+              {user ? (
+                <Box ref={accountRef} sx={{ position: 'relative' }}>
+                  <IconButton onClick={() => setShowAccount(o => !o)} sx={{ color: 'white', borderRadius: '10px', width: 40, height: 40, '&:hover': { bgcolor: 'rgba(255,255,255,0.07)' } }}>
+                    <Avatar sx={{ width: 28, height: 28, bgcolor: ORANGE, fontSize: 12, fontWeight: 900 }}>{user.firstName?.[0]}</Avatar>
+                  </IconButton>
+                  {showAccount && <AccountDropdown user={user} isSeller={isSeller} navigate={navigate} onClose={() => setShowAccount(false)} logout={logout} />}
+                </Box>
+              ) : (
+                <Button component={Link} to="/login" size="small" sx={{ borderColor: 'rgba(255,255,255,0.2)', color: 'white', borderRadius: '10px', fontSize: 12.5, fontWeight: 600, px: 1.5, border: '1px solid rgba(255,255,255,0.2)', '&:hover': { borderColor: ORANGE, color: ORANGE } }}>
+                  Connexion
+                </Button>
+              )}
+
+              {/* Cart */}
+              <IconButton component={Link} to="/cart" sx={{ color: 'white', borderRadius: '10px', width: 42, height: 42 }}>
+                <Badge badgeContent={count > 99 ? '99+' : count} max={999}
+                  sx={{ '& .MuiBadge-badge': { bgcolor: ORANGE, color: 'white', fontWeight: 900, fontSize: 9, minWidth: 17, height: 17, border: `2px solid ${BG}` } }}>
+                  <ShoppingCart sx={{ fontSize: 22 }} />
+                </Badge>
+              </IconButton>
+            </Box>
+          </Box>
+        )}
+
+        {/* ══ DESKTOP BAR ═══════════════════════════════════════════════════════ */}
+        {!isMobile && (
+        <Box sx={{
+          bgcolor: BG,
+          height: 72,
+          display: 'flex', alignItems: 'center',
+          px: { sm: 2, md: 3 },
+          gap: 2,
+        }}>
+          {/* Logo */}
+          <Box component={Link} to="/home" sx={{ textDecoration: 'none', flexShrink: 0 }}>
+            <Typography sx={{ fontWeight: 900, fontSize: 28, letterSpacing: '-1px', lineHeight: 1, color: 'white' }}>
+              Deal<span style={{ color: ORANGE }}>Pam</span>
+            </Typography>
+          </Box>
+
+          {/* Location */}
+          <Box sx={{ flexShrink: 0 }}>
+            <Box onClick={() => openLocationModal()} sx={{
+              display: 'flex', flexDirection: 'column', cursor: 'pointer',
+              px: 1.4, py: 0.9, borderRadius: '10px',
+              border: '1px solid transparent', transition: 'all 0.15s',
+              '&:hover': { border: `1px solid ${BORDER}`, bgcolor: 'rgba(255,255,255,0.04)' },
+            }}>
+              <Typography sx={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', lineHeight: 1.3, letterSpacing: 0.3, textTransform: 'uppercase' }}>Livraison vers</Typography>
+              <Tooltip title="Modifier votre zone de livraison" placement="bottom" arrow>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4 }}>
+                  <MyLocation sx={{ fontSize: 13, color: dpLocation ? ORANGE : 'rgba(255,255,255,0.35)', animation: dpLocation?.source === 'gps' ? 'dp-pulse 2s ease infinite' : 'none' }} />
+                  <Box sx={{ maxWidth: 140, overflow: 'hidden' }}>
+                    {dpLocation ? (
+                      <>
+                        <Typography sx={{ color: 'white', fontWeight: 700, fontSize: 13, lineHeight: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{dpLocation.city}</Typography>
+                        <Typography sx={{ color: 'rgba(255,255,255,0.5)', fontSize: 10.5, lineHeight: 1, mt: 0.25, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{dpLocation.department}</Typography>
+                      </>
+                    ) : (
+                      <Typography sx={{ color: ORANGE, fontWeight: 700, fontSize: 12.5, lineHeight: 1, whiteSpace: 'nowrap', animation: 'dp-pulse 2.5s ease infinite' }}>Choisir votre zone</Typography>
+                    )}
+                  </Box>
+                  <KeyboardArrowDown sx={{ fontSize: 13, color: 'rgba(255,255,255,0.4)' }} />
+                </Box>
+              </Tooltip>
+            </Box>
+          </Box>
+
+          {/* Search bar */}
+          <Box ref={sBoxRef} sx={{ flex: 1, position: 'relative', minWidth: 0 }}>
+            <Box component="form" onSubmit={doSearch} sx={{
+              display: 'flex', alignItems: 'center', height: 46, borderRadius: '12px',
+              bgcolor: 'rgba(255,255,255,0.07)', border: '1.5px solid rgba(255,255,255,0.1)', transition: 'all 0.2s',
+              '&:focus-within': { bgcolor: 'white', border: `1.5px solid ${ORANGE}`, boxShadow: `0 0 0 4px ${alpha(ORANGE, 0.15)}`, '& input': { color: '#0F172A' }, '& input::placeholder': { color: '#94A3B8' } },
+            }}>
+              {activeCategory && !search && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, ml: 1.5, pl: 1, pr: 0.5, py: 0.3, bgcolor: alpha(ORANGE, 0.18), borderRadius: '20px', border: `1px solid ${alpha(ORANGE, 0.35)}`, flexShrink: 0 }}>
+                  <Typography fontSize={12} fontWeight={700} color={ORANGE} sx={{ textTransform: 'capitalize' }}>{activeCategory}</Typography>
+                  <Box onClick={() => { setActiveCategory(''); navigate(rLocation.pathname, { replace: true }); }} sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer', color: ORANGE, ml: 0.3 }}>
+                    <Close sx={{ fontSize: 13 }} />
+                  </Box>
+                </Box>
+              )}
+              <InputBase
+                placeholder="Rechercher produits, boutiques, marques..."
+                value={search}
+                onChange={e => onType(e.target.value)}
+                onFocus={() => search.length >= 2 && setShowSuggs(true)}
+                sx={{ flex: 1, px: 1.5, fontSize: 14, '& input': { color: 'rgba(255,255,255,0.92)', transition: 'color 0.2s' }, '& input::placeholder': { color: 'rgba(255,255,255,0.3)', opacity: 1, transition: 'color 0.2s' } }}
+              />
+              <Button type="submit" disableElevation sx={{ bgcolor: ORANGE, color: 'white', borderRadius: '0 10px 10px 0', minWidth: 52, height: '100%', '&:hover': { bgcolor: ORANGE_D } }}>
+                <Search sx={{ fontSize: 20 }} />
+              </Button>
+            </Box>
+            {showSuggs && suggs.length > 0 && (
+              <Paper elevation={0} sx={{ position: 'absolute', top: 'calc(100% + 8px)', left: 0, right: 0, zIndex: 9999, borderRadius: '16px', overflow: 'hidden', border: '1px solid #E2E8F0', boxShadow: '0 20px 60px rgba(0,0,0,0.15)', animation: 'dp-slideDown 150ms ease forwards' }}>
+                {suggs.map((p: any, i: number) => {
+                  const img = p.images?.[0]?.urlMedium || p.images?.[0]?.url;
+                  const price = p.salePrice ? Number(p.salePrice) : Number(p.price);
+                  return (
+                    <Box key={p.id} onClick={() => toProd(p.slug)} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 2, py: 1.2, cursor: 'pointer', borderBottom: i < suggs.length - 1 ? '1px solid #F8FAFC' : 'none', '&:hover': { bgcolor: '#F8FAFC' }, transition: 'background 0.1s' }}>
+                      <Box sx={{ width: 46, height: 46, borderRadius: '10px', overflow: 'hidden', bgcolor: '#F1F5F9', flexShrink: 0 }}>
+                        {img && <Box component="img" src={img} alt={p.name} sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+                      </Box>
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography fontSize={13.5} fontWeight={600} color="#0F172A" noWrap>{p.name}</Typography>
+                        <Typography fontSize={11.5} color="#94A3B8" noWrap>{p.store?.name}</Typography>
+                      </Box>
+                      <Typography fontSize={13.5} fontWeight={800} color={ORANGE}>{price.toLocaleString()} HTG</Typography>
+                    </Box>
+                  );
+                })}
+                <Box onClick={() => doSearch()} sx={{ px: 2, py: 1.2, bgcolor: '#F8FAFC', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 1, borderTop: '1px solid #E2E8F0', '&:hover': { bgcolor: '#F1F5F9' } }}>
+                  <Search sx={{ fontSize: 14, color: '#64748B' }} />
+                  <Typography fontSize={13} color="#475569" fontWeight={500}>Voir tous les resultats pour <strong style={{ color: '#0F172A' }}>"{search}"</strong></Typography>
+                </Box>
+              </Paper>
+            )}
+          </Box>
+
+          {/* Account */}
+          {user ? (
+            <Box ref={accountRef} sx={{ position: 'relative', flexShrink: 0 }}>
+              <Box onClick={() => setShowAccount(o => !o)} sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer', px: 1.2, py: 0.8, borderRadius: '10px', border: `1px solid ${showAccount ? alpha(ORANGE, 0.3) : 'transparent'}`, bgcolor: showAccount ? alpha(ORANGE, 0.06) : 'transparent', transition: 'all 0.15s', '&:hover': { border: `1px solid ${BORDER}`, bgcolor: 'rgba(255,255,255,0.04)' } }}>
+                <Avatar sx={{ width: 32, height: 32, bgcolor: ORANGE, fontSize: 13, fontWeight: 900, color: 'white' }}>{user.firstName?.[0]}</Avatar>
+                <Box>
+                  <Typography sx={{ fontSize: 10.5, color: 'rgba(255,255,255,0.45)', lineHeight: 1.2 }}>{isSeller ? 'Espace vendeur' : 'Mon compte'}</Typography>
+                  <Typography sx={{ color: 'white', fontWeight: 700, fontSize: 13, lineHeight: 1 }}>{user.firstName}</Typography>
+                </Box>
+                <KeyboardArrowDown sx={{ fontSize: 14, color: 'rgba(255,255,255,0.3)', transform: showAccount ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+              </Box>
+              {showAccount && <AccountDropdown user={user} isSeller={isSeller} navigate={navigate} onClose={() => setShowAccount(false)} logout={logout} />}
+            </Box>
+          ) : (
+            <Button component={Link} to="/login" variant="outlined" size="small" sx={{ borderColor: 'rgba(255,255,255,0.2)', color: 'white', borderRadius: '10px', fontSize: 13, fontWeight: 600, px: 2, flexShrink: 0, '&:hover': { borderColor: ORANGE, color: ORANGE, bgcolor: alpha(ORANGE, 0.06) } }}>
+              Connexion
+            </Button>
+          )}
+
+          {/* Wishlist */}
+          {user && (
+            <IconButton component={Link} to="/account/wishlist" sx={{ color: 'rgba(255,255,255,0.6)', borderRadius: '10px', border: '1px solid transparent', flexShrink: 0, '&:hover': { color: '#EC4899', border: `1px solid ${BORDER}`, bgcolor: 'rgba(255,255,255,0.04)' } }}>
+              <FavoriteBorder sx={{ fontSize: 22 }} />
             </IconButton>
           )}
 
-          {/* Logo */}
-          <HBtn component={Link} to="/" sx={{ flexShrink: 0, mr: { xs: 0.5, md: 1 } }}>
-            <Box>
-              <Typography sx={{ fontWeight: 900, fontSize: { xs: 20, md: 24 }, letterSpacing: '-0.5px', lineHeight: 1, color: 'white' }}>
-                Deal<span style={{ color: ORANGE }}>Pam</span>
-              </Typography>
-              <Typography sx={{ fontSize: 9, color: 'rgba(255,255,255,0.65)', letterSpacing: 0.3, lineHeight: 1, textAlign: 'center' }}>
-                .com
-              </Typography>
-            </Box>
-          </HBtn>
-
-          {/* Delivery location (desktop) */}
-          {!isMobile && (
-            <Box sx={{ flexShrink: 0 }}>
-              <HBtn onClick={e => setCityAnchor(e.currentTarget)} sx={{ flexDirection: 'column', alignItems: 'flex-start', gap: 0 }}>
-                <Typography sx={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', lineHeight: 1 }}>
-                  {selectedCity ? 'Livrer à' : 'Choisir'}
-                </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
-                  <Room sx={{ color: selectedCity ? 'white' : 'rgba(255,255,255,0.55)', fontSize: 14 }} />
-                  <Typography sx={{ color: selectedCity ? 'white' : 'rgba(255,255,255,0.65)',
-                    fontWeight: selectedCity ? 700 : 400, fontSize: 12.5, lineHeight: 1 }}>
-                    {selectedCity || 'votre zone'}
-                  </Typography>
-                  <KeyboardArrowDown sx={{ color: 'rgba(255,255,255,0.65)', fontSize: 14 }} />
-                </Box>
-              </HBtn>
-              <Menu anchorEl={cityAnchor} open={Boolean(cityAnchor)} onClose={() => setCityAnchor(null)}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-                transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-                PaperProps={{ elevation: 12, sx: { borderRadius: 1, minWidth: 180, mt: 0.5 } }}>
-                {DEPARTMENTS.map(dept => (
-                  <MenuItem key={dept} onClick={() => handleCitySelect(dept)} selected={dept === selectedCity}
-                    sx={{ fontSize: 13.5, py: 0.9, '&.Mui-selected': { bgcolor: 'rgba(255,153,0,0.1)', color: ORANGE, fontWeight: 700 } }}>
-                    {dept}
-                  </MenuItem>
-                ))}
-              </Menu>
-            </Box>
-          )}
-
-          {/* ── SEARCH BAR (Amazon style) ── */}
-          {!isMobile ? (
-            <Box sx={{ flex: 1, display: 'flex', height: 40, borderRadius: 0.5, border: `2px solid ${ORANGE}`, overflow: 'hidden' }}>
-              {/* Category selector — rendered as sibling, Menu uses portal */}
-              <Box onClick={e => setSearchCatAnchor(e.currentTarget)}
-                sx={{ bgcolor: '#F3F3F3', borderRight: '1px solid #CDCDCD', display: 'flex', alignItems: 'center',
-                  px: 1.2, gap: 0.3, cursor: 'pointer', flexShrink: 0, minWidth: 80,
-                  '&:hover': { bgcolor: '#E6E6E6' } }}>
-                <Typography fontSize={12} fontWeight={500} color="#111" noWrap sx={{ maxWidth: 90 }}>{searchCat}</Typography>
-                <KeyboardArrowDown sx={{ fontSize: 14, color: '#555',
-                  transform: Boolean(searchCatAnchor) ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }} />
-              </Box>
-              <Box component="form" onSubmit={handleSearch} sx={{ flex: 1, display: 'flex' }}>
-                <InputBase
-                  placeholder="Rechercher produits, boutiques, categories..."
-                  value={search} onChange={e => setSearch(e.target.value)}
-                  sx={{ flex: 1, px: 1.5, fontSize: 13.5, bgcolor: 'white', color: '#111',
-                    '& input': { color: '#111' },
-                    '& input::placeholder': { color: '#444', opacity: 1, fontSize: 13.5 } }}
-                />
-                <Button type="submit" disableElevation
-                  sx={{ bgcolor: ORANGE, color: '#111', borderRadius: 0, minWidth: 46, px: 1.5,
-                    '&:hover': { bgcolor: ORANGE_HOVER } }}>
-                  <Search sx={{ fontSize: 21, color: '#111' }} />
-                </Button>
-              </Box>
-              <Menu anchorEl={searchCatAnchor} open={Boolean(searchCatAnchor)} onClose={() => setSearchCatAnchor(null)}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-                transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-                PaperProps={{ elevation: 16, sx: { borderRadius: 2, width: 320, mt: 0.5, p: 1.5,
-                  boxShadow: '0 12px 40px rgba(0,0,0,0.18)' } }}>
-                {/* Tous */}
-                <Box onClick={() => { setSearchCat('Tous'); setSearchCatAnchor(null); }}
-                  sx={{ display: 'flex', alignItems: 'center', gap: 1.2, px: 1.2, py: 0.9, mb: 0.5,
-                    borderRadius: 1.5, cursor: 'pointer', transition: 'all 0.15s',
-                    bgcolor: searchCat === 'Tous' ? alpha(ORANGE, 0.1) : 'transparent',
-                    border: `1px solid ${searchCat === 'Tous' ? ORANGE : 'transparent'}`,
-                    '&:hover': { bgcolor: alpha(ORANGE, 0.07) } }}>
-                  <Box sx={{ width: 30, height: 30, borderRadius: 1, bgcolor: alpha(ORANGE, 0.12),
-                    display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Apps sx={{ fontSize: 15, color: ORANGE }} />
-                  </Box>
-                  <Typography fontWeight={searchCat === 'Tous' ? 700 : 500} fontSize={13.5}
-                    color={searchCat === 'Tous' ? ORANGE : '#222'}>
-                    Toutes les catégories
-                  </Typography>
-                </Box>
-                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.4 }}>
-                  {CATS_MENU.map(({ label, icon: Icon, color }) => (
-                    <Box key={label} onClick={() => { setSearchCat(label); setSearchCatAnchor(null); }}
-                      sx={{ display: 'flex', alignItems: 'center', gap: 0.9, px: 1, py: 0.8,
-                        borderRadius: 1.5, cursor: 'pointer', transition: 'all 0.15s',
-                        bgcolor: searchCat === label ? alpha(color, 0.1) : 'transparent',
-                        border: `1px solid ${searchCat === label ? alpha(color, 0.4) : 'transparent'}`,
-                        '&:hover': { bgcolor: alpha(color, 0.07) } }}>
-                      <Box sx={{ width: 26, height: 26, borderRadius: 0.8, bgcolor: alpha(color, 0.12),
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        <Icon sx={{ fontSize: 13, color }} />
-                      </Box>
-                      <Typography fontSize={12.5} fontWeight={searchCat === label ? 700 : 400}
-                        color={searchCat === label ? color : '#333'} noWrap>
-                        {label}
-                      </Typography>
-                    </Box>
-                  ))}
-                </Box>
-              </Menu>
-            </Box>
-          ) : (
-            <Box component="form" onSubmit={handleSearch} sx={{ flex: 1, display: 'flex', height: 36, borderRadius: 0.5, overflow: 'hidden', border: `1.5px solid ${ORANGE}` }}>
-              <InputBase placeholder="Rechercher..." value={search} onChange={e => setSearch(e.target.value)}
-                sx={{ flex: 1, px: 1.2, fontSize: 13, bgcolor: 'white', color: '#111',
-                  '& input::placeholder': { color: '#444', opacity: 1 } }} />
-              <Button type="submit" sx={{ bgcolor: ORANGE, borderRadius: 0, minWidth: 38, '&:hover': { bgcolor: ORANGE_HOVER } }}>
-                <Search sx={{ fontSize: 18, color: '#111' }} />
-              </Button>
-            </Box>
-          )}
-
-          {/* ── RIGHT BUTTONS ── */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3, flexShrink: 0 }}>
-
-            {/* Compte / Connexion */}
-            {user ? (
-              <HBtn onClick={e => setAnchorEl(e.currentTarget)} sx={{ flexDirection: 'column', alignItems: 'flex-start', gap: 0 }}>
-                <Typography sx={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', lineHeight: 1.2 }}>Bonjour, {user.firstName}</Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
-                  <Typography sx={{ color: 'white', fontWeight: 700, fontSize: 12.5, lineHeight: 1 }}>Mon Compte</Typography>
-                  <KeyboardArrowDown sx={{ color: 'white', fontSize: 14 }} />
-                </Box>
-              </HBtn>
-            ) : (
-              <HBtn component={Link} to="/login" sx={{ flexDirection: 'column', alignItems: 'flex-start', gap: 0 }}>
-                <Typography sx={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', lineHeight: 1.2 }}>Bonjour, connectez-vous</Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
-                  <Typography sx={{ color: 'white', fontWeight: 700, fontSize: 12.5, lineHeight: 1 }}>Compte & Listes</Typography>
-                  <KeyboardArrowDown sx={{ color: 'white', fontSize: 14 }} />
-                </Box>
-              </HBtn>
-            )}
-
-            {/* Commandes */}
-            {!isMobile && (
-              <HBtn component={Link} to="/account/orders" sx={{ flexDirection: 'column', alignItems: 'flex-start', gap: 0 }}>
-                <Typography sx={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', lineHeight: 1.2 }}>Retours &</Typography>
-                <Typography sx={{ color: 'white', fontWeight: 700, fontSize: 12.5, lineHeight: 1 }}>Commandes</Typography>
-              </HBtn>
-            )}
-
-            {/* Panier */}
-            <HBtn component={Link} to="/cart" sx={{ flexDirection: 'row', alignItems: 'flex-end', gap: 0.5, px: 1 }}>
-              <Box sx={{ position: 'relative' }}>
-                <ShoppingCart sx={{ color: 'white', fontSize: 32, display: 'block' }} />
-                <Box sx={{ position: 'absolute', top: 0, right: -2, bgcolor: ORANGE, color: '#111',
-                  borderRadius: '50%', width: 18, height: 18, display: 'flex', alignItems: 'center',
-                  justifyContent: 'center', fontWeight: 900, fontSize: 11, lineHeight: 1 }}>
-                  {count}
-                </Box>
-              </Box>
-              <Typography sx={{ color: 'white', fontWeight: 700, fontSize: 12.5, pb: 0.3 }}>Panier</Typography>
-            </HBtn>
-          </Box>
+          {/* Cart */}
+          <IconButton component={Link} to="/cart" sx={{ color: 'white', borderRadius: '10px', border: '1px solid transparent', flexShrink: 0, '&:hover': { border: `1px solid ${BORDER}`, bgcolor: 'rgba(255,255,255,0.04)' } }}>
+            <Badge badgeContent={count > 99 ? '99+' : count} max={999}
+              sx={{ '& .MuiBadge-badge': { bgcolor: ORANGE, color: 'white', fontWeight: 900, fontSize: 10, minWidth: 18, height: 18, border: `2px solid ${BG}` } }}>
+              <ShoppingCart sx={{ fontSize: 26 }} />
+            </Badge>
+          </IconButton>
         </Box>
+        )}
 
-        {/* ══════════════════════════════════════════════
-            BOTTOM BAR
-        ══════════════════════════════════════════════ */}
+        {/* â•â•â• BOTTOM NAV â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
         {!isMobile && (
           <Box sx={{
-            bgcolor: '#191C1F',
-            borderBottom: '1px solid rgba(255,255,255,0.08)',
-            height: 40,
+            bgcolor: NAV_BG,
+            height: 44,
             display: 'flex', alignItems: 'stretch',
+            borderTop: `1px solid ${BORDER}`,
           }}>
-            {/* Left: Categories button fixed */}
-            <Box sx={{ flexShrink: 0, display: 'flex', alignItems: 'stretch' }}>
-              <Box onClick={e => setCatAnchor(catAnchor ? null : e.currentTarget)}
-                sx={{
-                  display: 'flex', alignItems: 'center', gap: 0.8, px: 2, cursor: 'pointer',
-                  bgcolor: Boolean(catAnchor) ? ORANGE : 'transparent',
-                  borderRight: '1px solid rgba(255,255,255,0.1)',
-                  transition: 'background 0.15s',
-                  '&:hover': { bgcolor: Boolean(catAnchor) ? ORANGE : 'rgba(255,255,255,0.06)' },
-                }}>
-                <Apps sx={{ color: Boolean(catAnchor) ? '#111' : 'rgba(255,255,255,0.9)', fontSize: 15 }} />
-                <Typography sx={{ color: Boolean(catAnchor) ? '#111' : 'rgba(255,255,255,0.9)', fontWeight: 600, fontSize: 13 }}>
-                  Catégories
+            {/* Categories dropdown */}
+            <Box ref={catRef} sx={{ position: 'relative', flexShrink: 0 }}>
+              <Box onClick={() => setShowCat(o => !o)} sx={{
+                display: 'flex', alignItems: 'center', gap: 0.8,
+                px: 2.2, height: '100%', cursor: 'pointer',
+                bgcolor: showCat ? alpha(ORANGE, 0.1) : 'transparent',
+                borderRight: `1px solid ${BORDER}`,
+                transition: 'background 0.15s',
+                '&:hover': { bgcolor: showCat ? alpha(ORANGE, 0.12) : 'rgba(255,255,255,0.04)' },
+              }}>
+                <GridView sx={{ fontSize: 15, color: showCat ? ORANGE : 'rgba(255,255,255,0.65)' }} />
+                <Typography sx={{ fontSize: 13, fontWeight: 600, color: showCat ? ORANGE : 'rgba(255,255,255,0.8)', letterSpacing: 0.1 }}>
+                  Categories
                 </Typography>
-                <KeyboardArrowDown sx={{
-                  color: Boolean(catAnchor) ? '#111' : 'rgba(255,255,255,0.45)', fontSize: 14,
-                  transform: Boolean(catAnchor) ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s',
-                }} />
+                <KeyboardArrowDown sx={{ fontSize: 14, color: 'rgba(255,255,255,0.3)', transform: showCat ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
               </Box>
-              <Menu anchorEl={catAnchor} open={Boolean(catAnchor)} onClose={() => setCatAnchor(null)}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-                transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-                PaperProps={{ elevation: 16, sx: {
-                  borderRadius: '0 8px 8px 8px', width: 500, p: 2, mt: 0,
-                  boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
-                } }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5, pb: 1.2, borderBottom: '1px solid #F0F0F0' }}>
-                  <Apps sx={{ color: ORANGE, fontSize: 18 }} />
-                  <Typography fontWeight={800} fontSize={13} color="#111" letterSpacing={0.5} sx={{ textTransform: 'uppercase' }}>
-                    Toutes les categories
-                  </Typography>
-                </Box>
-                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 0.5 }}>
-                  {CATS_MENU.map(({ label, icon: Icon, color, path }) => (
-                    <Box key={label} component={Link} to={path} onClick={() => setCatAnchor(null)}
-                      sx={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 1,
-                        px: 1.2, py: 0.9, borderRadius: 1.5, border: '1px solid transparent', transition: 'all 0.15s',
-                        '&:hover': { bgcolor: alpha(color, 0.08), border: `1px solid ${alpha(color, 0.2)}` } }}>
-                      <Box sx={{ width: 30, height: 30, borderRadius: 1, bgcolor: alpha(color, 0.12),
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        <Icon sx={{ fontSize: 16, color }} />
-                      </Box>
-                      <Typography fontWeight={500} fontSize={13} color="#222">{label}</Typography>
-                    </Box>
-                  ))}
-                </Box>
-                <Box component={Link} to="/categories" onClick={() => setCatAnchor(null)}
-                  sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mt: 1.5, pt: 1.2,
-                    borderTop: '1px solid #F0F0F0', textDecoration: 'none', color: ORANGE, fontWeight: 700, fontSize: 13,
-                    '&:hover': { color: '#e68900' } }}>
-                  Voir toutes les categories &rsaquo;
-                </Box>
-              </Menu>
+              {showCat && <CatDropdown activeCat={activeCat} onPick={(l, p) => { setActiveCat(l); navigate(p); }} onClose={() => setShowCat(false)} />}
             </Box>
 
-            {/* Center: scrollable nav links */}
-            <Box sx={{
-              flex: 1, display: 'flex', alignItems: 'stretch',
-              overflowX: 'auto', overflowY: 'hidden',
-              scrollbarWidth: 'none', '&::-webkit-scrollbar': { display: 'none' },
-            }}>
-              {/* Flash sale */}
-              <Box component={Link} to="/products?sale=true"
-                sx={{
-                  display: 'flex', alignItems: 'center', gap: 0.6, px: 1.5, mx: 1, my: 'auto',
-                  height: 26, background: 'linear-gradient(135deg, #CC0C39, #ff2557)',
-                  borderRadius: '14px', textDecoration: 'none', flexShrink: 0,
-                  boxShadow: '0 0 10px rgba(204,12,57,0.4)',
-                  '&:hover': { opacity: 0.9 },
-                }}>
-                <FlashOn sx={{ fontSize: 13, color: 'white' }} />
-                <Typography sx={{ fontWeight: 800, fontSize: 12, color: 'white', whiteSpace: 'nowrap' }}>
+            {/* Ventes Flash — pill shimmer gradient */}
+            <Box sx={{ display: 'flex', alignItems: 'center', px: 1.5, borderRight: `1px solid ${BORDER}`, flexShrink: 0 }}>
+              <Box component={Link} to="/ventes-flash" sx={{
+                display: 'flex', alignItems: 'center', gap: 0.5, px: 1.5, height: 28,
+                borderRadius: '100px', textDecoration: 'none',
+                background: 'linear-gradient(110deg, #DC2626 0%, #F97316 40%, #DC2626 80%, #F97316 100%)',
+                backgroundSize: '200% auto',
+                animation: 'dp-shimmer 3s linear infinite',
+                boxShadow: '0 2px 10px rgba(220,38,38,0.45)',
+                transition: 'opacity 0.15s, transform 0.15s',
+                '&:hover': { opacity: 0.9, transform: 'translateY(-1px)' },
+              }}>
+                <FlashOn sx={{ fontSize: 14, color: 'white', animation: 'dp-pulse 2s ease-in-out infinite' }} />
+                <Typography sx={{ fontWeight: 800, fontSize: 12.5, color: 'white', whiteSpace: 'nowrap', letterSpacing: 0.2 }}>
                   Ventes Flash
                 </Typography>
               </Box>
+            </Box>
 
-              {/* Category links */}
-              {NAV_LINKS.filter(l => !l.hot).map(({ label, path }) => (
-                <Box key={path} component={Link} to={path}
-                  sx={{
-                    textDecoration: 'none', display: 'flex', alignItems: 'center',
-                    px: 1.3, flexShrink: 0, position: 'relative',
-                    '&::after': {
-                      content: '""', position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)',
-                      width: 0, height: 2, bgcolor: ORANGE, transition: 'width 0.2s',
-                    },
-                    '&:hover::after': { width: '70%' },
-                    '&:hover .nl': { color: 'white' },
-                  }}>
-                  <Typography className="nl" sx={{ color: 'rgba(255,255,255,0.65)', fontSize: 13, fontWeight: 400, whiteSpace: 'nowrap', transition: 'color 0.15s' }}>
+            {/* Nav links */}
+            <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', overflowX: 'auto', scrollbarWidth: 'none', '&::-webkit-scrollbar': { display: 'none' }, gap: 0 }}>
+              {NAV.map(({ label, path }) => (
+                <Box key={path} component={Link} to={path} sx={{
+                  textDecoration: 'none', display: 'flex', alignItems: 'center', height: '100%',
+                  px: 1.4, flexShrink: 0, position: 'relative',
+                  '&::after': { content: '""', position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: 0, height: 2, bgcolor: ORANGE, borderRadius: '2px 2px 0 0', transition: 'width 0.22s ease' },
+                  '&:hover::after': { width: '65%' },
+                  '&:hover .nt': { color: 'rgba(255,255,255,0.92)' },
+                }}>
+                  <Typography className="nt" sx={{ fontSize: 13, fontWeight: 400, color: 'rgba(255,255,255,0.5)', whiteSpace: 'nowrap', transition: 'color 0.15s' }}>
                     {label}
                   </Typography>
                 </Box>
               ))}
             </Box>
 
-            {/* Right: Sell CTA fixed */}
-            <Box component={Link} to="/register?role=SELLER"
-              sx={{
-                display: 'flex', alignItems: 'center', px: 2, flexShrink: 0,
-                borderLeft: '1px solid rgba(255,255,255,0.1)', textDecoration: 'none',
-                transition: 'background 0.15s',
-                '&:hover': { bgcolor: 'rgba(255,153,0,0.1)' },
-              }}>
-              <Typography sx={{ fontSize: 13, fontWeight: 600, color: ORANGE, whiteSpace: 'nowrap' }}>
-                Vendre sur DealPam
-              </Typography>
+            {/* Right CTA */}
+            <Box component={Link} to={isSeller ? '/seller' : '/register?role=SELLER'} sx={{
+              display: 'flex', alignItems: 'center', gap: 0.8, px: 2, flexShrink: 0,
+              borderLeft: `1px solid ${BORDER}`, textDecoration: 'none',
+              transition: 'background 0.15s', '&:hover': { bgcolor: alpha(ORANGE, 0.08) },
+            }}>
+              {isSeller ? (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.7, px: 1.4, py: 0.5, bgcolor: ORANGE, borderRadius: '100px', transition: 'filter 0.15s', '&:hover': { filter: 'brightness(1.08)' } }}>
+                  <GridView sx={{ fontSize: 14, color: 'white' }} />
+                  <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: 'white', whiteSpace: 'nowrap' }}>Dashboard</Typography>
+                </Box>
+              ) : (
+                <Typography sx={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.5)', whiteSpace: 'nowrap', transition: 'color 0.15s', '&:hover': { color: ORANGE } }}>
+                  Vendre sur DealPam
+                </Typography>
+              )}
             </Box>
           </Box>
         )}
       </Box>
 
-      {/* Spacer */}
-      <Box sx={{ height: spacerH }} />
+      <Box sx={{ height: hH }} />
 
-      {/* ── User menu ── */}
-      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}
-        transformOrigin={{ horizontal: 'left', vertical: 'top' }}
-        anchorOrigin={{ horizontal: 'left', vertical: 'bottom' }}
-        PaperProps={{ elevation: 12, sx: { mt: 0.5, borderRadius: 1.5, minWidth: 200, border: '1px solid #E5E7EB', overflow: 'hidden' } }}>
-        <Box sx={{ px: 2, py: 1.5, bgcolor: BG }}>
-          <Typography fontWeight={700} color="white" fontSize={13}>Bonjour, {user?.firstName}</Typography>
-          <Typography fontSize={11} sx={{ color: 'rgba(255,255,255,0.5)' }}>{user?.email}</Typography>
-        </Box>
-        <Box sx={{ py: 0.5 }}>
-          {[
-            { label: 'Mon compte', path: '/account', color: '#2563EB' },
-            { label: 'Mes commandes', path: '/account/orders', color: '#10B981' },
-            { label: 'Mes favoris', path: '/account/wishlist', color: '#EC4899' },
-            ...(user?.role === 'SELLER' ? [{ label: 'Ma boutique', path: '/seller', color: '#F59E0B' }] : []),
-          ].map(({ label, path, color }) => (
-            <MenuItem key={path} onClick={() => { navigate(path); setAnchorEl(null); }}
-              sx={{ py: 1.1, fontSize: 13.5, '&:hover': { bgcolor: '#F9FAFB', color } }}>
-              {label}
-            </MenuItem>
-          ))}
-          <Divider />
-          <MenuItem onClick={() => { logout(); setAnchorEl(null); navigate('/'); }}
-            sx={{ py: 1.1, color: '#EF4444', '&:hover': { bgcolor: '#FEF2F2' } }}>
-            Deconnexion
-          </MenuItem>
-        </Box>
-      </Menu>
+      {/* â•â•â• MOBILE DRAWER â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+      <Drawer open={drawerOpen} onClose={() => { setDrawerOpen(false); setDrawerShowAllCats(false); }}
+        PaperProps={{ sx: { width: '82vw', maxWidth: 320, bgcolor: '#0B1120', display: 'flex', flexDirection: 'column', borderRadius: '0 24px 24px 0', overflow: 'hidden' } }}>
 
-      {/* ── Mobile Drawer ── */}
-      <Drawer open={mobileOpen} onClose={() => setMobileOpen(false)}
-        PaperProps={{ sx: { width: 280, bgcolor: '#fff' } }}>
-        <Box sx={{ bgcolor: BG, p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography sx={{ fontWeight: 900, fontSize: 22, letterSpacing: '-0.5px', color: 'white' }}>
-            Deal<span style={{ color: ORANGE }}>Pam</span>
-          </Typography>
-          <IconButton onClick={() => setMobileOpen(false)} sx={{ color: 'rgba(255,255,255,0.6)', p: 0.5 }}><Close /></IconButton>
-        </Box>
-        <List dense sx={{ px: 1, pt: 0.5 }}>
-          {[['/', 'Accueil'], ['/products', 'Produits'], ['/categories', 'Categories'], ['/stores', 'Boutiques'], ['/products?sale=true', 'Ventes Flash']].map(([path, label]) => (
-            <ListItem key={path} component={Link} to={path} onClick={() => setMobileOpen(false)}
-              sx={{ borderRadius: 1.5, '&:hover': { bgcolor: '#F9FAFB' } }}>
-              <ListItemText primary={label} primaryTypographyProps={{ fontSize: 14, fontWeight: 500 }} />
-            </ListItem>
-          ))}
-        </List>
-        <Divider />
-        {user ? (
-          <Box sx={{ p: 1.5 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, p: 1.5, borderRadius: 2, bgcolor: '#F9FAFB', mb: 1 }}>
-              <Avatar sx={{ width: 34, height: 34, bgcolor: ORANGE, color: '#111', fontSize: 14, fontWeight: 900 }}>{user.firstName[0]}</Avatar>
-              <Box><Typography fontWeight={700} fontSize={13.5}>{user.firstName}</Typography><Typography variant="caption" color="text.secondary">{user.email}</Typography></Box>
+        {/* ── Header drawer ── */}
+        <Box sx={{ px: 2.5, pt: 3, pb: 2, background: 'linear-gradient(160deg, #1E2A45 0%, #0F172A 100%)', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2.5 }}>
+            <Typography sx={{ fontWeight: 900, fontSize: 22, letterSpacing: '-0.5px', color: 'white', lineHeight: 1 }}>
+              Deal<span style={{ color: ORANGE }}>Pam</span>
+            </Typography>
+            <IconButton onClick={() => setDrawerOpen(false)} size="small" sx={{ color: 'rgba(255,255,255,0.45)', bgcolor: 'rgba(255,255,255,0.07)', borderRadius: '10px', width: 34, height: 34, '&:hover': { bgcolor: 'rgba(255,255,255,0.12)', color: 'white' } }}>
+              <Close sx={{ fontSize: 16 }} />
+            </IconButton>
+          </Box>
+
+          {/* User card */}
+          {user ? (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, p: 1.5, borderRadius: '14px', bgcolor: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <Avatar sx={{ width: 44, height: 44, bgcolor: ORANGE, color: 'white', fontWeight: 900, fontSize: 18, flexShrink: 0, border: `2px solid ${alpha(ORANGE, 0.35)}` }}>
+                {user.firstName?.[0]}
+              </Avatar>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
+                  <Typography fontWeight={700} fontSize={14} color="white" noWrap sx={{ flex: 1 }}>{user.firstName} {user.lastName}</Typography>
+                  {isSeller && <Box sx={{ bgcolor: alpha(ORANGE, 0.2), border: `1px solid ${alpha(ORANGE, 0.4)}`, borderRadius: '20px', px: 1, py: '2px', flexShrink: 0 }}><Typography fontSize={9} fontWeight={800} color={ORANGE} sx={{ letterSpacing: 0.5 }}>VENDEUR</Typography></Box>}
+                </Box>
+                <Typography fontSize={11.5} color="rgba(255,255,255,0.35)" noWrap>{user.email}</Typography>
+              </Box>
             </Box>
-            <Button fullWidth variant="outlined" color="error" size="small" startIcon={<Logout />}
-              onClick={() => { logout(); setMobileOpen(false); navigate('/'); }}>Deconnexion</Button>
+          ) : (
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Button component={Link} to="/login" fullWidth onClick={() => setDrawerOpen(false)}
+                sx={{ bgcolor: ORANGE, color: 'white', fontWeight: 700, borderRadius: '12px', py: 1.1, '&:hover': { bgcolor: ORANGE_D }, textTransform: 'none', fontSize: 13.5 }}>Connexion</Button>
+              <Button component={Link} to="/register" fullWidth onClick={() => setDrawerOpen(false)}
+                sx={{ border: '1.5px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.7)', borderRadius: '12px', py: 1.1, '&:hover': { borderColor: ORANGE, color: ORANGE }, textTransform: 'none', fontSize: 13.5 }}>Inscription</Button>
+            </Box>
+          )}
+        </Box>
+
+        {/* ── Body scrollable ── */}
+        <Box sx={{ flex: 1, overflowY: 'auto', scrollbarWidth: 'none', '&::-webkit-scrollbar': { display: 'none' } }}>
+
+          {/* Zone */}
+          <Box onClick={() => { setDrawerOpen(false); openLocationModal(); }} sx={{
+            display: 'flex', alignItems: 'center', gap: 1.2, px: 2.5, py: 1.4, cursor: 'pointer',
+            borderBottom: '1px solid rgba(255,255,255,0.05)', transition: 'background 0.15s',
+            '&:hover': { bgcolor: 'rgba(255,255,255,0.03)' },
+          }}>
+            <Box sx={{ width: 32, height: 32, borderRadius: '10px', bgcolor: alpha(ORANGE, 0.15), display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <GpsFixed sx={{ fontSize: 15, color: ORANGE }} />
+            </Box>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Typography fontSize={10.5} color="rgba(255,255,255,0.35)" lineHeight={1} mb={0.2}>Ma zone</Typography>
+              <Typography fontSize={13} fontWeight={700} color={dpLocation ? ORANGE : 'rgba(255,255,255,0.5)'} noWrap>
+                {dpLocation ? `${dpLocation.city || dpLocation.department}` : 'Choisir ma zone →'}
+              </Typography>
+            </Box>
+            <KeyboardArrowRight sx={{ fontSize: 16, color: 'rgba(255,255,255,0.2)' }} />
           </Box>
-        ) : (
-          <Box sx={{ p: 1.5, display: 'flex', flexDirection: 'column', gap: 1 }}>
-            <Button component={Link} to="/login" fullWidth onClick={() => setMobileOpen(false)}
-              sx={{ bgcolor: ORANGE, color: '#111', fontWeight: 700, borderRadius: 1.5, '&:hover': { bgcolor: ORANGE_HOVER } }}>
-              Connexion
-            </Button>
-            <Button component={Link} to="/register" variant="outlined" fullWidth onClick={() => setMobileOpen(false)}
-              sx={{ borderRadius: 1.5, borderColor: BG, color: BG }}>S'inscrire</Button>
+
+          {/* Espace vendeur */}
+          {isSeller && (
+            <Box sx={{ mx: 2, mt: 2, mb: 0.5, p: 0.5, borderRadius: '16px', background: `linear-gradient(135deg, ${alpha(ORANGE, 0.18)} 0%, ${alpha(ORANGE, 0.08)} 100%)`, border: `1px solid ${alpha(ORANGE, 0.25)}` }}>
+              <Box sx={{ px: 1.5, pt: 1.2, pb: 0.8 }}>
+                <Typography fontSize={9.5} fontWeight={800} color={ORANGE} sx={{ textTransform: 'uppercase', letterSpacing: 1 }}>Espace Vendeur</Typography>
+              </Box>
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.5, px: 0.5, pb: 0.5 }}>
+                {[
+                  { l: 'Dashboard', p: '/seller', I: Dashboard },
+                  { l: 'Produits',  p: '/seller/products', I: Inventory },
+                  { l: 'Commandes', p: '/seller/orders',   I: ShoppingBag },
+                  { l: 'Boutique',  p: '/seller/store',    I: GridView },
+                ].map(({ l, p, I }) => (
+                  <Box key={p} component={Link} to={p} onClick={() => setDrawerOpen(false)} sx={{
+                    display: 'flex', alignItems: 'center', gap: 1, px: 1.2, py: 1, borderRadius: '12px',
+                    textDecoration: 'none', bgcolor: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.06)',
+                    transition: 'all 0.15s', '&:hover': { bgcolor: ORANGE, '& .dl': { color: 'white' }, '& .di': { color: 'white' } },
+                  }}>
+                    <I className="di" sx={{ fontSize: 14, color: ORANGE, transition: 'color 0.15s' }} />
+                    <Typography className="dl" fontSize={12.5} fontWeight={600} color="rgba(255,255,255,0.75)" sx={{ transition: 'color 0.15s' }}>{l}</Typography>
+                  </Box>
+                ))}
+              </Box>
+            </Box>
+          )}
+
+          {/* Navigation */}
+          <Box sx={{ px: 2, pt: 2 }}>
+            <Typography fontSize={9.5} fontWeight={700} color="rgba(255,255,255,0.25)" sx={{ textTransform: 'uppercase', letterSpacing: 1, mb: 1, px: 0.5 }}>Navigation</Typography>
+            {[
+              { path: '/home',         label: 'Accueil',     I: HomeIcon },
+              { path: '/products',     label: 'Marketplace', I: GridView },
+              { path: '/ventes-flash', label: 'Ventes Flash',I: FlashOn },
+              { path: '/stores',       label: 'Boutiques',   I: ShoppingBag },
+              ...(user ? [{ path: '/account', label: 'Mon compte', I: Person }] : []),
+            ].map(({ path, label, I }) => (
+              <Box key={path} component={Link} to={path} onClick={() => setDrawerOpen(false)} sx={{
+                display: 'flex', alignItems: 'center', gap: 1.5, px: 1, py: 1.1, mb: 0.3, borderRadius: '12px',
+                textDecoration: 'none', transition: 'all 0.15s',
+                '&:hover': { bgcolor: 'rgba(255,255,255,0.05)', '& .nl': { color: 'white' }, '& .ni': { color: ORANGE } },
+              }}>
+                <I className="ni" sx={{ fontSize: 18, color: 'rgba(255,255,255,0.35)', transition: 'color 0.15s' }} />
+                <Typography className="nl" fontSize={14} fontWeight={500} color="rgba(255,255,255,0.65)" sx={{ transition: 'color 0.15s' }}>{label}</Typography>
+              </Box>
+            ))}
           </Box>
-        )}
+
+          {/* Catégories */}
+          <Box sx={{ px: 2, pt: 1.5, pb: 3 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.2, px: 0.5 }}>
+              <Typography fontSize={9.5} fontWeight={700} color="rgba(255,255,255,0.25)" sx={{ textTransform: 'uppercase', letterSpacing: 1 }}>Catégories</Typography>
+            </Box>
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 0.8 }}>
+              {(drawerShowAllCats ? CATS : CATS.slice(0, 6)).map(({ label, icon: Icon, color, bg, path }) => (
+                <Box key={label} component={Link} to={path} onClick={() => setDrawerOpen(false)} sx={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.7,
+                  py: 1.3, borderRadius: '14px', textDecoration: 'none',
+                  bgcolor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)',
+                  transition: 'all 0.18s ease',
+                  '&:hover': { bgcolor: alpha(color, 0.12), borderColor: alpha(color, 0.35), transform: 'translateY(-2px)' },
+                }}>
+                  <Box sx={{ width: 34, height: 34, borderRadius: '10px', bgcolor: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.3)' }}>
+                    <Icon sx={{ fontSize: 17, color }} />
+                  </Box>
+                  <Typography fontSize={10} fontWeight={500} color="rgba(255,255,255,0.55)" textAlign="center" lineHeight={1.2}>{label}</Typography>
+                </Box>
+              ))}
+            </Box>
+            {/* Voir plus / Voir moins */}
+            <Box onClick={() => setDrawerShowAllCats(v => !v)} sx={{
+              mt: 1.2, py: 1, borderRadius: '12px', cursor: 'pointer', textAlign: 'center',
+              border: '1px solid rgba(255,255,255,0.08)', bgcolor: 'rgba(255,255,255,0.03)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.6,
+              transition: 'all 0.15s', '&:hover': { bgcolor: 'rgba(255,255,255,0.07)', borderColor: 'rgba(255,255,255,0.15)' },
+            }}>
+              <Typography fontSize={12} fontWeight={600} color="rgba(255,255,255,0.45)">
+                {drawerShowAllCats ? 'Voir moins' : `Voir plus (${CATS.length - 6})`}
+              </Typography>
+              <KeyboardArrowDown sx={{ fontSize: 14, color: 'rgba(255,255,255,0.3)', transform: drawerShowAllCats ? 'rotate(180deg)' : 'none', transition: 'transform 0.25s' }} />
+            </Box>
+          </Box>
+        </Box>
+
+        {/* ── Footer drawer ── */}
+        <Box sx={{ px: 2.5, py: 2, borderTop: '1px solid rgba(255,255,255,0.06)', flexShrink: 0, bgcolor: 'rgba(0,0,0,0.2)', display: 'flex', gap: 1 }}>
+          {user ? (
+            <>
+              <Button component={Link} to="/account/wishlist" onClick={() => setDrawerOpen(false)}
+                sx={{ flex: 1, borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.55)', fontSize: 12.5, textTransform: 'none', '&:hover': { bgcolor: 'rgba(255,255,255,0.06)', color: 'white' } }}>
+                Favoris
+              </Button>
+              <Button onClick={() => { logout(); setDrawerOpen(false); navigate('/'); }}
+                sx={{ flex: 1, borderRadius: '12px', border: '1px solid rgba(239,68,68,0.25)', color: '#F87171', fontSize: 12.5, textTransform: 'none', '&:hover': { bgcolor: 'rgba(239,68,68,0.08)', borderColor: '#F87171' } }}>
+                Déconnexion
+              </Button>
+            </>
+          ) : (
+            <Typography fontSize={11} color="rgba(255,255,255,0.2)" textAlign="center" sx={{ width: '100%' }}>
+              DealPam — La marketplace haitienne
+            </Typography>
+          )}
+        </Box>
       </Drawer>
+
+      {/* Location modal */}
+      <LocationModal
+        open={locationModalOpen}
+        onClose={closeLocationModal}
+      />
     </>
   );
 }
+

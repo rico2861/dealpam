@@ -1,5 +1,6 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, UseInterceptors, UploadedFiles, NotFoundException } from '@nestjs/common';
-import { FilesInterceptor } from '@nestjs/platform-express';
+import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, UseInterceptors, UploadedFiles, Req, Res } from '@nestjs/common';
+import { Response } from 'express';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { ApiTags, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
@@ -7,23 +8,88 @@ import { RolesGuard } from '../../shared/guards/roles.guard';
 import { Roles } from '../../shared/decorators/roles.decorator';
 import { CurrentUser } from '../../shared/decorators/current-user.decorator';
 import { ProductsService } from './products.service';
-import { PrismaService } from '../../prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { FilterProductsDto } from './dto/filter-products.dto';
 
+const MULTI_UPLOAD = FileFieldsInterceptor(
+  [
+    { name: 'images', maxCount: 10 },
+    { name: 'variantImages', maxCount: 50 },
+  ],
+  { storage: memoryStorage() },
+);
+
 @ApiTags('Products')
 @Controller('products')
 export class ProductsController {
-  constructor(private productsService: ProductsService, private prisma: PrismaService) {}
+  constructor(private productsService: ProductsService) {}
 
-  @Get() findAll(@Query() filter: FilterProductsDto) { return this.productsService.findAll(filter); }
-  @Get('featured') getFeatured() { return this.productsService.getFeatured(); }
+  @Get()
+  async findAll(@Query() filter: FilterProductsDto, @Res({ passthrough: true }) res: Response) {
+    res.setHeader('Cache-Control', 'public, max-age=30, stale-while-revalidate=120');
+    return this.productsService.findAll(filter);
+  }
+
+  @Get('featured')
+  async getFeatured(@Res({ passthrough: true }) res: Response) {
+    res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
+    return this.productsService.getFeatured();
+  }
+
+  @Get('near')
+  getNear(
+    @Query('department') department: string,
+    @Query('city') city: string,
+    @Query('limit') limit = 20,
+  ) {
+    if (!department) return { products: [], level: 'national', label: 'Produits populaires en Haiti' };
+    return this.productsService.getNearProducts(department, city || '', Number(limit));
+  }
+
+  // ── Intelligent recommendations ───────────────────────────────────────────
+  @Get('recommendations')
+  getRecommendations(
+    @Query('productIds') productIds: string,   // comma-separated recently viewed IDs
+    @Query('department') department: string,
+    @Query('categoryId') categoryId: string,
+    @Query('limit') limit = 16,
+  ) {
+    const ids = productIds ? productIds.split(',').filter(Boolean) : [];
+    return this.productsService.getRecommendations({ ids, department, categoryId, limit: Number(limit) });
+  }
+
+  @Get('trending-categories')
+  getTrendingCategories(@Query('department') department: string) {
+    return this.productsService.getTrendingCategories(department);
+  }
+
+  @Get('personalized')
+  getPersonalized(@Req() req: any, @Query('sessionId') sessionId: string, @Query('limit') limit = 12) {
+    const userId = req.user?.id || null;
+    const sid    = sessionId || req.headers['x-session-id'] || 'anon';
+    return this.productsService.getPersonalized(userId, sid, Number(limit));
+  }
+
+  @Get('by-category/:slug')
+  getByCategory(
+    @Param('slug') slug: string,
+    @Query('department') department: string,
+    @Query('limit') limit = 12,
+  ) {
+    return this.productsService.findAll({ category: slug, department, limit: Number(limit), sort: 'popular' } as any);
+  }
 
   @Get('me')
   @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('SELLER')
-  getMyProducts(@CurrentUser() user: any, @Query('page') page: number, @Query('limit') limit: number) {
-    return this.productsService.getMyProducts(user.seller?.id || user.id, page, limit);
+  getMyProducts(@CurrentUser() user: any, @Query('page') page = 1, @Query('limit') limit = 20) {
+    return this.productsService.getMyProducts(user.id, Number(page), Number(limit));
+  }
+
+  @Get('admin-list')
+  @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('ADMIN', 'SUPER_ADMIN')
+  findAllAdmin(@Query('page') page = 1, @Query('limit') limit = 50) {
+    return this.productsService.findAllAdmin(Number(page), Number(limit));
   }
 
   @Get(':slug') findOne(@Param('slug') slug: string) { return this.productsService.findOne(slug); }
@@ -31,39 +97,50 @@ export class ProductsController {
   @Post()
   @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('SELLER')
   @ApiConsumes('multipart/form-data')
-  @UseInterceptors(FilesInterceptor('images', 10, { storage: memoryStorage() }))
-  async create(@CurrentUser() user: any, @Body() dto: CreateProductDto, @UploadedFiles() files: Express.Multer.File[]) {
-    const seller = await this.getSeller(user.id);
-    return this.productsService.create(seller.id, dto, files);
+  @UseInterceptors(MULTI_UPLOAD)
+  create(
+    @CurrentUser() user: any,
+    @Body() dto: CreateProductDto,
+    @UploadedFiles() files: { images?: Express.Multer.File[]; variantImages?: Express.Multer.File[] },
+  ) {
+    return this.productsService.create(user.id, dto, files ?? {});
   }
 
   @Patch(':id')
   @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('SELLER')
-  async update(@Param('id') id: string, @CurrentUser() user: any, @Body() dto: UpdateProductDto) {
-    const seller = await this.getSeller(user.id);
-    return this.productsService.update(id, seller.id, dto);
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(MULTI_UPLOAD)
+  update(
+    @Param('id') id: string,
+    @CurrentUser() user: any,
+    @Body() dto: UpdateProductDto,
+    @UploadedFiles() files: { images?: Express.Multer.File[]; variantImages?: Express.Multer.File[] },
+  ) {
+    return this.productsService.update(id, user.id, dto, files ?? {});
   }
 
   @Post(':id/images')
   @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('SELLER')
   @ApiConsumes('multipart/form-data')
-  @UseInterceptors(FilesInterceptor('images', 10, { storage: memoryStorage() }))
-  async addImages(@Param('id') id: string, @CurrentUser() user: any, @UploadedFiles() files: Express.Multer.File[]) {
-    const seller = await this.getSeller(user.id);
-    return this.productsService.addImages(id, seller.id, files);
+  @UseInterceptors(FileFieldsInterceptor([{ name: 'images', maxCount: 10 }], { storage: memoryStorage() }))
+  addImages(
+    @Param('id') id: string,
+    @CurrentUser() user: any,
+    @UploadedFiles() files: { images?: Express.Multer.File[] },
+  ) {
+    return this.productsService.addImages(id, user.id, files?.images ?? []);
   }
 
   @Delete('images/:imageId')
   @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('SELLER')
-  async deleteImage(@Param('imageId') imageId: string, @CurrentUser() user: any) {
-    const seller = await this.getSeller(user.id);
-    return this.productsService.deleteImage(imageId, seller.id);
+  deleteImage(@Param('imageId') imageId: string, @CurrentUser() user: any) {
+    return this.productsService.deleteImage(imageId, user.id);
   }
 
-  @Get('admin-list')
-  @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('ADMIN', 'SUPER_ADMIN')
-  findAllAdmin(@Query('page') page = 1, @Query('limit') limit = 50) {
-    return this.productsService.findAllAdmin(Number(page), Number(limit));
+  @Delete('variants/:variantId')
+  @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('SELLER')
+  deleteVariant(@Param('variantId') variantId: string, @CurrentUser() user: any) {
+    return this.productsService.deleteVariant(variantId, user.id);
   }
 
   @Patch(':id/toggle-featured')
@@ -74,6 +151,13 @@ export class ProductsController {
   @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('ADMIN', 'SUPER_ADMIN')
   toggleSponsored(@Param('id') id: string) { return this.productsService.toggleSponsored(id); }
 
+  @Patch(':id/boost')
+  @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('ADMIN', 'SUPER_ADMIN')
+  boostProduct(
+    @Param('id') id: string,
+    @Body() body: { days?: number; isSponsored?: boolean; isFeatured?: boolean },
+  ) { return this.productsService.boostProduct(id, body); }
+
   @Post(':id/approve')
   @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('ADMIN', 'SUPER_ADMIN', 'MODERATOR')
   approve(@Param('id') id: string) { return this.productsService.approve(id); }
@@ -81,10 +165,4 @@ export class ProductsController {
   @Post(':id/reject')
   @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('ADMIN', 'SUPER_ADMIN', 'MODERATOR')
   reject(@Param('id') id: string, @Body('reason') reason: string) { return this.productsService.reject(id, reason); }
-
-  private async getSeller(userId: string) {
-    const seller = await this.prisma.seller.findUnique({ where: { userId } });
-    if (!seller) throw new NotFoundException('Profil vendeur introuvable');
-    return seller;
-  }
 }

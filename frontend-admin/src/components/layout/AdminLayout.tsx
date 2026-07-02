@@ -1,23 +1,41 @@
 import { useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { Box, Drawer, List, ListItem, ListItemIcon, ListItemText, Typography, AppBar, Toolbar, IconButton, Avatar, Chip, Divider, useMediaQuery, useTheme, Badge, Tooltip, alpha } from '@mui/material';
-import { Dashboard, People, Store, Inventory, ShoppingBag, Payment, Subscriptions, Category, BrandingWatermark, Reviews, Settings, Menu as MenuIcon, Logout, Notifications, ArrowBack, FlashOn, Campaign } from '@mui/icons-material';
+import { Dashboard, People, Store, Inventory, ShoppingBag, Payment, Subscriptions, Category, BrandingWatermark, Reviews, Settings, Menu as MenuIcon, Logout, Notifications, FlashOn, Campaign, Tag, Label, Timer, ViewCarousel, SupportAgent, Storefront, AdminPanelSettings, Handshake } from '@mui/icons-material';
 import { useAdminStore } from '../../store/admin.store';
 
-const MENU = [
-  { path: '/',              label: 'Tableau de bord', icon: Dashboard,         exact: true },
-  { path: '/sellers',       label: 'Vendeurs',        icon: Store },
-  { path: '/products',      label: 'Produits',        icon: Inventory },
-  { path: '/orders',        label: 'Commandes',       icon: ShoppingBag },
-  { path: '/users',         label: 'Utilisateurs',    icon: People },
-  { path: '/payments',      label: 'Paiements',       icon: Payment },
-  { path: '/subscriptions', label: 'Abonnements',     icon: Subscriptions },
-  { path: '/categories',    label: 'Catégories',      icon: Category },
-  { path: '/brands',        label: 'Marques',         icon: BrandingWatermark },
-  { path: '/reviews',       label: 'Avis',            icon: Reviews },
-  { path: '/promotions',    label: 'Promotions',      icon: FlashOn },
-  { path: '/ads',           label: 'Publicités',      icon: Campaign },
-  { path: '/settings',      label: 'Paramètres',      icon: Settings },
+// Roles that each menu item is visible to (empty = all staff roles allowed)
+type MenuItem = { path: string; label: string; icon: any; exact?: boolean; roles?: string[] };
+
+const ALL_STAFF = ['ADMIN','SUPER_ADMIN','MODERATOR','CUSTOMER_CARE','PARTNER','ACCOUNTANT'];
+const ADMIN_ONLY = ['ADMIN','SUPER_ADMIN'];
+const ROLE_COLORS: Record<string, string> = {
+  ADMIN: '#EF4444', SUPER_ADMIN: '#7C3AED', MODERATOR: '#F59E0B',
+  CUSTOMER_CARE: '#3B82F6', PARTNER: '#10B981', ACCOUNTANT: '#F97316',
+};
+
+const MENU: MenuItem[] = [
+  { path: '/',              label: 'Tableau de bord',  icon: Dashboard,          exact: true, roles: [...ADMIN_ONLY, 'MODERATOR', 'CUSTOMER_CARE', 'ACCOUNTANT'] },
+  { path: '/partner',       label: 'Mon tableau de bord', icon: Handshake,       exact: true, roles: ['PARTNER'] },
+  { path: '/sellers',       label: 'Vendeurs',         icon: Store,              roles: [...ADMIN_ONLY, 'MODERATOR'] },
+  { path: '/products',      label: 'Produits',         icon: Inventory,          roles: [...ADMIN_ONLY, 'MODERATOR'] },
+  { path: '/orders',        label: 'Commandes',        icon: ShoppingBag,        roles: [...ADMIN_ONLY, 'MODERATOR', 'CUSTOMER_CARE'] },
+  { path: '/users',         label: 'Utilisateurs',     icon: People,             roles: ADMIN_ONLY },
+  { path: '/staff',         label: 'Équipe',           icon: AdminPanelSettings, roles: ADMIN_ONLY },
+  { path: '/payments',      label: 'Paiements',        icon: Payment,            roles: [...ADMIN_ONLY, 'ACCOUNTANT'] },
+  { path: '/subscriptions', label: 'Abonnements',      icon: Subscriptions,      roles: [...ADMIN_ONLY, 'ACCOUNTANT'] },
+  { path: '/categories',    label: 'Catégories',       icon: Category,           roles: ADMIN_ONLY },
+  { path: '/brands',        label: 'Marques',          icon: BrandingWatermark,  roles: ADMIN_ONLY },
+  { path: '/reviews',       label: 'Avis',             icon: Reviews,            roles: [...ADMIN_ONLY, 'MODERATOR', 'CUSTOMER_CARE'] },
+  { path: '/flash-sale',    label: 'Ventes Flash',     icon: Timer,              roles: [...ADMIN_ONLY, 'MODERATOR'] },
+  { path: '/promotions',    label: 'Promotions',       icon: FlashOn,            roles: [...ADMIN_ONLY, 'PARTNER'] },
+  { path: '/ads',           label: 'Publicités',       icon: Campaign,           roles: [...ADMIN_ONLY, 'PARTNER'] },
+  { path: '/tags',          label: 'Tags',             icon: Tag,                roles: ADMIN_ONLY },
+  { path: '/labels',        label: 'Labels',           icon: Label,              roles: ADMIN_ONLY },
+  { path: '/banners',       label: 'Pubs Homepage',    icon: ViewCarousel,       roles: [...ADMIN_ONLY, 'PARTNER'] },
+  { path: '/boutique',      label: 'Boutique DealPam', icon: Storefront,         roles: [...ADMIN_ONLY, 'PARTNER'] },
+  { path: '/chat',          label: 'Support Chat',     icon: SupportAgent,       roles: [...ADMIN_ONLY, 'MODERATOR', 'CUSTOMER_CARE'] },
+  { path: '/settings',      label: 'Paramètres',       icon: Settings,           roles: ADMIN_ONLY },
 ];
 
 const W = 248;
@@ -52,7 +70,7 @@ export default function AdminLayout() {
 
       {/* Nav */}
       <List sx={{ flex: 1, px: 1.5, py: 2, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 0.4 }}>
-        {MENU.map(({ path, label, icon: Icon, exact }) => {
+        {MENU.filter(item => !item.roles || item.roles.includes(admin?.role ?? '')).map(({ path, label, icon: Icon, exact }) => {
           const active = isActive(path, exact);
           return (
             <Tooltip title={label} placement="right" key={path} disableHoverListener>
@@ -84,7 +102,7 @@ export default function AdminLayout() {
           </Avatar>
           <Box sx={{ overflow: 'hidden', flex: 1 }}>
             <Typography variant="body2" color="white" fontWeight={600} noWrap fontSize={13}>{admin?.firstName} {admin?.lastName}</Typography>
-            <Chip label={admin?.role} size="small" sx={{ height: 16, fontSize: 9, bgcolor: alpha('#FF9900', 0.3), color: '#FF9900', mt: 0.3 }} />
+            <Chip label={admin?.role?.replace('_', ' ')} size="small" sx={{ height: 16, fontSize: 9, bgcolor: alpha(ROLE_COLORS[admin?.role ?? ''] || '#FF9900', 0.25), color: ROLE_COLORS[admin?.role ?? ''] || '#FF9900', mt: 0.3 }} />
           </Box>
         </Box>
         <ListItem onClick={() => { logout(); navigate('/login'); }}

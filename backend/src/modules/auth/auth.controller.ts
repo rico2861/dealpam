@@ -1,7 +1,9 @@
-import { Controller, Post, Body, HttpCode, Req, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, Req, UseGuards, Get, Query, BadRequestException, UnauthorizedException } from '@nestjs/common';
+import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
+import { CurrentUser } from '../../shared/decorators/current-user.decorator';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
-import { IsEmail, IsString, MinLength, MaxLength } from 'class-validator';
+import { Throttle } from '@nestjs/throttler';
+import { IsEmail, IsString, MinLength, MaxLength, Matches } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
@@ -13,12 +15,18 @@ class ForgotPasswordDto {
 
 class ResetPasswordDto {
   @ApiProperty() @IsString() @MinLength(32) @MaxLength(128) token: string;
-  @ApiProperty() @IsString() @MinLength(8) @MaxLength(128) password: string;
+  @ApiProperty()
+  @IsString()
+  @MinLength(8, { message: 'Mot de passe trop court (min 8 caractères)' })
+  @MaxLength(128)
+  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()\-_=+\[\]{}|;:,.<>?/\\~`"'])/, {
+    message: "Le mot de passe doit contenir une minuscule, une majuscule, un chiffre et un caractère spécial",
+  })
+  password: string;
 }
 
 @ApiTags('Auth')
 @Controller('auth')
-@UseGuards(ThrottlerGuard)
 export class AuthController {
   constructor(private authService: AuthService) {}
 
@@ -64,11 +72,38 @@ export class AuthController {
     return this.authService.forgotPassword(dto.email);
   }
 
+  @Post('verify-reset-code')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Vérifier le code OTP de réinitialisation (6 chiffres)' })
+  @Throttle({ default: { limit: 10, ttl: 300000 } })
+  verifyResetCode(@Body('email') email: string, @Body('code') code: string) {
+    if (!email || !code) throw new BadRequestException('email et code requis');
+    return this.authService.verifyResetCode(email, code);
+  }
+
   @Post('reset-password')
   @HttpCode(200)
   @ApiOperation({ summary: 'Réinitialiser le mot de passe avec un token' })
   @Throttle({ default: { limit: 5, ttl: 300000 } })
   resetPassword(@Body() dto: ResetPasswordDto) {
     return this.authService.resetPassword(dto.token, dto.password);
+  }
+
+  // Forced password change — called right after login if mustChangePassword is true
+  @Post('change-password-forced')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(200)
+  changePasswordForced(@CurrentUser() u: any, @Body('newPassword') newPassword: string) {
+    return this.authService.changePasswordForced(u.id, newPassword);
+  }
+
+  // Rate-limited: 30 checks per minute per IP — prevents email enumeration abuse
+  @Get('check-availability')
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
+  checkAvailability(
+    @Query('email') email?: string,
+    @Query('username') username?: string,
+  ) {
+    return this.authService.checkAvailability(email, username);
   }
 }

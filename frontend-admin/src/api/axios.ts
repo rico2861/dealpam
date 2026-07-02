@@ -14,8 +14,11 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (res) => res,
   (error) => {
-    if (error.response?.status === 401) {
+    const status = error.response?.status;
+    const msg: string = error.response?.data?.message || '';
+    if (status === 401) {
       localStorage.removeItem('admin_token');
+      if (msg) sessionStorage.setItem('logout_reason', msg);
       window.location.href = '/login';
     }
     return Promise.reject(error);

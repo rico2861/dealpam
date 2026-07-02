@@ -13,9 +13,26 @@ import { OrdersService } from './orders.service';
 export class OrdersController {
   constructor(private os: OrdersService) {}
 
-  @Post() create(@CurrentUser() u: any, @Body() b: any) { return this.os.create(u.id, b.addressId, b.notes); }
+  @Post() create(@CurrentUser() u: any, @Body() b: any) {
+    return this.os.create(u.id, b);
+  }
   @Get('me') getMyOrders(@CurrentUser() u: any, @Query('page') p: number) { return this.os.findMyOrders(u.id, p); }
   @Get('me/:id') getOne(@CurrentUser() u: any, @Param('id') id: string) { return this.os.findOne(id, u.id); }
+
+  @Post('me/:id/payment-tx')
+  submitPaymentTx(@CurrentUser() u: any, @Param('id') id: string, @Body() b: any) {
+    return this.os.submitPaymentTransaction(id, u.id, b.txRef, b.method);
+  }
+
+  @Get('admin/pending-payments')
+  @UseGuards(RolesGuard) @Roles('ADMIN', 'SUPER_ADMIN')
+  getPendingPayments(@Query('page') p: number) { return this.os.getPendingPayments(p); }
+
+  @Patch('admin/:id/payment-tx')
+  @UseGuards(RolesGuard) @Roles('ADMIN', 'SUPER_ADMIN')
+  reviewPaymentTx(@Param('id') id: string, @CurrentUser() u: any, @Body() b: any) {
+    return this.os.reviewPaymentTransaction(id, u.id, b.status, b.note);
+  }
 
   @Get('seller') @UseGuards(RolesGuard) @Roles('SELLER')
   getSellerOrders(@CurrentUser() u: any, @Query('page') p: number) { return this.os.findSellerOrders(u.id, p); }

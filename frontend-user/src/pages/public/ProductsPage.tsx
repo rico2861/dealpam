@@ -12,6 +12,7 @@ import {
 } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
 import api from '../../api/axios';
+import { useLocationStore } from '../../store/location.store';
 
 const ORANGE = '#FF9900';
 const HAITI_DEPTS = [
@@ -22,23 +23,18 @@ const HAITI_DEPTS = [
 // ─── PREMIUM PRODUCT CARD ─────────────────────────────────────────────────────
 
 function ProductCard({ p }: { p: any }) {
-  const [hovered, setHovered] = useState(false);
   const isOnSale = p.salePrice && Number(p.salePrice) < Number(p.price);
   const discount = isOnSale ? Math.round((1 - Number(p.salePrice) / Number(p.price)) * 100) : 0;
-  const img1 = p.images?.[0]?.urlMedium || p.images?.[0]?.urlFull;
-  const img2 = p.images?.[1]?.urlMedium || p.images?.[1]?.urlFull || img1;
-  const displayImg = hovered && img2 ? img2 : img1;
+  const displayImg = p.images?.[0]?.urlThumb || p.images?.[0]?.urlMedium || p.images?.[0]?.url || '';
 
   return (
-    <Card
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      sx={{
-        height: '100%', display: 'flex', flexDirection: 'column', position: 'relative',
-        border: '1px solid #E8E8E8', boxShadow: 'none', borderRadius: 2,
-        transition: 'all 0.22s',
-        ...(hovered && { transform: 'translateY(-4px)', boxShadow: '0 12px 40px rgba(0,0,0,0.12)', borderColor: ORANGE }),
-      }}>
+    <Card sx={{
+      height: '100%', display: 'flex', flexDirection: 'column', position: 'relative',
+      border: '1px solid #EBEBEB', boxShadow: 'none', borderRadius: 2,
+      transition: 'box-shadow 0.22s, transform 0.22s',
+      '&:hover': { transform: 'translateY(-3px)', boxShadow: '0 8px 28px rgba(0,0,0,0.11)', borderColor: ORANGE },
+      '&:hover .prod-img': { transform: 'scale(1.04)' },
+    }}>
 
       {/* Badges top-left */}
       <Box sx={{ position: 'absolute', top: 8, left: 8, zIndex: 2, display: 'flex', flexDirection: 'column', gap: 0.4 }}>
@@ -56,8 +52,7 @@ function ProductCard({ p }: { p: any }) {
         )}
       </Box>
 
-      {/* Verified badge top-right — shows on hover */}
-      {(p.store?.isVerified || hovered) && p.store?.isVerified && (
+      {p.store?.isVerified && (
         <Box sx={{ position: 'absolute', top: 8, right: 8, zIndex: 2 }}>
           <Tooltip title="Vendeur vérifié">
             <Box sx={{ bgcolor: 'white', borderRadius: '50%', width: 26, height: 26,
@@ -72,13 +67,17 @@ function ProductCard({ p }: { p: any }) {
       <Box component={Link} to={`/products/${p.slug}`} sx={{ textDecoration: 'none', flex: 1, display: 'flex', flexDirection: 'column' }}>
         {/* Image */}
         <Box sx={{ overflow: 'hidden', height: { xs: 170, sm: 210 }, bgcolor: '#F8F8F8', flexShrink: 0 }}>
-          <Box component="img"
+          <img
             src={displayImg || 'https://placehold.co/400x300/F5F5F5/AAAAAA?text=Photo'}
             alt={p.name}
-            sx={{ width: '100%', height: '100%', objectFit: 'cover',
-              transition: 'opacity 0.3s, transform 0.4s',
-              opacity: hovered ? 0.97 : 1,
-              transform: hovered ? 'scale(1.04)' : 'scale(1)' }} />
+            loading="lazy"
+            decoding="async"
+            fetchPriority="low"
+            className="prod-img"
+            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block',
+              transition: 'transform 0.38s cubic-bezier(0.25,0.46,0.45,0.94)',
+              willChange: 'transform', backfaceVisibility: 'hidden',
+            }} />
         </Box>
 
         {/* Content */}
@@ -88,7 +87,7 @@ function ProductCard({ p }: { p: any }) {
             <Typography fontSize={10.5} color="#888" fontWeight={500} noWrap sx={{ flex: 1 }}>
               {p.store?.name}
             </Typography>
-            {p.store?.isVerified && !hovered && (
+            {p.store?.isVerified && (
               <Verified sx={{ fontSize: 11, color: '#3B82F6', flexShrink: 0 }} />
             )}
           </Box>
@@ -126,23 +125,6 @@ function ProductCard({ p }: { p: any }) {
             </Box>
           )}
 
-          {/* Hover extra info */}
-          {hovered && (
-            <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mt: 0.8, pt: 0.8, borderTop: '1px solid #F0F0F0' }}>
-              {p.hasDelivery && (
-                <Chip icon={<LocalShipping sx={{ fontSize: 11 }} />} label="Livraison" size="small"
-                  sx={{ fontSize: 9.5, height: 20, bgcolor: '#ECFDF5', color: '#059669', fontWeight: 600 }} />
-              )}
-              {p.stock > 0 && (
-                <Chip icon={<Inventory sx={{ fontSize: 11 }} />} label="En stock" size="small"
-                  sx={{ fontSize: 9.5, height: 20, bgcolor: '#EFF6FF', color: '#3B82F6', fontWeight: 600 }} />
-              )}
-              {isOnSale && (
-                <Chip icon={<FlashOn sx={{ fontSize: 11 }} />} label={`-${discount}%`} size="small"
-                  sx={{ fontSize: 9.5, height: 20, bgcolor: '#FFF1F2', color: '#CC0C39', fontWeight: 700 }} />
-              )}
-            </Box>
-          )}
         </Box>
       </Box>
     </Card>
@@ -236,7 +218,9 @@ function FilterPanel({ fs, setFs, onClose }: { fs: FilterState; setFs: (v: Filte
   ].filter(Boolean).length;
 
   const reset = () => setFs({ category: '', priceRange: [0, 50000], minRating: 0, verified: false, delivery: false, inStock: false, onSale: false, dept: '', proximity: false });
-  const city = localStorage.getItem('dealpam_city') || '';
+  const { location: locData } = useLocationStore();
+  const userDept = locData?.department || localStorage.getItem('dealpam_dept') || localStorage.getItem('dealpam_city') || '';
+  const userCity = locData?.city || '';
 
   return (
     <Box sx={{ width: { xs: 290, md: '100%' }, bgcolor: 'white', borderRadius: { md: 2 },
@@ -279,7 +263,7 @@ function FilterPanel({ fs, setFs, onClose }: { fs: FilterState; setFs: (v: Filte
             sx={{ fontSize: 11, bgcolor: alpha(ORANGE, 0.1), color: ORANGE, fontWeight: 600 }} />}
           {fs.dept && <Chip label={fs.dept} size="small" onDelete={() => setFs({ ...fs, dept: '' })}
             sx={{ fontSize: 11, bgcolor: '#EEF2FF', color: '#6366F1', fontWeight: 600 }} />}
-          {fs.proximity && city && <Chip label={`📍 ${city}`} size="small" onDelete={() => setFs({ ...fs, proximity: false })}
+          {fs.proximity && userDept && <Chip label={`📍 ${userCity || userDept}`} size="small" onDelete={() => setFs({ ...fs, proximity: false })}
             sx={{ fontSize: 11, bgcolor: '#ECFDF5', color: '#059669', fontWeight: 600 }} />}
           {(fs.priceRange[0] > 0 || fs.priceRange[1] < 50000) && (
             <Chip label={`${fs.priceRange[0].toLocaleString()}–${fs.priceRange[1].toLocaleString()} HTG`}
@@ -298,7 +282,7 @@ function FilterPanel({ fs, setFs, onClose }: { fs: FilterState; setFs: (v: Filte
       )}
 
       {/* ── PROXIMITÉ ── */}
-      {city && (
+      {userDept && (
         <FilterSection title="Proximité" count={fs.proximity ? 1 : 0}>
           <Box sx={{ px: 1.5 }}>
             <Box onClick={() => setFs({ ...fs, proximity: !fs.proximity, dept: fs.proximity ? fs.dept : '' })}
@@ -311,7 +295,7 @@ function FilterPanel({ fs, setFs, onClose }: { fs: FilterState; setFs: (v: Filte
                 <Typography fontSize={12.5} fontWeight={700} color={fs.proximity ? '#059669' : '#333'}>
                   À proximité de moi
                 </Typography>
-                <Typography fontSize={10.5} color="#888">{city}</Typography>
+                <Typography fontSize={10.5} color="#888">{userCity || userDept}</Typography>
               </Box>
               {fs.proximity && <Check sx={{ fontSize: 14, color: '#059669' }} />}
             </Box>
@@ -424,11 +408,11 @@ const DEFAULT_FS: FilterState = {
 };
 
 export default function ProductsPage() {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const [fs, setFs] = useState<FilterState>({
     ...DEFAULT_FS,
     category: searchParams.get('category') || '',
-    dept: searchParams.get('department') || localStorage.getItem('dealpam_city') || '',
+    dept: searchParams.get('department') || '',
     onSale: searchParams.get('sponsored') === 'true',
   });
   const [sort, setSort] = useState(searchParams.get('sort') || 'latest');
@@ -436,33 +420,57 @@ export default function ProductsPage() {
   const [mobileFilter, setMobileFilter] = useState(false);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const { location: locData } = useLocationStore();
+  const userDept = locData?.department || localStorage.getItem('dealpam_dept') || localStorage.getItem('dealpam_city') || '';
+  const userCity = locData?.city || '';
 
-  // Sync searchParams → fs on first load
+  // Sync searchParams → fs quand l'URL change
   useEffect(() => {
     const cat = searchParams.get('category') || '';
     const dept = searchParams.get('department') || '';
-    if (cat !== fs.category || dept !== fs.dept) setFs(f => ({ ...f, category: cat, dept }));
-  }, []);
+    setFs(f => {
+      if (f.category === cat && f.dept === dept) return f;
+      return { ...f, category: cat, dept };
+    });
+    setPage(1);
+  }, [searchParams]);
 
-  const params: any = {
+  // Département effectif : filtre manuel OU proximité — jamais forcé sans action explicite
+  const effectiveDept = fs.dept || (fs.proximity ? userDept : '');
+  const effectiveCity = (!fs.dept && fs.proximity) ? userCity : '';
+
+  const params: Record<string, string | number | boolean> = {
     sort, page, limit: 24,
     ...(fs.category && { category: fs.category }),
     ...(fs.priceRange[0] > 0 && { minPrice: fs.priceRange[0] }),
     ...(fs.priceRange[1] < 50000 && { maxPrice: fs.priceRange[1] }),
     ...(fs.minRating > 0 && { minRating: fs.minRating }),
-    ...(fs.verified && { verified: 'true' }),
-    ...(fs.delivery && { inStock: 'true' }),  // reuse inStock for now
     ...(fs.inStock && { inStock: 'true' }),
-    ...(fs.onSale && { sponsored: 'true' }),
-    ...((fs.proximity || fs.dept) && { department: fs.dept || localStorage.getItem('dealpam_city') || '' }),
+    ...(fs.onSale && { hasSale: 'true' }),
+    ...(fs.verified && { storeVerified: 'true' }),
+    ...(effectiveDept && { department: effectiveDept }),
+    ...(effectiveCity && { city: effectiveCity }),
   };
-  // Remove empty
-  Object.keys(params).forEach(k => params[k] === '' && delete params[k]);
+  Object.keys(params).forEach(k => { if (params[k] === '') delete params[k]; });
 
   const { data, isLoading } = useQuery({
     queryKey: ['products', params],
     queryFn: () => api.get('/products', { params }).then(r => r.data).catch(() => ({ data: [], total: 0, totalPages: 0 })),
   });
+
+  // Fetch categories for horizontal chip bar
+  const { data: categoriesData } = useQuery({
+    queryKey: ['categories'],
+    queryFn: () => api.get('/categories').then(r => r.data).catch(() => []),
+  });
+  const catList: Array<{ id?: string; slug: string; name: string }> =
+    Array.isArray(categoriesData) && categoriesData.length > 0 ? categoriesData : [
+      { slug: 'mode', name: 'Mode' }, { slug: 'electronique', name: 'Électronique' },
+      { slug: 'maison', name: 'Maison' }, { slug: 'beaute', name: 'Beauté' },
+      { slug: 'bijoux', name: 'Bijoux' }, { slug: 'sport', name: 'Sport' },
+      { slug: 'vehicules', name: 'Véhicules' }, { slug: 'chaussures', name: 'Chaussures' },
+      { slug: 'sacs', name: 'Sacs' }, { slug: 'jeux', name: 'Jeux & Tech' },
+    ];
 
   const activeCount = [
     fs.category, fs.priceRange[0] > 0 || fs.priceRange[1] < 50000,
@@ -470,122 +478,270 @@ export default function ProductsPage() {
     fs.dept || fs.proximity,
   ].filter(Boolean).length;
 
-  const city = localStorage.getItem('dealpam_city') || '';
+  // Active filter chips (excluding category, shown as pills above)
+  const activeFilterChips: Array<{ label: string; onDelete: () => void }> = [
+    ...(fs.dept ? [{ label: fs.dept, onDelete: () => setFs(f => ({ ...f, dept: '' })) }] : []),
+    ...(fs.proximity && userDept ? [{ label: userCity || userDept, onDelete: () => setFs(f => ({ ...f, proximity: false })) }] : []),
+    ...((fs.priceRange[0] > 0 || fs.priceRange[1] < 50000) ? [{ label: `${fs.priceRange[0].toLocaleString()}–${fs.priceRange[1].toLocaleString()} HTG`, onDelete: () => setFs(f => ({ ...f, priceRange: [0, 50000] })) }] : []),
+    ...(fs.verified ? [{ label: 'Vérifié ✓', onDelete: () => setFs(f => ({ ...f, verified: false })) }] : []),
+    ...(fs.delivery ? [{ label: 'Livraison', onDelete: () => setFs(f => ({ ...f, delivery: false })) }] : []),
+    ...(fs.onSale ? [{ label: 'Promotion 🔥', onDelete: () => setFs(f => ({ ...f, onSale: false })) }] : []),
+    ...(fs.inStock ? [{ label: 'En stock', onDelete: () => setFs(f => ({ ...f, inStock: false })) }] : []),
+    ...(fs.minRating > 0 ? [{ label: `${fs.minRating}★ & +`, onDelete: () => setFs(f => ({ ...f, minRating: 0 })) }] : []),
+  ];
 
   return (
-    <Box sx={{ bgcolor: '#F1F5F9', minHeight: '100vh' }}>
-      {/* Full width — no Container wrapper at root level */}
-      <Box sx={{ maxWidth: '100%', px: { xs: 1.5, md: 2.5 }, py: { xs: 1.5, md: 2.5 } }}>
+    <Box sx={{ bgcolor: '#F4F5F7', minHeight: '100vh' }}>
 
-        {/* ── TOP BAR ── */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          mb: 2, flexWrap: 'wrap', gap: 1.5 }}>
-          <Box>
-            <Typography variant="h5" fontWeight={900} sx={{ letterSpacing: '-0.5px', fontSize: { xs: 18, md: 22 } }}>
-              Produits
-              {fs.category && (
-                <Typography component="span" variant="h5" color="primary.main" fontWeight={900}
-                  sx={{ fontSize: 'inherit' }}> · {fs.category}</Typography>
-              )}
+      {/* ── TOP SECTION (white card, full width) ── */}
+      <Box sx={{
+        bgcolor: 'white',
+        boxShadow: '0 2px 12px rgba(0,0,0,0.07)',
+        borderBottom: '1px solid #EBEBEB',
+      }}>
+        <Box sx={{ maxWidth: '100%', px: { xs: 2, md: 3 }, pt: { xs: 1.5, md: 2 }, pb: 0 }}>
+
+          {/* Breadcrumb */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
+            <Typography
+              component={Link} to="/"
+              sx={{ fontSize: 12, color: '#9CA3AF', textDecoration: 'none', '&:hover': { color: ORANGE } }}>
+              Accueil
             </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-              {data?.total > 0 && (
-                <Typography fontSize={12} color="#666">
-                  {data.total.toLocaleString()} résultats
+            <Typography fontSize={12} color="#D1D5DB">›</Typography>
+            <Typography fontSize={12} color="#9CA3AF">Produits</Typography>
+            {fs.category && (
+              <>
+                <Typography fontSize={12} color="#D1D5DB">›</Typography>
+                <Typography fontSize={12} color={ORANGE} fontWeight={600} sx={{ textTransform: 'capitalize' }}>
+                  {fs.category}
                 </Typography>
+              </>
+            )}
+          </Box>
+
+          {/* Title row */}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 2, mb: 1.5 }}>
+            <Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+                <Typography fontWeight={900} sx={{ fontSize: { xs: 20, md: 26 }, letterSpacing: '-0.5px', color: '#111827' }}>
+                  {fs.category
+                    ? fs.category.charAt(0).toUpperCase() + fs.category.slice(1)
+                    : 'Tous les produits'}
+                </Typography>
+                {data?.total > 0 && (
+                  <Box sx={{
+                    px: 1.2, py: 0.3, borderRadius: '20px', flexShrink: 0,
+                    bgcolor: alpha(ORANGE, 0.1), border: `1px solid ${alpha(ORANGE, 0.25)}`,
+                  }}>
+                    <Typography fontSize={12} fontWeight={700} color={ORANGE} noWrap>
+                      {data.total.toLocaleString()} résultats
+                    </Typography>
+                  </Box>
+                )}
+                {(fs.dept || fs.proximity) && (fs.dept || userDept) && (
+                  <Box sx={{
+                    display: 'flex', alignItems: 'center', gap: 0.4,
+                    px: 1.2, py: 0.3, borderRadius: '20px',
+                    bgcolor: '#ECFDF5', border: '1px solid #A7F3D0',
+                  }}>
+                    <FmdGood sx={{ fontSize: 13, color: '#059669' }} />
+                    <Typography fontSize={12} fontWeight={700} color="#059669">{fs.dept || userCity || userDept}</Typography>
+                  </Box>
+                )}
+                {searchParams.get('q') && (
+                  <Typography fontSize={13} color="#6B7280">
+                    pour &laquo; {searchParams.get('q')} &raquo;
+                  </Typography>
+                )}
+              </Box>
+            </Box>
+
+            {/* Sort + mobile filter */}
+            <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexShrink: 0 }}>
+              {isMobile && (
+                <Button
+                  variant="outlined" startIcon={<FilterList />}
+                  onClick={() => setMobileFilter(true)} size="small"
+                  sx={{
+                    borderRadius: '20px', fontSize: 12, fontWeight: 700, px: 1.5,
+                    borderColor: activeCount > 0 ? ORANGE : 'rgba(0,0,0,0.18)',
+                    color: activeCount > 0 ? ORANGE : '#374151',
+                    bgcolor: activeCount > 0 ? alpha(ORANGE, 0.06) : 'transparent',
+                  }}>
+                  Filtres{activeCount > 0 ? ` (${activeCount})` : ''}
+                </Button>
               )}
-              {(fs.dept || fs.proximity) && city && (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4 }}>
-                  <FmdGood sx={{ fontSize: 13, color: '#059669' }} />
-                  <Typography fontSize={12} color="#059669" fontWeight={600}>{city}</Typography>
-                </Box>
-              )}
-              {searchParams.get('q') && (
-                <Typography fontSize={12} color="#888">pour « {searchParams.get('q')} »</Typography>
-              )}
+              <FormControl size="small" sx={{ minWidth: 155 }}>
+                <InputLabel sx={{ fontSize: 12.5 }}>Trier par</InputLabel>
+                <Select value={sort} label="Trier par"
+                  onChange={e => { setSort(e.target.value); setPage(1); }}
+                  sx={{ borderRadius: '20px', bgcolor: '#FAFAFA', fontSize: 13 }}>
+                  <MenuItem value="latest">Plus récents</MenuItem>
+                  <MenuItem value="popular">Populaires</MenuItem>
+                  <MenuItem value="price_asc">Prix croissant</MenuItem>
+                  <MenuItem value="price_desc">Prix décroissant</MenuItem>
+                  <MenuItem value="rating">Mieux notés</MenuItem>
+                  <MenuItem value="discount">Meilleures promos</MenuItem>
+                  <MenuItem value="views">Les plus vus</MenuItem>
+                  <MenuItem value="newest">Nouveautés</MenuItem>
+                </Select>
+              </FormControl>
             </Box>
           </Box>
 
-          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-            {isMobile && (
-              <Button variant="outlined" startIcon={<FilterList />} onClick={() => setMobileFilter(true)}
-                size="small" sx={{ borderRadius: 2, fontSize: 12, fontWeight: 600,
-                  borderColor: activeCount > 0 ? ORANGE : 'rgba(0,0,0,0.15)',
-                  color: activeCount > 0 ? ORANGE : 'text.primary' }}>
-                Filtres{activeCount > 0 ? ` (${activeCount})` : ''}
-              </Button>
-            )}
-            <FormControl size="small" sx={{ minWidth: 160 }}>
-              <InputLabel sx={{ fontSize: 12.5 }}>Trier par</InputLabel>
-              <Select value={sort} label="Trier par"
-                onChange={e => { setSort(e.target.value); setPage(1); }}
-                sx={{ borderRadius: 2, bgcolor: 'white', fontSize: 13 }}>
-                <MenuItem value="latest">Plus récents</MenuItem>
-                <MenuItem value="popular">Populaires</MenuItem>
-                <MenuItem value="price_asc">Prix croissant</MenuItem>
-                <MenuItem value="price_desc">Prix décroissant</MenuItem>
-                <MenuItem value="rating">Mieux notés</MenuItem>
-              </Select>
-            </FormControl>
+          {/* ── Horizontal category chips ── */}
+          <Box sx={{
+            display: 'flex', gap: 1, overflowX: 'auto', pb: 1.5,
+            scrollbarWidth: 'none', '&::-webkit-scrollbar': { display: 'none' },
+            borderTop: '1px solid #F3F4F6', pt: 1.5,
+          }}>
+            <Box onClick={() => { setFs(f => ({ ...f, category: '' })); setPage(1); }}
+              sx={{
+                flexShrink: 0, px: 1.8, py: 0.55, borderRadius: '20px', cursor: 'pointer',
+                border: `1.5px solid ${!fs.category ? ORANGE : '#E5E7EB'}`,
+                bgcolor: !fs.category ? ORANGE : 'white',
+                color: !fs.category ? 'white' : '#374151',
+                fontWeight: 700, fontSize: 13, transition: 'all 0.18s',
+                '&:hover': { borderColor: ORANGE, color: !fs.category ? 'white' : ORANGE },
+              }}>
+              Tous
+            </Box>
+            {catList.map(c => {
+              const active = fs.category === c.slug;
+              return (
+                <Box key={c.id || c.slug}
+                  onClick={() => { setFs(f => ({ ...f, category: active ? '' : c.slug })); setPage(1); }}
+                  sx={{
+                    flexShrink: 0, px: 1.8, py: 0.55, borderRadius: '20px', cursor: 'pointer',
+                    border: `1.5px solid ${active ? ORANGE : '#E5E7EB'}`,
+                    bgcolor: active ? ORANGE : 'white',
+                    color: active ? 'white' : '#374151',
+                    fontWeight: active ? 700 : 500, fontSize: 13, transition: 'all 0.18s',
+                    '&:hover': { borderColor: ORANGE, color: active ? 'white' : ORANGE },
+                  }}>
+                  {c.name}
+                </Box>
+              );
+            })}
           </Box>
-        </Box>
 
-        {/* ── LAYOUT ── */}
-        <Grid container spacing={2} sx={{ alignItems: 'flex-start' }}>
-
-          {/* Sidebar — always visible on desktop */}
-          {!isMobile && (
-            <Grid item md={2.8} lg={2.4} xl={2}>
-              <Box sx={{ position: 'sticky', top: 80 }}>
-                <FilterPanel fs={fs} setFs={v => { setFs(v); setPage(1); }} />
-              </Box>
-            </Grid>
+          {/* ── Active filter chips ── */}
+          {activeFilterChips.length > 0 && (
+            <Box sx={{
+              display: 'flex', gap: 0.8, flexWrap: 'wrap',
+              borderTop: '1px solid #F3F4F6', pt: 1, pb: 1.5,
+            }}>
+              {activeFilterChips.map((chip, i) => (
+                <Chip
+                  key={i} label={chip.label} size="small"
+                  onDelete={chip.onDelete}
+                  sx={{
+                    fontSize: 12, fontWeight: 600, borderRadius: '20px',
+                    bgcolor: '#F3F4F6', color: '#374151',
+                    '& .MuiChip-deleteIcon': { color: '#9CA3AF', '&:hover': { color: '#EF4444' } },
+                  }}
+                />
+              ))}
+              <Chip
+                label="Tout effacer" size="small"
+                onClick={() => { setFs(DEFAULT_FS); setPage(1); }}
+                sx={{
+                  fontSize: 12, fontWeight: 700, borderRadius: '20px',
+                  bgcolor: '#FFF1F2', color: '#EF4444', cursor: 'pointer',
+                  '&:hover': { bgcolor: '#FFE4E6' },
+                }}
+              />
+            </Box>
           )}
+        </Box>
+      </Box>
 
-          {/* Products grid */}
-          <Grid item xs={12} md={9.2} lg={9.6} xl={10}>
-            {isLoading ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}>
-                <CircularProgress sx={{ color: ORANGE }} />
+      {/* ── MAIN LAYOUT (sidebar + products) ── */}
+      <Box sx={{
+        display: 'flex', alignItems: 'flex-start', gap: 2,
+        px: { xs: 1.5, md: 2.5 }, py: 2.5,
+      }}>
+
+        {/* Sticky sidebar */}
+        {!isMobile && (
+          <Box sx={{ flexShrink: 0, width: 260, position: 'sticky', top: 80 }}>
+            <FilterPanel fs={fs} setFs={v => { setFs(v); setPage(1); }} />
+          </Box>
+        )}
+
+        {/* Products area */}
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          {isLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 14 }}>
+              <CircularProgress sx={{ color: ORANGE }} />
+            </Box>
+          ) : (data?.data || []).length === 0 ? (
+            <Box sx={{
+              textAlign: 'center', py: 12, bgcolor: 'white', borderRadius: 3,
+              border: '1px solid #E8E8E8', boxShadow: '0 1px 6px rgba(0,0,0,0.05)',
+            }}>
+              <Typography fontSize={60} lineHeight={1} mb={2}>🔍</Typography>
+              <Typography variant="h6" fontWeight={800} mb={0.8} color="#111827">
+                Aucun produit trouvé
+              </Typography>
+              <Typography variant="body2" color="#6B7280" mb={3} sx={{ maxWidth: 340, mx: 'auto' }}>
+                Aucun résultat pour ces critères. Essayez de modifier les filtres ou de changer de catégorie.
+              </Typography>
+              <Button
+                variant="contained" onClick={() => { setFs(DEFAULT_FS); setPage(1); }}
+                sx={{
+                  bgcolor: ORANGE, color: 'white', fontWeight: 700, borderRadius: '20px',
+                  px: 3, textTransform: 'none', '&:hover': { bgcolor: '#E68900' },
+                }}>
+                Réinitialiser les filtres
+              </Button>
+            </Box>
+          ) : (
+            <>
+              <Box sx={{
+                display: 'grid',
+                gap: { xs: '10px', sm: '12px', md: '14px' },
+                gridTemplateColumns: {
+                  xs: 'repeat(2, 1fr)',
+                  sm: 'repeat(3, 1fr)',
+                  md: 'repeat(3, 1fr)',
+                  lg: 'repeat(4, 1fr)',
+                  xl: 'repeat(5, 1fr)',
+                },
+              }}>
+                {(data?.data || []).map((p: any) => (
+                  <ProductCard key={p.id} p={p} />
+                ))}
               </Box>
-            ) : (data?.data || []).length === 0 ? (
-              <Box sx={{ textAlign: 'center', py: 10, bgcolor: 'white', borderRadius: 2,
-                border: '1px solid #E8E8E8' }}>
-                <Typography variant="h6" fontWeight={700} mb={1} color="#333">Aucun produit trouvé</Typography>
-                <Typography variant="body2" color="#888" mb={2}>Essayez d'autres filtres ou une autre zone.</Typography>
-                <Button variant="outlined" onClick={() => { setFs(DEFAULT_FS); setPage(1); }}
-                  sx={{ borderColor: ORANGE, color: ORANGE, borderRadius: 2 }}>
-                  Réinitialiser les filtres
-                </Button>
-              </Box>
-            ) : (
-              <>
-                <Grid container spacing={{ xs: 1.2, sm: 1.5, md: 2 }}>
-                  {(data?.data || []).map((p: any) => (
-                    <Grid item xs={6} sm={4} md={4} lg={3} xl={2.4} key={p.id}>
-                      <ProductCard p={p} />
-                    </Grid>
-                  ))}
-                </Grid>
-                {data?.totalPages > 1 && (
-                  <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-                    <Pagination count={data.totalPages} page={page}
-                      onChange={(_, v) => { setPage(v); window.scrollTo(0, 0); }}
-                      color="primary" shape="rounded"
-                      sx={{ '& .MuiPaginationItem-root': { fontWeight: 600, borderRadius: 1.5 } }} />
-                  </Box>
-                )}
-              </>
-            )}
-          </Grid>
-        </Grid>
+              {data?.totalPages > 1 && (
+                <Box sx={{ display: 'flex', justifyContent: 'center', mt: 5 }}>
+                  <Pagination count={data.totalPages} page={page}
+                    onChange={(_, v) => { setPage(v); window.scrollTo(0, 0); }}
+                    color="primary" shape="rounded"
+                    sx={{ '& .MuiPaginationItem-root': { fontWeight: 700, borderRadius: 1.5 } }} />
+                </Box>
+              )}
+            </>
+          )}
+        </Box>
       </Box>
 
       {/* Mobile filter drawer */}
       <Drawer anchor="left" open={mobileFilter} onClose={() => setMobileFilter(false)}
-        PaperProps={{ sx: { borderRadius: '0 16px 16px 0', maxWidth: 310 } }}>
-        <FilterPanel fs={fs} setFs={v => { setFs(v); setPage(1); }}
-          onClose={() => setMobileFilter(false)} />
+        PaperProps={{ sx: { borderRadius: '0 20px 20px 0', maxWidth: 320, display: 'flex', flexDirection: 'column' } }}>
+        <Box sx={{ flex: 1, overflowY: 'auto' }}>
+          <FilterPanel fs={fs} setFs={v => { setFs(v); setPage(1); }}
+            onClose={() => setMobileFilter(false)} />
+        </Box>
+        {/* Apply button pinned at bottom */}
+        <Box sx={{ p: 2, borderTop: '1px solid #F0F0F0', bgcolor: 'white', flexShrink: 0 }}>
+          <Button fullWidth variant="contained" onClick={() => setMobileFilter(false)}
+            sx={{ bgcolor: ORANGE, color: 'white', fontWeight: 800, fontSize: 14, borderRadius: '12px', py: 1.3,
+              '&:hover': { bgcolor: '#E68900' }, textTransform: 'none', boxShadow: `0 4px 14px rgba(255,153,0,0.4)` }}>
+            Voir les résultats{data?.total > 0 ? ` (${data.total.toLocaleString()})` : ''}
+          </Button>
+        </Box>
       </Drawer>
     </Box>
   );

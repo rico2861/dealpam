@@ -139,7 +139,7 @@ export class BadgesService {
       const store = await this.prisma.store.findUnique({ where: { id: storeId } });
       if (!store) return;
 
-      const storeSeller = await this.prisma.seller.findFirst({ where: { store: { id: storeId } } });
+      const storeSeller = await this.prisma.seller.findFirst({ where: { stores: { some: { id: storeId } } } });
       const complaintCount = storeSeller ? await this.prisma.complaint.count({
         where: { sellerId: storeSeller.id, status: { in: ['CONFIRMED', 'RESOLVED_AGAINST_SELLER'] } },
       }) : 0;
@@ -159,7 +159,7 @@ export class BadgesService {
 
       await this.prisma.store.update({
         where: { id: storeId },
-        data: { badges, reputationScore: score, lastBadgeUpdate: new Date() },
+        data: { badges: badges as any, reputationScore: score, lastBadgeUpdate: new Date() },
       });
 
       this.logger.log(`Store ${storeId} → badges=[${badges.join(',')}] score=${score}`);

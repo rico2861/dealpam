@@ -26,6 +26,23 @@ export class MoncashService {
   private _token: string | null = null;
   private _tokenExpiry = 0;
 
+  private static readonly FETCH_TIMEOUT_MS = 8000;
+
+  private async fetchWithTimeout(url: string, options: RequestInit): Promise<Response> {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), MoncashService.FETCH_TIMEOUT_MS);
+    try {
+      return await fetch(url, { ...options, signal: controller.signal });
+    } catch (err: any) {
+      if (err?.name === 'AbortError') {
+        throw new BadGatewayException('MonCash ne répond pas (timeout)');
+      }
+      throw err;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
   constructor(private config: ConfigService) {
     const mode = config.get<string>('MONCASH_MODE', 'sandbox');
     const isLive = mode === 'live';
@@ -48,7 +65,7 @@ export class MoncashService {
 
     const credentials = Buffer.from(`${this.clientId}:${this.clientSecret}`).toString('base64');
 
-    const res = await fetch(`${this.apiHost}/oauth/token`, {
+    const res = await this.fetchWithTimeout(`${this.apiHost}/oauth/token`, {
       method: 'POST',
       headers: {
         Authorization: `Basic ${credentials}`,
@@ -77,7 +94,7 @@ export class MoncashService {
   ): Promise<{ redirectUrl: string; paymentToken: string }> {
     const token = await this.getToken();
 
-    const res = await fetch(`${this.apiHost}/v1/CreatePayment`, {
+    const res = await this.fetchWithTimeout(`${this.apiHost}/v1/CreatePayment`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -104,7 +121,7 @@ export class MoncashService {
   async verifyByTransactionId(transactionId: string): Promise<MoncashPayment> {
     const token = await this.getToken();
 
-    const res = await fetch(`${this.apiHost}/v1/RetrieveTransactionPayment`, {
+    const res = await this.fetchWithTimeout(`${this.apiHost}/v1/RetrieveTransactionPayment`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -128,7 +145,7 @@ export class MoncashService {
   async verifyByOrderId(orderId: string): Promise<MoncashPayment> {
     const token = await this.getToken();
 
-    const res = await fetch(`${this.apiHost}/v1/RetrieveOrderPayment`, {
+    const res = await this.fetchWithTimeout(`${this.apiHost}/v1/RetrieveOrderPayment`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -161,7 +178,7 @@ export class MoncashService {
 
     const token = await this.getToken();
 
-    const res = await fetch(`${this.apiHost}/v1/Transfert`, {
+    const res = await this.fetchWithTimeout(`${this.apiHost}/v1/Transfert`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,

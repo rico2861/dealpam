@@ -7,11 +7,22 @@ import { MailService } from '../mail/mail.service';
 export class SubscriptionCron {
   private readonly logger = new Logger(SubscriptionCron.name);
 
+  private lastRunDate: string | null = null;
+
   constructor(private prisma: PrismaService, private mail: MailService) {}
 
   // Run every night at 2:00 AM
   @Cron(CronExpression.EVERY_DAY_AT_2AM)
   async handleExpiredSubscriptions() {
+    // Garde-fou anti-doublon : empêche un second déclenchement (redémarrage, appel manuel)
+    // le même jour calendaire de renvoyer les mêmes emails d'expiration/rappel.
+    const today = new Date().toISOString().slice(0, 10);
+    if (this.lastRunDate === today) {
+      this.logger.warn(`Subscription cron already ran today (${today}) — skipping duplicate run.`);
+      return;
+    }
+    this.lastRunDate = today;
+
     this.logger.log('Running subscription expiry check…');
 
     const now = new Date();
@@ -22,7 +33,7 @@ export class SubscriptionCron {
       include: {
         seller: {
           include: {
-            store: true,
+            stores: { take: 1, where: { isPrimary: true } },
             user: true,
           },
         },
@@ -39,15 +50,16 @@ export class SubscriptionCron {
         });
 
         // Suspend all published products of this store
-        if (sub.seller.store) {
+        const primaryStore = (sub.seller as any).stores?.[0];
+        if (primaryStore) {
           await this.prisma.product.updateMany({
-            where: { storeId: sub.seller.store.id, status: 'PUBLISHED' },
+            where: { storeId: primaryStore.id, status: 'PUBLISHED' },
             data: { status: 'SUSPENDED' },
           });
 
           // Deactivate store
           await this.prisma.store.update({
-            where: { id: sub.seller.store.id },
+            where: { id: primaryStore.id },
             data: { isActive: false },
           });
         }
@@ -110,7 +122,7 @@ export class SubscriptionCron {
 
   // When a new subscription is created/renewed — reactivate products
   async reactivateSeller(sellerId: string) {
-    const store = await this.prisma.store.findUnique({ where: { sellerId } });
+    const store = await this.prisma.store.findFirst({ where: { sellerId, isPrimary: true } });
     if (!store) return;
 
     await this.prisma.store.update({ where: { id: store.id }, data: { isActive: true } });

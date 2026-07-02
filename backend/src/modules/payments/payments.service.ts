@@ -187,12 +187,26 @@ export class PaymentsService {
 
       // Activer l'abonnement
       if (payment.subscriptionId) {
-        await tx.sellerSubscription.update({
-          where: { id: payment.subscriptionId },
-          data:  { isActive: true },
+        const sub = await tx.sellerSubscription.update({
+          where:   { id: payment.subscriptionId },
+          data:    { isActive: true },
+          include: { seller: { include: { stores: { where: { isPrimary: true }, take: 1 } } }, plan: true },
         });
+        // Badge tier : le plan payant déclenche isVerified si le vendeur est APPROVED
+        if (sub.seller.status === 'APPROVED' && sub.seller.stores[0]) {
+          const hasDocs = await this.prisma.businessDocument.count({
+            where: { sellerId: sub.sellerId, isValid: true },
+          });
+          if (hasDocs > 0) {
+            await tx.store.update({
+              where: { id: sub.seller.stores[0].id },
+              data:  { isVerified: true },
+            });
+          }
+        }
         return {
           type:           'subscription',
+          tier:           sub.plan.tier,
           amount_htg:     Number(confirmedAmount),
           transaction_id: moncashTransactionId,
           payer:          mc.payer,

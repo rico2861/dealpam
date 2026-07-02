@@ -1,5 +1,7 @@
-import { Injectable, ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, ForbiddenException, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { WalletService } from '../wallet/wallet.service';
+import { MoncashService } from '../moncash/moncash.service';
 import { CreateCampaignDto } from './create-campaign.dto';
 
 // Cost per event (HTG)
@@ -9,28 +11,41 @@ const CPA = 25;   // coût par conversion
 
 @Injectable()
 export class AdsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private walletService: WalletService,
+    private moncash: MoncashService,
+  ) {}
 
   // ── SELLER ──────────────────────────────────────────────────────────────────
 
   async createCampaign(sellerId: string, dto: CreateCampaignDto) {
-    const seller = await this.prisma.seller.findUnique({ where: { id: sellerId }, include: { store: true } });
+    const seller = await this.prisma.seller.findUnique({ where: { id: sellerId }, include: { stores: true } });
     if (!seller || seller.status !== 'APPROVED') throw new ForbiddenException('Boutique non approuvée');
 
-    const product = await this.prisma.product.findFirst({ where: { id: dto.productId, store: { sellerId } } });
-    if (!product) throw new NotFoundException('Produit introuvable');
+    if (!dto.productId && !dto.storeId) throw new BadRequestException('Sélectionnez un produit ou une boutique à promouvoir');
+
+    if (dto.productId) {
+      const product = await this.prisma.product.findFirst({ where: { id: dto.productId, store: { sellerId } } });
+      if (!product) throw new NotFoundException('Produit introuvable');
+    }
+    if (dto.storeId) {
+      const store = await this.prisma.store.findFirst({ where: { id: dto.storeId, sellerId } });
+      if (!store) throw new NotFoundException('Boutique introuvable');
+    }
 
     const start = new Date(dto.startDate);
     const end = new Date(dto.endDate);
     if (end <= start) throw new BadRequestException('La date de fin doit être après la date de début');
     if (start < new Date()) throw new BadRequestException('La date de début ne peut pas être dans le passé');
 
-    return this.prisma.adCampaign.create({
+    return (this.prisma.adCampaign as any).create({
       data: {
         sellerId,
-        productId: dto.productId,
+        productId: dto.productId ?? null,
+        storeId: dto.storeId ?? null,
         name: dto.name,
-        objective: (dto.objective as any) || 'TRAFFIC',
+        objective: dto.objective || 'TRAFFIC',
         totalBudget: dto.totalBudget,
         dailyBudget: dto.dailyBudget || null,
         startDate: start,
@@ -42,7 +57,7 @@ export class AdsService {
         targetCategories: dto.targetCategories || [],
         status: 'PENDING_PAYMENT',
       },
-      include: { product: { include: { images: { where: { isPrimary: true }, take: 1 } } } },
+      include: { product: { include: { images: { where: { isPrimary: true }, take: 1 } } }, store: { select: { id: true, name: true, logoUrl: true, slug: true } } },
     });
   }
 
@@ -55,6 +70,7 @@ export class AdsService {
         take: 20,
         include: {
           product: { include: { images: { where: { isPrimary: true }, take: 1 } } },
+          store: { select: { id: true, name: true, logoUrl: true, slug: true } },
           _count: { select: { events: true } },
         },
       }),
@@ -66,7 +82,7 @@ export class AdsService {
   async getCampaignStats(campaignId: string, sellerId: string) {
     const campaign = await this.prisma.adCampaign.findFirst({
       where: { id: campaignId, sellerId },
-      include: { product: { include: { images: { where: { isPrimary: true }, take: 1 } } } },
+      include: { product: { include: { images: { where: { isPrimary: true }, take: 1 } } }, store: { select: { id: true, name: true, logoUrl: true, slug: true } } },
     });
     if (!campaign) throw new NotFoundException('Campagne introuvable');
 
@@ -115,6 +131,56 @@ export class AdsService {
     return this.prisma.adCampaign.update({ where: { id: campaignId }, data: { status: 'CANCELLED' } });
   }
 
+  async payCampaign(campaignId: string, sellerId: string, method: 'WALLET' | 'MONCASH', reference?: string) {
+    const campaign = await this.prisma.adCampaign.findFirst({ where: { id: campaignId, sellerId } });
+    if (!campaign) throw new NotFoundException('Campagne introuvable');
+    if (campaign.status !== 'PENDING_PAYMENT') throw new BadRequestException('Cette campagne n\'attend pas de paiement');
+
+    if (method === 'WALLET') {
+      await this.walletService.deductForCampaign(sellerId, campaignId, campaign.totalBudget);
+      return this.prisma.adCampaign.update({
+        where: { id: campaignId },
+        data: { status: 'PENDING_REVIEW' },
+      });
+    } else {
+      if (!reference?.trim()) throw new BadRequestException('Référence MonCash requise');
+
+      // Vérification serveur obligatoire — jamais de confiance dans une simple référence fournie par le client
+      let payment: any;
+      try {
+        payment = await this.moncash.verifyByTransactionId(reference.trim());
+      } catch {
+        throw new BadRequestException('Transaction MonCash introuvable ou invalide');
+      }
+      if (payment?.message !== 'successful') {
+        throw new BadRequestException('Paiement MonCash non confirmé');
+      }
+      if (Number(payment.cost) < Number(campaign.totalBudget)) {
+        throw new BadRequestException('Montant payé insuffisant pour le budget de la campagne');
+      }
+
+      try {
+        const paymentRecord = await this.prisma.payment.create({
+          data: {
+            method: 'MONCASH',
+            status: 'COMPLETED',
+            amountHTG: campaign.totalBudget,
+            moncashTransactionId: reference.trim(),
+            paidAt: new Date(),
+          },
+        });
+        return this.prisma.adCampaign.update({
+          where: { id: campaignId },
+          data: { status: 'PENDING_REVIEW', paymentId: paymentRecord.id },
+        });
+      } catch (err: any) {
+        // Contrainte unique sur moncashTransactionId — empêche la réutilisation d'une même référence
+        if (err?.code === 'P2002') throw new ConflictException('Cette référence de paiement a déjà été utilisée');
+        throw err;
+      }
+    }
+  }
+
   // ── ADMIN ────────────────────────────────────────────────────────────────────
 
   async getAllCampaigns(page = 1, status?: string) {
@@ -129,7 +195,7 @@ export class AdsService {
         take: 30,
         include: {
           product: { include: { images: { where: { isPrimary: true }, take: 1 } } },
-          seller: { include: { user: { select: { firstName: true, lastName: true, email: true } }, store: { select: { name: true } } } },
+          seller: { include: { user: { select: { firstName: true, lastName: true, email: true } }, stores: { select: { name: true }, take: 1 } } },
         },
       }),
       this.prisma.adCampaign.count({ where }),
@@ -203,12 +269,15 @@ export class AdsService {
         // Boost by remaining budget (higher budget = more visibility)
         score += Math.min(remaining / 100, 50);
 
-        // Geo match
-        if (c.targetDepts.length > 0) {
-          if (department && c.targetDepts.some(d => d.toLowerCase() === department.toLowerCase())) {
+        // Geo match — targetDepts peut être un JSON string ou un tableau
+        const depts: string[] = Array.isArray(c.targetDepts)
+          ? c.targetDepts as string[]
+          : (() => { try { return JSON.parse(c.targetDepts as any) } catch { return [] } })();
+        if (depts.length > 0) {
+          if (department && depts.some((d: string) => d.toLowerCase() === department.toLowerCase())) {
             score += 40;
           } else if (department) {
-            score -= 30; // penalize mismatch if campaign has geo targeting
+            score -= 30;
           }
         }
 

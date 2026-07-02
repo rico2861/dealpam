@@ -14,8 +14,16 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 
 const MAX_FAILED_ATTEMPTS = 5;
-const LOCK_DURATION_MS = 30 * 60 * 1000; // 30 minutes
-const RESET_TOKEN_EXPIRES_MS = 60 * 60 * 1000; // 1 hour
+const LOCK_DURATION_MS    = 30 * 60 * 1000; // 30 min
+const RESET_TOKEN_EXPIRES = 15 * 60 * 1000; // 15 min
+
+// Plan tier → max stores allowed
+const PLAN_STORE_LIMITS: Record<string, number> = {
+  STARTER:  1,
+  BUSINESS: 3,
+  PREMIUM:  5,
+  ELITE:    10,
+};
 
 @Injectable()
 export class AuthService {
@@ -25,183 +33,192 @@ export class AuthService {
     private mailService: MailService,
   ) {}
 
+  // ── Register ────────────────────────────────────────────────────────────────
+
   async register(dto: RegisterDto) {
-    const exists = await this.prisma.user.findUnique({ where: { email: dto.email.toLowerCase() } });
-    if (exists) throw new ConflictException('Email déjà utilisé');
+    const emailLower = dto.email.toLowerCase();
+
+    // Check duplicates in parallel
+    const [emailExists, usernameExists] = await Promise.all([
+      this.prisma.user.findUnique({ where: { email: emailLower } }),
+      dto.username ? this.prisma.user.findUnique({ where: { username: dto.username.toLowerCase() } }) : null,
+    ]);
+
+    if (emailExists)    throw new ConflictException('Cet email est déjà utilisé');
+    if (usernameExists) throw new ConflictException('Ce username est déjà pris');
+
+    // Auto-generate username if not provided
+    const username = dto.username
+      ? dto.username.toLowerCase()
+      : await this.generateUsername(dto.firstName, dto.lastName);
 
     const passwordHash = await bcrypt.hash(dto.password, 12);
+
     const user = await this.prisma.user.create({
       data: {
-        email: dto.email.toLowerCase(),
+        email:     emailLower,
+        username,
         passwordHash,
         firstName: dto.firstName.trim(),
-        lastName: dto.lastName.trim(),
-        phone: dto.phone?.trim() || null,
-        role: dto.role === 'SELLER' ? 'SELLER' : 'CUSTOMER',
+        lastName:  dto.lastName.trim(),
+        phone:     dto.phone?.trim() || null,
+        role:      dto.role === 'SELLER' ? 'SELLER' : 'CUSTOMER',
       },
     });
 
     if (dto.role === 'SELLER') {
       if (!dto.storeName) throw new BadRequestException('Nom de boutique requis pour les vendeurs');
+
       const seller = await this.prisma.seller.create({
         data: { userId: user.id, nif: dto.nif || null },
       });
-      const slug = dto.storeName
-        .toLowerCase()
-        .normalize('NFD').replace(/[̀-ͯ]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/[^a-z0-9-]/g, '')
-        .slice(0, 80);
-      await this.prisma.store.create({
+
+      const slug      = this.buildSlug(dto.storeName);
+      const storeCode = await this.generateStoreCode();
+      await (this.prisma.store as any).create({
         data: {
-          sellerId: seller.id,
-          name: dto.storeName.trim(),
-          slug: `${slug}-${Date.now().toString(36)}`,
+          sellerId:    seller.id,
+          storeCode,
+          name:        dto.storeName.trim(),
+          slug:        `${slug}-${Date.now().toString(36)}`,
           description: dto.storeDescription?.trim() || null,
+          isPrimary:   true,
         },
       });
     }
 
     const tokens = await this.generateTokens(user.id, user.email, user.role);
-    return { user: this.sanitizeUser(user), ...tokens };
+    return { user: this.sanitize(user), ...tokens };
   }
 
-  async login(dto: LoginDto, ip?: string) {
-    const email = dto.email.toLowerCase();
-    const user = await this.prisma.user.findUnique({ where: { email } });
+  // ── Login (email OR username) ───────────────────────────────────────────────
 
-    // Always do a dummy compare to prevent timing attacks that reveal if email exists
-    const dummyHash = '$2b$12$invalidhashfortimingprotectiononly............';
+  async login(dto: LoginDto, ip?: string) {
+    const identifier = dto.identifier.toLowerCase().trim();
+    const isEmail    = identifier.includes('@');
+
+    // Lookup by email or username
+    const user = isEmail
+      ? await this.prisma.user.findUnique({ where: { email: identifier } })
+      : await this.prisma.user.findUnique({ where: { username: identifier } });
+
+    // Timing-safe: always do a hash compare even for non-existent accounts
+    const dummy = '$2b$12$invalidhashfortimingprotectiononly............';
     if (!user) {
-      await bcrypt.compare(dto.password, dummyHash);
+      await bcrypt.compare(dto.password, dummy);
       throw new UnauthorizedException('Identifiants invalides');
     }
 
-    // Check if account is locked
     if (user.lockedUntil && user.lockedUntil > new Date()) {
-      const minutesLeft = Math.ceil((user.lockedUntil.getTime() - Date.now()) / 60000);
-      throw new ForbiddenException(
-        `Compte bloqué. Réessayez dans ${minutesLeft} minute(s) ou réinitialisez votre mot de passe via l'email reçu.`,
-      );
+      const mins = Math.ceil((user.lockedUntil.getTime() - Date.now()) / 60000);
+      throw new ForbiddenException(`Compte bloqué. Réessayez dans ${mins} min ou réinitialisez votre mot de passe.`);
     }
 
     if (!user.isActive) throw new ForbiddenException('Compte désactivé. Contactez le support.');
 
+    // Admin/staff accounts can only log in via the admin panel, never via the user platform
+    const STAFF_ROLES = ['ADMIN', 'SUPER_ADMIN', 'MODERATOR', 'CUSTOMER_CARE', 'PARTNER', 'ACCOUNTANT'];
+    if (STAFF_ROLES.includes(user.role) && dto.clientType === 'user') {
+      throw new ForbiddenException('Ce compte est réservé à l\'espace administration. Utilisez le panneau admin.');
+    }
+
     const valid = await bcrypt.compare(dto.password, user.passwordHash);
 
     if (!valid) {
-      const newAttempts = user.failedLoginAttempts + 1;
+      const attempts = user.failedLoginAttempts + 1;
 
-      if (newAttempts >= MAX_FAILED_ATTEMPTS) {
-        // Generate reset token
-        const rawToken = crypto.randomBytes(32).toString('hex');
+      if (attempts >= MAX_FAILED_ATTEMPTS) {
+        const rawToken  = crypto.randomBytes(32).toString('hex');
         const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
-        const expires = new Date(Date.now() + RESET_TOKEN_EXPIRES_MS);
-        const lockedUntil = new Date(Date.now() + LOCK_DURATION_MS);
+        const locked    = new Date(Date.now() + LOCK_DURATION_MS);
+        const expires   = new Date(Date.now() + RESET_TOKEN_EXPIRES);
 
         await this.prisma.user.update({
           where: { id: user.id },
-          data: {
-            failedLoginAttempts: newAttempts,
-            lockedUntil,
-            passwordResetToken: tokenHash,
-            passwordResetExpires: expires,
-          },
+          data: { failedLoginAttempts: attempts, lockedUntil: locked,
+                  tokenVersion: { increment: 1 },
+                  passwordResetToken: tokenHash, passwordResetExpires: expires },
         });
 
-        const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${rawToken}`;
-        // Fire and forget — don't block the response
+        const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${rawToken}`;
         this.mailService.sendAccountLocked(user.email, user.firstName, resetUrl).catch(() => null);
-
-        throw new ForbiddenException(
-          'Compte bloqué après 5 tentatives échouées. Un email de réinitialisation vous a été envoyé.',
-        );
+        throw new ForbiddenException('Compte bloqué après 5 tentatives. Un email de réinitialisation vous a été envoyé.');
       }
 
-      await this.prisma.user.update({
-        where: { id: user.id },
-        data: { failedLoginAttempts: newAttempts },
-      });
-
-      const remaining = MAX_FAILED_ATTEMPTS - newAttempts;
-      throw new UnauthorizedException(
-        `Identifiants invalides. ${remaining} tentative(s) restante(s) avant le blocage du compte.`,
-      );
+      await this.prisma.user.update({ where: { id: user.id }, data: { failedLoginAttempts: attempts } });
+      throw new UnauthorizedException(`Identifiants invalides. ${MAX_FAILED_ATTEMPTS - attempts} tentative(s) restante(s).`);
     }
 
-    // Successful login — reset counter and any lock
-    if (user.failedLoginAttempts > 0 || user.lockedUntil) {
-      await this.prisma.user.update({
-        where: { id: user.id },
-        data: { failedLoginAttempts: 0, lockedUntil: null },
-      });
-    }
+    // Success — reset counter, record login
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { failedLoginAttempts: 0, lockedUntil: null, lastLoginAt: new Date(), lastLoginIp: ip || null },
+    });
 
-    const tokens = await this.generateTokens(user.id, user.email, user.role);
-    return { user: this.sanitizeUser(user), ...tokens };
+    const tokens = await this.generateTokens(user.id, user.email, user.role, user.tokenVersion);
+    return { user: this.sanitize(user), ...tokens };
   }
 
+  // ── Password flows ──────────────────────────────────────────────────────────
+
   async forgotPassword(email: string) {
-    // Always respond the same way to prevent email enumeration
     const user = await this.prisma.user.findUnique({ where: { email: email.toLowerCase() } });
-
-    if (user && user.isActive) {
-      const rawToken = crypto.randomBytes(32).toString('hex');
-      const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
-      const expires = new Date(Date.now() + RESET_TOKEN_EXPIRES_MS);
-
+    if (user?.isActive) {
+      // Generate 6-digit numeric code
+      const code      = Math.floor(100000 + Math.random() * 900000).toString();
+      const codeHash  = crypto.createHash('sha256').update(code).digest('hex');
+      const expires   = new Date(Date.now() + RESET_TOKEN_EXPIRES);
       await this.prisma.user.update({
         where: { id: user.id },
-        data: {
-          passwordResetToken: tokenHash,
-          passwordResetExpires: expires,
-          // Also unlock the account if it was locked
-          lockedUntil: null,
-          failedLoginAttempts: 0,
-        },
+        data: { passwordResetToken: codeHash, passwordResetExpires: expires, lockedUntil: null, failedLoginAttempts: 0 },
       });
-
-      const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${rawToken}`;
-      this.mailService.sendPasswordReset(user.email, user.firstName, resetUrl).catch(() => null);
+      this.mailService.sendPasswordResetCode(user.email, user.firstName, code).catch(() => null);
     }
+    return { message: 'Si cet email existe, un code de vérification vous a été envoyé.' };
+  }
 
-    return { message: 'Si cet email existe, un lien de réinitialisation a été envoyé.' };
+  async verifyResetCode(email: string, code: string) {
+    if (!email || !code || code.length !== 6) throw new BadRequestException('Code invalide');
+    const user = await this.prisma.user.findUnique({ where: { email: email.toLowerCase() } });
+    if (!user) throw new BadRequestException('Code invalide ou expiré');
+
+    const codeHash = crypto.createHash('sha256').update(code).digest('hex');
+    if (
+      user.passwordResetToken !== codeHash ||
+      !user.passwordResetExpires ||
+      user.passwordResetExpires < new Date()
+    ) throw new BadRequestException('Code invalide ou expiré');
+
+    // Code is valid — swap it for a full reset token (5-min window to set new password)
+    const rawToken  = crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+    const expires   = new Date(Date.now() + 5 * 60 * 1000);
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { passwordResetToken: tokenHash, passwordResetExpires: expires },
+    });
+    return { resetToken: rawToken };
   }
 
   async resetPassword(token: string, newPassword: string) {
     if (!token || token.length < 32) throw new BadRequestException('Token invalide');
-
     const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
-
     const user = await this.prisma.user.findFirst({
-      where: {
-        passwordResetToken: tokenHash,
-        passwordResetExpires: { gt: new Date() },
-      },
+      where: { passwordResetToken: tokenHash, passwordResetExpires: { gt: new Date() } },
     });
-
-    if (!user) throw new BadRequestException('Token invalide ou expiré. Faites une nouvelle demande.');
-
-    const passwordHash = await bcrypt.hash(newPassword, 12);
+    if (!user) throw new BadRequestException('Token invalide ou expiré.');
 
     await this.prisma.user.update({
       where: { id: user.id },
-      data: {
-        passwordHash,
-        passwordResetToken: null,
-        passwordResetExpires: null,
-        failedLoginAttempts: 0,
-        lockedUntil: null,
-      },
+      data: { passwordHash: await bcrypt.hash(newPassword, 12),
+              passwordResetToken: null, passwordResetExpires: null,
+              failedLoginAttempts: 0, lockedUntil: null },
     });
-
-    // Revoke all existing refresh tokens for security
     await this.prisma.refreshToken.deleteMany({ where: { userId: user.id } });
-
-    this.mailService.sendPasswordChanged(user.email, user.firstName).catch(() => null);
-
-    return { message: 'Mot de passe réinitialisé avec succès. Vous pouvez vous connecter.' };
+    return { message: 'Mot de passe réinitialisé. Vous pouvez vous connecter.' };
   }
+
+  // ── Token management ────────────────────────────────────────────────────────
 
   async refresh(token: string) {
     if (!token) throw new UnauthorizedException('Token manquant');
@@ -211,33 +228,92 @@ export class AuthService {
       throw new UnauthorizedException('Session expirée, veuillez vous reconnecter');
     }
     if (!stored.user.isActive) throw new ForbiddenException('Compte désactivé');
-
+    if (stored.user.lockedUntil && stored.user.lockedUntil > new Date())
+      throw new ForbiddenException('Compte bloqué');
     await this.prisma.refreshToken.delete({ where: { token } });
-    return this.generateTokens(stored.user.id, stored.user.email, stored.user.role);
+    return this.generateTokens(stored.user.id, stored.user.email, stored.user.role, stored.user.tokenVersion);
   }
 
   async logout(token: string) {
     if (token) await this.prisma.refreshToken.deleteMany({ where: { token } });
   }
 
-  private async generateTokens(userId: string, email: string, role: string) {
-    const payload = { sub: userId, email, role };
-    const accessToken = this.jwtService.sign(payload);
+  async checkAvailability(email?: string, username?: string) {
+    const result: { emailTaken?: boolean; usernameTaken?: boolean } = {};
+    if (email) {
+      const u = await this.prisma.user.findUnique({ where: { email: email.toLowerCase().trim() }, select: { id: true } });
+      result.emailTaken = !!u;
+    }
+    if (username) {
+      const u = await this.prisma.user.findUnique({ where: { username: username.toLowerCase().trim() }, select: { id: true } });
+      result.usernameTaken = !!u;
+    }
+    return result;
+  }
+
+  // ── Helpers ─────────────────────────────────────────────────────────────────
+
+  private async generateTokens(userId: string, email: string, role: string, tokenVersion = 0) {
+    const payload      = { sub: userId, email, role, tv: tokenVersion };
+    const accessToken  = this.jwtService.sign(payload);
     const refreshToken = this.jwtService.sign(payload, {
-      secret: process.env.JWT_REFRESH_SECRET,
-      expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
+      secret:    process.env.JWT_REFRESH_SECRET,
+      expiresIn: (process.env.JWT_REFRESH_EXPIRES_IN || '7d') as any,
     });
-
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
     await this.prisma.refreshToken.create({
-      data: { token: refreshToken, userId, expiresAt },
+      data: { token: refreshToken, userId, expiresAt: new Date(Date.now() + 7 * 86400000) },
     });
-
     return { accessToken, refreshToken };
   }
 
-  private sanitizeUser(user: any) {
-    const { passwordHash, failedLoginAttempts, lockedUntil, passwordResetToken, passwordResetExpires, ...rest } = user;
-    return rest;
+  // ── Force password change (first login with admin-created credentials) ─────
+
+  async changePasswordForced(userId: string, newPassword: string) {
+    if (!newPassword || newPassword.length < 8)
+      throw new BadRequestException('Le mot de passe doit contenir au moins 8 caractères');
+    const hash = await bcrypt.hash(newPassword, 12);
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash: hash, mustChangePassword: false, tokenVersion: { increment: 1 } },
+    });
+    return { message: 'Mot de passe mis à jour avec succès' };
+  }
+
+  private sanitize(user: any) {
+    const { passwordHash, failedLoginAttempts, lockedUntil, passwordResetToken, passwordResetExpires, lastLoginIp, staffMeta, ...rest } = user;
+    return rest; // mustChangePassword is intentionally kept so frontends can detect forced change
+  }
+
+  private buildSlug(name: string): string {
+    return name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '').slice(0, 60);
+  }
+
+  /** Auto-generate unique username like marie_jean or marie_jean_42 */
+  private async generateUsername(firstName: string, lastName: string): Promise<string> {
+    const base = `${firstName.toLowerCase()}_${lastName.toLowerCase()}`
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/[^a-z0-9_]/g, '').slice(0, 25);
+
+    let candidate = base;
+    let attempt   = 0;
+    const MAX_ATTEMPTS = 50;
+    while (attempt < MAX_ATTEMPTS) {
+      const exists = await this.prisma.user.findUnique({ where: { username: candidate } });
+      if (!exists) return candidate;
+      attempt++;
+      candidate = `${base}_${attempt}`;
+    }
+    // Filet de sécurité : au-delà de MAX_ATTEMPTS (forte contention), suffixe aléatoire
+    return `${base}_${Math.random().toString(36).slice(2, 8)}`;
+  }
+
+  private async generateStoreCode(): Promise<string> {
+    for (let i = 0; i < 20; i++) {
+      const digits = Math.floor(1000 + Math.random() * 9000);
+      const code   = `SHOP-${digits}`;
+      const exists = await (this.prisma.store as any).findUnique({ where: { storeCode: code } });
+      if (!exists) return code;
+    }
+    return `SHOP-${Date.now().toString(36).toUpperCase().slice(-4)}`;
   }
 }

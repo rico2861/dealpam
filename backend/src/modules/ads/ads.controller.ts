@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Patch, Param, Body, Query, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Param, Body, Query, UseGuards, Req, BadRequestException } from '@nestjs/common';
+import { ApiBearerAuth } from '@nestjs/swagger';
 import { AdsService } from './ads.service';
 import { CreateCampaignDto } from './create-campaign.dto';
 import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
@@ -7,7 +8,6 @@ import { Roles } from '../../shared/decorators/roles.decorator';
 import { CurrentUser } from '../../shared/decorators/current-user.decorator';
 
 @Controller('ads')
-@UseGuards(JwtAuthGuard)
 export class AdsController {
   constructor(private ads: AdsService) {}
 
@@ -41,72 +41,74 @@ export class AdsController {
   // ── SELLER ──────────────────────────────────────────────────────────────────
 
   @Post()
-  @Roles('SELLER')
-  @UseGuards(RolesGuard)
+  @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('SELLER')
   async create(@CurrentUser() user: any, @Body() dto: CreateCampaignDto) {
     const seller = await this.getSellerId(user.id);
     return this.ads.createCampaign(seller, dto);
   }
 
   @Get('my')
-  @Roles('SELLER')
-  @UseGuards(RolesGuard)
+  @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('SELLER')
   async getMy(@CurrentUser() user: any, @Query('page') page?: number) {
     const seller = await this.getSellerId(user.id);
     return this.ads.getMyCampaigns(seller, page);
   }
 
   @Get('my/:id/stats')
-  @Roles('SELLER')
-  @UseGuards(RolesGuard)
+  @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('SELLER')
   async getStats(@CurrentUser() user: any, @Param('id') id: string) {
     const seller = await this.getSellerId(user.id);
     return this.ads.getCampaignStats(id, seller);
   }
 
   @Patch('my/:id/pause')
-  @Roles('SELLER')
-  @UseGuards(RolesGuard)
+  @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('SELLER')
   async pause(@CurrentUser() user: any, @Param('id') id: string) {
     const seller = await this.getSellerId(user.id);
     return this.ads.pauseCampaign(id, seller);
   }
 
   @Patch('my/:id/resume')
-  @Roles('SELLER')
-  @UseGuards(RolesGuard)
+  @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('SELLER')
   async resume(@CurrentUser() user: any, @Param('id') id: string) {
     const seller = await this.getSellerId(user.id);
     return this.ads.resumeCampaign(id, seller);
   }
 
   @Patch('my/:id/cancel')
-  @Roles('SELLER')
-  @UseGuards(RolesGuard)
+  @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('SELLER')
   async cancel(@CurrentUser() user: any, @Param('id') id: string) {
     const seller = await this.getSellerId(user.id);
     return this.ads.cancelCampaign(id, seller);
   }
 
+  @Post('my/:id/pay')
+  @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('SELLER')
+  async pay(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+    @Body() body: { method: 'WALLET' | 'MONCASH'; reference?: string },
+  ) {
+    const seller = await this.getSellerId(user.id);
+    return this.ads.payCampaign(id, seller, body.method, body.reference);
+  }
+
   // ── ADMIN ────────────────────────────────────────────────────────────────────
 
   @Get('admin/all')
-  @Roles('ADMIN', 'SUPER_ADMIN')
-  @UseGuards(RolesGuard)
+  @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('ADMIN', 'SUPER_ADMIN')
   getAll(@Query('page') page?: number, @Query('status') status?: string) {
     return this.ads.getAllCampaigns(page, status);
   }
 
   @Get('admin/stats')
-  @Roles('ADMIN', 'SUPER_ADMIN')
-  @UseGuards(RolesGuard)
+  @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('ADMIN', 'SUPER_ADMIN')
   getAdminStats() {
     return this.ads.getAdminStats();
   }
 
   @Patch('admin/:id/review')
-  @Roles('ADMIN', 'SUPER_ADMIN')
-  @UseGuards(RolesGuard)
+  @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('ADMIN', 'SUPER_ADMIN')
   review(
     @Param('id') id: string,
     @CurrentUser() user: any,
@@ -116,8 +118,7 @@ export class AdsController {
   }
 
   @Patch('admin/:id/status')
-  @Roles('ADMIN', 'SUPER_ADMIN')
-  @UseGuards(RolesGuard)
+  @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('ADMIN', 'SUPER_ADMIN')
   forceStatus(@Param('id') id: string, @Body('status') status: string) {
     return this.ads.adminForceStatus(id, status);
   }

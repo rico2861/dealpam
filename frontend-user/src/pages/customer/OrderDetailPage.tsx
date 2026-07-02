@@ -1,4 +1,473 @@
-import { Container, Typography, Box } from '@mui/material';
+import { useState } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import {
+  Box, Typography, Button, Avatar, IconButton, Divider,
+  Rating, TextField, CircularProgress, alpha,
+  Stepper, Step, StepLabel,
+} from '@mui/material';
+import {
+  CheckCircle, LocalShipping, Assignment, HourglassEmpty,
+  Cancel, ArrowBack, Phone, Star,
+  ShoppingBag, ContentCopy, Home, Storefront,
+  Smartphone, InfoOutlined, ReceiptLong,
+  EmailOutlined, LocationOn, ChatBubbleOutline,
+} from '@mui/icons-material';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useSnackbar } from 'notistack';
+import api from '../../api/axios';
+
+const OR   = '#FF6B00';
+const ORD  = '#E05A00';
+const GRN  = '#10B981';
+const RED  = '#EF4444';
+const GOLD = '#F59E0B';
+const BG   = '#060B14';
+const CARD = 'rgba(255,255,255,0.035)';
+const BORD = 'rgba(255,255,255,0.07)';
+
+const fmt = (v: number) => `${Number(v).toLocaleString('fr-HT')} HTG`;
+
+const ORDER_STEPS = ['PENDING', 'CONFIRMED', 'PREPARING', 'SHIPPED', 'DELIVERED'];
+
+const STATUS: Record<string, { label: string; color: string; Icon: any }> = {
+  PENDING:   { label: 'En attente',     color: GOLD,    Icon: HourglassEmpty },
+  CONFIRMED: { label: 'Confirmée',      color: '#38BDF8', Icon: Assignment },
+  PREPARING: { label: 'En préparation', color: '#A78BFA', Icon: Assignment },
+  SHIPPED:   { label: 'Expédiée',       color: '#22D3EE', Icon: LocalShipping },
+  DELIVERED: { label: 'Livrée',         color: GRN,     Icon: CheckCircle },
+  CANCELLED: { label: 'Annulée',        color: RED,     Icon: Cancel },
+};
+
+const DELIVERY_LABELS: Record<string, string> = {
+  DELIVERY: 'Livraison à domicile',
+  PICKUP:   'Retrait en boutique',
+  CONTACT:  'Contact direct vendeur',
+};
+
+// ─── Review form ──────────────────────────────────────────────────────────────
+
+function ReviewForm({ storeId, orderId, onDone }: { storeId: string; orderId: string; onDone: () => void }) {
+  const { enqueueSnackbar } = useSnackbar();
+  const [rating,  setRating]  = useState<number | null>(5);
+  const [comment, setComment] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!rating) return;
+    setSubmitting(true);
+    try {
+      await api.post('/reviews', { storeId, orderId, rating, comment });
+      enqueueSnackbar('Avis publié — merci !', { variant: 'success' });
+      onDone();
+    } catch (e: any) {
+      enqueueSnackbar(e?.response?.data?.message || 'Erreur', { variant: 'error' });
+    } finally { setSubmitting(false); }
+  };
+
+  return (
+    <Box sx={{ p: 2.5, bgcolor: alpha(GOLD, 0.06), border: `1.5px solid ${alpha(GOLD, 0.2)}`, borderRadius: '18px', mb: 2 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+        <Star sx={{ color: GOLD, fontSize: 18 }} />
+        <Typography fontWeight={800} fontSize={14.5} color="white">Évaluer cette commande</Typography>
+      </Box>
+      <Typography fontSize={13} color="rgba(255,255,255,0.4)" mb={1.5}>
+        Votre commande a été livrée. Comment s'est passée l'expérience ?
+      </Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+        <Typography fontSize={13} fontWeight={600} color="rgba(255,255,255,0.55)">Note :</Typography>
+        <Rating value={rating} onChange={(_, v) => setRating(v)} precision={1}
+          sx={{ '& .MuiRating-iconFilled': { color: GOLD }, '& .MuiRating-iconEmpty': { color: 'rgba(255,255,255,0.15)' } }} />
+        <Typography fontSize={13} color={GOLD}>{rating}/5</Typography>
+      </Box>
+      <TextField fullWidth multiline rows={2}
+        label="Commentaire" value={comment} onChange={e => setComment(e.target.value)}
+        placeholder="Produit conforme ? Vendeur réactif ? Livraison rapide ?"
+        sx={{ mb: 2, '& .MuiOutlinedInput-root': { borderRadius: '12px', bgcolor: 'rgba(255,255,255,0.04)', color: 'white',
+          '& fieldset': { borderColor: BORD }, '&:hover fieldset': { borderColor: alpha(GOLD, 0.4) },
+          '&.Mui-focused fieldset': { borderColor: GOLD } },
+          '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.3)' },
+          '& .MuiInputBase-input': { color: 'white', '&::placeholder': { color: 'rgba(255,255,255,0.2)' } },
+        }} />
+      <Box sx={{ display: 'flex', gap: 1 }}>
+        <Button fullWidth variant="contained" disabled={!rating || submitting} onClick={handleSubmit}
+          startIcon={submitting ? <CircularProgress size={14} color="inherit" /> : <Star sx={{ fontSize: 15 }} />}
+          sx={{ bgcolor: GOLD, color: '#111', fontWeight: 800, borderRadius: '12px', textTransform: 'none',
+            '&:hover': { bgcolor: '#d97706' }, '&.Mui-disabled': { bgcolor: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.2)' } }}>
+          {submitting ? 'Publication...' : 'Publier mon avis'}
+        </Button>
+        <Button variant="outlined" onClick={onDone}
+          sx={{ borderRadius: '12px', borderColor: BORD, color: 'rgba(255,255,255,0.4)', textTransform: 'none', px: 2,
+            '&:hover': { borderColor: 'rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.6)' } }}>
+          Plus tard
+        </Button>
+      </Box>
+    </Box>
+  );
+}
+
+// ─── Main ─────────────────────────────────────────────────────────────────────
+
 export default function OrderDetailPage() {
-  return <Container sx={{ py: 4 }}><Typography variant="h4" fontWeight={700}>OrderDetailPage</Typography><Box mt={2}><Typography color="text.secondary">Cette page sera complétée lors du développement.</Typography></Box></Container>;
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { enqueueSnackbar } = useSnackbar();
+  const qc = useQueryClient();
+  const [showReview, setShowReview] = useState(true);
+  const [txRef, setTxRef] = useState('');
+  const [submittingTx, setSubmittingTx] = useState(false);
+
+  const { data: order, isLoading, error } = useQuery({
+    queryKey: ['order', id],
+    queryFn:  () => api.get(`/orders/me/${id}`).then(r => r.data),
+    enabled:  !!id,
+  });
+
+  const statusInfo = order ? (STATUS[order.status] ?? STATUS.PENDING) : null;
+  const stepIdx    = order ? ORDER_STEPS.indexOf(order.status) : -1;
+  const isCancelled = order?.status === 'CANCELLED';
+  const isDelivered = order?.status === 'DELIVERED';
+
+  // Needs TX: only for MonCash/NatCash/bank, only if not yet submitted
+  const needsTx = order?.chosenPaymentMethod
+    && ['MONCASH', 'NATCASH', 'BANK_TRANSFER'].includes(order.chosenPaymentMethod)
+    && !order.paymentTxRef;
+
+  const submitTx = async () => {
+    if (!txRef.trim()) return;
+    setSubmittingTx(true);
+    try {
+      await api.post(`/orders/me/${id}/payment-tx`, { txRef: txRef.trim(), method: order?.chosenPaymentMethod });
+      qc.invalidateQueries({ queryKey: ['order', id] });
+      enqueueSnackbar('Référence soumise avec succès !', { variant: 'success' });
+      setTxRef('');
+    } catch (e: any) {
+      enqueueSnackbar(e?.response?.data?.message || 'Erreur', { variant: 'error' });
+    } finally { setSubmittingTx(false); }
+  };
+
+  if (isLoading) return (
+    <Box sx={{ bgcolor: BG, minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+      <CircularProgress sx={{ color: OR }} />
+    </Box>
+  );
+  if (error || !order) return (
+    <Box sx={{ bgcolor: BG, minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: 2 }}>
+      <Typography color="rgba(255,255,255,0.5)">Commande introuvable.</Typography>
+      <Button component={Link} to="/account/orders" variant="outlined"
+        sx={{ borderColor: BORD, color: 'rgba(255,255,255,0.5)', borderRadius: '12px', textTransform: 'none' }}>
+        Mes commandes
+      </Button>
+    </Box>
+  );
+
+  return (
+    <Box sx={{ bgcolor: BG, minHeight: '100vh', pb: 8 }}>
+
+      {/* ── Top bar ── */}
+      <Box sx={{ px: { xs: 2, sm: 3, lg: 4 }, pt: 3, pb: 2, maxWidth: 960, mx: 'auto' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+          <IconButton onClick={() => navigate('/account/orders')}
+            sx={{ color: 'rgba(255,255,255,0.5)', bgcolor: CARD, border: `1px solid ${BORD}`, borderRadius: '12px', width: 38, height: 38,
+              '&:hover': { color: 'white', borderColor: 'rgba(255,255,255,0.15)' } }}>
+            <ArrowBack sx={{ fontSize: 18 }} />
+          </IconButton>
+          <Box sx={{ flex: 1 }}>
+            <Typography fontWeight={900} fontSize={{ xs: 17, sm: 20 }} color="white" letterSpacing="-0.4px">
+              Commande #{order.id.slice(-8).toUpperCase()}
+            </Typography>
+            <Typography fontSize={12.5} color="rgba(255,255,255,0.32)">
+              Passée le {new Date(order.createdAt).toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}
+            </Typography>
+          </Box>
+          {statusInfo && (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.7, px: 1.4, py: 0.6, borderRadius: '10px',
+              bgcolor: alpha(statusInfo.color, 0.12), border: `1px solid ${alpha(statusInfo.color, 0.25)}` }}>
+              <statusInfo.Icon sx={{ fontSize: 13, color: statusInfo.color }} />
+              <Typography fontSize={12.5} fontWeight={700} color={statusInfo.color}>{statusInfo.label}</Typography>
+            </Box>
+          )}
+        </Box>
+      </Box>
+
+      {/* ── Content ── */}
+      <Box sx={{ maxWidth: 960, mx: 'auto', px: { xs: 2, sm: 3, lg: 4 }, display: 'flex', gap: 2.5, flexDirection: { xs: 'column', md: 'row' }, alignItems: 'flex-start' }}>
+
+        {/* ── LEFT ── */}
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+
+          {/* Order tracker */}
+          {!isCancelled && (
+            <Box sx={{ bgcolor: CARD, border: `1px solid ${BORD}`, borderRadius: '18px', p: { xs: 2, sm: 2.5 }, mb: 2 }}>
+              <Typography fontWeight={700} fontSize={13.5} color="rgba(255,255,255,0.6)" textTransform="uppercase" letterSpacing="0.8px" mb={2.5}>
+                Suivi de commande
+              </Typography>
+              <Stepper activeStep={Math.max(0, stepIdx)} alternativeLabel
+                sx={{
+                  '& .MuiStepLabel-label': { fontSize: 11.5, mt: 0.5, color: 'rgba(255,255,255,0.35) !important' },
+                  '& .MuiStepLabel-label.Mui-active': { color: 'white !important', fontWeight: 700 },
+                  '& .MuiStepLabel-label.Mui-completed': { color: `${GRN} !important` },
+                  '& .MuiStepConnector-line': { borderColor: BORD },
+                  '& .MuiStepConnector-root.Mui-completed .MuiStepConnector-line': { borderColor: GRN },
+                }}>
+                {['Reçue', 'Confirmée', 'Préparation', 'Expédiée', 'Livrée'].map((label, i) => (
+                  <Step key={label} completed={i < stepIdx}>
+                    <StepLabel StepIconProps={{ sx: {
+                      color: 'rgba(255,255,255,0.12) !important',
+                      '&.Mui-completed': { color: `${GRN} !important` },
+                      '&.Mui-active': { color: `${OR} !important` },
+                    }}}>
+                      {label}
+                    </StepLabel>
+                  </Step>
+                ))}
+              </Stepper>
+            </Box>
+          )}
+
+          {isCancelled && (
+            <Box sx={{ bgcolor: alpha(RED, 0.08), border: `1px solid ${alpha(RED, 0.2)}`, borderRadius: '18px', p: 2.5, mb: 2, display: 'flex', gap: 1.5 }}>
+              <Cancel sx={{ color: RED, fontSize: 20, flexShrink: 0, mt: 0.2 }} />
+              <Box>
+                <Typography fontWeight={700} fontSize={14} color={RED} mb={0.3}>Commande annulée</Typography>
+                <Typography fontSize={13} color="rgba(255,255,255,0.4)">
+                  Si vous avez déjà effectué un paiement, contactez directement le vendeur ou le support DealPam.
+                </Typography>
+              </Box>
+            </Box>
+          )}
+
+          {/* ── Payment notice (direct client→seller) ── */}
+          {order.chosenPaymentMethod && !isDelivered && !isCancelled && (
+            <Box sx={{ bgcolor: alpha(OR, 0.07), border: `1px solid ${alpha(OR, 0.18)}`, borderRadius: '18px', p: 2.5, mb: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.2 }}>
+                <InfoOutlined sx={{ fontSize: 16, color: OR }} />
+                <Typography fontWeight={700} fontSize={13.5} color={OR}>Paiement direct au vendeur</Typography>
+              </Box>
+              <Typography fontSize={13} color="rgba(255,255,255,0.45)" lineHeight={1.7} mb={1.5}>
+                DealPam ne collecte pas les paiements pour les commandes de vendeurs tiers.
+                Vous devez payer directement le vendeur via le mode choisi.
+              </Typography>
+
+              {/* MonCash / NatCash number */}
+              {(order.chosenPaymentMethod === 'MONCASH' || order.chosenPaymentMethod === 'NATCASH') && order.store?.moncashPhone && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, p: 1.5,
+                  bgcolor: 'rgba(255,255,255,0.04)', borderRadius: '12px', border: `1px solid ${BORD}`, mb: 1.5 }}>
+                  <Smartphone sx={{ fontSize: 18, color: OR, flexShrink: 0 }} />
+                  <Box sx={{ flex: 1 }}>
+                    <Typography fontSize={11} color="rgba(255,255,255,0.3)" textTransform="uppercase" letterSpacing="0.6px">
+                      {order.chosenPaymentMethod === 'MONCASH' ? 'MonCash' : 'NatCash'} du vendeur
+                    </Typography>
+                    <Typography fontWeight={900} fontSize={18} color="white" letterSpacing={1}>
+                      {order.store.moncashPhone}
+                    </Typography>
+                  </Box>
+                  <IconButton size="small" onClick={() => { navigator.clipboard.writeText(order.store.moncashPhone); enqueueSnackbar('Numéro copié !', { variant: 'info' }); }}
+                    sx={{ color: 'rgba(255,255,255,0.3)', '&:hover': { color: OR } }}>
+                    <ContentCopy sx={{ fontSize: 15 }} />
+                  </IconButton>
+                </Box>
+              )}
+
+              {/* Submit TX ref */}
+              {needsTx && (
+                <Box>
+                  <Typography fontSize={12.5} color="rgba(255,255,255,0.35)" mb={1}>
+                    Après avoir payé, entrez votre référence de transaction pour confirmation :
+                  </Typography>
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    <TextField fullWidth size="small" value={txRef} onChange={e => setTxRef(e.target.value)}
+                      placeholder="Ex: MCX-1234567890"
+                      sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px', bgcolor: 'rgba(255,255,255,0.04)', color: 'white',
+                        '& fieldset': { borderColor: BORD }, '&.Mui-focused fieldset': { borderColor: OR } },
+                        '& .MuiInputBase-input': { color: 'white', fontSize: 13, '&::placeholder': { color: 'rgba(255,255,255,0.2)' } } }} />
+                    <Button variant="contained" disabled={!txRef.trim() || submittingTx} onClick={submitTx}
+                      sx={{ bgcolor: OR, borderRadius: '10px', fontWeight: 700, px: 2.5, flexShrink: 0, textTransform: 'none',
+                        '&:hover': { bgcolor: ORD }, '&.Mui-disabled': { bgcolor: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.2)' } }}>
+                      {submittingTx ? <CircularProgress size={16} color="inherit" /> : 'Envoyer'}
+                    </Button>
+                  </Box>
+                </Box>
+              )}
+
+              {/* TX already submitted */}
+              {order.paymentTxRef && (
+                <Box sx={{ display: 'flex', gap: 1, p: 1.5, bgcolor: 'rgba(255,255,255,0.04)', borderRadius: '12px', border: `1px solid ${BORD}`, mt: 1 }}>
+                  <ReceiptLong sx={{ fontSize: 16, color: order.paymentTxStatus === 'APPROVED' ? GRN : order.paymentTxStatus === 'REJECTED' ? RED : GOLD, flexShrink: 0, mt: 0.2 }} />
+                  <Box>
+                    <Typography fontSize={12.5} fontWeight={700} color="white">Réf. : {order.paymentTxRef}</Typography>
+                    <Typography fontSize={12} color={order.paymentTxStatus === 'APPROVED' ? GRN : order.paymentTxStatus === 'REJECTED' ? RED : GOLD}>
+                      {order.paymentTxStatus === 'APPROVED' ? 'Validé par DealPam' : order.paymentTxStatus === 'REJECTED' ? 'Rejeté — contactez le support' : 'En attente de validation'}
+                    </Typography>
+                    {order.paymentTxNote && <Typography fontSize={11.5} color="rgba(255,255,255,0.35)" mt={0.3}>Note : {order.paymentTxNote}</Typography>}
+                  </Box>
+                </Box>
+              )}
+            </Box>
+          )}
+
+          {/* ── Articles ── */}
+          <Box sx={{ bgcolor: CARD, border: `1px solid ${BORD}`, borderRadius: '18px', p: { xs: 2, sm: 2.5 }, mb: 2 }}>
+            <Typography fontWeight={700} fontSize={13.5} color="rgba(255,255,255,0.6)" textTransform="uppercase" letterSpacing="0.8px" mb={2}>
+              Articles commandés
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              {order.items?.map((item: any, i: number) => (
+                <Box key={i} sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                  <Box sx={{ width: 56, height: 56, borderRadius: '12px', bgcolor: 'rgba(255,255,255,0.05)',
+                    border: `1px solid ${BORD}`, flexShrink: 0, overflow: 'hidden',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {item.imageUrl
+                      ? <Box component="img" src={item.imageUrl} alt="" sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      : <ShoppingBag sx={{ fontSize: 22, color: 'rgba(255,255,255,0.12)' }} />}
+                  </Box>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography fontWeight={600} fontSize={13.5} noWrap color="white">{item.productName}</Typography>
+                    {(item.color || item.size) && (
+                      <Typography fontSize={12} color="rgba(255,255,255,0.3)">{[item.color, item.size].filter(Boolean).join(' · ')}</Typography>
+                    )}
+                    <Typography fontSize={12} color="rgba(255,255,255,0.35)">{fmt(Number(item.unitPrice))} × {item.quantity}</Typography>
+                  </Box>
+                  <Typography fontWeight={700} fontSize={14} color="white" flexShrink={0}>
+                    {fmt(Number(item.subtotal ?? Number(item.unitPrice) * item.quantity))}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
+            <Box sx={{ borderTop: `1px solid ${BORD}`, mt: 2, pt: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography fontWeight={700} fontSize={14} color="rgba(255,255,255,0.5)">Total</Typography>
+              <Typography fontWeight={900} fontSize={20} color={OR}>{fmt(Number(order.totalHTG))}</Typography>
+            </Box>
+          </Box>
+
+          {/* Review */}
+          {isDelivered && showReview && <ReviewForm storeId={order.storeId} orderId={order.id} onDone={() => setShowReview(false)} />}
+          {isDelivered && !showReview && (
+            <Box sx={{ bgcolor: alpha(GRN, 0.08), border: `1px solid ${alpha(GRN, 0.2)}`, borderRadius: '14px', p: 2, display: 'flex', gap: 1 }}>
+              <CheckCircle sx={{ color: GRN, fontSize: 16, mt: 0.2 }} />
+              <Typography fontSize={13} color={GRN}>Merci pour votre avis ! Il aide la communauté DealPam.</Typography>
+            </Box>
+          )}
+        </Box>
+
+        {/* ── RIGHT: seller card ── */}
+        <Box sx={{ width: { xs: '100%', md: 280 }, flexShrink: 0, position: { md: 'sticky' }, top: 16 }}>
+
+          {/* Seller */}
+          {order.store && (
+            <Box sx={{ bgcolor: CARD, border: `1px solid ${BORD}`, borderRadius: '18px', p: 2.5, mb: 2 }}>
+              <Typography fontSize={11} fontWeight={700} color="rgba(255,255,255,0.3)" textTransform="uppercase" letterSpacing="0.8px" mb={1.5}>
+                Vendeur
+              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, mb: 2 }}>
+                <Avatar sx={{ width: 40, height: 40, bgcolor: alpha(OR, 0.15), color: OR, fontSize: 16, fontWeight: 900, border: `1.5px solid ${alpha(OR, 0.25)}` }}>
+                  {order.store.name?.[0]}
+                </Avatar>
+                <Typography fontWeight={800} fontSize={14} color="white">{order.store.name}</Typography>
+              </Box>
+
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                {/* Phone */}
+                {order.store.phone && (
+                  <Box component="a" href={`tel:${order.store.phone}`} sx={{
+                    display: 'flex', alignItems: 'center', gap: 1.2, p: 1.2, textDecoration: 'none',
+                    bgcolor: 'rgba(255,255,255,0.04)', borderRadius: '10px', border: `1px solid ${BORD}`,
+                    transition: 'all 0.15s', '&:hover': { borderColor: 'rgba(255,255,255,0.15)', bgcolor: 'rgba(255,255,255,0.07)' },
+                  }}>
+                    <Phone sx={{ fontSize: 15, color: 'rgba(255,255,255,0.4)' }} />
+                    <Typography fontSize={13} color="rgba(255,255,255,0.65)">{order.store.phone}</Typography>
+                  </Box>
+                )}
+
+                {/* Email */}
+                {order.store.email && (
+                  <Box component="a" href={`mailto:${order.store.email}`} sx={{
+                    display: 'flex', alignItems: 'center', gap: 1.2, p: 1.2, textDecoration: 'none',
+                    bgcolor: 'rgba(255,255,255,0.04)', borderRadius: '10px', border: `1px solid ${BORD}`,
+                    transition: 'all 0.15s', '&:hover': { borderColor: 'rgba(255,255,255,0.15)', bgcolor: 'rgba(255,255,255,0.07)' },
+                  }}>
+                    <EmailOutlined sx={{ fontSize: 15, color: 'rgba(255,255,255,0.4)' }} />
+                    <Typography fontSize={13} color="rgba(255,255,255,0.65)" noWrap>{order.store.email}</Typography>
+                  </Box>
+                )}
+
+                {/* Address */}
+                {(order.store.address || order.store.city) && (
+                  <Box sx={{
+                    display: 'flex', alignItems: 'flex-start', gap: 1.2, p: 1.2,
+                    bgcolor: 'rgba(255,255,255,0.04)', borderRadius: '10px', border: `1px solid ${BORD}`,
+                  }}>
+                    <LocationOn sx={{ fontSize: 15, color: 'rgba(255,255,255,0.4)', mt: 0.2, flexShrink: 0 }} />
+                    <Typography fontSize={13} color="rgba(255,255,255,0.65)" lineHeight={1.5}>
+                      {[order.store.address, order.store.city, order.store.department].filter(Boolean).join(', ')}
+                    </Typography>
+                  </Box>
+                )}
+
+                {/* Chat with seller */}
+                {order.store.seller?.userId && (
+                  <Button
+                    component={Link}
+                    to={`/account/messages/${order.store.seller.userId}`}
+                    variant="contained"
+                    startIcon={<ChatBubbleOutline sx={{ fontSize: 16 }} />}
+                    sx={{
+                      bgcolor: alpha(OR, 0.12), color: OR, fontWeight: 700, fontSize: 13,
+                      borderRadius: '10px', textTransform: 'none', border: `1px solid ${alpha(OR, 0.25)}`,
+                      boxShadow: 'none', py: 1.1,
+                      '&:hover': { bgcolor: alpha(OR, 0.2), boxShadow: 'none' },
+                    }}>
+                    Écrire au vendeur
+                  </Button>
+                )}
+              </Box>
+
+              <Box sx={{ my: 2, borderTop: `1px solid ${BORD}` }} />
+
+              {/* Order meta */}
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                {order.deliveryType && (
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography fontSize={12} color="rgba(255,255,255,0.3)">Livraison</Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      {order.deliveryType === 'DELIVERY' ? <Home sx={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }} /> :
+                       order.deliveryType === 'PICKUP'   ? <Storefront sx={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }} /> :
+                       <Phone sx={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }} />}
+                      <Typography fontSize={12} fontWeight={600} color="rgba(255,255,255,0.6)">
+                        {DELIVERY_LABELS[order.deliveryType] ?? order.deliveryType}
+                      </Typography>
+                    </Box>
+                  </Box>
+                )}
+                {order.chosenPaymentMethod && (
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography fontSize={12} color="rgba(255,255,255,0.3)">Paiement</Typography>
+                    <Typography fontSize={12} fontWeight={600} color="rgba(255,255,255,0.6)">{order.chosenPaymentMethod}</Typography>
+                  </Box>
+                )}
+                {order.shippingHTG > 0 && (
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography fontSize={12} color="rgba(255,255,255,0.3)">Livraison</Typography>
+                    <Typography fontSize={12} fontWeight={600} color="rgba(255,255,255,0.6)">{fmt(Number(order.shippingHTG))}</Typography>
+                  </Box>
+                )}
+              </Box>
+
+              <Button component={Link} to={`/store/${order.store.slug}`} fullWidth variant="outlined"
+                sx={{ mt: 2, borderRadius: '12px', borderColor: BORD, color: 'rgba(255,255,255,0.4)', fontSize: 13,
+                  textTransform: 'none', '&:hover': { borderColor: 'rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.7)', bgcolor: 'rgba(255,255,255,0.04)' } }}>
+                Voir la boutique
+              </Button>
+            </Box>
+          )}
+
+          <Button component={Link} to="/account/orders" fullWidth variant="text"
+            startIcon={<ArrowBack sx={{ fontSize: 15 }} />}
+            sx={{ borderRadius: '12px', color: 'rgba(255,255,255,0.3)', fontSize: 13, textTransform: 'none',
+              '&:hover': { color: 'rgba(255,255,255,0.6)', bgcolor: CARD } }}>
+            Mes commandes
+          </Button>
+        </Box>
+      </Box>
+    </Box>
+  );
 }

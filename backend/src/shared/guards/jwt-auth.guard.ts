@@ -1,5 +1,24 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 import { AuthGuard } from '@nestjs/passport';
+import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 
 @Injectable()
-export class JwtAuthGuard extends AuthGuard('jwt') {}
+export class JwtAuthGuard extends AuthGuard('jwt') {
+  constructor(private reflector: Reflector) { super(); }
+
+  canActivate(ctx: ExecutionContext) {
+    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+      ctx.getHandler(), ctx.getClass(),
+    ]);
+    if (isPublic) return true;
+    return super.canActivate(ctx);
+  }
+
+  // Preserve the exact message thrown by JwtStrategy instead of Passport's generic "Unauthorized"
+  handleRequest(err: any, user: any, info: any) {
+    const message = err?.message || info?.message || 'Non authentifié';
+    if (err || !user) throw err || new UnauthorizedException(message);
+    return user;
+  }
+}
