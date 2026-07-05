@@ -300,8 +300,17 @@ model SubscriptionPlan {
   hasHomepageAd     Boolean          @default(false) @map("has_homepage_ad")
   hasAdvancedStats  Boolean          @default(false) @map("has_advanced_stats")
   hasAutoSponsored  Boolean          @default(false) @map("has_auto_sponsored")
+  hasKeywordTargeting Boolean        @default(false) @map("has_keyword_targeting")
   description       String?
   isActive          Boolean          @default(true) @map("is_active")
+  // Mis en avant "POPULAIRE" — pilotable depuis l'admin (un seul plan à la fois en pratique)
+  isPopular         Boolean          @default(false) @map("is_popular")
+  // Prix "barré" affiché avant le prix réel, pour créer un effet d'ancrage (optionnel)
+  originalPriceHTG  Decimal?         @map("original_price_htg") @db.Decimal(10, 2)
+  // Produits que le vendeur peut publier comme pub (jamais dans le carousel homepage)
+  maxPromoProducts    Int            @default(0) @map("max_promo_products")
+  // Sous-ensemble des produits pub qui peuvent aussi apparaître dans le carousel homepage
+  maxCarouselProducts Int            @default(0) @map("max_carousel_products")
   // % de réduction si le vendeur paie pour 1 an d'un coup (configurable par l'admin)
   annualDiscountPercent Int          @default(25) @map("annual_discount_percent")
   subscriptions     SellerSubscription[]

@@ -32,13 +32,27 @@ const PLAN_ICONS: Record<string, any> = {
   ELITE:    Diamond,
 };
 
-const PLAN_FEATURES: Record<string, string[]> = {
-  FREE:     ['10 produits maximum', '3 images par produit', 'Tableau de bord basique'],
-  STARTER:  ['50 produits maximum', '5 images par produit', 'Tableau de bord basique'],
-  BUSINESS: ['130 produits maximum', '10 images par produit', 'Badge Vérifié ✓', 'Statistiques avancées'],
-  PREMIUM:  ['300 produits maximum', '10 images par produit', 'Badge Vérifié ✓', 'Priorité dans les recherches', 'Statistiques avancées'],
-  ELITE:    ['Produits illimités', '15 images par produit', 'Badge Elite 💎', 'Priorité maximale', 'Encart page accueil', 'Produits auto-sponsorisés', 'Statistiques complètes'],
-};
+// Fonctionnalités générées dynamiquement depuis les vraies données du plan
+// (jamais de texte codé en dur qui pourrait se désynchroniser des valeurs admin)
+function buildPlanFeatures(plan: any): string[] {
+  const f: string[] = [];
+  f.push(plan.maxProducts ? `${plan.maxProducts} produits maximum` : 'Produits illimités');
+  f.push(`${plan.maxImages} image${plan.maxImages > 1 ? 's' : ''} par produit`);
+  if (plan.maxStores > 1) f.push(`Jusqu'à ${plan.maxStores} boutiques`);
+  if (plan.hasEliteBadge) f.push('Badge Elite 💎');
+  else if (plan.hasVerifiedBadge) f.push('Badge vendeur vérifié ✓');
+  if (plan.hasPrioritySearch) f.push('Priorité dans les résultats de recherche');
+  if (plan.hasKeywordTargeting) f.push('Mots-clés ciblés pour plus de visibilité');
+  if (plan.hasHomepageAd) f.push('Encart mis en avant sur la page d\'accueil');
+  if (plan.hasAutoSponsored) f.push('Produits sponsorisés automatiquement');
+  if (plan.maxPromoProducts > 0) {
+    f.push(plan.maxCarouselProducts > 0
+      ? `${plan.maxPromoProducts} produits en publicité, dont ${plan.maxCarouselProducts} sur le carousel homepage`
+      : `${plan.maxPromoProducts} produits publiables en publicité`);
+  }
+  f.push(plan.hasAdvancedStats ? 'Statistiques de vente avancées' : 'Tableau de bord basique');
+  return f;
+}
 
 export default function SellerSubscriptionPage() {
   const { enqueueSnackbar } = useSnackbar();
@@ -98,8 +112,8 @@ export default function SellerSubscriptionPage() {
           const color   = PLAN_COLORS[plan.tier] ?? OR;
           const PlanIcon = PLAN_ICONS[plan.tier] ?? Store;
           const isCurrent = currentSub?.plan?.tier === plan.tier;
-          const isPopular = plan.tier === 'BUSINESS';
-          const features  = PLAN_FEATURES[plan.tier] || [];
+          const isPopular = !!plan.isPopular;
+          const features  = buildPlanFeatures(plan);
 
           return (
             <Box key={plan.id} sx={{
@@ -139,6 +153,11 @@ export default function SellerSubscriptionPage() {
 
                 {/* Price */}
                 <Box sx={{ mb: 2.5 }}>
+                  {plan.originalPriceHTG && Number(plan.originalPriceHTG) > Number(plan.priceHTG) && (
+                    <Typography fontSize={13} color={SUB} sx={{ textDecoration: 'line-through' }}>
+                      {Number(plan.originalPriceHTG).toLocaleString()} HTG
+                    </Typography>
+                  )}
                   <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
                     <Typography fontWeight={900} fontSize={28} color={color} letterSpacing="-1px">
                       {Number(plan.priceHTG) === 0 ? '0' : Number(plan.priceHTG).toLocaleString()}

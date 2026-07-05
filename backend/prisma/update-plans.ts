@@ -1,0 +1,98 @@
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
+
+const PLANS = [
+  {
+    tier: 'STARTER' as any,
+    name: 'Starter',
+    priceHTG: 0,
+    originalPriceHTG: null,
+    maxProducts: 2,
+    maxImages: 1,
+    maxStores: 1,
+    hasVerifiedBadge: false,
+    hasEliteBadge: false,
+    hasPrioritySearch: false,
+    hasHomepageAd: false,
+    hasAdvancedStats: false,
+    hasAutoSponsored: false,
+    hasKeywordTargeting: false,
+    isPopular: false,
+    maxPromoProducts: 0,
+    maxCarouselProducts: 0,
+    annualDiscountPercent: 25,
+    description: 'Testez la plateforme gratuitement avec un tableau de bord simple et clair — idéal pour découvrir DealPam avant de vous lancer.',
+  },
+  {
+    tier: 'BUSINESS' as any,
+    name: 'Business',
+    priceHTG: 400,
+    originalPriceHTG: 600,
+    maxProducts: 12,
+    maxImages: 4,
+    maxStores: 2,
+    hasVerifiedBadge: true,
+    hasEliteBadge: false,
+    hasPrioritySearch: false,
+    hasHomepageAd: false,
+    hasAdvancedStats: true,
+    hasAutoSponsored: false,
+    hasKeywordTargeting: false,
+    isPopular: false,
+    maxPromoProducts: 2,
+    maxCarouselProducts: 0,
+    annualDiscountPercent: 25,
+    description: 'Le plan idéal pour lancer sérieusement votre activité : badge vérifié, deux boutiques et des statistiques avancées pour piloter vos ventes.',
+  },
+  {
+    tier: 'PREMIUM' as any,
+    name: 'Premium',
+    priceHTG: 900,
+    originalPriceHTG: 1200,
+    maxProducts: 25,
+    maxImages: 8,
+    maxStores: 5,
+    hasVerifiedBadge: true,
+    hasEliteBadge: false,
+    hasPrioritySearch: true,
+    hasHomepageAd: false,
+    hasAdvancedStats: true,
+    hasAutoSponsored: false,
+    hasKeywordTargeting: true,
+    isPopular: true,
+    maxPromoProducts: 7,
+    maxCarouselProducts: 3,
+    annualDiscountPercent: 25,
+    description: 'Le choix préféré de nos vendeurs qui grandissent vite : jusqu\'à 5 boutiques, priorité dans les recherches, mots-clés ciblés et une vraie visibilité sur le carousel homepage.',
+  },
+  {
+    tier: 'ELITE' as any,
+    name: 'Elite',
+    priceHTG: 2300,
+    originalPriceHTG: 2900,
+    maxProducts: null,
+    maxImages: 14,
+    maxStores: 10,
+    hasVerifiedBadge: true,
+    hasEliteBadge: true,
+    hasPrioritySearch: true,
+    hasHomepageAd: true,
+    hasAdvancedStats: true,
+    hasAutoSponsored: true,
+    hasKeywordTargeting: true,
+    isPopular: false,
+    maxPromoProducts: 10,
+    maxCarouselProducts: 5,
+    annualDiscountPercent: 25,
+    description: 'La puissance maximale sur DealPam : produits illimités, badge Elite, priorité absolue, encart page d\'accueil et produits auto-sponsorisés. Ciblez aussi vos clients par zone, ville ou âge avec des campagnes publicitaires dédiées.',
+  },
+];
+
+async function main() {
+  for (const p of PLANS) {
+    await prisma.subscriptionPlan.upsert({ where: { tier: p.tier }, create: p, update: p });
+  }
+  console.log(`✅ ${PLANS.length} plans mis à jour avec les nouveaux tarifs/textes`);
+}
+
+main().catch(console.error).finally(() => prisma.$disconnect());

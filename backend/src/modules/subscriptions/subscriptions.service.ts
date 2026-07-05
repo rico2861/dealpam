@@ -39,8 +39,13 @@ export class SubscriptionsService {
         hasHomepageAd:         !!dto.hasHomepageAd,
         hasAdvancedStats:      !!dto.hasAdvancedStats,
         hasAutoSponsored:      !!dto.hasAutoSponsored,
+        hasKeywordTargeting:   !!dto.hasKeywordTargeting,
         description:           dto.description ?? null,
         isActive:              dto.isActive ?? true,
+        isPopular:             !!dto.isPopular,
+        originalPriceHTG:      dto.originalPriceHTG ?? null,
+        maxPromoProducts:      dto.maxPromoProducts ?? 0,
+        maxCarouselProducts:   dto.maxCarouselProducts ?? 0,
         annualDiscountPercent: dto.annualDiscountPercent ?? 25,
       },
     });
@@ -51,7 +56,8 @@ export class SubscriptionsService {
     for (const key of [
       'name', 'priceHTG', 'maxProducts', 'maxImages', 'maxStores',
       'hasVerifiedBadge', 'hasEliteBadge', 'hasPrioritySearch', 'hasHomepageAd',
-      'hasAdvancedStats', 'hasAutoSponsored', 'description', 'isActive',
+      'hasAdvancedStats', 'hasAutoSponsored', 'hasKeywordTargeting', 'description', 'isActive',
+      'isPopular', 'originalPriceHTG', 'maxPromoProducts', 'maxCarouselProducts',
       'annualDiscountPercent',
     ]) {
       if (dto[key] !== undefined) data[key] = dto[key];
