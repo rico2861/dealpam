@@ -75,7 +75,7 @@ export default function MoncashReturnHandler() {
         return;
       }
 
-      // Paiement commande classique
+      // Paiement d'abonnement vendeur (seul type restant vérifié par /payments/verify)
       try {
         const res = await fetch(`${API}/payments/verify`, {
           method:  'POST',
@@ -89,8 +89,14 @@ export default function MoncashReturnHandler() {
           showToast(`Pèman echwe: ${data.message ?? 'Erè enkoni'}`, 'error');
           return;
         }
+        if (data.type === 'subscription') {
+          navigate('/order-received/thank-you', {
+            replace: true,
+            state: { type: 'subscription', tier: data.tier, amount_htg: data.amount_htg },
+          });
+          return;
+        }
         showToast(`✅ Pèman konfime — ${data.amount_htg} HTG`, 'success');
-        if (data.order_id) navigate(`/account/orders/${data.order_id}`);
       } catch {
         showToast('Erè koneksyon pandan verifikasyon pèman', 'error');
       }

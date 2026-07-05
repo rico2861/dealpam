@@ -64,6 +64,7 @@ import BecomeSellerPage from './pages/customer/BecomeSellerPage';
 import CartPage from './pages/customer/CartPage';
 import CheckoutPage from './pages/customer/CheckoutPage';
 import OrderSuccessPage from './pages/customer/OrderSuccessPage';
+import ThankYouPage from './pages/customer/ThankYouPage';
 import MoncashReturnHandler from './components/MoncashReturnHandler';
 import CookieConsentBanner from './components/shared/CookieConsentBanner';
 import ScrollToTop from './components/ScrollToTop';
@@ -147,6 +148,7 @@ export default function App() {
             <Route path="ventes-flash" element={<FlashSalePage />} />
             <Route path="cart" element={<CartPage />} />
             <Route path="order-success" element={<OrderSuccessPage />} />
+            <Route path="order-received/thank-you" element={<ThankYouPage />} />
             <Route path="support" element={<SupportPage />} />
             <Route path="newsletter/unsubscribe" element={<UnsubscribePage />} />
             <Route path="privacy" element={<PrivacyPage />} />

@@ -552,9 +552,10 @@ export default function CheckoutPage() {
       });
       const orders = Array.isArray(res.data) ? res.data : [res.data];
       await fetchCount();
-      navigate('/order-success', {
+      navigate('/order-received/thank-you', {
         replace: true,
         state: {
+          type: 'product',
           orders,
           storeInfo: { ...storeDetail, ...storeOptions },
           sellerUserId: storeOptions?.seller?.userId ?? storeDetail?.seller?.userId ?? null,
