@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
+import { MailAccountType, getMailAccounts, getSmtpTransportConfig } from './mail.config';
 
 const BRAND = {
   name: 'DealPam',
@@ -16,16 +17,49 @@ const BRAND = {
 @Injectable()
 export class MailService {
   private readonly logger = new Logger(MailService.name);
-  private transporter: nodemailer.Transporter;
+  private readonly transporters = new Map<MailAccountType, nodemailer.Transporter>();
+  private readonly accounts = getMailAccounts();
 
   constructor() {
-    this.transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 587,
-      secure: false,
-      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
-      tls: { rejectUnauthorized: false },
-    });
+    const transportConfig = getSmtpTransportConfig();
+    for (const type of Object.keys(this.accounts) as MailAccountType[]) {
+      const account = this.accounts[type];
+      this.transporters.set(
+        type,
+        nodemailer.createTransport({
+          host: transportConfig.host,
+          port: transportConfig.port,
+          secure: transportConfig.secure,
+          auth: { user: account.user, pass: account.pass },
+          tls: { rejectUnauthorized: false },
+        }),
+      );
+    }
+  }
+
+  // ── API publique réutilisable ────────────────────────────────────────────
+  // Point d'entrée simple pour tout nouveau template : on précise juste le
+  // type de destinataire (client/seller/admin), à/sujet/contenu.
+  async sendMail(opts: { as: MailAccountType; to: string; subject: string; html: string }): Promise<void> {
+    await this.send(opts.to, opts.subject, this.layout(opts.subject, opts.subject, opts.html), opts.as);
+  }
+
+  // Détermine le compte d'envoi à partir du rôle réel de l'utilisateur —
+  // utile pour les emails génériques (reset password, compte bloqué...)
+  // envoyés à n'importe quel type de compte.
+  static accountForRole(role?: string): MailAccountType {
+    if (role === 'SELLER') return 'seller';
+    if (['ADMIN', 'SUPER_ADMIN', 'MODERATOR', 'CUSTOMER_CARE', 'PARTNER', 'ACCOUNTANT'].includes(role || '')) return 'admin';
+    return 'client';
+  }
+
+  // ── Alertes internes équipe (litiges, rapports, notifications système) ──
+  async sendTeamAlert(subject: string, message: string, to = process.env.SMTP_TEAM_USER || ''): Promise<void> {
+    const body = `
+      ${this.hero('🔔', '#EFF6FF', subject)}
+      <div style="color:${BRAND.text};font-size:14.5px;line-height:1.75;">${message}</div>
+    `;
+    await this.send(to, `[DealPam Admin] ${subject}`, this.layout(subject, subject, body), 'admin');
   }
 
   // ── SHARED LAYOUT ──────────────────────────────────────────────────────────
@@ -166,7 +200,7 @@ export class MailService {
       ${this.divider()}
       <p style="margin:0;color:${BRAND.muted};font-size:12.5px;text-align:center;">Des questions ? Contactez-nous à <a href="mailto:${BRAND.support}">${BRAND.support}</a></p>
     `;
-    await this.send(to, `🎉 Bienvenue sur DealPam, ${firstName} !`, this.layout('Bienvenue', `Bienvenue ${firstName} ! Votre compte DealPam est prêt.`, body));
+    await this.send(to, `🎉 Bienvenue sur DealPam, ${firstName} !`, this.layout('Bienvenue', `Bienvenue ${firstName} ! Votre compte DealPam est prêt.`, body), 'client');
   }
 
   // ── 2. EMAIL VERIFICATION ──────────────────────────────────────────────────
@@ -180,7 +214,7 @@ export class MailService {
       ${this.alert('⏱️ Ce lien est valable <strong>24 heures</strong>. Si vous n\'avez pas créé de compte, ignorez cet email.', 'info')}
       ${this.linkNote(verifyUrl)}
     `;
-    await this.send(to, '📧 Confirmez votre adresse email — DealPam', this.layout('Confirmation email', 'Confirmez votre email pour activer votre compte DealPam.', body));
+    await this.send(to, '📧 Confirmez votre adresse email — DealPam', this.layout('Confirmation email', 'Confirmez votre email pour activer votre compte DealPam.', body), 'client');
   }
 
   // ── 3. SELLER ACCOUNT APPROVED ─────────────────────────────────────────────
@@ -195,7 +229,7 @@ export class MailService {
       ${this.divider()}
       <p style="margin:0;color:${BRAND.muted};font-size:13px;text-align:center;">Besoin d'aide pour démarrer ? Consultez notre guide vendeur ou contactez-nous.</p>
     `;
-    await this.send(to, `✅ Votre boutique "${storeName}" est approuvée — DealPam`, this.layout('Boutique approuvée', `Votre boutique ${storeName} est validée et prête à vendre.`, body));
+    await this.send(to, `✅ Votre boutique "${storeName}" est approuvée — DealPam`, this.layout('Boutique approuvée', `Votre boutique ${storeName} est validée et prête à vendre.`, body), 'seller');
   }
 
   // ── 4. SELLER REJECTED ─────────────────────────────────────────────────────
@@ -211,12 +245,12 @@ export class MailService {
       ${this.divider()}
       ${this.para(`Si vous pensez que cette décision est une erreur, contactez notre support à <a href="mailto:${BRAND.support}">${BRAND.support}</a>.`)}
     `;
-    await this.send(to, '❌ Vérification refusée — DealPam', this.layout('Vérification refusée', 'Votre dossier vendeur n\'a pas pu être validé.', body));
+    await this.send(to, '❌ Vérification refusée — DealPam', this.layout('Vérification refusée', 'Votre dossier vendeur n\'a pas pu être validé.', body), 'seller');
   }
 
   // ── 5. PASSWORD RESET (code 6 chiffres) ───────────────────────────────────
 
-  async sendPasswordResetCode(to: string, firstName: string, code: string): Promise<void> {
+  async sendPasswordResetCode(to: string, firstName: string, code: string, as: MailAccountType = 'client'): Promise<void> {
     const body = `
       ${this.hero('🔐', '#FFF8EC', 'Code de vérification', 'Réinitialisation de votre mot de passe')}
       ${this.greeting(firstName)}
@@ -227,16 +261,16 @@ export class MailService {
       </div>
       ${this.alert('Ce code expire dans <strong>15 minutes</strong> et ne peut être utilisé qu\'une seule fois. Si vous n\'avez pas fait cette demande, ignorez cet email.', 'warning')}
     `;
-    await this.send(to, 'Votre code de réinitialisation — DealPam', this.layout('Code de réinitialisation', 'Votre code de réinitialisation DealPam.', body));
+    await this.send(to, 'Votre code de réinitialisation — DealPam', this.layout('Code de réinitialisation', 'Votre code de réinitialisation DealPam.', body), as);
   }
 
-  async sendPasswordReset(to: string, firstName: string, resetUrl: string): Promise<void> {
-    return this.sendPasswordResetCode(to, firstName, resetUrl);
+  async sendPasswordReset(to: string, firstName: string, resetUrl: string, as: MailAccountType = 'client'): Promise<void> {
+    return this.sendPasswordResetCode(to, firstName, resetUrl, as);
   }
 
   // ── 6. ADMIN RESET — temp password ─────────────────────────────────────────
 
-  async sendAdminPasswordReset(to: string, firstName: string, tempPassword: string): Promise<void> {
+  async sendAdminPasswordReset(to: string, firstName: string, tempPassword: string, as: MailAccountType = 'client'): Promise<void> {
     const body = `
       ${this.hero('🛡️', '#EFF6FF', 'Mot de passe réinitialisé par l\'admin', 'Un mot de passe temporaire a été créé')}
       ${this.greeting(firstName)}
@@ -248,12 +282,12 @@ export class MailService {
       ${this.alert('⚠️ Pour des raisons de sécurité, <strong>changez ce mot de passe immédiatement</strong> après votre connexion. Ce mot de passe temporaire expire dans <strong>24 heures</strong>.', 'warning')}
       ${this.btn('Se connecter maintenant', `${BRAND.url}/login`)}
     `;
-    await this.send(to, '🛡️ Votre mot de passe a été réinitialisé — DealPam', this.layout('Reset par admin', 'Un administrateur a réinitialisé votre mot de passe DealPam.', body));
+    await this.send(to, '🛡️ Votre mot de passe a été réinitialisé — DealPam', this.layout('Reset par admin', 'Un administrateur a réinitialisé votre mot de passe DealPam.', body), as);
   }
 
   // ── 7. ACCOUNT LOCKED ─────────────────────────────────────────────────────
 
-  async sendAccountLocked(to: string, firstName: string, resetUrl: string): Promise<void> {
+  async sendAccountLocked(to: string, firstName: string, resetUrl: string, as: MailAccountType = 'client'): Promise<void> {
     const body = `
       ${this.hero('🔒', '#FFF1F2', 'Compte temporairement bloqué', 'Plusieurs tentatives de connexion échouées détectées')}
       ${this.greeting(firstName)}
@@ -261,12 +295,12 @@ export class MailService {
       ${this.alert('⚠️ Si ce n\'était pas vous, votre mot de passe a peut-être été compromis. Réinitialisez-le immédiatement.', 'error')}
       ${this.btn('Réinitialiser mon mot de passe', resetUrl)}
     `;
-    await this.send(to, '🔒 Compte bloqué — DealPam', this.layout('Compte bloqué', 'Votre compte DealPam a été temporairement bloqué.', body));
+    await this.send(to, '🔒 Compte bloqué — DealPam', this.layout('Compte bloqué', 'Votre compte DealPam a été temporairement bloqué.', body), as);
   }
 
   // ── 8. PASSWORD CHANGED ───────────────────────────────────────────────────
 
-  async sendPasswordChanged(to: string, firstName: string): Promise<void> {
+  async sendPasswordChanged(to: string, firstName: string, as: MailAccountType = 'client'): Promise<void> {
     const now = new Date().toLocaleString('fr-FR', { timeZone: 'America/Port-au-Prince', dateStyle: 'long', timeStyle: 'short' });
     const body = `
       ${this.hero('✅', '#F0FDF4', 'Mot de passe modifié avec succès')}
@@ -274,7 +308,7 @@ export class MailService {
       ${this.para(`Votre mot de passe DealPam a été modifié le <strong>${now}</strong>.`)}
       ${this.alert(`⚠️ Si vous n'avez pas effectué cette action, contactez immédiatement <a href="mailto:${BRAND.support}">${BRAND.support}</a>`, 'error')}
     `;
-    await this.send(to, '✅ Mot de passe modifié — DealPam', this.layout('Mot de passe modifié', 'Votre mot de passe DealPam a été changé.', body));
+    await this.send(to, '✅ Mot de passe modifié — DealPam', this.layout('Mot de passe modifié', 'Votre mot de passe DealPam a été changé.', body), as);
   }
 
   // ── 9. NEW ORDER (to seller) ───────────────────────────────────────────────
@@ -321,7 +355,7 @@ export class MailService {
       ${this.btn('Gérer cette commande →', `${BRAND.url}/seller/orders`)}
       ${this.alert('⚡ Répondez rapidement ! Les vendeurs qui traitent leurs commandes en moins de 2h reçoivent un badge <strong>"Réponse Rapide"</strong>.', 'info')}
     `;
-    await this.send(to, `🛒 Nouvelle commande #${order.number} — DealPam`, this.layout('Nouvelle commande', `Nouvelle commande #${order.number} reçue sur DealPam.`, body));
+    await this.send(to, `🛒 Nouvelle commande #${order.number} — DealPam`, this.layout('Nouvelle commande', `Nouvelle commande #${order.number} reçue sur DealPam.`, body), 'seller');
   }
 
   // ── 10. ORDER CONFIRMATION (to customer) ──────────────────────────────────
@@ -362,7 +396,7 @@ export class MailService {
       ])}
       ${this.btn('Suivre ma commande', `${BRAND.url}/orders`)}
     `;
-    await this.send(to, `📦 Commande #${order.number} confirmée — DealPam`, this.layout('Commande confirmée', `Votre commande #${order.number} sur DealPam est confirmée.`, body));
+    await this.send(to, `📦 Commande #${order.number} confirmée — DealPam`, this.layout('Commande confirmée', `Votre commande #${order.number} sur DealPam est confirmée.`, body), 'client');
   }
 
   // ── 11. ORDER STATUS UPDATE ───────────────────────────────────────────────
@@ -383,12 +417,12 @@ export class MailService {
       ${detail ? this.alert(detail, 'info') : ''}
       ${status === 'DELIVERED' ? this.btn('Laisser un avis', `${BRAND.url}/orders`) : this.btn('Voir ma commande', `${BRAND.url}/orders`)}
     `;
-    await this.send(to, `${s.icon} Commande #${orderNumber} — ${s.title} — DealPam`, this.layout(s.title, s.msg, body));
+    await this.send(to, `${s.icon} Commande #${orderNumber} — ${s.title} — DealPam`, this.layout(s.title, s.msg, body), 'client');
   }
 
   // ── 12. NEW MESSAGE NOTIFICATION ──────────────────────────────────────────
 
-  async sendNewMessageNotification(to: string, recipientName: string, senderName: string, preview: string, chatUrl: string): Promise<void> {
+  async sendNewMessageNotification(to: string, recipientName: string, senderName: string, preview: string, chatUrl: string, as: MailAccountType = 'client'): Promise<void> {
     const body = `
       ${this.hero('💬', '#EFF6FF', `Message de ${this.esc(senderName)}`)}
       ${this.greeting(recipientName)}
@@ -398,7 +432,7 @@ export class MailService {
       </div>
       ${this.btn('Répondre au message', chatUrl)}
     `;
-    await this.send(to, `💬 Nouveau message de ${senderName} — DealPam`, this.layout('Nouveau message', `Nouveau message de ${senderName} sur DealPam.`, body));
+    await this.send(to, `💬 Nouveau message de ${senderName} — DealPam`, this.layout('Nouveau message', `Nouveau message de ${senderName} sur DealPam.`, body), as);
   }
 
   // ── 13. SUBSCRIPTION EXPIRY REMINDER ─────────────────────────────────────
@@ -416,7 +450,7 @@ export class MailService {
         : this.alert('💡 Renouvelez maintenant pour continuer à vendre sans interruption.', 'warning')}
       ${this.btn('Renouveler mon abonnement', renewUrl)}
     `;
-    await this.send(to, `${isUrgent ? '⚠️' : '🔔'} Votre abonnement expire dans ${daysLeft}j — DealPam`, this.layout('Expiration abonnement', `Votre abonnement ${planName} expire dans ${daysLeft} jours.`, body));
+    await this.send(to, `${isUrgent ? '⚠️' : '🔔'} Votre abonnement expire dans ${daysLeft}j — DealPam`, this.layout('Expiration abonnement', `Votre abonnement ${planName} expire dans ${daysLeft} jours.`, body), 'seller');
   }
 
   // ── 14. SUBSCRIPTION EXPIRED ──────────────────────────────────────────────
@@ -429,7 +463,7 @@ export class MailService {
       ${this.alert('📦 Vos produits et données sont conservés. Renouvelez votre abonnement pour les réactiver immédiatement.', 'warning')}
       ${this.btn('Renouveler et réactiver ma boutique', renewUrl)}
     `;
-    await this.send(to, '⛔ Abonnement expiré — Réactivez votre boutique DealPam', this.layout('Abonnement expiré', `Votre abonnement ${planName} a expiré sur DealPam.`, body));
+    await this.send(to, '⛔ Abonnement expiré — Réactivez votre boutique DealPam', this.layout('Abonnement expiré', `Votre abonnement ${planName} a expiré sur DealPam.`, body), 'seller');
   }
 
   // ── 15. SUBSCRIPTION RENEWED ──────────────────────────────────────────────
@@ -443,7 +477,7 @@ export class MailService {
       ${this.table([['Plan', planName], ['Actif jusqu\'au', end]])}
       ${this.btn('Gérer ma boutique', `${BRAND.url}/seller`)}
     `;
-    await this.send(to, `🎊 Abonnement ${planName} renouvelé — DealPam`, this.layout('Abonnement renouvelé', `Votre abonnement DealPam a été renouvelé jusqu'au ${end}.`, body));
+    await this.send(to, `🎊 Abonnement ${planName} renouvelé — DealPam`, this.layout('Abonnement renouvelé', `Votre abonnement DealPam a été renouvelé jusqu'au ${end}.`, body), 'seller');
   }
 
   // ── 16. NEWSLETTER WELCOME ────────────────────────────────────────────────
@@ -485,31 +519,37 @@ export class MailService {
       to,
       'Bienvenue dans la newsletter DealPam',
       this.layout('Newsletter DealPam', 'Bienvenue ! Vous recevrez nos meilleures offres en avant-première.', body),
+      'client',
     );
   }
 
   // ── 17. RAW / CUSTOM ──────────────────────────────────────────────────────
 
-  async sendRaw(to: string, subject: string, bodyHtml: string): Promise<void> {
-    await this.send(to, subject, this.layout(subject, subject, bodyHtml));
+  async sendRaw(to: string, subject: string, bodyHtml: string, as: MailAccountType = 'client'): Promise<void> {
+    await this.send(to, subject, this.layout(subject, subject, bodyHtml), as);
   }
 
   // ── INTERNAL ──────────────────────────────────────────────────────────────
 
-  private async send(to: string, subject: string, html: string): Promise<void> {
+  private async send(to: string, subject: string, html: string, as: MailAccountType = 'client'): Promise<void> {
     // En dev/local, les comptes vendeurs de seed ont des emails fictifs (@dealpam.com sans
-    // boîte réelle) — chaque envoi rebondit et Gmail renvoie la notification d'échec dans
-    // la boîte du compte SMTP lui-même. On n'envoie donc réellement qu'en production,
-    // et on trace l'email qui aurait été envoyé dans les logs sinon.
+    // boîte réelle) — chaque envoi rebondit et le compte SMTP reçoit la notification d'échec.
+    // On n'envoie donc réellement qu'en production, et on trace l'email dans les logs sinon.
     if (process.env.NODE_ENV !== 'production') {
-      this.logger.log(`[DRY-RUN dev] Email non envoyé (NODE_ENV≠production) → ${to}: ${subject}`);
+      this.logger.log(`[DRY-RUN dev] Email non envoyé (compte=${as}, NODE_ENV≠production) → ${to}: ${subject}`);
+      return;
+    }
+    const transporter = this.transporters.get(as);
+    const account = this.accounts[as];
+    if (!transporter || !account?.user) {
+      this.logger.error(`Compte mail "${as}" non configuré — email à ${to} non envoyé (${subject})`);
       return;
     }
     try {
-      await this.transporter.sendMail({ from: `"DealPam" <${process.env.SMTP_USER}>`, to, subject, html });
-      this.logger.log(`Email sent to ${to}: ${subject}`);
+      await transporter.sendMail({ from: account.from, to, subject, html });
+      this.logger.log(`Email sent (compte=${as}) to ${to}: ${subject}`);
     } catch (err) {
-      this.logger.error(`Failed to send email to ${to}: ${err.message}`);
+      this.logger.error(`Failed to send email (compte=${as}) to ${to}: ${err.message}`);
     }
   }
 

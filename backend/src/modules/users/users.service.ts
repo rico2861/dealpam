@@ -168,7 +168,7 @@ export class UsersService {
 
     const hash = await bcrypt.hash(tempPassword, 12);
     await this.prisma.user.update({ where: { id: userId }, data: { passwordHash: hash, mustChangePassword: true } });
-    await this.mail.sendAdminPasswordReset(user.email, user.firstName, tempPassword);
+    await this.mail.sendAdminPasswordReset(user.email, user.firstName, tempPassword, MailService.accountForRole(user.role));
     return { message: `Mot de passe temporaire envoyé à ${user.email}` };
   }
 

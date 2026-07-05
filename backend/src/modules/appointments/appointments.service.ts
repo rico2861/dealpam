@@ -136,6 +136,7 @@ export class AppointmentsService {
       sellerUser.email,
       'Nouvelle demande de rendez-vous — Dealpam',
       `${who} a demandé un rendez-vous pour <strong>${product.name}</strong> le <strong>${new Date(scheduledAt).toLocaleString('fr-FR')}</strong>.<br/>Connectez-vous à votre dashboard pour confirmer ou refuser.`,
+      'seller',
     ).catch(() => null);
   }
 }

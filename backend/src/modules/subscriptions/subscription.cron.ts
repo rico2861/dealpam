@@ -81,6 +81,7 @@ export class SubscriptionCron {
             <p>Renouvelez votre abonnement pour réactiver votre boutique immédiatement.</p>
             <p><a href="${process.env.FRONTEND_URL}/seller/subscription" style="background:#2563EB;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">Renouveler mon abonnement</a></p>
             `,
+            'seller',
           ).catch(() => null);
         }
 
@@ -113,6 +114,7 @@ export class SubscriptionCron {
           <p>Renouvelez maintenant pour éviter la suspension de votre boutique.</p>
           <p><a href="${process.env.FRONTEND_URL}/seller/subscription" style="background:#2563EB;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">Renouveler</a></p>
           `,
+          'seller',
         ).catch(() => null);
       }
     }

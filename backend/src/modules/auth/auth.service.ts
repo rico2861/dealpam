@@ -141,7 +141,7 @@ export class AuthService {
         });
 
         const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${rawToken}`;
-        this.mailService.sendAccountLocked(user.email, user.firstName, resetUrl).catch(() => null);
+        this.mailService.sendAccountLocked(user.email, user.firstName, resetUrl, MailService.accountForRole(user.role)).catch(() => null);
         throw new ForbiddenException('Compte bloqué après 5 tentatives échouées. Un email pour réinitialiser votre mot de passe vous a été envoyé.');
       }
 
@@ -176,7 +176,7 @@ export class AuthService {
         where: { id: user.id },
         data: { passwordResetToken: codeHash, passwordResetExpires: expires, lockedUntil: null, failedLoginAttempts: 0 },
       });
-      this.mailService.sendPasswordResetCode(user.email, user.firstName, code).catch(() => null);
+      this.mailService.sendPasswordResetCode(user.email, user.firstName, code, MailService.accountForRole(user.role)).catch(() => null);
     }
     return { message: 'Si cet email existe, un code de vérification vous a été envoyé.' };
   }
