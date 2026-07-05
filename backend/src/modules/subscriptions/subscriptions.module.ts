@@ -6,6 +6,6 @@ import { SubscriptionCron } from './subscription.cron';
 @Module({
   providers: [SubscriptionsService, SubscriptionCron],
   controllers: [SubscriptionsController],
-  exports: [SubscriptionCron],
+  exports: [SubscriptionCron, SubscriptionsService],
 })
 export class SubscriptionsModule {}

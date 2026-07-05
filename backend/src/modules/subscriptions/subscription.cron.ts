@@ -69,17 +69,17 @@ export class SubscriptionCron {
         if (user?.email) {
           await this.mail.sendRaw(
             user.email,
-            '⚠️ Votre abonnement Dealpam a expiré',
+            '⛔ Votre boutique Dealpam a été désactivée',
             `
             <p>Bonjour <strong>${user.firstName}</strong>,</p>
-            <p>Votre abonnement <strong>${sub.plan.name}</strong> a expiré le <strong>${sub.endDate.toLocaleDateString('fr-FR')}</strong>.</p>
-            <p>Conséquences :</p>
+            <p>Votre abonnement <strong>${sub.plan.name}</strong>${sub.isTrial ? ' (essai gratuit)' : ''} a expiré le <strong>${sub.endDate.toLocaleDateString('fr-FR')}</strong>.</p>
+            <p>Conséquences immédiates :</p>
             <ul>
-              <li>❌ Vos produits ont été désactivés</li>
-              <li>❌ Votre boutique est temporairement inactive</li>
+              <li>❌ Vous ne pouvez plus publier de nouveaux produits ou services</li>
+              <li>❌ Tous vos produits/services déjà publiés ne sont plus visibles par les clients sur la plateforme</li>
             </ul>
-            <p>Renouvelez votre abonnement pour réactiver votre boutique immédiatement.</p>
-            <p><a href="${process.env.FRONTEND_URL}/seller/subscription" style="background:#2563EB;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">Renouveler mon abonnement</a></p>
+            <p>✅ <strong>Bonne nouvelle :</strong> rien n'est supprimé. Vos produits restent enregistrés et repasseront automatiquement en ligne, tels quels, dès que vous payez un plan — aucune republication nécessaire.</p>
+            <p><a href="${process.env.FRONTEND_URL}/seller/subscription" style="background:#2563EB;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">Choisir un plan et réactiver ma boutique</a></p>
             `,
             'seller',
           ).catch(() => null);
@@ -107,12 +107,19 @@ export class SubscriptionCron {
       if (user?.email) {
         await this.mail.sendRaw(
           user.email,
-          `⏰ Votre abonnement expire dans ${daysLeft} jour(s)`,
+          sub.isTrial
+            ? `⏰ Votre essai gratuit se termine dans ${daysLeft} jour(s)`
+            : `⏰ Votre abonnement expire dans ${daysLeft} jour(s)`,
           `
           <p>Bonjour <strong>${user.firstName}</strong>,</p>
-          <p>Votre abonnement <strong>${sub.plan.name}</strong> expire dans <strong>${daysLeft} jour(s)</strong>.</p>
-          <p>Renouvelez maintenant pour éviter la suspension de votre boutique.</p>
-          <p><a href="${process.env.FRONTEND_URL}/seller/subscription" style="background:#2563EB;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">Renouveler</a></p>
+          <p>${sub.isTrial ? 'Votre période d\'essai gratuit de 30 jours' : `Votre abonnement <strong>${sub.plan.name}</strong>`} se termine dans <strong>${daysLeft} jour(s)</strong>.</p>
+          <p>⚠️ Si vous ne choisissez pas de plan avant cette date :</p>
+          <ul>
+            <li>Vous ne pourrez plus publier de nouveaux produits ou services</li>
+            <li>Tous vos produits/services actuellement publiés deviendront invisibles pour les clients</li>
+          </ul>
+          <p>Vos données restent enregistrées — dès qu'un plan est payé, tout redevient visible automatiquement.</p>
+          <p><a href="${process.env.FRONTEND_URL}/seller/subscription" style="background:#2563EB;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">Choisir un plan maintenant</a></p>
           `,
           'seller',
         ).catch(() => null);

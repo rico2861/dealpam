@@ -5,6 +5,7 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { MailModule } from '../mail/mail.module';
+import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { MailModule } from '../mail/mail.module';
       signOptions: { expiresIn: (process.env.JWT_EXPIRES_IN || '2h') as any },
     }),
     MailModule,
+    SubscriptionsModule,
   ],
   providers: [AuthService, JwtStrategy],
   controllers: [AuthController],

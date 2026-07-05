@@ -10,6 +10,7 @@ import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
+import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 
@@ -31,6 +32,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private mailService: MailService,
+    private subscriptionsService: SubscriptionsService,
   ) {}
 
   // ── Register ────────────────────────────────────────────────────────────────
@@ -69,6 +71,12 @@ export class AuthService {
     if (dto.role === 'SELLER') {
       if (!dto.storeName) throw new BadRequestException('Nom de boutique requis pour les vendeurs');
 
+      const storeNameTrimmed = dto.storeName.trim();
+      const nameTaken = await (this.prisma.store as any).findFirst({
+        where: { name: { equals: storeNameTrimmed, mode: 'insensitive' } },
+      });
+      if (nameTaken) throw new ConflictException('Ce nom de boutique est déjà utilisé sur la plateforme. Choisissez-en un autre.');
+
       const seller = await this.prisma.seller.create({
         data: { userId: user.id, nif: dto.nif || null },
       });
@@ -79,12 +87,24 @@ export class AuthService {
         data: {
           sellerId:    seller.id,
           storeCode,
-          name:        dto.storeName.trim(),
+          name:        storeNameTrimmed,
           slug:        `${slug}-${Date.now().toString(36)}`,
           description: dto.storeDescription?.trim() || null,
           isPrimary:   true,
         },
       });
+
+      // Essai gratuit 30 jours offert à tous les nouveaux vendeurs — soumis aux
+      // mêmes règles anti-abus (téléphone/email/NIF) que l'essai manuel.
+      try {
+        const trial = await this.subscriptionsService.startTrial(user.id);
+        this.mailService
+          .sendSellerWelcomeTrial(user.email, user.firstName, storeNameTrimmed, trial.endDate)
+          .catch(() => null);
+      } catch (err) {
+        // Ex: téléphone/email/NIF déjà utilisé pour un essai précédent — le compte
+        // est quand même créé, simplement sans essai gratuit automatique.
+      }
     }
 
     const tokens = await this.generateTokens(user.id, user.email, user.role);
