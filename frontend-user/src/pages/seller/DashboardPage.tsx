@@ -153,27 +153,47 @@ export default function SellerDashboard() {
         <Box sx={{ mb:3, p:2.5, borderRadius:'16px',
           background: expiring
             ? 'linear-gradient(135deg,rgba(245,158,11,0.12),rgba(239,68,68,0.08))'
-            : 'linear-gradient(135deg,#0a1628,#0f2244)',
-          border: expiring ? '1px solid rgba(245,158,11,0.3)' : `1px solid rgba(37,99,235,0.3)` }}>
+            : sub.isTrial
+              ? 'linear-gradient(135deg,#1a0f00,#2b1600)'
+              : 'linear-gradient(135deg,#0a1628,#0f2244)',
+          border: expiring ? '1px solid rgba(245,158,11,0.3)' : sub.isTrial ? `1px solid rgba(255,107,0,0.35)` : `1px solid rgba(37,99,235,0.3)` }}>
           <Box sx={{ display:'flex', justifyContent:'space-between', alignItems:'center', mb:1.5, flexWrap:'wrap', gap:1 }}>
             <Box sx={{ display:'flex', alignItems:'center', gap:1.5 }}>
-              {expiring ? <WarningAmber sx={{ color:GLD, fontSize:22 }}/> : <CheckCircle sx={{ color:'rgba(255,255,255,0.7)', fontSize:22 }}/>}
+              {expiring ? <WarningAmber sx={{ color:GLD, fontSize:22 }}/> : sub.isTrial ? <Typography fontSize={22}>🎁</Typography> : <CheckCircle sx={{ color:'rgba(255,255,255,0.7)', fontSize:22 }}/>}
               <Box>
-                <Typography fontWeight={800} fontSize={15} color={expiring?GLD:TXT}>{sub.plan?.name ?? 'Plan actif'}</Typography>
+                <Typography fontWeight={800} fontSize={15} color={expiring?GLD:sub.isTrial?OR:TXT}>
+                  {sub.isTrial ? 'Essai gratuit 30 jours' : (sub.plan?.name ?? 'Plan actif')}
+                </Typography>
                 <Typography fontSize={12} color={SUB}>
-                  {sub.plan?.maxProducts ? `${sub.plan.maxProducts} produits max` : 'Produits illimités'}
-                  {sub.plan?.maxStores>1 ? ` · ${sub.plan.maxStores} boutiques` : ''}
+                  {sub.isTrial
+                    ? `Profitez de toutes les fonctionnalités ${sub.plan?.name ?? ''} sans payer`
+                    : (sub.plan?.maxProducts ? `${sub.plan.maxProducts} produits max` : 'Produits illimités')}
+                  {!sub.isTrial && sub.plan?.maxStores>1 ? ` · ${sub.plan.maxStores} boutiques` : ''}
                 </Typography>
               </Box>
             </Box>
             <Chip label={expiring?`⚠ ${daysLeft}j restants !`:`${daysLeft}j restants`}
-              sx={{ bgcolor: expiring ? 'rgba(245,158,11,0.15)' : 'rgba(255,255,255,0.1)',
-                color: expiring ? GLD : TXT, fontWeight:700, fontSize:12 }}/>
+              sx={{ bgcolor: expiring ? 'rgba(245,158,11,0.15)' : sub.isTrial ? 'rgba(255,107,0,0.15)' : 'rgba(255,255,255,0.1)',
+                color: expiring ? GLD : sub.isTrial ? OR : TXT, fontWeight:700, fontSize:12 }}/>
           </Box>
           <LinearProgress variant="determinate" value={progress}
             sx={{ height:5, borderRadius:3,
               bgcolor: expiring ? 'rgba(245,158,11,0.15)' : 'rgba(255,255,255,0.08)',
-              '& .MuiLinearProgress-bar':{ bgcolor: expiring ? GLD : '#3B82F6', borderRadius:3 } }}/>
+              '& .MuiLinearProgress-bar':{ bgcolor: expiring ? GLD : sub.isTrial ? OR : '#3B82F6', borderRadius:3 } }}/>
+          {sub.isTrial && (
+            <Box sx={{ display:'flex', justifyContent:'space-between', alignItems:'center', mt:1.5 }}>
+              <Typography fontSize={12} color={SUB}>
+                {expiring
+                  ? '⏳ Passez à un plan payant pour ne rien perdre — vos produits resteront en ligne sans interruption.'
+                  : 'Aucune carte requise. Choisissez un plan à tout moment pour continuer après l\'essai.'}
+              </Typography>
+              <Button component={Link} to="/seller/subscription" size="small" endIcon={<ArrowForward sx={{ fontSize:14 }}/>}
+                sx={{ borderRadius:'8px', bgcolor:OR, color:'#fff', fontWeight:700, fontSize:12, px:1.5, flexShrink:0,
+                  '&:hover':{ bgcolor:'#E05A00' } }}>
+                Voir les plans
+              </Button>
+            </Box>
+          )}
         </Box>
       ) : (
         <Box sx={{ mb:3, p:2.5, borderRadius:'16px', border:'1.5px dashed rgba(245,158,11,0.4)', bgcolor:'rgba(245,158,11,0.05)',
