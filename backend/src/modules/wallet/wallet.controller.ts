@@ -9,7 +9,7 @@ import { WalletService } from './wallet.service';
 import { PrismaService } from '../../prisma/prisma.service';
 
 class InitRechargeDto {
-  @IsNumber() @Min(100) amount: number;
+  @IsNumber() @Min(25) amount: number;
 }
 
 class ConfirmRechargeDto {

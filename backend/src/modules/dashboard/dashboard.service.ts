@@ -6,8 +6,10 @@ export class DashboardService {
   constructor(private prisma: PrismaService) {}
 
   async getAdminStats() {
+    // Exclut le staff interne (admin, modérateurs, etc.) — seuls les vrais clients/vendeurs comptent
+    const STAFF_ROLES = ['ADMIN', 'SUPER_ADMIN', 'MODERATOR', 'CUSTOMER_CARE', 'PARTNER', 'ACCOUNTANT'];
     const [totalUsers, totalSellers, pendingSellers, totalProducts, pendingProducts, totalOrders, activeSubscriptions] = await Promise.all([
-      this.prisma.user.count(),
+      this.prisma.user.count({ where: { role: { notIn: STAFF_ROLES as any } } }),
       this.prisma.seller.count(),
       this.prisma.seller.count({ where: { status: 'PENDING' } }),
       this.prisma.product.count({ where: { status: 'PUBLISHED' } }),
