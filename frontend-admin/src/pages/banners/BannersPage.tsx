@@ -12,7 +12,11 @@ const ORANGE = '#FF9900';
 
 interface Banner {
   id: string;
+  tag: string | null;
   title: string | null;
+  subtitle: string | null;
+  ctaText: string | null;
+  catFilter: string | null;
   imageUrl: string;
   targetUrl: string;
   sortOrder: number;
@@ -23,7 +27,8 @@ interface Banner {
 }
 
 const EMPTY: Omit<Banner, 'id' | 'createdAt'> = {
-  title: '', imageUrl: '', targetUrl: '', sortOrder: 0, isActive: true, startsAt: null, endsAt: null,
+  tag: '', title: '', subtitle: '', ctaText: 'Découvrir', catFilter: '',
+  imageUrl: '', targetUrl: '', sortOrder: 0, isActive: true, startsAt: null, endsAt: null,
 };
 
 function BannerDialog({ banner, open, onClose }: { banner: Partial<Banner> | null; open: boolean; onClose: () => void }) {
@@ -47,13 +52,23 @@ function BannerDialog({ banner, open, onClose }: { banner: Partial<Banner> | nul
       PaperProps={{ sx: { borderRadius: 3 } }}>
       <DialogTitle fontWeight={700}>{isNew ? 'Ajouter une bannière' : 'Modifier la bannière'}</DialogTitle>
       <DialogContent sx={{ pt: '16px !important', display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <TextField label="Titre (optionnel)" value={form.title || ''} onChange={set('title')} fullWidth size="small" />
+        <TextField label="Badge / tag (ex: MODE & STYLE)" value={form.tag || ''} onChange={set('tag')} fullWidth size="small" />
+        <TextField label="Titre" value={form.title || ''} onChange={set('title')} fullWidth size="small"
+          helperText="Utilisez \n pour un retour à la ligne" />
+        <TextField label="Sous-titre" value={form.subtitle || ''} onChange={set('subtitle')} fullWidth size="small" />
         <TextField label="URL image *" value={form.imageUrl || ''} onChange={set('imageUrl')} fullWidth size="small"
           placeholder="https://…/banner.jpg" required
           helperText="Image 1920×600 recommandée (WebP ou JPG)" />
         <TextField label="URL cible (lien) *" value={form.targetUrl || ''} onChange={set('targetUrl')} fullWidth size="small"
           placeholder="/products?category=mode" required />
         <Grid container spacing={2}>
+          <Grid item xs={6}>
+            <TextField label="Texte du bouton" value={form.ctaText || ''} onChange={set('ctaText')} fullWidth size="small" placeholder="Découvrir" />
+          </Grid>
+          <Grid item xs={6}>
+            <TextField label="Filtre catégorie (slug)" value={form.catFilter || ''} onChange={set('catFilter')} fullWidth size="small"
+              placeholder="vetements" helperText="Optionnel, pour le mini-carousel produits" />
+          </Grid>
           <Grid item xs={6}>
             <TextField label="Ordre d'affichage" type="number" value={form.sortOrder} onChange={set('sortOrder')} fullWidth size="small" />
           </Grid>

@@ -250,13 +250,13 @@ function MiniCard({ p, visible, isMobile }: { p: any; visible: boolean; isMobile
 /* ─── Side banners ────────────────────────────────────────────────────────── */
 const LEFT_BANNERS = [
   { label: 'Ventes Flash', img: 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=400&q=80', to: '/ventes-flash' },
-  { label: 'Nouveautes',   img: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=400&q=80', to: '/products?sort=latest' },
+  { label: 'Nouveautés',   img: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=400&q=80', to: '/products?sort=latest' },
   { label: 'Tendances',    img: 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=400&q=80', to: '/products?sort=views' },
 ];
 const RIGHT_BANNERS = [
   { label: 'Smartphones',    img: 'https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?w=400&q=80', to: '/products?category=smartphones' },
   { label: 'Collection Auto',img: 'https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=400&q=80', to: '/products?category=vehicules' },
-  { label: 'Maison & Deco', img: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400&q=80', to: '/products?category=meubles' },
+  { label: 'Maison & Déco', img: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400&q=80', to: '/products?category=meubles' },
 ];
 
 function SideBanners({ banners }: { banners: typeof LEFT_BANNERS }) {
@@ -284,28 +284,28 @@ function SideBanners({ banners }: { banners: typeof LEFT_BANNERS }) {
   );
 }
 
-/* ─── Hero carousel slides config ────────────────────────────────────────── */
-const SLIDES = [
+/* ─── Hero carousel — slides par défaut (fallback si aucune bannière admin) ── */
+const DEFAULT_SLIDES = [
   { img: 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=1400&q=85',
-    tag: 'NOUVEAUTES', title: 'Tout ce que vous\naimez, enfin local',
-    sub: 'Des milliers de produits de vendeurs haitiens verifies',
-    cta: 'Decouvrir', to: '/products', catFilter: null },
+    tag: 'NOUVEAUTÉS', title: 'Tout ce que vous\naimez, enfin local',
+    sub: 'Des milliers de produits de vendeurs haïtiens vérifiés',
+    cta: 'Découvrir', to: '/products', catFilter: null },
   { img: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1400&q=85',
-    tag: 'MODE & STYLE', title: 'Tendances Mode\nEte 2025',
-    sub: 'Vetements, chaussures et accessoires tendance',
+    tag: 'MODE & STYLE', title: 'Tendances Mode\nÉté 2025',
+    sub: 'Vêtements, chaussures et accessoires tendance',
     cta: 'Shopper', to: '/products?category=vetements', catFilter: 'vetements' },
   { img: 'https://images.unsplash.com/photo-1611186871525-4cf23d23c4ca?w=1400&q=85',
-    tag: 'HIGH-TECH', title: 'Smartphones &\nElectronique',
-    sub: "iPhone, Samsung, MacBook — jusqu'a -35%",
+    tag: 'HIGH-TECH', title: 'Smartphones &\nÉlectronique',
+    sub: "iPhone, Samsung, MacBook — jusqu'à -35%",
     cta: 'Voir les offres', to: '/products?category=smartphones', catFilter: 'smartphones' },
   { img: 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=1400&q=85',
-    tag: 'VEHICULES', title: 'Voitures &\nAccessoires Auto',
-    sub: 'Toyota, Honda, Hyundai — meilleurs prix Haiti',
+    tag: 'VÉHICULES', title: 'Voitures &\nAccessoires Auto',
+    sub: 'Toyota, Honda, Hyundai — meilleurs prix en Haïti',
     cta: 'Explorer', to: '/products?category=vehicules', catFilter: 'vehicules' },
 ];
 
 /* ─── Central carousel — moderne, responsive, swipe tactile ──────────────── */
-function CentralCarousel({ allProducts }: { allProducts: any[] }) {
+function CentralCarousel({ allProducts, slides }: { allProducts: any[]; slides: typeof DEFAULT_SLIDES }) {
   const [idx,     setIdx]     = useState(0);
   const [prog,    setProg]    = useState(0);
   const [miniIdx, setMiniIdx] = useState(0);
@@ -323,11 +323,11 @@ function CentralCarousel({ allProducts }: { allProducts: any[] }) {
     clearInterval(mainRef.current);
     mainRef.current = setInterval(() => {
       setProg(p => {
-        if (p >= 100) { setIdx(c => { const next = (c + 1) % SLIDES.length; return next; }); return 0; }
+        if (p >= 100) { setIdx(c => { const next = (c + 1) % slides.length; return next; }); return 0; }
         return p + (100 / (5000 / 50));
       });
     }, 50);
-  }, []);
+  }, [slides.length]);
 
   useEffect(() => { goTo(0); return () => clearInterval(mainRef.current); }, []);
 
@@ -350,21 +350,21 @@ function CentralCarousel({ allProducts }: { allProducts: any[] }) {
   useEffect(() => { setMiniIdx(0); setVisible(true); }, [idx]);
 
   function getSlideProducts(products: any[], slideIdx: number) {
-    const cat = SLIDES[slideIdx]?.catFilter;
+    const cat = slides[slideIdx]?.catFilter;
     if (!cat || products.length === 0) return products;
     const m = products.filter((p: any) =>
       p.category?.slug?.includes(cat) || p.categorySlug?.includes(cat));
     return m.length >= 2 ? m : products;
   }
 
-  const slide = SLIDES[idx];
+  const slide = slides[idx];
   const pool  = getSlideProducts(allProducts, idx);
   const mp    = pool.length >= 2
     ? [pool[miniIdx % pool.length], pool[(miniIdx + 1) % pool.length]]
     : pool.slice(0, 2);
 
-  const prev = () => goTo((idx - 1 + SLIDES.length) % SLIDES.length, -1);
-  const next = () => goTo((idx + 1) % SLIDES.length, 1);
+  const prev = () => goTo((idx - 1 + slides.length) % slides.length, -1);
+  const next = () => goTo((idx + 1) % slides.length, 1);
 
   const onTouchStart = (e: React.TouchEvent) => { touchX.current = e.touches[0].clientX; };
   const onTouchEnd   = (e: React.TouchEvent) => {
@@ -382,7 +382,7 @@ function CentralCarousel({ allProducts }: { allProducts: any[] }) {
         userSelect: 'none', cursor: 'grab', '&:active': { cursor: 'grabbing' } }}>
 
       {/* ── Slides images avec crossfade ── */}
-      {SLIDES.map((s, i) => (
+      {slides.map((s, i) => (
         <Box key={s.img} sx={{
           position: 'absolute', inset: 0,
           backgroundImage: `url(${s.img})`,
@@ -506,7 +506,7 @@ function CentralCarousel({ allProducts }: { allProducts: any[] }) {
         bgcolor: 'rgba(0,0,0,0.25)', backdropFilter: 'blur(6px)',
         borderRadius: '20px', px: 1.2, py: 0.6,
       }}>
-        {SLIDES.map((_, i) => (
+        {slides.map((_, i) => (
           <Box key={i} onClick={() => goTo(i, i > idx ? 1 : -1)}
             sx={{
               height: 5, borderRadius: '3px', cursor: 'pointer',
@@ -530,7 +530,7 @@ function CentralCarousel({ allProducts }: { allProducts: any[] }) {
 }
 
 /* ─── Hero wrapper ───────────────────────────────────────────────────────── */
-function HeroSection({ allProducts }: { allProducts: any[] }) {
+function HeroSection({ allProducts, slides }: { allProducts: any[]; slides: typeof DEFAULT_SLIDES }) {
   return (
     <Box sx={{
       bgcolor: { xs: '#0F172A', md: PG },
@@ -549,7 +549,7 @@ function HeroSection({ allProducts }: { allProducts: any[] }) {
             <SideBanners banners={LEFT_BANNERS} />
           </Box>
           {/* Carousel */}
-          <CentralCarousel allProducts={allProducts} />
+          <CentralCarousel allProducts={allProducts} slides={slides} />
           {/* Right banners — large desktop only */}
           <Box sx={{ display: { xs: 'none', lg: 'flex' } }}>
             <SideBanners banners={RIGHT_BANNERS} />
@@ -2382,6 +2382,20 @@ export default function HomePage() {
   // choisies par l'admin (isFeatured) — jamais de faux produits inventés.
   const carouselPool = apiPool.length >= 4 ? apiPool : (featured as any[]);
 
+  // Grand carousel hero — piloté par l'admin (bannières homepage), avec repli
+  // sur des slides marketing par défaut si aucune bannière n'est configurée.
+  const heroSlides = (banners as any[]).length > 0
+    ? (banners as any[]).map((b) => ({
+        img: b.imageUrl,
+        tag: b.tag || '',
+        title: b.title || '',
+        sub: b.subtitle || '',
+        cta: b.ctaText || 'Découvrir',
+        to: b.targetUrl,
+        catFilter: b.catFilter || null,
+      }))
+    : DEFAULT_SLIDES;
+
   // Produits recommandés : mix des 3 catégories les plus vues, dédupliqués
   const recommendedProducts = (() => {
     if (topCategories.length === 0) return [];
@@ -2401,7 +2415,7 @@ export default function HomePage() {
 
 
       {/* 1 — Hero */}
-      <HeroSection allProducts={carouselPool} />
+      <HeroSection allProducts={carouselPool} slides={heroSlides} />
 
       {/* 2 — Trust bar */}
       <TrustBar />

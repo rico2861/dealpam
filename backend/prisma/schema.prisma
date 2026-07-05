@@ -830,7 +830,11 @@ model Setting {
 
 model HomepageBanner {
   id          String   @id @default(uuid())
+  tag         String?
   title       String?
+  subtitle    String?
+  ctaText     String?  @map("cta_text")
+  catFilter   String?  @map("cat_filter")
   imageUrl    String   @map("image_url")
   targetUrl   String   @map("target_url")
   sortOrder   Int      @default(0) @map("sort_order")

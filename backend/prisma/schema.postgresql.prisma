@@ -955,7 +955,11 @@ model NewsletterSubscriber {
 
 model HomepageBanner {
   id          String   @id @default(uuid())
+  tag         String?  // ex: "MODE & STYLE", badge affiché au-dessus du titre
   title       String?
+  subtitle    String?  // texte descriptif sous le titre
+  ctaText     String?  @map("cta_text") // texte du bouton, ex: "Découvrir"
+  catFilter   String?  @map("cat_filter") // slug catégorie utilisé pour filtrer les produits du mini-carousel
   imageUrl    String   @map("image_url")
   targetUrl   String   @map("target_url")
   sortOrder   Int      @default(0) @map("sort_order")
