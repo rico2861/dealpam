@@ -48,7 +48,7 @@ export class PaymentsService {
   //  ABONNEMENTS
   // ══════════════════════════════════════════════════════════════════════════
 
-  async initiateSubscriptionPayment(userId: string, planId: string) {
+  async initiateSubscriptionPayment(userId: string, planId: string, billingCycle: 'MONTHLY' | 'ANNUAL' = 'MONTHLY') {
     const plan = await this.prisma.subscriptionPlan.findFirst({ where: { id: planId, isActive: true } });
     if (!plan) throw new NotFoundException('Plan introuvable ou inactif');
 
@@ -60,9 +60,18 @@ export class PaymentsService {
       return this._activateFreeSubscription(seller.id, planId);
     }
 
-    const amountHTG = Number(plan.priceHTG);
+    const monthlyPrice = Number(plan.priceHTG);
+    const isAnnual      = billingCycle === 'ANNUAL';
+    const discountPct   = plan.annualDiscountPercent ?? 25;
+    // 12 mois au prix mensuel, moins la réduction annuelle configurée par l'admin
+    const amountHTG = isAnnual
+      ? Math.round(monthlyPrice * 12 * (1 - discountPct / 100))
+      : monthlyPrice;
+
     const startDate = new Date();
-    const endDate   = new Date(); endDate.setMonth(endDate.getMonth() + 1);
+    const endDate   = new Date();
+    if (isAnnual) endDate.setFullYear(endDate.getFullYear() + 1);
+    else          endDate.setMonth(endDate.getMonth() + 1);
 
     // Créer abonnement inactif en attente de paiement
     const sub = await this.prisma.$transaction(async (tx) => {
@@ -71,7 +80,7 @@ export class PaymentsService {
         data:  { isActive: false },
       });
       return tx.sellerSubscription.create({
-        data: { sellerId: seller.id, planId, startDate, endDate, isActive: false },
+        data: { sellerId: seller.id, planId, startDate, endDate, isActive: false, billingCycle },
       });
     });
 

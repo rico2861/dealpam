@@ -697,7 +697,7 @@ export class ProductsService {
     if (topCategories.length === 0) {
       // Fallback: return popular products
       return this.prisma.product.findMany({
-        where:   { status: 'ACTIVE' },
+        where:   { status: 'PUBLISHED' },
         include: PRODUCT_INCLUDE,
         orderBy: [{ viewCount: 'desc' }, { avgRating: 'desc' }],
         take:    limit,
@@ -709,7 +709,7 @@ export class ProductsService {
     });
     const catIds = cats.map(c => c.id);
     return this.prisma.product.findMany({
-      where:   { status: 'ACTIVE', categoryId: { in: catIds } },
+      where:   { status: 'PUBLISHED', categoryId: { in: catIds } },
       include: PRODUCT_INCLUDE,
       orderBy: [{ viewCount: 'desc' }, { avgRating: 'desc' }],
       take:    limit,

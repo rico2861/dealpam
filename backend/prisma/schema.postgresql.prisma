@@ -16,6 +16,9 @@ enum Role {
   MODERATOR
   ADMIN
   SUPER_ADMIN
+  PARTNER
+  CUSTOMER_CARE
+  ACCOUNTANT
 }
 
 enum SellerStatus {
@@ -114,6 +117,8 @@ enum MessageType {
   TEXT
   IMAGE
   FILE
+  BOT
+  SYSTEM
 }
 
 // ─── Models ───────────────────────────────────────────────────────────────────
@@ -249,8 +254,9 @@ model Store {
   phone        String?
   email        String?
   whatsapp     String?
-  // Méthodes de paiement que le vendeur accepte (MONCASH, NATCASH, CASH, BANK_TRANSFER, OTHER)
-  acceptedPaymentMethods String[] @default([]) @map("accepted_payment_methods")
+  // Méthodes de paiement que le vendeur accepte (MONCASH, NATCASH, CASH, BANK_TRANSFER, OTHER) — stocké en JSON.stringify()
+  acceptedPaymentMethods String @default("[]") @map("accepted_payment_methods")
+  isPlatformStore  Boolean   @default(false) @map("is_platform_store")
   // Numéro MonCash du vendeur (pour que le client sache où payer)
   moncashPhone String?  @map("moncash_phone")
   // Points de retrait : [{name, address, city, dept, phone, hours}] — stocké en JSON.stringify()
@@ -296,6 +302,8 @@ model SubscriptionPlan {
   hasAutoSponsored  Boolean          @default(false) @map("has_auto_sponsored")
   description       String?
   isActive          Boolean          @default(true) @map("is_active")
+  // % de réduction si le vendeur paie pour 1 an d'un coup (configurable par l'admin)
+  annualDiscountPercent Int          @default(25) @map("annual_discount_percent")
   subscriptions     SellerSubscription[]
   createdAt         DateTime         @default(now()) @map("created_at")
   updatedAt         DateTime         @updatedAt @map("updated_at")
@@ -313,6 +321,8 @@ model SellerSubscription {
   endDate   DateTime         @map("end_date")
   isActive  Boolean          @default(true) @map("is_active")
   autoRenew Boolean          @default(true) @map("auto_renew")
+  billingCycle String        @default("MONTHLY") @map("billing_cycle") // MONTHLY | ANNUAL
+  isTrial   Boolean          @default(false) @map("is_trial")
   payment   Payment?
   createdAt DateTime         @default(now()) @map("created_at")
   updatedAt DateTime         @updatedAt @map("updated_at")
@@ -321,6 +331,20 @@ model SellerSubscription {
   @@index([isActive])
   @@index([endDate])
   @@map("seller_subscriptions")
+}
+
+model TrialUsage {
+  id       String   @id @default(uuid())
+  sellerId String   @map("seller_id")
+  phone    String?
+  email    String?
+  nif      String?
+  usedAt   DateTime @default(now()) @map("used_at")
+
+  @@index([phone])
+  @@index([email])
+  @@index([nif])
+  @@map("trial_usages")
 }
 
 model Category {

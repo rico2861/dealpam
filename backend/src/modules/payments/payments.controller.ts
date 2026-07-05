@@ -2,14 +2,17 @@ import {
   Controller, Get, Post, Body, Query, Param, UseGuards, BadRequestException,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
-import { IsUUID, IsString, IsOptional } from 'class-validator';
+import { IsUUID, IsString, IsOptional, IsIn } from 'class-validator';
 import { JwtAuthGuard }   from '../../shared/guards/jwt-auth.guard';
 import { RolesGuard }     from '../../shared/guards/roles.guard';
 import { Roles }          from '../../shared/decorators/roles.decorator';
 import { CurrentUser }    from '../../shared/decorators/current-user.decorator';
 import { PaymentsService } from './payments.service';
 
-class InitiateSubDto    { @IsUUID() planId: string; }
+class InitiateSubDto {
+  @IsUUID() planId: string;
+  @IsOptional() @IsIn(['MONTHLY', 'ANNUAL']) billingCycle?: 'MONTHLY' | 'ANNUAL';
+}
 class InitiateAdDto     { @IsUUID() campaignId: string; }
 class VerifyDto {
   @IsOptional() @IsString() transaction_id?: string;
@@ -27,7 +30,7 @@ export class PaymentsController {
   @Post('subscription/initiate')
   @ApiOperation({ summary: 'Vendeur — initie le paiement MonCash pour un abonnement' })
   initiateSubscription(@CurrentUser() u: any, @Body() dto: InitiateSubDto) {
-    return this.ps.initiateSubscriptionPayment(u.id, dto.planId);
+    return this.ps.initiateSubscriptionPayment(u.id, dto.planId, dto.billingCycle || 'MONTHLY');
   }
 
   // ── Pub : initier le paiement MonCash pour une campagne ───────────────────

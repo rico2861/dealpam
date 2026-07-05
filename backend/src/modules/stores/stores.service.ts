@@ -110,6 +110,14 @@ export class StoresService {
       throw new ForbiddenException(`Votre plan permet au maximum ${maxStores} boutique(s). Mettez à niveau pour en créer davantage.`);
     }
 
+    const nameTrimmed = dto.name.trim();
+    const nameTaken = await (this.prisma.store as any).findFirst({
+      where: { name: { equals: nameTrimmed, mode: 'insensitive' } },
+    });
+    if (nameTaken) {
+      throw new ForbiddenException('Ce nom de boutique est déjà utilisé sur la plateforme. Choisissez-en un autre.');
+    }
+
     const slug      = await this.buildUniqueSlug(dto.name);
     const storeCode = await this.generateStoreCode();
     const isPrimary = current === 0;
@@ -156,6 +164,15 @@ export class StoresService {
     });
     if (!store)                      throw new NotFoundException('Boutique introuvable');
     if (store.seller.userId !== userId) throw new ForbiddenException('Cette boutique ne vous appartient pas');
+
+    if (data.name && data.name.trim().toLowerCase() !== store.name.toLowerCase()) {
+      const nameTaken = await (this.prisma.store as any).findFirst({
+        where: { name: { equals: data.name.trim(), mode: 'insensitive' }, id: { not: storeId } },
+      });
+      if (nameTaken) {
+        throw new ForbiddenException('Ce nom de boutique est déjà utilisé sur la plateforme. Choisissez-en un autre.');
+      }
+    }
 
     const payload: any = { ...data };
     if (Array.isArray(payload.acceptedPaymentMethods)) {

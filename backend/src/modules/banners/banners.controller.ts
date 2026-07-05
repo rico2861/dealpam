@@ -1,6 +1,7 @@
 import {
-  Controller, Get, Post, Patch, Delete, Body, Param, UseGuards, Query,
+  Controller, Get, Post, Patch, Delete, Body, Param, UseGuards, Query, Res,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { BannersService } from './banners.service';
 import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
 import { RolesGuard } from '../../shared/guards/roles.guard';
@@ -12,7 +13,8 @@ export class BannersController {
 
   // ── PUBLIC ────────────────────────────────────────────────────────────────
   @Get()
-  getActive() {
+  getActive(@Res({ passthrough: true }) res: Response) {
+    res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
     return this.svc.getActive();
   }
 
