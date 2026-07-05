@@ -137,10 +137,21 @@ model User {
   passwordResetExpires DateTime? @map("password_reset_expires")
   lastLoginAt          DateTime? @map("last_login_at")
   lastLoginIp          String?   @map("last_login_ip")
+  tokenVersion         Int       @default(0) @map("token_version")
 
   // Geo
   city                 String?
   department           String?
+
+  // Away message (for sellers)
+  awayMessageEnabled   Boolean   @default(false) @map("away_message_enabled")
+  awayMessage          String?   @map("away_message")
+
+  // E2E encryption
+  publicKey            String?   @map("public_key")
+
+  // Staff-specific metadata (JSON): { partnershipPercent, responsibilities, notes }
+  staffMeta            String?   @map("staff_meta")
 
   refreshTokens        RefreshToken[]
   addresses            Address[]
@@ -154,6 +165,7 @@ model User {
   auditLogs            AuditLog[]
   sentMessages         Message[]           @relation("MessageSender")
   conversations        ConversationUser[]
+  assignedConversations Conversation[]     @relation("ConvAssignedAgent")
 
   createdAt            DateTime  @default(now()) @map("created_at")
   updatedAt            DateTime  @updatedAt @map("updated_at")
@@ -196,6 +208,7 @@ model Seller {
   subscriptions    SellerSubscription[]
   documents        BusinessDocument[]
   adCampaigns      AdCampaign[]
+  wallet           SellerWallet?
   createdAt        DateTime      @default(now()) @map("created_at")
   updatedAt        DateTime      @updatedAt @map("updated_at")
 
@@ -240,10 +253,10 @@ model Store {
   acceptedPaymentMethods String[] @default([]) @map("accepted_payment_methods")
   // Numéro MonCash du vendeur (pour que le client sache où payer)
   moncashPhone String?  @map("moncash_phone")
-  // Points de retrait : [{name, address, city, dept, phone, hours}]
-  pickupPoints Json?    @map("pickup_points")
-  // Zones de livraison : [{dept, priceHTG, estimatedDays}]
-  deliveryZones Json?   @map("delivery_zones")
+  // Points de retrait : [{name, address, city, dept, phone, hours}] — stocké en JSON.stringify()
+  pickupPoints String?  @map("pickup_points")
+  // Zones de livraison : [{dept, priceHTG, estimatedDays}] — stocké en JSON.stringify()
+  deliveryZones String? @map("delivery_zones")
   avgRating        Float     @default(0) @map("avg_rating")
   totalReviews     Int       @default(0) @map("total_reviews")
   totalSales       Int       @default(0) @map("total_sales")
@@ -257,6 +270,7 @@ model Store {
   reviews      Review[]
   orders       Order[]
   appointments Appointment[]
+  adCampaigns  AdCampaign[]
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
 
@@ -363,6 +377,7 @@ model Product {
   colors          String[]
 
   // Geo / Delivery
+  address         String?                 // Full address (for services/RE)
   city            String?
   department      String?    // Département haïtien
   hasDelivery     Boolean    @default(false) @map("has_delivery")
@@ -385,8 +400,12 @@ model Product {
   viewCount       Int       @default(0) @map("view_count")
   rejectionReason String?   @map("rejection_reason")
 
-  // Category-specific attributes stored as JSON (phone: brand/model/storage/ram; clothing: material/gender; etc.)
-  attributes      Json?         @map("attributes")
+  // Category-specific attributes stored as JSON (phone: brand/model/storage/ram; clothing: material/gender; etc.) — stocké en JSON.stringify()
+  attributes      String?       @map("attributes")
+  // Service / Immobilier / Freelance extra config (JSON) — stocké en JSON.stringify()
+  serviceConfig   String?       @map("service_config")
+  // Price unit label: "HTG/heure", "HTG/séance", "HTG/m²", "HTG/projet", "HTG/nuit"
+  priceUnit       String?       @map("price_unit")
 
   images          ProductImage[]
   variants        ProductVariant[]
@@ -623,7 +642,7 @@ model Complaint {
 
 model Appointment {
   id          String            @id @default(uuid())
-  userId      String            @map("user_id")
+  userId      String?           @map("user_id")   // null for guest bookings
   productId   String            @map("product_id")
   product     Product           @relation(fields: [productId], references: [id])
   storeId     String            @map("store_id")
@@ -632,6 +651,14 @@ model Appointment {
   scheduledAt DateTime          @map("scheduled_at")
   note        String?
   sellerNote  String?           @map("seller_note")
+  // Guest booking info (client non connecté)
+  clientName  String?           @map("client_name")
+  clientPhone String?           @map("client_phone")
+  clientEmail String?           @map("client_email")
+  // Service sub-type (ex: "Coupe femme", "Détartrage", "Logo design")
+  serviceType String?           @map("service_type")
+  // Duration in minutes
+  duration    Int?
   createdAt   DateTime          @default(now()) @map("created_at")
   updatedAt   DateTime          @updatedAt @map("updated_at")
 
@@ -642,14 +669,23 @@ model Appointment {
 }
 
 model Conversation {
-  id           String             @id @default(uuid())
-  participants ConversationUser[]
-  messages     Message[]
-  lastMessage  String?            @map("last_message")
-  lastMessageAt DateTime?         @map("last_message_at")
-  createdAt    DateTime           @default(now()) @map("created_at")
-  updatedAt    DateTime           @updatedAt @map("updated_at")
+  id              String             @id @default(uuid())
+  participants    ConversationUser[]
+  messages        Message[]
+  lastMessage     String?            @map("last_message")
+  lastMessageAt   DateTime?          @map("last_message_at")
+  isSupport       Boolean            @default(false) @map("is_support")
+  topic           String?
+  status          String             @default("OPEN")  // OPEN | RESOLVED | CLOSED
+  ticketNumber    String?            @unique @map("ticket_number")
+  assignedAgentId String?            @map("assigned_agent_id")
+  assignedAgent   User?              @relation("ConvAssignedAgent", fields: [assignedAgentId], references: [id])
+  closedAt        DateTime?          @map("closed_at")
+  createdAt       DateTime           @default(now()) @map("created_at")
+  updatedAt       DateTime           @updatedAt @map("updated_at")
 
+  @@index([isSupport])
+  @@index([status])
   @@map("conversations")
 }
 
@@ -768,8 +804,10 @@ model AdCampaign {
   id             String      @id @default(uuid())
   sellerId       String      @map("seller_id")
   seller         Seller      @relation(fields: [sellerId], references: [id], onDelete: Cascade)
-  productId      String      @map("product_id")
-  product        Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId      String?     @map("product_id")
+  product        Product?    @relation(fields: [productId], references: [id], onDelete: SetNull)
+  storeId        String?     @map("store_id")
+  store          Store?      @relation(fields: [storeId], references: [id], onDelete: SetNull)
 
   // Paramètres de la campagne
   name           String
@@ -842,6 +880,44 @@ model Setting {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("settings")
+}
+
+model SellerWallet {
+  id        String   @id @default(uuid())
+  sellerId  String   @unique @map("seller_id")
+  seller    Seller   @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  balance   Float    @default(0)
+  transactions WalletTransaction[]
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  @@map("seller_wallets")
+}
+
+model WalletTransaction {
+  id          String   @id @default(uuid())
+  walletId    String   @map("wallet_id")
+  wallet      SellerWallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  type        String   // RECHARGE | CAMPAIGN_PAYMENT | REFUND
+  amount      Float    // positive = credit, negative = debit
+  balanceAfter Float   @map("balance_after")
+  description String
+  reference   String?  // MonCash transaction ref or campaign id
+  status      String   @default("COMPLETED") // PENDING | COMPLETED | FAILED
+  createdAt   DateTime @default(now()) @map("created_at")
+  @@index([walletId])
+  @@index([createdAt])
+  @@map("wallet_transactions")
+}
+
+model NewsletterSubscriber {
+  id          String   @id @default(uuid())
+  email       String   @unique
+  token       String   @unique
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt      @map("updated_at")
+
+  @@map("newsletter_subscribers")
 }
 
 model HomepageBanner {
