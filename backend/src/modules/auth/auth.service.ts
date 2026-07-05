@@ -111,7 +111,7 @@ export class AuthService {
 
     if (user.lockedUntil && user.lockedUntil > new Date()) {
       const mins = Math.ceil((user.lockedUntil.getTime() - Date.now()) / 60000);
-      throw new ForbiddenException(`Compte bloqué. Réessayez dans ${mins} min ou réinitialisez votre mot de passe.`);
+      throw new ForbiddenException(`Compte temporairement bloqué suite à plusieurs échecs de connexion. Réessayez dans ${mins} min, ou réinitialisez votre mot de passe via "Mot de passe oublié".`);
     }
 
     if (!user.isActive) throw new ForbiddenException('Compte désactivé. Contactez le support.');
@@ -142,11 +142,15 @@ export class AuthService {
 
         const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${rawToken}`;
         this.mailService.sendAccountLocked(user.email, user.firstName, resetUrl).catch(() => null);
-        throw new ForbiddenException('Compte bloqué après 5 tentatives. Un email de réinitialisation vous a été envoyé.');
+        throw new ForbiddenException('Compte bloqué après 5 tentatives échouées. Un email pour réinitialiser votre mot de passe vous a été envoyé.');
       }
 
       await this.prisma.user.update({ where: { id: user.id }, data: { failedLoginAttempts: attempts } });
-      throw new UnauthorizedException(`Identifiants invalides. ${MAX_FAILED_ATTEMPTS - attempts} tentative(s) restante(s).`);
+      const remaining = MAX_FAILED_ATTEMPTS - attempts;
+      const s = remaining > 1 ? 's' : '';
+      throw new UnauthorizedException(
+        `Email ou mot de passe incorrect. Il vous reste ${remaining} tentative${s} avant le blocage temporaire (30 min) de ce compte.`
+      );
     }
 
     // Success — reset counter, record login
