@@ -40,6 +40,12 @@ export class AuthService {
   async register(dto: RegisterDto) {
     const emailLower = dto.email.toLowerCase();
 
+    // Domaine réservé au staff interne — jamais utilisable pour un compte
+    // client/vendeur public (empêche l'usurpation de comptes "officiels").
+    if (emailLower.endsWith('@dealpam.com')) {
+      throw new BadRequestException('Ce domaine email est réservé et ne peut pas être utilisé pour créer un compte.');
+    }
+
     // Check duplicates in parallel
     const [emailExists, usernameExists] = await Promise.all([
       this.prisma.user.findUnique({ where: { email: emailLower } }),

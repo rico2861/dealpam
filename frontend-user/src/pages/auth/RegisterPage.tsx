@@ -386,9 +386,13 @@ export default function RegisterPage() {
       ['phone', 'storeName', 'storeDescription', 'nif', 'username'].forEach(k => { if (!payload[k]) delete payload[k]; });
       const { data } = await api.post('/auth/register', payload);
       setUser(data.user, data.accessToken, data.refreshToken);
-      enqueueSnackbar('Compte créé ! Bienvenue sur DealPam 🎉', { variant: 'success' });
-      if (role === 'SELLER') navigate('/seller/subscription');
-      else navigate('/account');
+      if (role === 'SELLER') {
+        enqueueSnackbar('🎁 Compte créé ! Profitez de vos 30 jours d\'essai gratuit.', { variant: 'success' });
+        navigate('/seller');
+      } else {
+        enqueueSnackbar('Compte créé ! Bienvenue sur DealPam 🎉', { variant: 'success' });
+        navigate('/account');
+      }
     } catch (err: any) {
       const net = !err.response || err.code === 'ERR_NETWORK';
       setError(net ? 'Impossible de joindre le serveur.' :
@@ -439,9 +443,9 @@ export default function RegisterPage() {
             /* ── SELLER ── */
             <LeftPanel
               accent={PURPLE}
-              badge="+340 boutiques ouvertes ce mois"
+              badge="🎁 30 jours d'essai GRATUIT pour tout nouveau vendeur"
               headline={<>Transformez vos produits<br />en revenus stables,<br /><Box component="span" sx={{ color: PURPLE }}>dès aujourd'hui.</Box></>}
-              sub="Votre boutique en ligne, vos règles. Commandez, gérez, encaissez — depuis votre téléphone."
+              sub="Votre boutique en ligne, vos règles. Commandez, gérez, encaissez — depuis votre téléphone. Et pendant 30 jours, c'est gratuit."
               features={[
                 { Icon: Inventory2Outlined,      title: 'Boutique complète en 5 min',      sub: 'Publiez vos produits avec photos, prix et stock.' },
                 { Icon: ChatBubbleOutlineRounded, title: 'Discutez directement avec vos clients', sub: 'Répondez, négociez et concluez en temps réel.' },

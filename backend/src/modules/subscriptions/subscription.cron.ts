@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class SubscriptionCron {
@@ -9,7 +10,11 @@ export class SubscriptionCron {
 
   private lastRunDate: string | null = null;
 
-  constructor(private prisma: PrismaService, private mail: MailService) {}
+  constructor(
+    private prisma: PrismaService,
+    private mail: MailService,
+    private notifications: NotificationsService,
+  ) {}
 
   // Run every night at 2:00 AM
   @Cron(CronExpression.EVERY_DAY_AT_2AM)
@@ -83,6 +88,12 @@ export class SubscriptionCron {
             `,
             'seller',
           ).catch(() => null);
+          await this.notifications.create(
+            user.id,
+            'Boutique désactivée',
+            `Votre ${sub.isTrial ? "essai gratuit" : "abonnement " + sub.plan.name} a expiré. Vos produits ne sont plus visibles. Payez un plan pour tout réactiver.`,
+            'SUBSCRIPTION_EXPIRED',
+          ).catch(() => null);
         }
 
         this.logger.log(`Suspended seller ${sub.seller.id} (expired: ${sub.endDate.toISOString()})`);
@@ -122,6 +133,12 @@ export class SubscriptionCron {
           <p><a href="${process.env.FRONTEND_URL}/seller/subscription" style="background:#2563EB;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">Choisir un plan maintenant</a></p>
           `,
           'seller',
+        ).catch(() => null);
+        await this.notifications.create(
+          user.id,
+          sub.isTrial ? `Essai gratuit : ${daysLeft}j restants` : `Abonnement : ${daysLeft}j restants`,
+          `${sub.isTrial ? "Votre essai gratuit" : `Votre abonnement ${sub.plan.name}`} se termine dans ${daysLeft} jour(s). Pensez à choisir un plan pour ne pas perdre la visibilité de vos produits.`,
+          'SUBSCRIPTION_EXPIRING',
         ).catch(() => null);
       }
     }
