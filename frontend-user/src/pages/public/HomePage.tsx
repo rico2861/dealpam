@@ -284,46 +284,6 @@ function SideBanners({ banners }: { banners: typeof LEFT_BANNERS }) {
   );
 }
 
-/* ─── Fallback produits hardcodes (visibles sans backend) ─────────────────── */
-const FALLBACK_MINI = [
-  { id: 'f1', name: 'iPhone 15 Pro Max', slug: 'products', price: 85000, salePrice: 79000,
-    images: [{ urlFull: 'https://images.unsplash.com/photo-1678685888221-cda773a3dcdb?w=600&q=90' }],
-    category: { slug: 'smartphones' } },
-  { id: 'f2', name: 'Samsung Galaxy S24 Ultra', slug: 'products', price: 72000, salePrice: 65000,
-    images: [{ urlFull: 'https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?w=600&q=90' }],
-    category: { slug: 'smartphones' } },
-  { id: 'f3', name: 'MacBook Air M2', slug: 'products', price: 125000, salePrice: 115000,
-    images: [{ urlFull: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=600&q=90' }],
-    category: { slug: 'electronique' } },
-  { id: 'f4', name: 'TV Samsung 55" QLED 4K', slug: 'products', price: 45000, salePrice: 38000,
-    images: [{ urlFull: 'https://images.unsplash.com/photo-1593359677879-a4bb92f4834c?w=600&q=90' }],
-    category: { slug: 'electronique' } },
-  { id: 'f5', name: 'Nike Air Max 270', slug: 'products', price: 12000, salePrice: 9500,
-    images: [{ urlFull: 'https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?w=600&q=90' }],
-    category: { slug: 'chaussures' } },
-  { id: 'f6', name: 'Robe Soiree Rouge', slug: 'products', price: 8500, salePrice: 6800,
-    images: [{ urlFull: 'https://images.unsplash.com/photo-1566479179817-c0e38fd5c97e?w=600&q=90' }],
-    category: { slug: 'vetements' } },
-  { id: 'f7', name: 'Toyota Corolla 2020', slug: 'products', price: 1800000, salePrice: 1650000,
-    images: [{ urlFull: 'https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?w=600&q=90' }],
-    category: { slug: 'vehicules' } },
-  { id: 'f8', name: 'Canape 3 Places Velours', slug: 'products', price: 28000, salePrice: 24000,
-    images: [{ urlFull: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600&q=90' }],
-    category: { slug: 'meubles' } },
-  { id: 'f9', name: 'Parfum Chloe Rose 75ml', slug: 'products', price: 12000, salePrice: 9500,
-    images: [{ urlFull: 'https://images.unsplash.com/photo-1541643600914-78b084683702?w=600&q=90' }],
-    category: { slug: 'beaute' } },
-  { id: 'f10', name: 'Ventilateur Plafond 52"', slug: 'products', price: 9500, salePrice: 7800,
-    images: [{ urlFull: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=600&q=90' }],
-    category: { slug: 'maison' } },
-  { id: 'f11', name: 'Casque Sony WH-1000XM5', slug: 'products', price: 28000, salePrice: 24000,
-    images: [{ urlFull: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&q=90' }],
-    category: { slug: 'electronique' } },
-  { id: 'f12', name: 'Adidas Stan Smith Blanc', slug: 'products', price: 9500, salePrice: 8000,
-    images: [{ urlFull: 'https://images.unsplash.com/photo-1491553895911-0055eca6402d?w=600&q=90' }],
-    category: { slug: 'chaussures' } },
-];
-
 /* ─── Hero carousel slides config ────────────────────────────────────────── */
 const SLIDES = [
   { img: 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=1400&q=85',
@@ -2418,7 +2378,9 @@ export default function HomePage() {
     ...(trending as any[]), ...(phones as any[]), ...(clothes as any[]),
     ...(electronics as any[]), ...(vehicles as any[]), ...(beauty as any[]),
   ].filter((p, i, arr) => arr.findIndex(x => x.id === p.id) === i);
-  const carouselPool = apiPool.length >= 4 ? apiPool : FALLBACK_MINI;
+  // Si pas assez de produits par catégorie, on complète avec les "Vedettes"
+  // choisies par l'admin (isFeatured) — jamais de faux produits inventés.
+  const carouselPool = apiPool.length >= 4 ? apiPool : (featured as any[]);
 
   // Produits recommandés : mix des 3 catégories les plus vues, dédupliqués
   const recommendedProducts = (() => {
