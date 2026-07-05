@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Box, Typography, CircularProgress } from '@mui/material';
 import { CheckCircle, Store, Star, WorkspacePremium, Diamond, CreditCard } from '@mui/icons-material';
 import { useQuery, useMutation } from '@tanstack/react-query';
@@ -47,8 +48,11 @@ export default function SellerSubscriptionPage() {
   const { data: plans, isLoading }  = useQuery({ queryKey: ['plans'],     queryFn: () => api.get('/subscriptions/plans').then(r => r.data) });
   const { data: currentSub }        = useQuery({ queryKey: ['sellerSub'], queryFn: () => api.get('/subscriptions/me').then(r => r.data).catch(() => null), enabled: hasToken });
 
+  const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
+
   const subscribeMut = useMutation({
     mutationFn: (planId: string) => api.post('/payments/subscription/initiate', { planId }).then(r => r.data),
+    onSettled: () => setLoadingPlanId(null),
     onSuccess: (data: any) => {
       if (data?.redirect_url) {
         enqueueSnackbar(`Redirection MonCash pour ${data.plan}…`, { variant: 'info' });
@@ -154,7 +158,11 @@ export default function SellerSubscriptionPage() {
                 </Box>
 
                 {/* CTA */}
-                <Box onClick={() => !isCurrent && !subscribeMut.isPending && subscribeMut.mutate(plan.id)}
+                <Box onClick={() => {
+                    if (isCurrent || subscribeMut.isPending) return;
+                    setLoadingPlanId(plan.id);
+                    subscribeMut.mutate(plan.id);
+                  }}
                   sx={{
                     textAlign: 'center', py: 1.2, borderRadius: '11px', cursor: isCurrent ? 'default' : 'pointer',
                     bgcolor: isCurrent ? 'rgba(255,255,255,0.04)' : color,
@@ -162,7 +170,7 @@ export default function SellerSubscriptionPage() {
                     transition: 'all 0.15s',
                     '&:hover': { bgcolor: isCurrent ? 'rgba(255,255,255,0.04)' : `${color}dd`, filter: isCurrent ? 'none' : 'brightness(0.95)' },
                   }}>
-                  {subscribeMut.isPending
+                  {loadingPlanId === plan.id
                     ? <CircularProgress size={16} sx={{ color: isCurrent ? SUB : '#fff' }} />
                     : <Typography fontSize={13} fontWeight={800} color={isCurrent ? SUB : '#fff'}>
                         {isCurrent ? 'Plan actuel' : `Choisir ${plan.name}`}
