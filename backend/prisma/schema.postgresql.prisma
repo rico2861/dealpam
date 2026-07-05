@@ -292,6 +292,8 @@ model SubscriptionPlan {
   name              String
   priceHTG          Decimal          @map("price_htg") @db.Decimal(10, 2)
   maxProducts       Int?             @map("max_products")
+  // Quota séparé pour les produits de type SERVICE — null = illimité, 0 = non autorisé
+  maxServices       Int?             @map("max_services")
   maxImages         Int              @default(5) @map("max_images")
   maxStores         Int              @default(1) @map("max_stores")
   hasVerifiedBadge  Boolean          @default(false) @map("has_verified_badge")
@@ -612,6 +614,8 @@ model Payment {
   subscriptionId String?             @unique @map("subscription_id")
   subscription   SellerSubscription? @relation(fields: [subscriptionId], references: [id])
   adCampaign     AdCampaign?
+  couponId          String?  @map("coupon_id")
+  couponDiscountHTG Decimal? @map("coupon_discount_htg") @db.Decimal(10, 2)
   method         PaymentMethod
   status         PaymentStatus       @default(PENDING)
   amountHTG            Decimal             @map("amount_htg") @db.Decimal(10, 2)
@@ -951,6 +955,46 @@ model NewsletterSubscriber {
   updatedAt   DateTime @updatedAt      @map("updated_at")
 
   @@map("newsletter_subscribers")
+}
+
+model Coupon {
+  id              String    @id @default(uuid())
+  code            String    @unique
+  description     String?
+  discountType    String    @map("discount_type") // PERCENTAGE | FIXED_AMOUNT
+  discountValue   Decimal   @map("discount_value") @db.Decimal(10, 2)
+  // Où le coupon est utilisable : SUBSCRIPTION | PLATFORM_PRODUCT | BOTH
+  appliesTo       String    @default("BOTH") @map("applies_to")
+  minAmountHTG    Decimal?  @map("min_amount_htg") @db.Decimal(10, 2)
+  maxDiscountHTG  Decimal?  @map("max_discount_htg") @db.Decimal(10, 2)
+  maxUses         Int?      @map("max_uses") // null = illimité
+  usedCount       Int       @default(0) @map("used_count")
+  maxUsesPerUser  Int       @default(1) @map("max_uses_per_user")
+  startsAt        DateTime? @map("starts_at")
+  endsAt          DateTime? @map("ends_at")
+  isActive        Boolean   @default(true) @map("is_active")
+  redemptions     CouponRedemption[]
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@index([code])
+  @@index([isActive])
+  @@map("coupons")
+}
+
+model CouponRedemption {
+  id                String   @id @default(uuid())
+  couponId          String   @map("coupon_id")
+  coupon            Coupon   @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  userId            String   @map("user_id")
+  context           String   // SUBSCRIPTION | PLATFORM_PRODUCT
+  referenceId       String?  @map("reference_id") // subscriptionId ou orderId
+  amountDiscounted  Decimal  @map("amount_discounted") @db.Decimal(10, 2)
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  @@index([couponId])
+  @@index([userId])
+  @@map("coupon_redemptions")
 }
 
 model HomepageBanner {

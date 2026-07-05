@@ -28,10 +28,11 @@ export class ProductsService {
   ) {}
 
   async findAll(filter: FilterProductsDto) {
-    const { brand, minPrice, maxPrice, search, sort, page = 1, limit = 20, storeId, inStock, department, city, featured, sponsored, minRating, hasSale, storeVerified } = filter as any;
+    const { brand, minPrice, maxPrice, search, sort, page = 1, limit = 20, storeId, inStock, department, city, featured, sponsored, minRating, hasSale, storeVerified, productType } = filter as any;
     const category = filter.category || filter.categorySlug;
 
     const baseWhere: any = { status: 'PUBLISHED' };
+    if (productType) baseWhere.productType = productType;
     if (category)  baseWhere.category = { slug: category };
     if (brand)     baseWhere.brand = { slug: brand };
     if (minPrice)  baseWhere.price = { ...baseWhere.price, gte: minPrice };
@@ -173,10 +174,20 @@ export class ProductsService {
 
     if (!store) throw new ForbiddenException('Boutique introuvable');
 
-    // Check product limit
-    if (sub.plan.maxProducts) {
+    // Quota séparé produits vs services — un plan peut limiter les deux différemment
+    const isService = (dto as any).productType === 'SERVICE';
+    if (isService) {
+      if (sub.plan.maxServices !== null && sub.plan.maxServices !== undefined) {
+        const count = await this.prisma.product.count({
+          where: { storeId: store.id, productType: 'SERVICE', status: { in: ['PUBLISHED', 'PENDING_REVIEW', 'DRAFT'] } },
+        });
+        if (count >= sub.plan.maxServices) {
+          throw new ForbiddenException(`Limite de ${sub.plan.maxServices} services atteinte pour votre plan`);
+        }
+      }
+    } else if (sub.plan.maxProducts) {
       const count = await this.prisma.product.count({
-        where: { storeId: store.id, status: { in: ['PUBLISHED', 'PENDING_REVIEW', 'DRAFT'] } },
+        where: { storeId: store.id, productType: { not: 'SERVICE' }, status: { in: ['PUBLISHED', 'PENDING_REVIEW', 'DRAFT'] } },
       });
       if (count >= sub.plan.maxProducts) {
         throw new ForbiddenException(`Limite de ${sub.plan.maxProducts} produits atteinte pour votre plan`);
@@ -238,9 +249,9 @@ export class ProductsService {
         requiresAppointment: (dto as any).requiresAppointment ?? false,
         serviceConfig: (dto as any).serviceConfig || null,
         priceUnit:   (dto as any).priceUnit || null,
-        // Services/RE/Freelance go ACTIVE directly; physical products need review
+        // Services/RE/Freelance sont publiés directement ; produits physiques passent en révision
         status:      (dto as any).productType && (dto as any).productType !== 'PHYSICAL'
-                       ? ((dto as any).status || 'ACTIVE')
+                       ? 'PUBLISHED'
                        : 'PENDING_REVIEW',
         isFeatured:  sub.plan.tier === 'PREMIUM' || sub.plan.tier === 'ELITE',
         isSponsored: sub.plan.hasAutoSponsored,

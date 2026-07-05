@@ -215,14 +215,14 @@ function FilterPanel({ filters, setFilters, onClose, userDept = '' }: { filters:
 
       {/* Categories */}
       <Box sx={{ bgcolor: 'white', borderRadius: 1.5, border: '1px solid #E8E8E8', p: 2, mb: 1.5 }}>
-        <Typography fontWeight={700} fontSize={13} mb={1.5} color="#0F1111">Categorie</Typography>
+        <Typography fontWeight={700} fontSize={13} mb={1.5} color="#0F1111">Catégorie</Typography>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.3 }}>
           <Box onClick={() => set('category', '')}
             sx={{ fontSize: 13, py: 0.5, px: 0.5, borderRadius: 0.8, cursor: 'pointer',
               fontWeight: !filters.category ? 700 : 400,
               color: !filters.category ? ORANGE : '#333',
               '&:hover': { bgcolor: alpha(ORANGE, 0.06) } }}>
-            Toutes les categories
+            Toutes les catégories
           </Box>
           {CATEGORIES.map(cat => (
             <Box key={cat.slug} onClick={() => set('category', cat.slug)}
@@ -306,7 +306,7 @@ function FilterPanel({ filters, setFilters, onClose, userDept = '' }: { filters:
       <Button fullWidth variant="outlined" size="small"
         onClick={() => setFilters({ category: '', minPrice: 0, maxPrice: 50000, minRating: undefined, department: userDept, inStock: false })}
         sx={{ borderColor: '#888', color: '#333', fontSize: 12, borderRadius: 1 }}>
-        Reinitialiser les filtres
+        Réinitialiser les filtres
       </Button>
     </Box>
   );
@@ -401,7 +401,7 @@ export default function SearchPage() {
             border: `2px solid ${ORANGE}`, overflow: 'hidden', bgcolor: 'white' }}>
             <InputBase
               value={query} onChange={e => setQuery(e.target.value)}
-              placeholder="Rechercher produits, boutiques, categories..."
+              placeholder="Rechercher produits, boutiques, catégories..."
               autoFocus
               sx={{ flex: 1, px: 2, fontSize: { xs: 13, md: 14.5 }, color: '#111',
                 '& input::placeholder': { color: '#777', opacity: 1 } }}
@@ -471,7 +471,7 @@ export default function SearchPage() {
 
               <Typography fontSize={13} color="#555" sx={{ flex: 1 }}>
                 {isLoading ? 'Recherche...' : (
-                  <>{total.toLocaleString()} resultat{total !== 1 ? 's' : ''}
+                  <>{total.toLocaleString()} résultat{total !== 1 ? 's' : ''}
                     {query ? <> pour <strong>"{query}"</strong></> : ''}
                     {filters.department ? <> dans <strong>{filters.department}</strong></> : ''}
                   </>
@@ -511,7 +511,7 @@ export default function SearchPage() {
                 border: '1px solid #E8E8E8' }}>
                 <Typography fontSize={48} mb={1}>🔍</Typography>
                 <Typography fontSize={20} fontWeight={700} mb={0.5} color="#0F1111">
-                  Aucun resultat trouve
+                  Aucun résultat trouvé
                 </Typography>
                 <Typography fontSize={14} color="#555" mb={3}>
                   {query ? `Aucun produit pour "${query}"` : 'Aucun produit ne correspond aux filtres'}
@@ -532,7 +532,7 @@ export default function SearchPage() {
                 {/* Suggested categories */}
                 <Divider sx={{ my: 3 }} />
                 <Typography fontSize={13} fontWeight={600} color="#555" mb={1.5}>
-                  Explorer par categorie
+                  Explorer par catégorie
                 </Typography>
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: 'center' }}>
                   {CATEGORIES.slice(0, 8).map(cat => (

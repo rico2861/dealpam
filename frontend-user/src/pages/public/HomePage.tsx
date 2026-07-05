@@ -1035,6 +1035,19 @@ function ProductCard({ p, flash = false, compact = false }: { p: any; flash?: bo
             </Box>
           )}
 
+          {/* Badge SERVICE — top right, jamais confondu avec un produit physique */}
+          {p.productType && p.productType !== 'PHYSICAL' && (
+            <Box sx={{
+              position: 'absolute', top: compact ? 6 : 8, right: compact ? 6 : 8,
+              bgcolor: 'rgba(99,102,241,0.92)', color: 'white', fontWeight: 800,
+              fontSize: compact ? 8.5 : 9.5, lineHeight: 1,
+              borderRadius: '6px', px: compact ? '5px' : '6px', py: compact ? '3px' : '4px',
+              letterSpacing: 0.2, textTransform: 'uppercase',
+            }}>
+              {p.productType === 'SERVICE' ? 'Service' : p.productType === 'RENTAL' ? 'Location' : p.productType === 'VEHICLE' ? 'Véhicule' : 'Service'}
+            </Box>
+          )}
+
           {/* Badge localisation — bottom left */}
           {nearLabel && (
             <Box sx={{

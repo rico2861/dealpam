@@ -68,16 +68,16 @@ const CATS = [
 ];
 
 const NAV = [
-  { label: 'Nouveautes',   path: '/products?sort=latest' },
+  { label: 'Nouveautés',   path: '/products?sort=latest' },
   { label: 'Mode',         path: '/products?category=mode' },
-  { label: 'Electronique', path: '/products?category=electronique' },
+  { label: 'Électronique', path: '/products?category=electronique' },
   { label: 'Maison',       path: '/products?category=maison' },
-  { label: 'Beaute',       path: '/products?category=beaute' },
+  { label: 'Beauté',       path: '/products?category=beaute' },
   { label: 'Chaussures',   path: '/products?category=chaussures' },
   { label: 'Bijoux',       path: '/products?category=bijoux' },
   { label: 'Sport',        path: '/products?category=sport' },
   { label: 'Alimentation', path: '/products?category=alimentation' },
-  { label: 'Services',     path: '/products?category=services' },
+  { label: 'Services',     path: '/products?productType=SERVICE' },
 ];
 
 const DEPTS = ['Ouest','Nord','Nord-Est','Nord-Ouest','Artibonite','Centre','Sud','Sud-Est',"Grand'Anse",'Nippes'];
@@ -648,7 +648,7 @@ export default function Header() {
                       })}
                       <Box onClick={() => doSearch()} sx={{ px: 1.5, py: 1, bgcolor: '#F8FAFC', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 1, borderTop: '1px solid #E2E8F0' }}>
                         <Search sx={{ fontSize: 13, color: '#64748B' }} />
-                        <Typography fontSize={12} color="#475569" fontWeight={500}>Voir tous les resultats pour <strong style={{ color: '#0F172A' }}>"{search}"</strong></Typography>
+                        <Typography fontSize={12} color="#475569" fontWeight={500}>Voir tous les résultats pour <strong style={{ color: '#0F172A' }}>"{search}"</strong></Typography>
                       </Box>
                     </Paper>
                   )}
@@ -747,7 +747,7 @@ export default function Header() {
                   })}
                   <Box onClick={() => doSearch()} sx={{ px: 1.5, py: 1, bgcolor: '#F8FAFC', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 1, borderTop: '1px solid #E2E8F0' }}>
                     <Search sx={{ fontSize: 13, color: '#64748B' }} />
-                    <Typography fontSize={12.5} color="#475569" fontWeight={500}>Voir tous les resultats pour <strong style={{ color: '#0F172A' }}>"{search}"</strong></Typography>
+                    <Typography fontSize={12.5} color="#475569" fontWeight={500}>Voir tous les résultats pour <strong style={{ color: '#0F172A' }}>"{search}"</strong></Typography>
                   </Box>
                 </Paper>
               )}
@@ -882,7 +882,7 @@ export default function Header() {
                 })}
                 <Box onClick={() => doSearch()} sx={{ px: 2, py: 1.2, bgcolor: '#F8FAFC', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 1, borderTop: '1px solid #E2E8F0', '&:hover': { bgcolor: '#F1F5F9' } }}>
                   <Search sx={{ fontSize: 14, color: '#64748B' }} />
-                  <Typography fontSize={13} color="#475569" fontWeight={500}>Voir tous les resultats pour <strong style={{ color: '#0F172A' }}>"{search}"</strong></Typography>
+                  <Typography fontSize={13} color="#475569" fontWeight={500}>Voir tous les résultats pour <strong style={{ color: '#0F172A' }}>"{search}"</strong></Typography>
                 </Box>
               </Paper>
             )}
@@ -1112,6 +1112,7 @@ export default function Header() {
             {[
               { path: '/home',         label: 'Accueil',     I: HomeIcon },
               { path: '/products',     label: 'Marketplace', I: GridView },
+              { path: '/products?productType=SERVICE', label: 'Services', I: MiscellaneousServices },
               { path: '/ventes-flash', label: 'Ventes Flash',I: FlashOn },
               { path: '/stores',       label: 'Boutiques',   I: ShoppingBag },
               ...(user ? [{ path: '/account', label: 'Mon compte', I: Person }] : []),

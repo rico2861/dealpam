@@ -17,6 +17,7 @@ interface Plan {
   priceHTG: number;
   originalPriceHTG: number | null;
   maxProducts: number | null;
+  maxServices: number | null;
   maxImages: number;
   maxStores: number;
   hasVerifiedBadge: boolean;
@@ -35,7 +36,7 @@ interface Plan {
 }
 
 const EMPTY: Omit<Plan, 'id'> = {
-  tier: 'STARTER', name: '', priceHTG: 0, originalPriceHTG: null, maxProducts: null, maxImages: 5, maxStores: 1,
+  tier: 'STARTER', name: '', priceHTG: 0, originalPriceHTG: null, maxProducts: null, maxServices: null, maxImages: 5, maxStores: 1,
   hasVerifiedBadge: false, hasEliteBadge: false, hasPrioritySearch: false, hasHomepageAd: false,
   hasAdvancedStats: false, hasAutoSponsored: false, hasKeywordTargeting: false, isPopular: false,
   maxPromoProducts: 0, maxCarouselProducts: 0, annualDiscountPercent: 25,
@@ -106,9 +107,12 @@ function PlanDialog({ plan, open, onClose }: { plan: Partial<Plan> | null; open:
               fullWidth size="small" placeholder="Illimité" helperText="Vide = illimité" />
           </Grid>
           <Grid item xs={4}>
+            <TextField label="Services max" type="number" value={form.maxServices ?? ''} onChange={setN('maxServices')}
+              fullWidth size="small" placeholder="Illimité" helperText="Quota séparé des produits" />
+          </Grid>
+          <Grid item xs={4}>
             <TextField label="Images / produit" type="number" value={form.maxImages} onChange={setN('maxImages')} fullWidth size="small" />
           </Grid>
-          <Grid item xs={4} />
           <Grid item xs={6}>
             <TextField label="Produits pub max" type="number" value={form.maxPromoProducts} onChange={setN('maxPromoProducts')}
               fullWidth size="small" helperText="Publiables comme pub, jamais dans le carousel" />
@@ -248,7 +252,7 @@ export default function PlansPage() {
 
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.4, mb: 1 }}>
                       <Typography fontSize={12.5} color="text.secondary">
-                        📦 {p.maxProducts ?? 'Illimité'} produits · 🖼️ {p.maxImages} images · 🏪 {p.maxStores} boutique(s)
+                        📦 {p.maxProducts ?? 'Illimité'} produits · 🔧 {p.maxServices ?? 'Illimité'} services · 🖼️ {p.maxImages} images · 🏪 {p.maxStores} boutique(s)
                       </Typography>
                       {p.maxPromoProducts > 0 && (
                         <Typography fontSize={12.5} color="text.secondary">

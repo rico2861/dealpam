@@ -37,6 +37,11 @@ const PLAN_ICONS: Record<string, any> = {
 function buildPlanFeatures(plan: any): string[] {
   const f: string[] = [];
   f.push(plan.maxProducts ? `${plan.maxProducts} produits maximum` : 'Produits illimités');
+  if (plan.maxServices !== null && plan.maxServices !== undefined) {
+    f.push(plan.maxServices === 0 ? 'Services non inclus' : `${plan.maxServices} services maximum`);
+  } else {
+    f.push('Services illimités');
+  }
   f.push(`${plan.maxImages} image${plan.maxImages > 1 ? 's' : ''} par produit`);
   if (plan.maxStores > 1) f.push(`Jusqu'à ${plan.maxStores} boutiques`);
   if (plan.hasEliteBadge) f.push('Badge Elite 💎');

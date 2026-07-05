@@ -4,6 +4,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   Box, Typography, Button, IconButton, Avatar,
   CircularProgress, Rating, Tooltip,
+  Dialog, DialogTitle, DialogContent, DialogActions, TextField, Alert,
 } from '@mui/material';
 import {
   Favorite, FavoriteBorder, Store, Verified,
@@ -134,6 +135,7 @@ export default function ProductDetailPage() {
   const [copied,   setCopied]   = useState(false);
   const [more,     setMore]     = useState(false);
   const [hist,     setHist]     = useState<any[]>([]);
+  const [apptOpen, setApptOpen] = useState(false);
   const t0 = useRef(0);
 
   const { data: product, isLoading } = useQuery({
@@ -422,6 +424,13 @@ export default function ProductDetailPage() {
                   <Typography fontSize={11} fontWeight={700} color={RED}>PROMO -{disc}%</Typography>
                 </Box>
               )}
+              {product.productType && product.productType !== 'PHYSICAL' && (
+                <Box sx={{ px:1.4, py:0.4, borderRadius:'20px', bgcolor:'rgba(99,102,241,0.14)', border:'1px solid rgba(99,102,241,0.35)' }}>
+                  <Typography fontSize={11} fontWeight={700} color="#818CF8" letterSpacing="0.5px" textTransform="uppercase">
+                    {product.productType === 'SERVICE' ? 'Service' : product.productType === 'RENTAL' ? 'Location' : product.productType === 'VEHICLE' ? 'Véhicule' : 'Alimentation'}
+                  </Typography>
+                </Box>
+              )}
             </Box>
 
             {/* title */}
@@ -443,6 +452,21 @@ export default function ProductDetailPage() {
               </Box>
             ) : (
               <Typography fontSize={12.5} color={SUB} mb={2.5}>Aucun avis</Typography>
+            )}
+
+            {/* Rendez-vous — pour les services/prestations qui en nécessitent un */}
+            {product.requiresAppointment && (
+              <Box sx={{ mb:3, p:2, borderRadius:'14px', bgcolor:'rgba(99,102,241,0.08)', border:'1px solid rgba(99,102,241,0.25)' }}>
+                <Typography fontSize={13.5} fontWeight={700} color="#818CF8" mb={1}>
+                  📅 Ce service nécessite une prise de rendez-vous
+                </Typography>
+                <Button fullWidth onClick={()=>setApptOpen(true)}
+                  sx={{ py:1.3, borderRadius:'12px', fontWeight:800, fontSize:14, color:'#fff',
+                    background:'linear-gradient(135deg,#4338CA,#6366F1)',
+                    '&:hover':{ background:'linear-gradient(135deg,#3730A3,#4F46E5)' } }}>
+                  Prendre rendez-vous
+                </Button>
+              </Box>
             )}
 
             {/* price — mobile only: desktop shows it in the sticky buy box on the right */}
@@ -943,6 +967,95 @@ export default function ProductDetailPage() {
           </Button>
         )}
       </Box>
+
+      {apptOpen && product && (
+        <BookAppointmentDialog
+          product={product}
+          isLoggedIn={!!user && !!localStorage.getItem('accessToken')}
+          onClose={() => setApptOpen(false)}
+        />
+      )}
     </Box>
+  );
+}
+
+/* ─── Dialogue de prise de rendez-vous ──────────────────────────────────── */
+function BookAppointmentDialog({ product, isLoggedIn, onClose }: { product: any; isLoggedIn: boolean; onClose: () => void }) {
+  const { enqueueSnackbar } = useSnackbar();
+  const [scheduledAt, setScheduledAt] = useState('');
+  const [note, setNote]               = useState('');
+  const [clientName, setClientName]   = useState('');
+  const [clientPhone, setClientPhone] = useState('');
+  const [clientEmail, setClientEmail] = useState('');
+  const [submitting, setSubmitting]   = useState(false);
+  const [done, setDone]               = useState(false);
+
+  const canSubmit = !!scheduledAt && (isLoggedIn || (clientName.trim() && clientPhone.trim()));
+
+  const submit = async () => {
+    setSubmitting(true);
+    try {
+      if (isLoggedIn) {
+        await api.post('/appointments', { productId: product.id, scheduledAt, note: note || undefined });
+      } else {
+        await api.post('/appointments/public', {
+          productId: product.id, scheduledAt, note: note || undefined,
+          clientName, clientPhone, clientEmail: clientEmail || undefined,
+        });
+      }
+      setDone(true);
+    } catch (e: any) {
+      enqueueSnackbar(e?.response?.data?.message || 'Erreur lors de la prise de rendez-vous', { variant: 'error' });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <Dialog open onClose={onClose} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: '18px', bgcolor: '#0D1424', color: '#fff' } }}>
+      <DialogTitle fontWeight={800}>Prendre rendez-vous</DialogTitle>
+      <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: '12px !important' }}>
+        {done ? (
+          <Alert severity="success" sx={{ borderRadius: '12px' }}>
+            Votre demande de rendez-vous a été envoyée au vendeur. Vous serez contacté pour confirmation.
+          </Alert>
+        ) : (
+          <>
+            <Typography fontSize={13} color="rgba(255,255,255,0.6)">
+              Pour : <strong style={{ color: '#fff' }}>{product.name}</strong>
+            </Typography>
+            <TextField
+              type="datetime-local" label="Date et heure souhaitées" fullWidth size="small"
+              value={scheduledAt} onChange={e => setScheduledAt(e.target.value)}
+              InputLabelProps={{ shrink: true }}
+              inputProps={{ min: new Date().toISOString().slice(0, 16) }}
+              sx={{ '& .MuiInputBase-input': { color: '#fff' }, '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.5)' } }}
+            />
+            {!isLoggedIn && (
+              <>
+                <TextField label="Votre nom *" fullWidth size="small" value={clientName} onChange={e => setClientName(e.target.value)}
+                  sx={{ '& .MuiInputBase-input': { color: '#fff' }, '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.5)' } }} />
+                <TextField label="Votre téléphone *" fullWidth size="small" value={clientPhone} onChange={e => setClientPhone(e.target.value)}
+                  sx={{ '& .MuiInputBase-input': { color: '#fff' }, '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.5)' } }} />
+                <TextField label="Votre email (optionnel)" fullWidth size="small" value={clientEmail} onChange={e => setClientEmail(e.target.value)}
+                  sx={{ '& .MuiInputBase-input': { color: '#fff' }, '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.5)' } }} />
+              </>
+            )}
+            <TextField label="Note (optionnel)" fullWidth size="small" multiline rows={2} value={note} onChange={e => setNote(e.target.value)}
+              sx={{ '& .MuiInputBase-input': { color: '#fff' }, '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.5)' } }} />
+          </>
+        )}
+      </DialogContent>
+      <DialogActions sx={{ px: 3, pb: 2 }}>
+        <Button onClick={onClose} sx={{ color: 'rgba(255,255,255,0.6)' }}>{done ? 'Fermer' : 'Annuler'}</Button>
+        {!done && (
+          <Button onClick={submit} disabled={!canSubmit || submitting} variant="contained"
+            startIcon={submitting ? <CircularProgress size={14} color="inherit" /> : null}
+            sx={{ borderRadius: '10px', fontWeight: 700, bgcolor: '#6366F1', '&:hover': { bgcolor: '#4F46E5' } }}>
+            Confirmer
+          </Button>
+        )}
+      </DialogActions>
+    </Dialog>
   );
 }

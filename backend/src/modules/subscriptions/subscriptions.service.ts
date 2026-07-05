@@ -31,6 +31,7 @@ export class SubscriptionsService {
         name:                  dto.name,
         priceHTG:              dto.priceHTG,
         maxProducts:           dto.maxProducts ?? null,
+        maxServices:           dto.maxServices ?? null,
         maxImages:             dto.maxImages ?? 5,
         maxStores:             dto.maxStores ?? 1,
         hasVerifiedBadge:      !!dto.hasVerifiedBadge,
@@ -54,7 +55,7 @@ export class SubscriptionsService {
   updatePlan(id: string, dto: any) {
     const data: any = {};
     for (const key of [
-      'name', 'priceHTG', 'maxProducts', 'maxImages', 'maxStores',
+      'name', 'priceHTG', 'maxProducts', 'maxServices', 'maxImages', 'maxStores',
       'hasVerifiedBadge', 'hasEliteBadge', 'hasPrioritySearch', 'hasHomepageAd',
       'hasAdvancedStats', 'hasAutoSponsored', 'hasKeywordTargeting', 'description', 'isActive',
       'isPopular', 'originalPriceHTG', 'maxPromoProducts', 'maxCarouselProducts',

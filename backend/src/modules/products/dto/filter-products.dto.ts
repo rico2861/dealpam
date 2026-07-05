@@ -10,6 +10,7 @@ export class FilterProductsDto {
   @IsOptional() @Type(() => Number) @IsNumber() maxPrice?: number;
   @IsOptional() @IsString() search?: string;
   @IsOptional() @IsString() storeId?: string;
+  @IsOptional() @IsString() productType?: string;
   @IsOptional() @IsString() sort?: string;
   @IsOptional() @Transform(({ value }) => value === 'true') @IsBoolean() inStock?: boolean;
   @IsOptional() @IsString() department?: string;

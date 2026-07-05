@@ -195,6 +195,7 @@ model SubscriptionPlan {
   name              String
   priceHTG          Float          @map("price_htg")
   maxProducts       Int?             @map("max_products")
+  maxServices       Int?             @map("max_services")
   maxImages         Int              @default(5) @map("max_images")
   maxStores         Int              @default(1) @map("max_stores")
   hasVerifiedBadge  Boolean          @default(false) @map("has_verified_badge")
@@ -511,6 +512,8 @@ model Payment {
   subscriptionId String?             @unique @map("subscription_id")
   subscription   SellerSubscription? @relation(fields: [subscriptionId], references: [id])
   adCampaign     AdCampaign?
+  couponId          String? @map("coupon_id")
+  couponDiscountHTG Float?  @map("coupon_discount_htg")
   method         String
   status         String       @default("PENDING")
   amountHTG            Float             @map("amount_htg")
@@ -886,4 +889,43 @@ model NewsletterSubscriber {
   updatedAt   DateTime @updatedAt      @map("updated_at")
 
   @@map("newsletter_subscribers")
+}
+
+model Coupon {
+  id              String    @id @default(uuid())
+  code            String    @unique
+  description     String?
+  discountType    String    @map("discount_type")
+  discountValue   Float     @map("discount_value")
+  appliesTo       String    @default("BOTH") @map("applies_to")
+  minAmountHTG    Float?    @map("min_amount_htg")
+  maxDiscountHTG  Float?    @map("max_discount_htg")
+  maxUses         Int?      @map("max_uses")
+  usedCount       Int       @default(0) @map("used_count")
+  maxUsesPerUser  Int       @default(1) @map("max_uses_per_user")
+  startsAt        DateTime? @map("starts_at")
+  endsAt          DateTime? @map("ends_at")
+  isActive        Boolean   @default(true) @map("is_active")
+  redemptions     CouponRedemption[]
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@index([code])
+  @@index([isActive])
+  @@map("coupons")
+}
+
+model CouponRedemption {
+  id                String   @id @default(uuid())
+  couponId          String   @map("coupon_id")
+  coupon            Coupon   @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  userId            String   @map("user_id")
+  context           String
+  referenceId       String?  @map("reference_id")
+  amountDiscounted  Float    @map("amount_discounted")
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  @@index([couponId])
+  @@index([userId])
+  @@map("coupon_redemptions")
 }

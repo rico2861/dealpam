@@ -123,12 +123,12 @@ function DeliveryZonesTab({ storeId, initialZones }: { storeId: string; initialZ
                     InputProps={{ inputProps: { min: 0 } }} />
                 </Grid>
                 <Grid item xs={6}>
-                  <TextField fullWidth size="small" label="Delai min (jours)" type="number"
+                  <TextField fullWidth size="small" label="Délai min (jours)" type="number"
                     value={zone.minDays} onChange={e => updateZone(zone.id, 'minDays', Number(e.target.value))}
                     InputProps={{ inputProps: { min: 1 } }} />
                 </Grid>
                 <Grid item xs={6}>
-                  <TextField fullWidth size="small" label="Delai max (jours)" type="number"
+                  <TextField fullWidth size="small" label="Délai max (jours)" type="number"
                     value={zone.maxDays} onChange={e => updateZone(zone.id, 'maxDays', Number(e.target.value))}
                     InputProps={{ inputProps: { min: 1 } }} />
                 </Grid>
@@ -346,19 +346,19 @@ function PaymentMethodsTab({ storeId, store }: { storeId: string; store: any }) 
       {(accepted.includes('MONCASH') || accepted.includes('NATCASH')) && (
         <>
           <Divider sx={{ my: 2.5 }} />
-          <Typography fontWeight={700} fontSize={14} mb={0.5}>Numeros de paiement mobile</Typography>
+          <Typography fontWeight={700} fontSize={14} mb={0.5}>Numéros de paiement mobile</Typography>
           <Typography fontSize={12} color="#666" mb={2}>
             Ces numeros sont affichees aux clients pour effectuer le paiement.
           </Typography>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
             {accepted.includes('MONCASH') && (
-              <TextField fullWidth label="Numero MonCash" placeholder="+509 XXXX-XXXX"
+              <TextField fullWidth label="Numéro MonCash" placeholder="+509 XXXX-XXXX"
                 value={moncashPhone} onChange={e => setMoncashPhone(e.target.value)}
                 size="small"
                 InputProps={{
                   startAdornment: <Phone sx={{ fontSize: 16, color: '#FF3C00', mr: 1 }} />,
                   endAdornment: moncashPhone ? (
-                    <Tooltip title={copied ? 'Copie !' : 'Copier'}>
+                    <Tooltip title={copied ? 'Copié !' : 'Copier'}>
                       <IconButton size="small" onClick={() => copyPhone(moncashPhone)}>
                         {copied ? <CheckCircle sx={{ fontSize: 15, color: '#007600' }} /> : <ContentCopy sx={{ fontSize: 15, color: '#888' }} />}
                       </IconButton>
@@ -368,7 +368,7 @@ function PaymentMethodsTab({ storeId, store }: { storeId: string; store: any }) 
               />
             )}
             {accepted.includes('NATCASH') && (
-              <TextField fullWidth label="Numero NatCash" placeholder="+509 XXXX-XXXX"
+              <TextField fullWidth label="Numéro NatCash" placeholder="+509 XXXX-XXXX"
                 value={natcashPhone} onChange={e => setNatcashPhone(e.target.value)}
                 size="small"
                 InputProps={{ startAdornment: <Phone sx={{ fontSize: 16, color: '#003087', mr: 1 }} /> }}

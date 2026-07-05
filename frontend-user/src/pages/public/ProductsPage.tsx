@@ -450,6 +450,7 @@ export default function ProductsPage() {
     ...(fs.verified && { storeVerified: 'true' }),
     ...(effectiveDept && { department: effectiveDept }),
     ...(effectiveCity && { city: effectiveCity }),
+    ...(searchParams.get('productType') && { productType: searchParams.get('productType')! }),
   };
   Object.keys(params).forEach(k => { if (params[k] === '') delete params[k]; });
 
