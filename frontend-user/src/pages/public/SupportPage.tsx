@@ -76,7 +76,7 @@ export default function SupportPage() {
 
         <Box sx={{ mt: 3, p: 3, bgcolor: alpha(ORANGE, 0.06), border: `1px solid ${alpha(ORANGE, 0.18)}`, borderRadius: '16px', textAlign: 'center' }}>
           <Typography fontSize={14} color="#475569">
-            Vous êtes vendeur ? Contactez le support dédié à <strong style={{ color: ORANGE }}>vendeurs@dealpam.com</strong>
+            Vous êtes vendeur ? Contactez le support dédié à <strong style={{ color: ORANGE }}>sellers@dealpam.com</strong>
           </Typography>
         </Box>
       </Container>

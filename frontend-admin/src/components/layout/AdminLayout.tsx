@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { Box, Drawer, List, ListItem, ListItemIcon, ListItemText, Typography, AppBar, Toolbar, IconButton, Avatar, Chip, Divider, useMediaQuery, useTheme, Badge, Tooltip, alpha } from '@mui/material';
-import { Dashboard, People, Store, Inventory, ShoppingBag, Payment, Subscriptions, Category, BrandingWatermark, Reviews, Settings, Menu as MenuIcon, Logout, Notifications, FlashOn, Campaign, Tag, Label, Timer, ViewCarousel, SupportAgent, Storefront, AdminPanelSettings, Handshake, WorkspacePremium } from '@mui/icons-material';
+import { Dashboard, People, Store, Inventory, ShoppingBag, Payment, Subscriptions, Category, BrandingWatermark, Reviews, Settings, Menu as MenuIcon, Logout, Notifications, FlashOn, Campaign, Tag, Label, Timer, ViewCarousel, SupportAgent, Storefront, AdminPanelSettings, Handshake, WorkspacePremium, LocalOffer } from '@mui/icons-material';
 import { useAdminStore } from '../../store/admin.store';
 
 // Roles that each menu item is visible to (empty = all staff roles allowed)
@@ -25,6 +25,7 @@ const MENU: MenuItem[] = [
   { path: '/payments',      label: 'Paiements',        icon: Payment,            roles: [...ADMIN_ONLY, 'ACCOUNTANT'] },
   { path: '/subscriptions', label: 'Abonnements',      icon: Subscriptions,      roles: [...ADMIN_ONLY, 'ACCOUNTANT'] },
   { path: '/plans',         label: 'Plans',            icon: WorkspacePremium,   roles: ADMIN_ONLY },
+  { path: '/coupons',       label: 'Coupons',          icon: LocalOffer,         roles: ADMIN_ONLY },
   { path: '/categories',    label: 'Catégories',       icon: Category,           roles: ADMIN_ONLY },
   { path: '/brands',        label: 'Marques',          icon: BrandingWatermark,  roles: ADMIN_ONLY },
   { path: '/reviews',       label: 'Avis',             icon: Reviews,            roles: [...ADMIN_ONLY, 'MODERATOR', 'CUSTOMER_CARE'] },
@@ -105,6 +106,14 @@ export default function AdminLayout() {
             <Typography variant="body2" color="white" fontWeight={600} noWrap fontSize={13}>{admin?.firstName} {admin?.lastName}</Typography>
             <Chip label={admin?.role?.replace('_', ' ')} size="small" sx={{ height: 16, fontSize: 9, bgcolor: alpha(ROLE_COLORS[admin?.role ?? ''] || '#FF9900', 0.25), color: ROLE_COLORS[admin?.role ?? ''] || '#FF9900', mt: 0.3 }} />
           </Box>
+        </Box>
+        {/* Contact interne équipe — visible uniquement dans la plateforme admin */}
+        <Box sx={{ p: 1.2, mb: 1, borderRadius: 2, bgcolor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+          <Typography fontSize={10} color="rgba(255,255,255,0.35)" mb={0.3}>Support interne équipe</Typography>
+          <Typography component="a" href="mailto:team@dealpam.com" fontSize={11.5} fontWeight={600}
+            sx={{ color: '#FF9900', textDecoration: 'none', display: 'block' }}>team@dealpam.com</Typography>
+          <Typography component="a" href="tel:+5093454686" fontSize={11.5} fontWeight={600}
+            sx={{ color: '#FF9900', textDecoration: 'none', display: 'block' }}>+509 3454 686</Typography>
         </Box>
         <ListItem onClick={() => { logout(); navigate('/login'); }}
           sx={{ borderRadius: 2, py: 0.8, gap: 1, cursor: 'pointer', '&:hover': { bgcolor: alpha('#EF4444', 0.1) } }}>

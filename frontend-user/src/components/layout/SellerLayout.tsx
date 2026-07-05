@@ -183,6 +183,11 @@ function SidebarContent({ badges, onClose, stats }: {
             <Typography fontSize={10.5} color={SUB} noWrap>{user?.email}</Typography>
           </Box>
         </Box>
+        <Box component="a" href="mailto:sellers@dealpam.com"
+          sx={{ display: 'block', textAlign: 'center', mb: 1, py: 0.6, borderRadius: '8px', textDecoration: 'none',
+            bgcolor: 'rgba(255,107,0,0.06)', border: `1px solid rgba(255,107,0,0.15)`, '&:hover': { bgcolor: 'rgba(255,107,0,0.1)' } }}>
+          <Typography fontSize={11} color={OR}>Besoin d'aide ? sellers@dealpam.com</Typography>
+        </Box>
         <Box sx={{ display: 'flex', gap: 0.8 }}>
           <Box component={Link} to="/" onClick={onClose}
             sx={{ flex: 1, display: 'flex', alignItems: 'center', gap: 0.8, px: 1.2, py: 0.9, borderRadius: '8px', textDecoration: 'none', '&:hover': { bgcolor: 'rgba(255,255,255,0.05)' }, transition: 'all 0.15s' }}>
@@ -192,7 +197,7 @@ function SidebarContent({ badges, onClose, stats }: {
           <Box onClick={() => { logout(); navigate('/'); }}
             sx={{ flex: 1, display: 'flex', alignItems: 'center', gap: 0.8, px: 1.2, py: 0.9, borderRadius: '8px', cursor: 'pointer', '&:hover': { bgcolor: 'rgba(239,68,68,0.1)' }, transition: 'all 0.15s' }}>
             <Logout sx={{ fontSize: 14, color: SUB }} />
-            <Typography fontSize={12} color={SUB}>Deconnexion</Typography>
+            <Typography fontSize={12} color={SUB}>Déconnexion</Typography>
           </Box>
         </Box>
       </Box>

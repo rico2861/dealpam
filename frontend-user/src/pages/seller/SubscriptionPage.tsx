@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Box, Typography, CircularProgress } from '@mui/material';
+import { Box, Typography, CircularProgress, TextField, InputAdornment } from '@mui/material';
 import { CheckCircle, Store, Star, WorkspacePremium, Diamond, CreditCard } from '@mui/icons-material';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
@@ -63,9 +63,10 @@ export default function SellerSubscriptionPage() {
   const { data: currentSub }        = useQuery({ queryKey: ['sellerSub'], queryFn: () => api.get('/subscriptions/me').then(r => r.data).catch(() => null), enabled: hasToken });
 
   const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
+  const [couponCode, setCouponCode] = useState('');
 
   const subscribeMut = useMutation({
-    mutationFn: (planId: string) => api.post('/payments/subscription/initiate', { planId }).then(r => r.data),
+    mutationFn: (planId: string) => api.post('/payments/subscription/initiate', { planId, couponCode: couponCode || undefined }).then(r => r.data),
     onSettled: () => setLoadingPlanId(null),
     onSuccess: (data: any) => {
       if (data?.redirect_url) {
@@ -105,6 +106,19 @@ export default function SellerSubscriptionPage() {
           </Typography>
         </Box>
       )}
+
+      {/* Code promo */}
+      <Box sx={{ mb: 3, maxWidth: 340 }}>
+        <TextField
+          size="small" fullWidth value={couponCode}
+          onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+          placeholder="Code promo (optionnel)"
+          InputProps={{
+            startAdornment: <InputAdornment position="start"><Typography fontSize={14}>🎟️</Typography></InputAdornment>,
+            sx: { bgcolor: CARD, color: TXT, borderRadius: '10px', '& fieldset': { borderColor: BORD } },
+          }}
+        />
+      </Box>
 
       {/* Plans grid */}
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', md: 'repeat(4,1fr)' }, gap: 1.5, mb: 2 }}>

@@ -369,7 +369,7 @@ function DeliveryStep({
 
 // ─── Step: Payment ────────────────────────────────────────────────────────────
 
-function PaymentStep({ paymentMethods, selectedPayment, setSelectedPayment, notes, setNotes, onBack, onNext, storeInfo, placing }: any) {
+function PaymentStep({ paymentMethods, selectedPayment, setSelectedPayment, notes, setNotes, couponCode, setCouponCode, onBack, onNext, storeInfo, placing }: any) {
   return (
     <Box>
       <Typography fontWeight={800} fontSize={16} mb={2} color={TXT}>Mode de paiement</Typography>
@@ -436,6 +436,12 @@ function PaymentStep({ paymentMethods, selectedPayment, setSelectedPayment, note
         </Box>
       )}
 
+      {storeInfo?.isPlatformStore && (
+        <TextField fullWidth size="small" label="Code promo (optionnel)"
+          value={couponCode} onChange={e => setCouponCode(e.target.value.toUpperCase())}
+          placeholder="Ex: BIENVENUE30" sx={{ mb: 2 }} />
+      )}
+
       <TextField fullWidth multiline rows={2} label="Note pour le vendeur (optionnel)"
         value={notes} onChange={e => setNotes(e.target.value)}
         placeholder="Instructions spéciales, couleur, taille préférée..."
@@ -479,6 +485,7 @@ export default function CheckoutPage() {
   const [shippingCost,     setShippingCost]     = useState(0);
   const [selectedPayment,  setSelectedPayment]  = useState('');
   const [notes, setNotes] = useState('');
+  const [couponCode, setCouponCode] = useState('');
 
   // Cart
   const { data: cart } = useQuery({ queryKey: ['cart'], queryFn: () => api.get('/cart').then(r => r.data) });
@@ -549,6 +556,7 @@ export default function CheckoutPage() {
         pickupPointAddress:  pickupPt?.address ? `${pickupPt.address}, ${pickupPt.city}` : undefined,
         chosenPaymentMethod: selectedPayment   || undefined,
         notes:               notes             || undefined,
+        couponCode:          storeDetail?.isPlatformStore && couponCode ? couponCode : undefined,
       });
       const orders = Array.isArray(res.data) ? res.data : [res.data];
       await fetchCount();
@@ -640,6 +648,7 @@ export default function CheckoutPage() {
                   paymentMethods={paymentMethods}
                   selectedPayment={selectedPayment} setSelectedPayment={setSelectedPayment}
                   notes={notes} setNotes={setNotes}
+                  couponCode={couponCode} setCouponCode={setCouponCode}
                   storeInfo={{ ...storeDetail, ...storeOptions }}
                   onBack={() => setStep(0)} onNext={placeOrder} placing={placing}
                 />
