@@ -25,7 +25,9 @@ export default function MobileBottomNav() {
     : (role === 'ADMIN' || role === 'SUPER_ADMIN') ? '/admin'
     : '/account/profile';
 
-  const messagesDest = role === 'SELLER' && hasToken ? '/seller/chat' : '/stores';
+  const messagesDest = !hasToken ? '/login?next=/account/messages'
+    : role === 'SELLER' ? '/seller/chat'
+    : '/account/messages';
 
   const favorisDest  = user && hasToken ? '/account/wishlist' : '/login?next=/account/wishlist';
 

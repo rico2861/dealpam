@@ -7,6 +7,7 @@ import {
 import {
   Send, FiberManualRecord, SupportAgent, Person, Store as StoreIcon,
   CheckCircle, Cancel, Refresh, FilterList,
+  PictureAsPdfOutlined, InsertDriveFileOutlined,
 } from '@mui/icons-material';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { io, Socket } from 'socket.io-client';
@@ -22,6 +23,8 @@ interface Msg {
   senderId: string;
   conversationId?: string;
   createdAt: string;
+  type?: string;
+  mediaUrl?: string;
   sender?: { id: string; firstName: string; lastName: string; role?: string };
 }
 
@@ -320,6 +323,8 @@ export default function ChatMonitorPage() {
                 messages.map(msg => {
                   const mine = isMine(msg);
                   const isAdmin = isAdminMsg(msg);
+                  const isImg  = msg.type === 'IMAGE' && msg.mediaUrl;
+                  const isFile = msg.type === 'FILE' && msg.mediaUrl;
                   return (
                     <Box key={msg.id} sx={{ display: 'flex', justifyContent: mine ? 'flex-end' : 'flex-start', alignItems: 'flex-end', gap: 0.8 }}>
                       {!mine && (
@@ -340,12 +345,32 @@ export default function ChatMonitorPage() {
                           </Typography>
                         )}
                         <Box sx={{
-                          px: 1.8, py: 1,
+                          px: isImg ? 0.8 : 1.8, py: isImg ? 0.8 : 1,
                           borderRadius: mine ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
                           bgcolor: mine ? OR : 'white',
                           boxShadow: mine ? `0 2px 8px ${alpha(OR, 0.3)}` : '0 1px 3px rgba(0,0,0,0.07)',
+                          overflow: 'hidden',
                         }}>
-                          <Typography fontSize={13.5} color={mine ? 'white' : '#111827'} lineHeight={1.5}>{msg.content}</Typography>
+                          {isImg && (
+                            <Box component="img" src={msg.mediaUrl} alt="" loading="lazy"
+                              onClick={() => window.open(msg.mediaUrl, '_blank')}
+                              sx={{ maxWidth: '100%', maxHeight: 260, borderRadius: '10px', display: 'block', cursor: 'pointer', objectFit: 'cover' }}
+                            />
+                          )}
+                          {isFile && (
+                            <Box component="a" href={msg.mediaUrl} target="_blank" rel="noopener"
+                              sx={{ display: 'flex', alignItems: 'center', gap: 1, textDecoration: 'none', px: 1, py: 0.2 }}>
+                              {/\.pdf($|\?)/i.test(msg.mediaUrl!)
+                                ? <PictureAsPdfOutlined sx={{ fontSize: 20, color: mine ? 'white' : '#DC2626', flexShrink: 0 }} />
+                                : <InsertDriveFileOutlined sx={{ fontSize: 20, color: mine ? 'white' : '#2563EB', flexShrink: 0 }} />}
+                              <Typography fontSize={12.5} fontWeight={600} color={mine ? 'white' : '#111827'} sx={{ wordBreak: 'break-all' }}>
+                                {msg.content}
+                              </Typography>
+                            </Box>
+                          )}
+                          {!isImg && !isFile && (
+                            <Typography fontSize={13.5} color={mine ? 'white' : '#111827'} lineHeight={1.5}>{msg.content}</Typography>
+                          )}
                         </Box>
                         <Typography fontSize={10} color="#CBD5E1" mt={0.3} textAlign={mine ? 'right' : 'left'}>
                           {new Date(msg.createdAt).toLocaleTimeString('fr', { hour: '2-digit', minute: '2-digit' })}

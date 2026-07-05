@@ -16,6 +16,7 @@ import {
   TrendingUp, FavoriteBorder, GridView, CheckCircle,
   ShoppingBag, Inventory, BarChart as BarChartIcon,
   GpsFixed, StorefrontOutlined, ArrowForward, ReceiptLongOutlined,
+  ChatBubbleOutline,
 } from '@mui/icons-material';
 import { useAuthStore } from '../../store/auth.store';
 import { useCartStore } from '../../store/cart.store';
@@ -312,6 +313,7 @@ function AccountDropdown({ user, isSeller, navigate, onClose, logout }: any) {
   const buyerItems = [
     { label: 'Mon profil',     path: '/account',          Icon: Person },
     { label: 'Mes commandes',  path: '/account/orders',   Icon: ReceiptLongOutlined },
+    { label: 'Mes messages',   path: '/account/messages', Icon: ChatBubbleOutline },
     { label: 'Mes favoris',    path: '/account/wishlist', Icon: FavoriteBorder },
   ];
 
@@ -903,6 +905,16 @@ export default function Header() {
             <Button component={Link} to="/login" variant="outlined" size="small" sx={{ borderColor: 'rgba(255,255,255,0.2)', color: 'white', borderRadius: '10px', fontSize: 13, fontWeight: 600, px: 2, flexShrink: 0, '&:hover': { borderColor: ORANGE, color: ORANGE, bgcolor: alpha(ORANGE, 0.06) } }}>
               Connexion
             </Button>
+          )}
+
+          {/* Messages */}
+          {user && (
+            <Tooltip title="Mes messages">
+              <IconButton component={Link} to={isSeller ? '/seller/chat' : '/account/messages'}
+                sx={{ color: 'rgba(255,255,255,0.6)', borderRadius: '10px', border: '1px solid transparent', flexShrink: 0, '&:hover': { color: ORANGE, border: `1px solid ${BORDER}`, bgcolor: 'rgba(255,255,255,0.04)' } }}>
+                <ChatBubbleOutline sx={{ fontSize: 21 }} />
+              </IconButton>
+            </Tooltip>
           )}
 
           {/* Wishlist */}

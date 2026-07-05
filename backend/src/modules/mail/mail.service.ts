@@ -497,6 +497,14 @@ export class MailService {
   // ── INTERNAL ──────────────────────────────────────────────────────────────
 
   private async send(to: string, subject: string, html: string): Promise<void> {
+    // En dev/local, les comptes vendeurs de seed ont des emails fictifs (@dealpam.com sans
+    // boîte réelle) — chaque envoi rebondit et Gmail renvoie la notification d'échec dans
+    // la boîte du compte SMTP lui-même. On n'envoie donc réellement qu'en production,
+    // et on trace l'email qui aurait été envoyé dans les logs sinon.
+    if (process.env.NODE_ENV !== 'production') {
+      this.logger.log(`[DRY-RUN dev] Email non envoyé (NODE_ENV≠production) → ${to}: ${subject}`);
+      return;
+    }
     try {
       await this.transporter.sendMail({ from: `"DealPam" <${process.env.SMTP_USER}>`, to, subject, html });
       this.logger.log(`Email sent to ${to}: ${subject}`);

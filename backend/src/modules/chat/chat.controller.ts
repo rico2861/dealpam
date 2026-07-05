@@ -51,13 +51,15 @@ export class ChatController {
   }
 
   @Post('conversations/:id/messages')
-  @ApiOperation({ summary: 'Envoyer un message dans une conversation' })
+  @ApiOperation({ summary: 'Envoyer un message dans une conversation (texte, image ou fichier)' })
   sendMessage(
     @Req() req: any,
     @Param('id') conversationId: string,
     @Body('content') content: string,
+    @Body('type') type?: 'TEXT' | 'IMAGE' | 'FILE',
+    @Body('mediaUrl') mediaUrl?: string,
   ) {
-    return this.chatService.sendMessage(req.user.id, conversationId, content);
+    return this.chatService.sendMessage(req.user.id, conversationId, content, type || 'TEXT', mediaUrl);
   }
 
   @Post('conversations/:id/read')

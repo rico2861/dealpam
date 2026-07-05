@@ -74,7 +74,8 @@ export default function OptimizedImg({ images, alt, mode = 'card', style, classN
         alt={alt}
         loading={isEager ? 'eager' : 'lazy'}
         decoding={isEager ? 'sync' : 'async'}
-        fetchPriority={isEager ? 'high' : 'low'}
+        // @ts-expect-error — React <19 doesn't type fetchpriority; must be lowercase to reach the DOM correctly
+        fetchpriority={isEager ? 'high' : 'low'}
         onLoad={() => setLoaded(true)}
         onClick={onClick}
         className={className}

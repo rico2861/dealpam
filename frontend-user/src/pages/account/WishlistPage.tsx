@@ -39,6 +39,11 @@ export default function WishlistPage() {
     queryFn: () => api.get('/wishlist').then(r => r.data as any[]),
     enabled: !!user,
     staleTime: 0,
+    // Le favori peut avoir été ajouté/retiré sur une autre page (fiche produit, liste...) :
+    // il faut toujours revérifier au montage, sinon un résultat vide mis en cache plus tôt
+    // (ex: avant tout ajout) resterait affiché indéfiniment malgré le paramètre global
+    // refetchOnMount:false défini dans main.tsx.
+    refetchOnMount: 'always',
   });
 
   const remove = useMutation({

@@ -3,10 +3,26 @@ import ReactDOM from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SnackbarProvider } from 'notistack';
 import CustomSnackbar from './components/shared/CustomSnackbar';
-import { ThemeProvider, CssBaseline } from '@mui/material';
+import { ThemeProvider, CssBaseline, useMediaQuery } from '@mui/material';
 import App from './App';
 import theme from './theme';
 import './index.css';
+
+// Sur mobile, "bottom-right" chevauche la barre de navigation fixe et le bouton
+// de chat flottant — on affiche donc les notifications en haut, centrées, en dessous
+// de 600px, et on garde le classique bas-droite sur desktop.
+function AppSnackbarProvider({ children }: { children: React.ReactNode }) {
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  return (
+    <SnackbarProvider
+      maxSnack={3}
+      anchorOrigin={isMobile ? { vertical: 'top', horizontal: 'center' } : { vertical: 'bottom', horizontal: 'right' }}
+      Components={{ success: CustomSnackbar, error: CustomSnackbar, info: CustomSnackbar, warning: CustomSnackbar }}
+    >
+      {children}
+    </SnackbarProvider>
+  );
+}
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -25,13 +41,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <QueryClientProvider client={queryClient}>
-        <SnackbarProvider
-          maxSnack={3}
-          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-          Components={{ success: CustomSnackbar, error: CustomSnackbar, info: CustomSnackbar, warning: CustomSnackbar }}
-        >
+        <AppSnackbarProvider>
           <App />
-        </SnackbarProvider>
+        </AppSnackbarProvider>
       </QueryClientProvider>
     </ThemeProvider>
   </React.StrictMode>

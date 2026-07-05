@@ -48,9 +48,7 @@ const LINKS_ACHETER = [
 
 const LINKS_VENDRE_GUEST = [
   { label: 'Vendre sur DealPam', to: '/register?role=SELLER' },
-  { label: 'Créer un compte',    to: '/register?role=SELLER' },
   { label: 'Comment ça marche',  to: '/support' },
-  { label: 'Support',            to: '/support' },
 ];
 
 const LINKS_VENDRE_SELLER = [
@@ -249,7 +247,7 @@ export default function Footer() {
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
               {linksVendre.map(({ label, to }) => (
-                <Box key={to} component={Link} to={to} sx={{
+                <Box key={label} component={Link} to={to} sx={{
                   fontSize: 13.5, color: 'rgba(255,255,255,0.42)', textDecoration: 'none',
                   transition: 'color 0.18s', '&:hover': { color: 'white' },
                   display: 'inline-flex', alignItems: 'center', gap: 0.5,

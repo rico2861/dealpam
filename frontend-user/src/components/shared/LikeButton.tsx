@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { IconButton, Typography, Box, alpha, Tooltip } from '@mui/material';
 import { Favorite, FavoriteBorder } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import api from '../../api/axios';
 import { useAuthStore } from '../../store/auth.store';
@@ -26,6 +27,7 @@ export default function LikeButton({
 }: Props) {
   const { user }   = useAuthStore();
   const navigate   = useNavigate();
+  const qc         = useQueryClient();
   const { enqueueSnackbar } = useSnackbar();
   const track = useEventTracker();
 
@@ -55,12 +57,16 @@ export default function LikeButton({
         enqueueSnackbar('Ajouté aux favoris ❤️', { variant: 'success', autoHideDuration: 2000 });
         track({ eventType: 'LIKE', productId, categorySlug });
       }
+      // Rafraîchit immédiatement la page Favoris et le badge du header/nav,
+      // au lieu d'attendre une prochaine navigation.
+      qc.invalidateQueries({ queryKey: ['wishlist'] });
+      qc.invalidateQueries({ queryKey: ['wishlist-count'] });
     } catch {
       enqueueSnackbar('Erreur', { variant: 'error', autoHideDuration: 1500 });
     } finally {
       setBusy(false);
     }
-  }, [liked, busy, user, productId, navigate, track, categorySlug, enqueueSnackbar]);
+  }, [liked, busy, user, productId, navigate, track, categorySlug, enqueueSnackbar, qc]);
 
   const iconSx = {
     fontSize: size === 'small' ? 18 : 22,

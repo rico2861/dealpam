@@ -227,7 +227,7 @@ export default function SellerLayout() {
   };
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: BG }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh', width: '100%', bgcolor: BG }}>
 
       {!isMobile && (
         <Box sx={{ width: W, flexShrink: 0, position: 'fixed', top: 0, left: 0, bottom: 0, borderRight: `1px solid ${BORD}`, zIndex: 100 }}>
@@ -242,7 +242,7 @@ export default function SellerLayout() {
         </Drawer>
       )}
 
-      <Box sx={{ flex: 1, ml: isMobile ? 0 : `${W}px`, display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      <Box sx={{ flex: 1, minWidth: 0, ml: isMobile ? 0 : `${W}px`, display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
 
         {isMobile && (
           <Box sx={{ position: 'sticky', top: 0, zIndex: 50, bgcolor: SIDE, borderBottom: `1px solid ${BORD}`, px: 2, py: 1.5, display: 'flex', alignItems: 'center', gap: 1.5 }}>

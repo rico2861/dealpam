@@ -132,7 +132,7 @@ export class ProductsService {
       where: { slug },
       include: {
         ...PRODUCT_INCLUDE,
-        store: true,
+        store: { include: { seller: { select: { userId: true } } } },
         reviews: {
           where: { isApproved: true },
           include: { user: { select: { firstName: true, lastName: true, avatar: true } } },

@@ -342,12 +342,12 @@ export default function SellerChatPage() {
   const groups = groupByDate(messages);
 
   return (
-    <Box sx={{ display: 'flex', height: { xs: 'calc(100vh - 60px)', md: '100vh' }, overflow: 'hidden', bgcolor: DARK_BG }}>
+    <Box sx={{ display: 'flex', width: '100%', height: { xs: 'calc(100vh - 60px)', md: '100vh' }, overflow: 'hidden', bgcolor: DARK_BG }}>
       <input ref={fileRef} type="file" accept="image/*,.pdf,.doc,.docx,.txt" style={{ display: 'none' }} onChange={handleFile} />
 
       {/* ── LEFT ── */}
       <Box sx={{
-        width: { xs: active ? 0 : '100%', sm: 300 },
+        width: { xs: active ? 0 : '100%', sm: 280, md: 320, lg: 360 },
         flexShrink: 0, overflow: 'hidden',
         display: { xs: active ? 'none' : 'flex', sm: 'flex' },
         flexDirection: 'column',
@@ -423,7 +423,7 @@ export default function SellerChatPage() {
               <Box key={conv.id} onClick={() => selectConv(conv.id)} sx={{
                 display: 'flex', gap: 1.5, alignItems: 'center',
                 px: 1.5, py: 1.5, mb: 0.5, borderRadius: '14px', cursor: 'pointer',
-                transition: 'all 0.15s',
+                transition: 'all 0.18s cubic-bezier(.2,.8,.2,1)',
                 background: sel
                   ? 'linear-gradient(135deg,rgba(255,107,0,0.18),rgba(255,107,0,0.08))'
                   : 'transparent',
@@ -435,7 +435,9 @@ export default function SellerChatPage() {
                     ? 'linear-gradient(135deg,rgba(255,107,0,0.2),rgba(255,107,0,0.1))'
                     : 'rgba(255,255,255,0.04)',
                   borderColor: sel ? 'rgba(255,107,0,0.4)' : 'rgba(255,255,255,0.07)',
+                  transform: 'translateX(2px)',
                 },
+                '&:active': { transform: 'scale(0.99)' },
               }}>
 
                 {/* Avatar */}
@@ -470,7 +472,12 @@ export default function SellerChatPage() {
                     <Box sx={{ position: 'absolute', top: -4, right: -4, minWidth: 18, height: 18, borderRadius: '6px',
                       bgcolor: ORANGE, border: '2px solid #0a1020',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      boxShadow: '0 2px 8px rgba(255,107,0,0.5)' }}>
+                      boxShadow: '0 2px 8px rgba(255,107,0,0.5)',
+                      animation: 'dp-pulse 2s ease-in-out infinite',
+                      '@keyframes dp-pulse': {
+                        '0%,100%': { boxShadow: '0 2px 8px rgba(255,107,0,0.5)' },
+                        '50%':     { boxShadow: '0 2px 14px rgba(255,107,0,0.85)' },
+                      } }}>
                       <Typography sx={{ fontSize: 9.5, fontWeight: 900, color: 'white', px: 0.4, lineHeight: 1 }}>
                         {unread > 9 ? '9+' : unread}
                       </Typography>
@@ -510,7 +517,11 @@ export default function SellerChatPage() {
       </Box>
 
       {/* ── RIGHT: chat area ── */}
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, position: 'relative', bgcolor: DARK_BG }}>
+      <Box sx={{
+        flex: 1, minWidth: 0, position: 'relative', bgcolor: DARK_BG,
+        flexDirection: 'column',
+        display: { xs: active ? 'flex' : 'none', sm: 'flex' },
+      }}>
         {!active ? (
           <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 0, p: 4 }}>
             {/* Decorative rings */}
@@ -641,6 +652,7 @@ export default function SellerChatPage() {
               scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.07) transparent',
               '&::-webkit-scrollbar': { width: 4 },
               '&::-webkit-scrollbar-thumb': { bgcolor: 'rgba(255,255,255,0.08)', borderRadius: 2 },
+              '& > *': { width: '100%', maxWidth: 860, mx: 'auto' },
             }}>
               {loadingMsgs && (
                 <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', py: 6 }}>

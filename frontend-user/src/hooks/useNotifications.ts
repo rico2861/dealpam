@@ -25,6 +25,7 @@ export function useWishlistCount() {
     queryFn:  () => api.get('/wishlist/count').then(r => r.data?.count ?? 0),
     enabled:  !!user && hasToken(),
     staleTime: 60_000,
+    refetchOnMount: 'always',
   });
   return data ?? 0;
 }
