@@ -30,7 +30,7 @@ export class WalletService {
 
   /** Step 1 — crée un paiement MonCash et retourne l'URL de redirection */
   async initRecharge(sellerId: string, amount: number): Promise<{ redirectUrl: string; orderId: string }> {
-    if (amount < 100) throw new BadRequestException('Montant minimum: 100 HTG');
+    if (amount < 25) throw new BadRequestException('Montant minimum: 25 HTG');
 
     const orderId = `WALLET-${randomUUID()}`;
     const { redirectUrl } = await this.moncash.createPayment(amount, orderId);
@@ -69,7 +69,7 @@ export class WalletService {
     }
 
     const amount = Number(payment.cost);
-    if (!amount || amount < 100) throw new BadRequestException('Montant invalide');
+    if (!amount || amount < 25) throw new BadRequestException('Montant invalide');
 
     // Vérifier que l'orderId correspond à une recharge en attente pour CE vendeur
     const wallet = await this.ensureWallet(sellerId);
