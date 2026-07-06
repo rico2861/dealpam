@@ -31,7 +31,7 @@ function LockCountdown({ seconds }: { seconds: number }) {
         </Typography>
       </Box>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.8, mb: 2 }}>
-        {[String(m).padStart(2,'0'), String(s).padStart(2,'0')].map((v, i) => (
+        {[String(m).padStart(2, '0'), String(s).padStart(2, '0')].map((v, i) => (
           <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
             <Box sx={{ bgcolor: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.35)', borderRadius: '8px', px: 1.5, py: 0.8, minWidth: 44, textAlign: 'center' }}>
               <Typography fontWeight={900} fontSize={22} color="#FF6B6B" fontFamily="monospace">{v}</Typography>
@@ -63,17 +63,9 @@ export default function LoginPage() {
   const [lockoutSeconds, setLockoutSeconds] = useState(0); // server-side lockout
   const delayRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Show revocation banner if session was cut server-side
+  // Déconnexion silencieuse : on nettoie la trace de la raison sans l'afficher.
   useEffect(() => {
-    const reason = sessionStorage.getItem('logout_reason');
-    if (reason) {
-      // Replace raw technical JWT errors with a user-friendly message
-      const friendly = /jwt|expired|token|unauthorized/i.test(reason)
-        ? 'Session expirée — veuillez vous reconnecter.'
-        : reason;
-      setError(friendly);
-      sessionStorage.removeItem('logout_reason');
-    }
+    sessionStorage.removeItem('logout_reason');
   }, []);
 
   // Animated orbs
@@ -240,7 +232,7 @@ export default function LoginPage() {
             <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <TextField
                 fullWidth type="email" value={form.email} autoFocus autoComplete="email" required
-                label="Email administrateur" placeholder="admin@dealpam.com"
+                label="Email" placeholder="Jeanmax@gmail.com"
                 onChange={e => setForm({ ...form, email: e.target.value })}
                 disabled={isBlocked || isDelayed}
                 sx={fieldSx}

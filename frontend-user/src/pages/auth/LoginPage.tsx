@@ -47,9 +47,9 @@ export default function LoginPage() {
 
   const idType = detectType(identifier);
 
+  // Déconnexion silencieuse : on nettoie la trace de la raison sans l'afficher.
   useEffect(() => {
-    const r = sessionStorage.getItem('logout_reason');
-    if (r) { setError(r); sessionStorage.removeItem('logout_reason'); }
+    sessionStorage.removeItem('logout_reason');
   }, []);
 
   // Navigation after login is handled in handleSubmit.
