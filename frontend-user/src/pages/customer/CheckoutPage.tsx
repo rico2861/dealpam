@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import {
   Container, Grid, Box, Typography, Button, Chip, Divider,
   TextField, CircularProgress, Radio, alpha, IconButton,
-  Dialog, DialogContent,
+  Dialog, DialogContent, MenuItem,
 } from '@mui/material';
 import {
   ShoppingCart, LocationOn, ArrowBack,
@@ -78,42 +78,39 @@ function AddAddressModal({ open, onClose, profile, onCreated }: any) {
     } finally { setSaving(false); }
   };
 
-  const inputSx = { mb: 1.5,
-    '& .MuiOutlinedInput-root': { borderRadius: '12px', color: TXT, bgcolor: CARD,
-      '& fieldset': { borderColor: BORD }, '&:hover fieldset': { borderColor: alpha(OR, 0.4) },
-      '&.Mui-focused fieldset': { borderColor: OR } },
-    '& .MuiInputLabel-root': { color: TXT2 } };
+  const inputSx = { mb: 2,
+    '& .MuiOutlinedInput-root': { borderRadius: '10px' } };
 
   return (
-    <Dialog open={open} onClose={onClose} PaperProps={{
-      sx: { bgcolor: CARD2, border: `1px solid ${BORD}`, borderRadius: '20px', maxWidth: 440, width: '100%', m: 2 }
-    }}>
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs"
+      PaperProps={{ sx: { borderRadius: { xs: 0, sm: '16px' }, m: { xs: 0, sm: 2 },
+        width: { xs: '100%', sm: 'auto' }, height: { xs: '100%', sm: 'auto' },
+        maxHeight: { xs: '100%', sm: 'calc(100% - 64px)' } } }}>
       <DialogContent sx={{ p: 0 }}>
-        <Box sx={{ px: 2.5, pt: 2.5, pb: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography fontWeight={800} fontSize={15} color={TXT}>Nouvelle adresse de livraison</Typography>
-          <IconButton size="small" onClick={onClose} sx={{ color: TXT2 }}><Close fontSize="small" /></IconButton>
+        <Box sx={{ px: 3, pt: 3, pb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          borderBottom: '1px solid rgba(0,0,0,0.08)' }}>
+          <Typography fontWeight={700} fontSize={17}>Nouvelle adresse de livraison</Typography>
+          <IconButton size="small" onClick={onClose}><Close fontSize="small" /></IconButton>
         </Box>
-        <Box sx={{ px: 2.5, pb: 2.5 }}>
-          <TextField fullWidth size="small" label="Libellé" value={form.label} onChange={e => set('label', e.target.value)} sx={inputSx} placeholder="Ex: Maison, Bureau..." />
-          <TextField fullWidth size="small" label="Nom complet" value={form.fullName} onChange={e => set('fullName', e.target.value)} sx={inputSx} />
-          <TextField fullWidth size="small" label="Téléphone" value={form.phone} onChange={e => set('phone', e.target.value)} sx={inputSx} />
-          <TextField fullWidth size="small" label="Adresse (rue, numéro)" value={form.line1} onChange={e => set('line1', e.target.value)} sx={inputSx} />
-          <Grid container spacing={1.5} sx={{ mb: 1.5 }}>
-            <Grid item xs={6}>
-              <TextField fullWidth size="small" label="Ville" value={form.city} onChange={e => set('city', e.target.value)}
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', color: TXT, bgcolor: CARD, '& fieldset': { borderColor: BORD }, '&:hover fieldset': { borderColor: alpha(OR, 0.4) }, '&.Mui-focused fieldset': { borderColor: OR } }, '& .MuiInputLabel-root': { color: TXT2 } }} />
+        <Box sx={{ px: 3, py: 3 }}>
+          <TextField fullWidth label="Libellé" value={form.label} onChange={e => set('label', e.target.value)} sx={inputSx} placeholder="Ex: Maison, Bureau..." />
+          <TextField fullWidth label="Nom complet" value={form.fullName} onChange={e => set('fullName', e.target.value)} sx={inputSx} />
+          <TextField fullWidth label="Téléphone" value={form.phone} onChange={e => set('phone', e.target.value)} sx={inputSx} />
+          <TextField fullWidth label="Adresse (rue, numéro)" value={form.line1} onChange={e => set('line1', e.target.value)} sx={inputSx} />
+          <Grid container spacing={2} sx={{ mb: 0.5 }}>
+            <Grid item xs={12} sm={6}>
+              <TextField fullWidth label="Ville" value={form.city} onChange={e => set('city', e.target.value)} sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px' } }} />
             </Grid>
-            <Grid item xs={6}>
-              <TextField fullWidth select size="small" label="Département" value={form.department} onChange={e => set('department', e.target.value)}
-                SelectProps={{ native: true }}
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', color: TXT, bgcolor: CARD, '& fieldset': { borderColor: BORD } }, '& .MuiInputLabel-root': { color: TXT2 }, '& select': { color: TXT, bgcolor: CARD2 } }}>
-                <option value="">— Département —</option>
-                {HAITI_DEPTS.filter((d, i, a) => a.indexOf(d) === i).map(d => <option key={d} value={d}>{d}</option>)}
+            <Grid item xs={12} sm={6}>
+              <TextField fullWidth select label="Département" value={form.department} onChange={e => set('department', e.target.value)}
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px' } }}>
+                <MenuItem value=""><em>— Département —</em></MenuItem>
+                {HAITI_DEPTS.filter((d, i, a) => a.indexOf(d) === i).map(d => <MenuItem key={d} value={d}>{d}</MenuItem>)}
               </TextField>
             </Grid>
           </Grid>
           <Button fullWidth variant="contained" onClick={handleSave} disabled={saving}
-            sx={{ py: 1.3, borderRadius: '12px', fontWeight: 800, textTransform: 'none', bgcolor: OR, '&:hover': { bgcolor: ORD } }}>
+            sx={{ mt: 2.5, py: 1.4, borderRadius: '10px', fontWeight: 700, textTransform: 'none', bgcolor: OR, '&:hover': { bgcolor: ORD } }}>
             {saving ? <CircularProgress size={18} sx={{ color: 'white' }} /> : 'Enregistrer l\'adresse'}
           </Button>
         </Box>
