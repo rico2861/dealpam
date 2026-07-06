@@ -128,6 +128,10 @@ export class AuthService {
       } catch (err) {
         this.logger.warn(`Essai gratuit non accordé pour ${user.email} (${(err as Error).message}) — email de bienvenue envoyé quand même`);
       }
+      // Filet de sécurité : si l'essai n'a pas été accordé (anti-abus), le
+      // vendeur garde au moins les 2 produits gratuits du plan Starter —
+      // jamais bloqué à zéro abonnement. No-op si l'essai a déjà été accordé.
+      await this.subscriptionsService.ensureBaselinePlan(seller.id).catch(() => null);
       this.mailService
         .sendSellerWelcomeTrial(user.email, user.firstName, storeNameTrimmed, trialEndDate)
         .catch((err) => this.logger.error(`Échec envoi email bienvenue vendeur à ${user.email}: ${err.message}`));

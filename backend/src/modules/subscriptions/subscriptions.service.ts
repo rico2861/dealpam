@@ -127,6 +127,29 @@ export class SubscriptionsService {
     return subscription;
   }
 
+  // ── Garantit qu'un vendeur a toujours au moins le plan gratuit Starter ────
+  // Sans ça, un vendeur qui n'a jamais démarré d'essai ni payé un plan se
+  // retrouve avec zéro abonnement en base et se fait bloquer même pour les
+  // 2 produits gratuits auxquels il a droit sans engagement. Appelé à la
+  // création du compte vendeur ; no-op si un abonnement actif existe déjà.
+  async ensureBaselinePlan(sellerId: string) {
+    const existing = await this.prisma.sellerSubscription.findFirst({
+      where: { sellerId, isActive: true, endDate: { gt: new Date() } },
+    });
+    if (existing) return existing;
+
+    const starter = await this.prisma.subscriptionPlan.findUnique({ where: { tier: 'STARTER' as any } });
+    if (!starter) return null;
+
+    const startDate = new Date();
+    const endDate = new Date(startDate);
+    endDate.setFullYear(endDate.getFullYear() + 100); // plan gratuit, pas de renouvellement à gérer
+
+    return this.prisma.sellerSubscription.create({
+      data: { sellerId, planId: starter.id, startDate, endDate, isActive: true, billingCycle: 'MONTHLY' },
+    });
+  }
+
   // Abonnement actif du vendeur — inclut le changement de plan programmé
   // (payé mais pas encore démarré) s'il y en a un, pour affichage côté vendeur.
   async getMySubscription(userId: string) {

@@ -2,6 +2,7 @@ import { Injectable, ForbiddenException, NotFoundException, BadRequestException 
 import { PrismaService } from '../../prisma/prisma.service';
 import { UploadService } from '../upload/upload.service';
 import { EventsService } from '../events/events.service';
+import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { FilterProductsDto } from './dto/filter-products.dto';
@@ -25,6 +26,7 @@ export class ProductsService {
     private prisma: PrismaService,
     private uploadService: UploadService,
     private eventsService: EventsService,
+    private subscriptionsService: SubscriptionsService,
   ) {}
 
   async findAll(filter: FilterProductsDto) {
@@ -164,8 +166,16 @@ export class ProductsService {
     if (!seller) throw new NotFoundException('Profil vendeur introuvable');
     if (seller.status !== 'APPROVED') throw new ForbiddenException('Votre boutique n\'est pas approuvée');
 
-    const sub = seller.subscriptions[0];
-    if (!sub) throw new ForbiddenException('Abonnement requis pour publier des produits');
+    let sub = seller.subscriptions[0];
+    if (!sub) {
+      // Filet de rattrapage : un compte créé avant la mise en place du plan
+      // Starter automatique n'a peut-être jamais reçu d'abonnement — on le
+      // régularise à la volée plutôt que de bloquer un vendeur qui a pourtant
+      // droit à ses 2 produits gratuits.
+      const baseline = await this.subscriptionsService.ensureBaselinePlan(seller.id).catch(() => null);
+      if (!baseline) throw new ForbiddenException('Abonnement requis pour publier des produits');
+      sub = await this.prisma.sellerSubscription.findUnique({ where: { id: baseline.id }, include: { plan: true } }) as any;
+    }
 
     // Select store: use storeId from DTO or fallback to primary
     let store = dto.storeId

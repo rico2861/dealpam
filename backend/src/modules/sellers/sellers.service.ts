@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, ForbiddenException, BadRequestException,
 import { PrismaService } from '../../prisma/prisma.service';
 import { UploadService } from '../upload/upload.service';
 import { MailService } from '../mail/mail.service';
+import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 
 // Types de document qui prouvent l'identité du vendeur — leur (re)soumission
 // après un rejet remet automatiquement le dossier "en attente".
@@ -20,6 +21,7 @@ export class SellersService {
     private prisma: PrismaService,
     private uploadService: UploadService,
     private mailService: MailService,
+    private subscriptionsService: SubscriptionsService,
   ) {}
 
   // ── Buyer → Seller conversion ─────────────────────────────────────────────
@@ -70,7 +72,7 @@ export class SellersService {
     const slugExists = await this.prisma.store.findFirst({ where: { slug } });
     if (slugExists) slug = `${slug}-${Date.now().toString().slice(-6)}`;
 
-    const [updatedUser] = await this.prisma.$transaction([
+    const [updatedUser, seller] = await this.prisma.$transaction([
       this.prisma.user.update({
         where: { id: userId },
         data: { role: 'SELLER' },
@@ -91,6 +93,10 @@ export class SellersService {
         },
       }),
     ]);
+
+    // Garantit les 2 produits gratuits du plan Starter dès la création du
+    // compte, sans exiger que le vendeur passe par l'essai ou un paiement.
+    await this.subscriptionsService.ensureBaselinePlan(seller.id).catch(() => null);
 
     return { user: updatedUser };
   }
