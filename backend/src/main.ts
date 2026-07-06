@@ -57,10 +57,16 @@ async function bootstrap() {
     'http://172.20.64.1:5174',
   ].filter(Boolean) as string[];
 
+  // Compare sans le préfixe "www." pour qu'un domaine autorisé couvre
+  // automatiquement ses deux variantes (https://dealpam.com et https://www.dealpam.com)
+  // sans avoir à les lister séparément.
+  const stripWww = (o: string) => o.replace(/^(https?:\/\/)www\./, '$1');
+  const normalizedAllowed = allowedOrigins.map(stripWww);
+
   app.enableCors({
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin)) return callback(null, true);
+      if (normalizedAllowed.includes(stripWww(origin))) return callback(null, true);
       // Autoriser les IPs réseau local en dev (mobile sur WiFi)
       if (process.env.NODE_ENV !== 'production' &&
         /^http:\/\/(192\.168\.|172\.|10\.)/.test(origin)) {
