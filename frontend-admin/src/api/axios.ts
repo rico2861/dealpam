@@ -19,7 +19,10 @@ api.interceptors.response.use(
     if (status === 401) {
       localStorage.removeItem('admin_token');
       if (msg) sessionStorage.setItem('logout_reason', msg);
-      window.location.href = '/login';
+      // Redirection vers la racine (et non /login) : Hostinger ne sert pas les
+      // routes imbriquées en navigation directe, seule "/" est garantie d'exister.
+      // Le garde d'authentification dans App.tsx redirige ensuite vers /login côté client.
+      window.location.href = '/';
     }
     return Promise.reject(error);
   }
