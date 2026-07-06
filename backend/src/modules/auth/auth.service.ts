@@ -277,14 +277,29 @@ export class AuthService {
   async refresh(token: string) {
     if (!token) throw new UnauthorizedException('Token manquant');
     const stored = await this.prisma.refreshToken.findUnique({ where: { token }, include: { user: true } });
-    if (!stored || stored.expiresAt < new Date()) {
-      if (stored) await this.prisma.refreshToken.delete({ where: { token } });
+    if (!stored) throw new UnauthorizedException('Session expirée, veuillez vous reconnecter');
+
+    // Réutilisation d'un refresh token déjà consommé = signal de vol (un tiers
+    // a intercepté un ancien token pendant que le vrai utilisateur continuait
+    // de rafraîchir normalement). Réaction : révoquer toute la session de cet
+    // utilisateur, sur tous les appareils, plutôt que d'accorder un nouveau token.
+    if (stored.usedAt) {
+      this.logger.warn(`Refresh token reuse detected for user ${stored.userId} — revoking all sessions`);
+      await this.prisma.refreshToken.deleteMany({ where: { userId: stored.userId } });
+      throw new UnauthorizedException('Activité suspecte détectée — reconnexion requise sur tous vos appareils');
+    }
+
+    if (stored.expiresAt < new Date()) {
+      await this.prisma.refreshToken.delete({ where: { token } });
       throw new UnauthorizedException('Session expirée, veuillez vous reconnecter');
     }
     if (!stored.user.isActive) throw new ForbiddenException('Compte désactivé');
     if (stored.user.lockedUntil && stored.user.lockedUntil > new Date())
       throw new ForbiddenException('Compte bloqué');
-    await this.prisma.refreshToken.delete({ where: { token } });
+
+    // On marque "consommé" plutôt que de supprimer immédiatement — nécessaire
+    // pour pouvoir détecter une éventuelle réutilisation de ce même token.
+    await this.prisma.refreshToken.update({ where: { token }, data: { usedAt: new Date() } });
     return this.generateTokens(stored.user.id, stored.user.email, stored.user.role, stored.user.tokenVersion);
   }
 

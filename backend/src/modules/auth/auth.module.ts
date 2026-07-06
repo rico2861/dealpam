@@ -3,6 +3,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
+import { AuthCron } from './auth.cron';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { MailModule } from '../mail/mail.module';
 import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
@@ -17,7 +18,7 @@ import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
     MailModule,
     SubscriptionsModule,
   ],
-  providers: [AuthService, JwtStrategy],
+  providers: [AuthService, JwtStrategy, AuthCron],
   controllers: [AuthController],
   exports: [AuthService],
 })

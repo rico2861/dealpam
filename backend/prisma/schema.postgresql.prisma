@@ -188,6 +188,10 @@ model RefreshToken {
   userId    String   @map("user_id")
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   expiresAt DateTime @map("expires_at")
+  // Marqué au moment de la rotation (au lieu d'une suppression immédiate) pour
+  // pouvoir détecter une réutilisation : un refresh token déjà consommé qui
+  // revient signale un vol — toute la session de l'utilisateur est révoquée.
+  usedAt    DateTime? @map("used_at")
   createdAt DateTime @default(now()) @map("created_at")
 
   @@index([userId])
