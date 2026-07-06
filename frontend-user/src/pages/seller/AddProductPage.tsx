@@ -156,16 +156,16 @@ function DarkSelect({ label, value, onChange, options }: { label: string; value:
 function PhoneFields({ attrs, onChange }: { attrs: any; onChange: (k: string, v: string) => void }) {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-      <Box sx={{ display: 'flex', gap: 2 }}>
+      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
         <TextField fullWidth label="Marque (Samsung, Apple…)" sx={fieldSx} value={attrs.brand || ''} onChange={e => onChange('brand', e.target.value)} />
         <TextField fullWidth label="Modèle" sx={fieldSx} value={attrs.model || ''} onChange={e => onChange('model', e.target.value)} />
       </Box>
-      <Box sx={{ display: 'flex', gap: 2 }}>
+      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
         <DarkSelect label="Stockage" value={attrs.storage || ''} onChange={v => onChange('storage', v)} options={['16 GB','32 GB','64 GB','128 GB','256 GB','512 GB']} />
         <DarkSelect label="RAM" value={attrs.ram || ''} onChange={v => onChange('ram', v)} options={['2 GB','3 GB','4 GB','6 GB','8 GB','12 GB','16 GB']} />
         <DarkSelect label="Réseau" value={attrs.network || ''} onChange={v => onChange('network', v)} options={['3G','4G','5G']} />
       </Box>
-      <Box sx={{ display: 'flex', gap: 2 }}>
+      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
         <TextField fullWidth label="IMEI (optionnel)" sx={fieldSx} value={attrs.imei || ''} onChange={e => onChange('imei', e.target.value)} inputProps={{ maxLength: 20 }} />
         <TextField fullWidth label="Couleur (ex: Noir Titane)" sx={fieldSx} value={attrs.color || ''} onChange={e => onChange('color', e.target.value)} />
       </Box>
@@ -177,11 +177,11 @@ function PhoneFields({ attrs, onChange }: { attrs: any; onChange: (k: string, v:
 function ClothingFields({ attrs, onChange }: { attrs: any; onChange: (k: string, v: string) => void }) {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-      <Box sx={{ display: 'flex', gap: 2 }}>
+      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
         <DarkSelect label="Genre" value={attrs.gender || ''} onChange={v => onChange('gender', v)} options={['Homme','Femme','Enfant','Unisexe']} />
         <DarkSelect label="Matière" value={attrs.material || ''} onChange={v => onChange('material', v)} options={['Coton','Polyester','Lin','Laine','Soie','Denim','Cuir','Synthétique']} />
       </Box>
-      <Box sx={{ display: 'flex', gap: 2 }}>
+      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
         <TextField fullWidth label="Marque (optionnel)" sx={fieldSx} value={attrs.brand || ''} onChange={e => onChange('brand', e.target.value)} />
         <TextField fullWidth label="Style (décontracté, élégant…)" sx={fieldSx} value={attrs.style || ''} onChange={e => onChange('style', e.target.value)} />
       </Box>
@@ -192,15 +192,15 @@ function ClothingFields({ attrs, onChange }: { attrs: any; onChange: (k: string,
 function VehicleFields({ attrs, onChange }: { attrs: any; onChange: (k: string, v: string) => void }) {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-      <Box sx={{ display: 'flex', gap: 2 }}>
+      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
         <TextField fullWidth label="Marque (Toyota, Honda…)" sx={fieldSx} value={attrs.brand || ''} onChange={e => onChange('brand', e.target.value)} />
         <TextField fullWidth label="Modèle" sx={fieldSx} value={attrs.model || ''} onChange={e => onChange('model', e.target.value)} />
       </Box>
-      <Box sx={{ display: 'flex', gap: 2 }}>
+      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
         <TextField fullWidth label="Année" type="number" sx={fieldSx} value={attrs.year || ''} onChange={e => onChange('year', e.target.value)} inputProps={{ min: 1950, max: 2030 }} />
         <TextField fullWidth label="Kilométrage (km)" type="number" sx={fieldSx} value={attrs.mileage || ''} onChange={e => onChange('mileage', e.target.value)} />
       </Box>
-      <Box sx={{ display: 'flex', gap: 2 }}>
+      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
         <DarkSelect label="Carburant" value={attrs.fuel || ''} onChange={v => onChange('fuel', v)} options={['Essence','Diesel','Électrique','Hybride','GPL']} />
         <DarkSelect label="Transmission" value={attrs.transmission || ''} onChange={v => onChange('transmission', v)} options={['Manuelle','Automatique']} />
       </Box>
@@ -282,6 +282,10 @@ export default function AddProductPage() {
     e.preventDefault();
     if (!form.name || !form.description || !form.categoryId || !form.price) { setError('Remplissez titre, description, catégorie et prix'); return; }
     if (!mainImages.length) { setError('Ajoutez au moins une photo'); return; }
+    if (form.salePrice && Number(form.salePrice) >= Number(form.price)) {
+      setError('Le prix normal doit être supérieur au prix promo');
+      return;
+    }
     setLoading(true); setError('');
     try {
       const fd = new FormData();
@@ -419,7 +423,7 @@ export default function AddProductPage() {
           {/* ── PRIX & CATÉGORIE ── */}
           <SectionCard title="Prix & Catégorie">
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-              <Box sx={{ display: 'flex', gap: 2 }}>
+              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
                 <TextField fullWidth label="Prix (HTG) *" type="number" value={form.price} onChange={set('price')}
                   required inputProps={{ min: 0 }} sx={fieldSx} />
                 <TextField fullWidth label="Prix promo (optionnel)" type="number" value={form.salePrice}
@@ -489,7 +493,7 @@ export default function AddProductPage() {
 
           {/* ── LOCALISATION ── */}
           <SectionCard title="Localisation" icon={<LocationOn sx={{ fontSize: 17 }} />}>
-            <Box sx={{ display: 'flex', gap: 2 }}>
+            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
               <FormControl fullWidth sx={fieldSx}>
                 <InputLabel>Département</InputLabel>
                 <Select value={form.department} label="Département" MenuProps={darkMenu}
@@ -579,7 +583,7 @@ export default function AddProductPage() {
               )}
 
               {/* Stock & SKU */}
-              <Box sx={{ display: 'flex', gap: 2 }}>
+              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
                 <TextField fullWidth label="Stock" type="number" value={form.stock}
                   onChange={set('stock')} inputProps={{ min: 1 }} sx={fieldSx} />
                 <TextField fullWidth label="Référence / SKU (optionnel)" value={form.sku}

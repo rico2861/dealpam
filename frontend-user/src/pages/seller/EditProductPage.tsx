@@ -38,6 +38,10 @@ export default function EditProductPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (form.salePrice && Number(form.salePrice) >= Number(form.price)) {
+      setError('Le prix normal doit être supérieur au prix promo');
+      return;
+    }
     setLoading(true); setError('');
     try {
       await api.patch(`/products/${id}`, form);

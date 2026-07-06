@@ -201,6 +201,10 @@ export class ProductsService {
       throw new BadRequestException(`Maximum ${sub.plan.maxImages} images pour votre plan`);
     }
 
+    if (dto.salePrice != null && Number(dto.salePrice) >= Number(dto.price)) {
+      throw new BadRequestException('Le prix normal doit être supérieur au prix promo');
+    }
+
     // Parse attributes and variants JSON
     let attributes: any = null;
     if (dto.attributes) {
@@ -331,6 +335,13 @@ export class ProductsService {
     const oldSalePrice = product.salePrice ? Number(product.salePrice) : null;
     const priceChanged = (newPrice != null && newPrice !== oldPrice) ||
                          (newSalePrice !== oldSalePrice);
+
+    const effPrice     = newPrice ?? oldPrice;
+    const effSalePrice = newSalePrice ?? oldSalePrice;
+    if (effSalePrice != null && effSalePrice >= effPrice) {
+      throw new BadRequestException('Le prix normal doit être supérieur au prix promo');
+    }
+
     if (priceChanged) {
       await (this.prisma as any).priceHistory.create({
         data: {
