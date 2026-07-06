@@ -298,25 +298,28 @@ export default function SellerChatPage() {
     const formData = new FormData();
     formData.append('file', file);
     const isImage = file.type.startsWith('image/');
-    const endpoint = isImage ? '/upload/image' : '/upload/document';
+    // Pièces jointes de chat : bucket privé — l'API ne renvoie qu'une
+    // référence interne (publicId), jamais une URL exploitable directement.
+    const endpoint = isImage ? '/upload/chat-image' : '/upload/chat-file';
     setUploadPct(0);
     try {
       const { data } = await api.post(endpoint, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
         onUploadProgress: p => setUploadPct(Math.round((p.loaded / (p.total ?? 1)) * 100)),
       });
-      const mediaUrl = isImage
-        ? (data.urlMedium ?? data.urlFull ?? data.url)
-        : (data.url ?? data.path);
+      const mediaRef = isImage ? `chatimg:${data.publicId}` : `chatfile:${data.publicId}:${data.fileName}`;
       const type = isImage ? 'IMAGE' : 'FILE';
+      // Aperçu local instantané (blob) le temps que le serveur renvoie le
+      // message réel avec son URL signée — jamais transmis au réseau.
+      const previewUrl = isImage ? URL.createObjectURL(file) : mediaRef;
       const opt: Msg = {
-        id: `opt-${Date.now()}`, content: file.name, type, mediaUrl, isRead: false,
+        id: `opt-${Date.now()}`, content: file.name, type, mediaUrl: previewUrl, isRead: false,
         senderId: user!.id, createdAt: new Date().toISOString(),
         sender: { id: user!.id, firstName: user!.firstName ?? '', lastName: user!.lastName ?? '', role: user?.role },
       };
       setMessages(p => [...p, opt]);
       scrollBottom(true);
-      socketRef.current?.emit('chat:send', { conversationId: active, content: file.name, type, mediaUrl });
+      socketRef.current?.emit('chat:send', { conversationId: active, content: file.name, type, mediaUrl: mediaRef });
     } catch { /* ignore */ }
     finally { setUploadPct(null); }
   };

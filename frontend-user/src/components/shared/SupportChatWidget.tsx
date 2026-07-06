@@ -253,7 +253,7 @@ function SupportChatInner({ user }: { user: any }) {
 
   /* ── Send ─────────────────────────────────────────────────────────────── */
 
-  const send = useCallback(async (content: string, type = 'TEXT', mediaUrl?: string) => {
+  const send = useCallback(async (content: string, type = 'TEXT', mediaUrl?: string, previewUrl?: string) => {
     if (!content.trim() && !mediaUrl) return;
     if (!convId) return;
 
@@ -264,7 +264,7 @@ function SupportChatInner({ user }: { user: any }) {
       sender: { id: user.id, firstName: user.firstName, lastName: user.lastName, avatar: user.avatar },
       content,
       type,
-      mediaUrl: mediaUrl ?? null,
+      mediaUrl: previewUrl ?? mediaUrl ?? null,
       createdAt: new Date().toISOString(),
       isRead: false,
     };
@@ -293,15 +293,16 @@ function SupportChatInner({ user }: { user: any }) {
     setUploading(true);
     setUploadProgress(0);
     try {
-      const endpoint = isImage ? '/upload/image' : '/upload/document';
+      // Pièces jointes de chat : bucket privé — l'API ne renvoie qu'une
+      // référence interne (publicId), jamais une URL exploitable directement.
+      const endpoint = isImage ? '/upload/chat-image' : '/upload/chat-file';
       const { data } = await api.post(endpoint, form, {
         headers: { 'Content-Type': 'multipart/form-data' },
         onUploadProgress: e => setUploadProgress(Math.round((e.loaded * 100) / (e.total ?? 1))),
       });
-      const mediaUrl = isImage
-        ? (data.urlMedium ?? data.urlFull ?? data.url)
-        : (data.url ?? data.path);
-      await send(file.name, isImage ? 'IMAGE' : 'FILE', mediaUrl);
+      const mediaRef = isImage ? `chatimg:${data.publicId}` : `chatfile:${data.publicId}:${data.fileName}`;
+      const previewUrl = isImage ? URL.createObjectURL(file) : undefined;
+      await send(file.name, isImage ? 'IMAGE' : 'FILE', mediaRef, previewUrl);
     } catch {}
     finally { setUploading(false); setUploadProgress(0); }
   }, [send]);

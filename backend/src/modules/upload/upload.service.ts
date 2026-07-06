@@ -70,6 +70,25 @@ export class UploadService {
     return Promise.all(files.map(f => this.uploadImage(f, folder)));
   }
 
+  // ── Image privée (chat) : mêmes 3 tailles, mais bucket privé sans cache
+  // public — jamais servie directement, uniquement via URL signée courte durée.
+  async uploadPrivateImage(file: Express.Multer.File, folder = 'chat-attachments'): Promise<{ publicId: string }> {
+    this.validateImage(file);
+    const publicId = this.generateId();
+    const keyBase = `${folder}/${publicId}`;
+    await Promise.all([
+      this.processAndUploadPrivate(file.buffer, `${keyBase}_full.webp`,   1400, 90),
+      this.processAndUploadPrivate(file.buffer, `${keyBase}_medium.webp`,  700, 85),
+      this.processAndUploadPrivate(file.buffer, `${keyBase}_thumb.webp`,   380, 78),
+    ]);
+    return { publicId };
+  }
+
+  async getPrivateImageSignedUrl(publicId: string, folder = 'chat-attachments', size: 'full' | 'medium' | 'thumb' = 'medium', expiresInSeconds = 300): Promise<string> {
+    const key = `${folder}/${publicId}_${size}.webp`;
+    return getSignedUrl(this.s3, new GetObjectCommand({ Bucket: this.docsBucket, Key: key }), { expiresIn: expiresInSeconds });
+  }
+
   // ── Document upload (PDF / image, no resize) ──────────────────────────────
 
   async uploadDocument(file: Express.Multer.File, folder = 'documents'): Promise<{ url: string; publicId: string }> {
@@ -141,6 +160,20 @@ export class UploadService {
     }));
 
     return `${this.cdnUrl}/${key}`;
+  }
+
+  private async processAndUploadPrivate(buffer: Buffer, key: string, width: number, quality = 85): Promise<void> {
+    const processed = await sharp(buffer)
+      .resize(width, width, { fit: 'inside', withoutEnlargement: true })
+      .webp({ quality, effort: 4, smartSubsample: true })
+      .toBuffer();
+
+    await this.s3.send(new PutObjectCommand({
+      Bucket: this.docsBucket,
+      Key: key,
+      Body: processed,
+      ContentType: 'image/webp',
+    }));
   }
 
   private validateImage(file: Express.Multer.File): void {

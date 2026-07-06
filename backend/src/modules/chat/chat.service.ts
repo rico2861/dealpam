@@ -1,5 +1,6 @@
 import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { UploadService } from '../upload/upload.service';
 type MessageType = 'TEXT' | 'IMAGE' | 'FILE' | 'BOT' | 'SYSTEM';
 
 const AGENT_ROLES = ['ADMIN', 'SUPER_ADMIN', 'MODERATOR'];
@@ -12,7 +13,28 @@ const PARTICIPANT_SELECT = {
 
 @Injectable()
 export class ChatService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private uploadService: UploadService) {}
+
+  // ── Pièces jointes de chat : le mediaUrl stocké en base n'est qu'une
+  // référence interne ("chatimg:<publicId>" / "chatfile:<publicId>:<fileName>")
+  // vers le bucket privé — jamais une URL exploitable. On la résout en URL
+  // signée (5 min) uniquement au moment de renvoyer les messages à un
+  // participant déjà authentifié et autorisé.
+  private async resolveMediaUrl<T extends { mediaUrl: string | null }>(message: T): Promise<T> {
+    if (!message.mediaUrl) return message;
+    if (message.mediaUrl.startsWith('chatimg:')) {
+      const publicId = message.mediaUrl.slice('chatimg:'.length);
+      const url = await this.uploadService.getPrivateImageSignedUrl(publicId, 'chat-attachments', 'medium');
+      return { ...message, mediaUrl: url };
+    }
+    if (message.mediaUrl.startsWith('chatfile:')) {
+      const [publicId, ...rest] = message.mediaUrl.slice('chatfile:'.length).split(':');
+      const fileName = rest.join(':') || 'fichier';
+      const url = await this.uploadService.getDocumentSignedUrl(publicId, fileName, 'chat-files');
+      return { ...message, mediaUrl: url };
+    }
+    return message;
+  }
 
   // ── User-to-user conversation ─────────────────────────────────────────────
 
@@ -156,7 +178,8 @@ export class ChatService {
       }),
       this.prisma.message.count({ where: { conversationId } }),
     ]);
-    return { data: data.reverse(), total, page, totalPages: Math.ceil(total / limit) };
+    const resolved = await Promise.all(data.reverse().map(m => this.resolveMediaUrl(m)));
+    return { data: resolved, total, page, totalPages: Math.ceil(total / limit) };
   }
 
   async sendMessage(senderId: string, conversationId: string, content: string, type: MessageType = 'TEXT', mediaUrl?: string) {
@@ -195,7 +218,7 @@ export class ChatService {
       }),
     ]);
 
-    return message;
+    return this.resolveMediaUrl(message);
   }
 
   // ── Bot / AI message ─────────────────────────────────────────────────────

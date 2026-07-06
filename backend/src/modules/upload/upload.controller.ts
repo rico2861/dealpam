@@ -43,6 +43,27 @@ export class UploadController {
     return this.uploadService.uploadDocument(file, 'documents');
   }
 
+  // ── Pièces jointes de chat : bucket privé, jamais d'URL publique ──────────
+  // Le dossier est fixé côté serveur (jamais confié au client) pour éviter
+  // toute confusion avec les autres usages du même bucket.
+
+  @Post('chat-image')
+  @ApiOperation({ summary: 'Upload une image de chat (bucket privé, URL signée à la lecture)' })
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FileInterceptor('file', { storage, fileFilter: imgFilter, limits: { fileSize: 10 * 1024 * 1024 } }))
+  uploadChatImage(@UploadedFile() file: Express.Multer.File) {
+    return this.uploadService.uploadPrivateImage(file, 'chat-attachments');
+  }
+
+  @Post('chat-file')
+  @ApiOperation({ summary: 'Upload un fichier de chat non-image (bucket privé, URL signée à la lecture)' })
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FileInterceptor('file', { storage, limits: { fileSize: 10 * 1024 * 1024 } }))
+  async uploadChatFile(@UploadedFile() file: Express.Multer.File) {
+    const result = await this.uploadService.uploadDocument(file, 'chat-files');
+    return { publicId: result.publicId, fileName: file.originalname };
+  }
+
   @Post('avatar')
   @ApiOperation({ summary: 'Upload avatar utilisateur' })
   @ApiConsumes('multipart/form-data')
