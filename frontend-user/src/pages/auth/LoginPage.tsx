@@ -79,7 +79,7 @@ export default function LoginPage() {
   };
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#060B14' }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#060B14', colorScheme: 'dark' }}>
 
       {/* ── LEFT — branding (hidden on mobile) ── */}
       <Box sx={{
@@ -301,12 +301,12 @@ const fieldSx = {
     '&.Mui-focused fieldset': { borderColor: '#FF6B00', boxShadow: '0 0 0 3px rgba(255,107,0,0.1)' },
   },
   '& .MuiInputBase-input': {
-    color: 'white', fontSize: 14.5,
+    color: '#fff !important', WebkitTextFillColor: '#fff', fontSize: 14.5, caretColor: '#fff',
     '&::placeholder': { color: 'rgba(255,255,255,0.18)', opacity: 1 },
     '&:-webkit-autofill, &:-webkit-autofill:hover, &:-webkit-autofill:focus': {
       WebkitBoxShadow: '0 0 0 100px #0C1220 inset',
-      WebkitTextFillColor: 'white',
-      caretColor: 'white',
+      WebkitTextFillColor: '#fff',
+      caretColor: '#fff',
       transition: 'background-color 9999s ease-in-out 0s',
     },
   },

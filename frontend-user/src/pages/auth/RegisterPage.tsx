@@ -112,12 +112,14 @@ function Field({
           sx={{
             flex: 1,
             '& input, & textarea': {
-              color: 'white', fontSize: 14, fontWeight: 500,
-              p: 0, lineHeight: '24px',
+              color: '#fff !important', WebkitTextFillColor: '#fff', fontSize: 14, fontWeight: 500,
+              p: 0, lineHeight: '24px', caretColor: '#fff',
               '&::placeholder': { color: 'rgba(255,255,255,0.2)', opacity: 1 },
-              '&:-webkit-autofill': {
+              '&:-webkit-autofill, &:-webkit-autofill:hover, &:-webkit-autofill:focus': {
                 WebkitBoxShadow: '0 0 0 100px #0C1220 inset',
-                WebkitTextFillColor: 'white',
+                WebkitTextFillColor: '#fff',
+                caretColor: '#fff',
+                transition: 'background-color 9999s ease-in-out 0s',
               },
             },
           }}
@@ -421,7 +423,7 @@ export default function RegisterPage() {
   const BUYER_PERKS  = ['50 000+ produits disponibles', 'Vendeurs vérifiés & certifiés', 'Suivi de commande en temps réel', 'Paiement 100 % sécurisé'];
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#060B14' }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#060B14', colorScheme: 'dark' }}>
 
       {/* ── LEFT panel ── */}
       <Box sx={{
