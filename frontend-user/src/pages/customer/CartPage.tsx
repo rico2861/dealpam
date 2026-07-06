@@ -208,6 +208,8 @@ function StoreGroup({ group, opts, onRemove, onUpdate, navigate }: any) {
               const isOnSale = sale != null && sale < orig;
               const discount = isOnSale ? Math.round((1 - sale! / orig) * 100) : 0;
               const img = item.product?.images?.[0]?.urlMedium || item.product?.images?.[0]?.url || '';
+              const stock = item.product?.stock ?? 99;
+              const atMax = item.quantity >= stock;
 
               return (
                 <Box key={item.id} sx={{ display: 'flex', gap: { xs: 1.2, sm: 2 }, alignItems: 'center' }}>
@@ -242,11 +244,12 @@ function StoreGroup({ group, opts, onRemove, onUpdate, navigate }: any) {
                         <Remove sx={{ fontSize: 13 }} />
                       </IconButton>
                       <Typography fontWeight={700} fontSize={13} color="#0F172A" sx={{ minWidth: 20, textAlign: 'center' }}>{item.quantity}</Typography>
-                      <IconButton size="small" onClick={() => onUpdate(item.id, item.quantity + 1)}
+                      <IconButton size="small" onClick={() => onUpdate(item.id, item.quantity + 1)} disabled={atMax}
                         sx={{ width: 26, height: 26, color: '#94A3B8', '&:hover': { color: OR } }}>
                         <Add sx={{ fontSize: 13 }} />
                       </IconButton>
                     </Box>
+                    {atMax && <Typography fontSize={10.5} color="#F59E0B" fontWeight={700}>Stock max ({stock})</Typography>}
                     <Tooltip title="Retirer">
                       <IconButton size="small" onClick={() => onRemove(item.id)}
                         sx={{ color: '#CBD5E1', width: 24, height: 24, '&:hover': { color: '#EF4444', bgcolor: alpha('#EF4444', 0.08) } }}>
@@ -318,6 +321,7 @@ export default function CartPage() {
   const updateMutation = useMutation({
     mutationFn: ({ itemId, quantity }: any) => api.patch(`/cart/items/${itemId}`, { quantity }),
     onSuccess:  () => { qc.invalidateQueries({ queryKey: ['cart'] }); fetchCount(); },
+    onError:    (err: any) => enqueueSnackbar(err?.response?.data?.message || 'Erreur', { variant: 'error' }),
   });
   const removeMutation = useMutation({
     mutationFn: (itemId: string) => api.delete(`/cart/items/${itemId}`),

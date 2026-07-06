@@ -1035,10 +1035,13 @@ function ProductCard({ p, flash = false, compact = false }: { p: any; flash?: bo
             </Box>
           )}
 
-          {/* Badge SERVICE — top right, jamais confondu avec un produit physique */}
+          {/* Badge SERVICE — left column, stacked below promo/flash badges so it never
+              collides with the favorite button (fixed top-right on every card) */}
           {p.productType && p.productType !== 'PHYSICAL' && (
             <Box sx={{
-              position: 'absolute', top: compact ? 6 : 8, right: compact ? 6 : 8,
+              position: 'absolute',
+              top: flash ? (compact ? 54 : 64) : hasSale ? (compact ? 30 : 36) : (compact ? 6 : 8),
+              left: compact ? 6 : 8,
               bgcolor: 'rgba(99,102,241,0.92)', color: 'white', fontWeight: 800,
               fontSize: compact ? 8.5 : 9.5, lineHeight: 1,
               borderRadius: '6px', px: compact ? '5px' : '6px', py: compact ? '3px' : '4px',

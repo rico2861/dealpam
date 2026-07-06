@@ -49,36 +49,33 @@ const ATTR: Record<string, string> = {
   volume:'Volume',skinType:'Type peau',duration:'Durée',locationType:'Lieu',
 };
 
-/* ── countdown "clearance deal" banner — expiry is fixed per product/session
-   so it doesn't visually reset on every reload (still creates urgency) ───── */
-function useCountdown(slug?: string) {
+/* ── countdown "vente flash" banner — only shown when this exact product is
+   part of the platform's real, admin-configured active flash sale, using its
+   real end date (no fake/generic urgency timers) ─────────────────────────── */
+function useCountdown(endAt?: string | null) {
   const [left, setLeft] = useState(0);
   useEffect(() => {
-    if (!slug) return;
-    const key = `dealExpiry:${slug}`;
-    let expiry = Number(localStorage.getItem(key));
-    if (!expiry || expiry < Date.now()) {
-      expiry = Date.now() + (12 * 3600 + Math.floor(Math.random() * 6 * 3600)) * 1000;
-      localStorage.setItem(key, String(expiry));
-    }
+    if (!endAt) { setLeft(0); return; }
+    const expiry = new Date(endAt).getTime();
     const tick = () => setLeft(Math.max(0, expiry - Date.now()));
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
-  }, [slug]);
+  }, [endAt]);
   const h = String(Math.floor(left / 3_600_000)).padStart(2, '0');
   const m = String(Math.floor((left % 3_600_000) / 60_000)).padStart(2, '0');
   const s = String(Math.floor((left % 60_000) / 1000)).padStart(2, '0');
-  return { h, m, s };
+  return { h, m, s, expired: left<=0 };
 }
 
-function CountdownBanner({ slug }: { slug?: string }) {
-  const { h, m, s } = useCountdown(slug);
+function CountdownBanner({ endAt, title }: { endAt?: string | null; title?: string }) {
+  const { h, m, s, expired } = useCountdown(endAt);
+  if (!endAt || expired) return null;
   return (
     <Box sx={{ display:'flex', alignItems:'center', gap:1.2, mb:2, px:1.6, py:1, borderRadius:'12px',
       background:`linear-gradient(135deg,#B91C1C,${RED})`, boxShadow:'0 6px 18px rgba(239,68,68,0.3)' }}>
       <FlashOn sx={{ fontSize:17, color:'#fff' }}/>
-      <Typography fontSize={12.5} fontWeight={800} color="#fff" sx={{ flex:1 }}>Offre flash — se termine dans</Typography>
+      <Typography fontSize={12.5} fontWeight={800} color="#fff" sx={{ flex:1 }}>{title||'Vente flash'} — se termine dans</Typography>
       <Box sx={{ display:'flex', gap:0.4 }}>
         {[h,m,s].map((v,i)=>(
           <React.Fragment key={i}>
@@ -191,6 +188,9 @@ export default function ProductDetailPage() {
   const stId  = product?.store?.id || product?.storeId;
   const dept  = product?.department || user?.department || '';
 
+  const { data: flashSale } = useQuery({ queryKey:['flash-sale-active'], queryFn:()=>api.get('/flash-sale/active').then(r=>r.data), staleTime:60_000 });
+  const inFlashSale = !!flashSale?.isActive && !!flashSale?.products?.some((p:any)=>p.id===product?.id);
+
   const { data: simR  } = useQuery({ queryKey:['sim',catSl,slug],  queryFn:()=>api.get(`/products?category=${catSl}&limit=12`).then(r=>r.data?.data??[]), enabled:!!catSl });
   const { data: sponR } = useQuery({ queryKey:['spon',dept],        queryFn:()=>api.get(`/products?sponsored=true&department=${dept}&limit=10`).then(r=>r.data?.data??[]), enabled:true });
   const { data: stR   } = useQuery({ queryKey:['stprod',stId],      queryFn:()=>api.get(`/products?storeId=${stId}&limit=8`).then(r=>r.data?.data??[]), enabled:!!stId });
@@ -264,7 +264,7 @@ export default function ProductDetailPage() {
       enqueueSnackbar('Ajouté au panier !', { variant:'success' });
     } catch(err:any) {
       if (err?.response?.status === 401) navigate(`/login?next=${encodeURIComponent(window.location.pathname)}`);
-      else enqueueSnackbar("Erreur lors de l'ajout", { variant:'error' });
+      else enqueueSnackbar(err?.response?.data?.message || "Erreur lors de l'ajout", { variant:'error' });
     } finally { setLoading(false); }
   };
 
@@ -291,7 +291,7 @@ export default function ProductDetailPage() {
       placeOrder();
     } catch(err:any) {
       if (err?.response?.status === 401) navigate(`/login?next=${encodeURIComponent(window.location.pathname)}`);
-      else enqueueSnackbar("Erreur lors de l'ajout", { variant:'error' });
+      else enqueueSnackbar(err?.response?.data?.message || "Erreur lors de l'ajout", { variant:'error' });
     } finally { setLoading(false); }
   };
 
@@ -364,7 +364,7 @@ export default function ProductDetailPage() {
 
           {/* ── GALLERY COLUMN ────────────────────────────────────────────── */}
           <Box sx={{
-            width:{ xs:'100%', lg:'38%' }, flexShrink:0,
+            width:{ xs:'100%', lg:'44%' }, flexShrink:0,
             position:{ lg:'sticky' }, top:{ lg:96 },
           }}>
             <Box sx={{ display:'flex', flexDirection:{ xs:'column', lg:'row' }, gap:1.2 }}>
@@ -372,7 +372,7 @@ export default function ProductDetailPage() {
               {/* vertical thumbnail rail — desktop only, Amazon/Shein-style */}
               {allI.length>1&&(
                 <Box sx={{ display:{ xs:'none', lg:'flex' }, flexDirection:'column', gap:1, width:64, flexShrink:0,
-                  maxHeight:420, overflowY:'auto',
+                  maxHeight:'100%', overflowY:'auto', alignSelf:'stretch',
                   '&::-webkit-scrollbar':{ width:3 }, '&::-webkit-scrollbar-thumb':{ bgcolor:BORD, borderRadius:4 } }}>
                   {allI.map((im:any,i:number)=>(
                     <Box key={i} onClick={()=>setIdx(i)}
@@ -391,7 +391,7 @@ export default function ProductDetailPage() {
               <Box sx={{ position:'relative', bgcolor:CARD, borderRadius:{ xs:0, md:'24px' },
                 border:{ xs:'none', md:`1px solid ${BORD}` }, flex:1, minWidth:0,
                 boxShadow:{ xs:'none', md:'0 8px 32px rgba(15,23,42,0.06)' },
-                height:{ xs:'72vw', sm:'55vw', md:380, lg:420 }, maxHeight:480, overflow:'hidden' }}>
+                aspectRatio:'1 / 1', width:'100%', overflow:'hidden' }}>
 
                 <Box onTouchStart={onTS} onTouchEnd={onTE} onClick={()=>setLb(true)}
                   sx={{ width:'100%', height:'100%', cursor:'zoom-in', '& img':{ objectFit:'contain !important' } }}>
@@ -551,7 +551,7 @@ export default function ProductDetailPage() {
 
             {/* price — mobile only: desktop shows it in the sticky buy box on the right */}
             <Box sx={{ display:{ xs:'block', lg:'none' } }}>
-              {sale&&<CountdownBanner slug={slug}/>}
+              {inFlashSale&&sale&&<CountdownBanner endAt={flashSale?.endAt} title={flashSale?.title}/>}
               {exchangeRate&&(
                 <Box sx={{ display:'inline-flex', borderRadius:'8px', border:`1px solid ${BORD}`, overflow:'hidden', mb:1 }}>
                   {(['HTG','USD'] as const).map(c=>(
@@ -717,14 +717,16 @@ export default function ProductDetailPage() {
             {/* trust badges — mobile only: same info shown in the desktop sticky buy box */}
             <Box sx={{ display:{ xs:'grid', lg:'none' }, gridTemplateColumns:'1fr 1fr', gap:1, mb:3.5 }}>
               {[
-                { Icon:Security,      label:'Paiement sécurisé',   c:'#818CF8' },
+                { Icon:Security,      label:'Paiement sécurisé',   c:'#6366F1' },
                 { Icon:LocalShipping, label:product.hasDelivery?'Livraison dispo.':'Retrait vendeur', c:GRN },
                 { Icon:Verified,      label:product.store?.isVerified?'Boutique vérifiée':'Vendeur DealPam', c:OR },
-                { Icon:FlashOn,       label:'Messages chiffrés E2E', c:'#F472B6' },
+                { Icon:FlashOn,       label:'Messages chiffrés', c:'#F472B6' },
               ].map(({ Icon, label, c },i)=>(
-                <Box key={i} sx={{ display:'flex', alignItems:'center', gap:1, p:1.2, borderRadius:'10px', bgcolor:'rgba(15,23,42,0.04)', border:`1px solid ${BORD}` }}>
-                  <Icon sx={{ fontSize:14, color:c, flexShrink:0 }}/>
-                  <Typography fontSize={11.5} fontWeight={600} color={SUB2}>{label}</Typography>
+                <Box key={i} sx={{ display:'flex', alignItems:'center', gap:1, p:1.2, borderRadius:'10px', bgcolor:'rgba(15,23,42,0.03)', border:`1px solid ${BORD}` }}>
+                  <Box sx={{ width:24, height:24, borderRadius:'7px', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', bgcolor:`${c}1A` }}>
+                    <Icon sx={{ fontSize:13, color:c }}/>
+                  </Box>
+                  <Typography fontSize={11.5} fontWeight={700} color={TXT} noWrap>{label}</Typography>
                 </Box>
               ))}
             </Box>
@@ -903,7 +905,7 @@ export default function ProductDetailPage() {
               '&::before':{ content:'""', position:'absolute', top:0, left:0, right:0, height:4,
                 background:`linear-gradient(90deg,${OR},#FF8C38)` } }}>
               <Typography fontSize={13} fontWeight={600} color={SUB} mb={0.5} noWrap sx={{ maxWidth:280 }}>{product.name}</Typography>
-              {sale&&<CountdownBanner slug={slug}/>}
+              {inFlashSale&&sale&&<CountdownBanner endAt={flashSale?.endAt} title={flashSale?.title}/>}
               {exchangeRate&&(
                 <Box sx={{ display:'inline-flex', borderRadius:'8px', border:`1px solid ${BORD}`, overflow:'hidden', mb:1 }}>
                   {(['HTG','USD'] as const).map(c=>(
@@ -980,15 +982,22 @@ export default function ProductDetailPage() {
                 Contacter le vendeur
               </Button>
 
-              <Box sx={{ display:'flex', flexDirection:'column', gap:1.2 }}>
+              <Box sx={{ display:'flex', flexDirection:'column', gap:1 }}>
                 {[
-                  { Icon:Security,      label:'Paiement sécurisé MonCash', c:'#818CF8' },
-                  { Icon:LocalShipping, label:product.hasDelivery?'Livraison disponible':'Retrait chez le vendeur', c:GRN },
-                  { Icon:Verified,      label:product.store?.isVerified?'Boutique vérifiée':'Vendeur DealPam', c:OR },
-                ].map(({ Icon, label, c },i)=>(
-                  <Box key={i} sx={{ display:'flex', alignItems:'center', gap:1 }}>
-                    <Icon sx={{ fontSize:14, color:c, flexShrink:0 }}/>
-                    <Typography fontSize={11.5} color={SUB} fontWeight={500}>{label}</Typography>
+                  { Icon:Security,      label:'Paiement sécurisé', sub:'via MonCash', c:'#6366F1' },
+                  { Icon:LocalShipping, label:product.hasDelivery?'Livraison disponible':'Retrait sur place', sub:product.hasDelivery?'Suivi de commande':'Chez le vendeur', c:GRN },
+                  { Icon:Verified,      label:product.store?.isVerified?'Boutique vérifiée':'Vendeur DealPam', sub:'Identité contrôlée', c:OR },
+                ].map(({ Icon, label, sub, c },i)=>(
+                  <Box key={i} sx={{ display:'flex', alignItems:'center', gap:1.2, p:1, borderRadius:'10px',
+                    bgcolor:'rgba(15,23,42,0.02)', border:`1px solid ${BORD}` }}>
+                    <Box sx={{ width:28, height:28, borderRadius:'8px', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center',
+                      bgcolor:`${c}1A` }}>
+                      <Icon sx={{ fontSize:15, color:c }}/>
+                    </Box>
+                    <Box sx={{ minWidth:0 }}>
+                      <Typography fontSize={12} color={TXT} fontWeight={700} lineHeight={1.3} noWrap>{label}</Typography>
+                      <Typography fontSize={10.5} color={SUB2} lineHeight={1.3} noWrap>{sub}</Typography>
+                    </Box>
                   </Box>
                 ))}
               </Box>
