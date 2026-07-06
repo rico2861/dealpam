@@ -45,7 +45,11 @@ async function tryRefresh(): Promise<string> {
   _refreshPromise = axios
     .post(`${BASE_URL}/auth/refresh`, { refreshToken })
     .then(({ data }) => {
+      // Le refresh token tourne à chaque appel (l'ancien est invalidé côté
+      // serveur) — il faut stocker le nouveau à chaque fois, sinon le
+      // rafraîchissement suivant échoue avec un token déjà consommé.
       localStorage.setItem('accessToken', data.accessToken);
+      localStorage.setItem('refreshToken', data.refreshToken);
       return data.accessToken as string;
     })
     .catch((err) => {

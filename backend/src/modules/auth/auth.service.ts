@@ -19,6 +19,20 @@ const MAX_FAILED_ATTEMPTS = 5;
 const LOCK_DURATION_MS    = 30 * 60 * 1000; // 30 min
 const RESET_TOKEN_EXPIRES = 15 * 60 * 1000; // 15 min
 
+// Comptes d'équipe (accès admin/panel) — session plus courte que les comptes
+// client/vendeur, conformément au principe de moindre privilège : ces
+// comptes touchent des documents KYC et des données financières.
+const STAFF_ROLES = ['ADMIN', 'SUPER_ADMIN', 'MODERATOR', 'CUSTOMER_CARE', 'PARTNER', 'ACCOUNTANT'];
+
+// Parse "30m" / "2h" / "7d" en millisecondes (évite une dépendance externe).
+function parseDurationMs(value: string, fallbackMs: number): number {
+  const match = /^(\d+)\s*(ms|s|m|h|d)$/i.exec(value?.trim() ?? '');
+  if (!match) return fallbackMs;
+  const n = parseInt(match[1], 10);
+  const unitMs: Record<string, number> = { ms: 1, s: 1000, m: 60_000, h: 3_600_000, d: 86_400_000 };
+  return n * unitMs[match[2].toLowerCase()];
+}
+
 // Plan tier → max stores allowed
 const PLAN_STORE_LIMITS: Record<string, number> = {
   STARTER:  1,
@@ -294,14 +308,26 @@ export class AuthService {
   // ── Helpers ─────────────────────────────────────────────────────────────────
 
   private async generateTokens(userId: string, email: string, role: string, tokenVersion = 0) {
+    const isStaff = STAFF_ROLES.includes(role);
+
+    // Comptes d'équipe : session plus courte (moindre privilège) — le
+    // rafraîchissement silencieux côté front rend ça invisible tant que le
+    // compte est utilisé ; au-delà, une reconnexion est exigée.
+    const accessExpiresIn  = isStaff
+      ? (process.env.JWT_ADMIN_EXPIRES_IN || '1h')
+      : (process.env.JWT_EXPIRES_IN || '2h');
+    const refreshExpiresIn = isStaff
+      ? (process.env.JWT_ADMIN_REFRESH_EXPIRES_IN || '1d')
+      : (process.env.JWT_REFRESH_EXPIRES_IN || '30d');
+
     const payload      = { sub: userId, email, role, tv: tokenVersion };
-    const accessToken  = this.jwtService.sign(payload);
+    const accessToken  = this.jwtService.sign(payload, { expiresIn: accessExpiresIn as any });
     const refreshToken = this.jwtService.sign(payload, {
       secret:    process.env.JWT_REFRESH_SECRET,
-      expiresIn: (process.env.JWT_REFRESH_EXPIRES_IN || '7d') as any,
+      expiresIn: refreshExpiresIn as any,
     });
     await this.prisma.refreshToken.create({
-      data: { token: refreshToken, userId, expiresAt: new Date(Date.now() + 7 * 86400000) },
+      data: { token: refreshToken, userId, expiresAt: new Date(Date.now() + parseDurationMs(refreshExpiresIn, 30 * 86400000)) },
     });
     return { accessToken, refreshToken };
   }

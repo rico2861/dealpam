@@ -22,10 +22,12 @@ export const useAdminStore = create<AdminState>()(
         const allowed = ['ADMIN', 'SUPER_ADMIN', 'MODERATOR', 'CUSTOMER_CARE', 'PARTNER', 'ACCOUNTANT'];
         if (!allowed.includes(data.user.role)) throw new Error('Accès réservé aux membres de l\'équipe DealPam');
         localStorage.setItem('admin_token', data.accessToken);
+        localStorage.setItem('admin_refresh_token', data.refreshToken);
         set({ admin: data.user });
       },
       logout: () => {
         localStorage.removeItem('admin_token');
+        localStorage.removeItem('admin_refresh_token');
         set({ admin: null });
       },
       clearMustChange: () => set(s => s.admin ? { admin: { ...s.admin, mustChangePassword: false } } : {}),
