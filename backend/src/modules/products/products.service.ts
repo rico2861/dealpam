@@ -1,4 +1,4 @@
-import { Injectable, ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UploadService } from '../upload/upload.service';
 import { EventsService } from '../events/events.service';
@@ -23,6 +23,8 @@ const PRODUCT_INCLUDE = {
 
 @Injectable()
 export class ProductsService {
+  private readonly logger = new Logger(ProductsService.name);
+
   constructor(
     private prisma: PrismaService,
     private uploadService: UploadService,
@@ -538,7 +540,11 @@ export class ProductsService {
   }
 
   async findAllAdmin(page = 1, limit = 50, status?: string) {
-    const where = status ? { status } : {};
+    const where: { status?: any } = {};
+    if (status) where.status = status;
+
+    this.logger.log(`findAllAdmin: raw status param = ${JSON.stringify(status)} (type ${typeof status}), where = ${JSON.stringify(where)}`);
+
     const [data, total] = await Promise.all([
       this.prisma.product.findMany({
         where,
@@ -552,6 +558,9 @@ export class ProductsService {
       }),
       this.prisma.product.count({ where }),
     ]);
+
+    this.logger.log(`findAllAdmin: returned ${data.length} row(s), statuses = ${JSON.stringify(data.map((d: any) => d.status))}`);
+
     return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
