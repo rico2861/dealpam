@@ -168,13 +168,13 @@ function ChatWidget({ store, sellerUserId, open, onClose }: {
   }, [open, user]); // eslint-disable-line
 
   /* send text */
-  const send = useCallback(async (content: string, type = 'TEXT', mediaUrl?: string) => {
+  const send = useCallback(async (content: string, type = 'TEXT', mediaUrl?: string, previewUrl?: string) => {
     if (!content.trim() && !mediaUrl) return;
     if (!convId) return;
     const opt: any = {
       id: `opt-${Date.now()}`, senderId: user!.id,
       sender: { id: user!.id, firstName: user!.firstName, lastName: user!.lastName, avatar: user!.avatar },
-      content, type, mediaUrl: mediaUrl ?? null, createdAt: new Date().toISOString(), isRead: false,
+      content, type, mediaUrl: previewUrl ?? mediaUrl ?? null, createdAt: new Date().toISOString(), isRead: false,
     };
     setMessages(p => [...p, opt]);
     setInput('');
@@ -197,13 +197,16 @@ function ChatWidget({ store, sellerUserId, open, onClose }: {
     form.append('file', file);
     setUploading(true); setUploadPct(0);
     try {
-      const endpoint = isImage ? '/upload/image' : '/upload/document';
+      // Pièces jointes de chat : bucket privé — l'API ne renvoie qu'une
+      // référence interne (publicId), jamais une URL exploitable directement.
+      const endpoint = isImage ? '/upload/chat-image' : '/upload/chat-file';
       const { data } = await api.post(endpoint, form, {
         headers: { 'Content-Type': 'multipart/form-data' },
         onUploadProgress: e => setUploadPct(Math.round((e.loaded * 100) / (e.total ?? 1))),
       });
-      const mediaUrl = isImage ? (data.urlMedium ?? data.urlFull) : (data.url ?? data.path);
-      await send(file.name, isImage ? 'IMAGE' : 'FILE', mediaUrl);
+      const mediaUrl = isImage ? `chatimg:${data.publicId}` : `chatfile:${data.publicId}:${data.fileName}`;
+      const previewUrl = isImage ? URL.createObjectURL(file) : undefined;
+      await send(file.name, isImage ? 'IMAGE' : 'FILE', mediaUrl, previewUrl);
     } catch {}
     finally { setUploading(false); setUploadPct(0); }
   }, [send]);

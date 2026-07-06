@@ -85,14 +85,14 @@ export default function MessagesPage() {
     setUploading(true);
     setUploadProgress(0);
     try {
-      const endpoint = isImage ? '/upload/image' : '/upload/document';
+      // Pièces jointes de chat : bucket privé — l'API ne renvoie qu'une
+      // référence interne (publicId), jamais une URL exploitable directement.
+      const endpoint = isImage ? '/upload/chat-image' : '/upload/chat-file';
       const { data } = await api.post(endpoint, form, {
         headers: { 'Content-Type': 'multipart/form-data' },
         onUploadProgress: e => setUploadProgress(Math.round((e.loaded * 100) / (e.total ?? 1))),
       });
-      const mediaUrl = isImage
-        ? (data.urlMedium ?? data.urlFull ?? data.url)
-        : (data.url ?? data.path);
+      const mediaUrl = isImage ? `chatimg:${data.publicId}` : `chatfile:${data.publicId}:${data.fileName}`;
       await send(file.name, isImage ? 'IMAGE' : 'FILE', mediaUrl);
     } catch {
       enqueueSnackbar('Erreur lors de l\'envoi du fichier', { variant: 'error' });
