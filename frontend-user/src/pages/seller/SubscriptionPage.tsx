@@ -7,12 +7,12 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
 
 const OR   = '#FF6B00';
-const BG   = '#060B14';
-const CARD = '#0D1424';
-const BORD = 'rgba(255,255,255,0.08)';
-const TXT  = 'rgba(255,255,255,0.92)';
-const SUB  = 'rgba(255,255,255,0.42)';
-const SUB2 = 'rgba(255,255,255,0.65)';
+const BG   = '#F7F8FA';
+const CARD = '#FFFFFF';
+const BORD = 'rgba(15,23,42,0.06)';
+const TXT  = '#0F172A';
+const SUB  = '#94A3B8';
+const SUB2 = '#94A3B8';
 const GRN  = '#10B981';
 const YLW  = '#F59E0B';
 
@@ -138,7 +138,7 @@ export default function SellerSubscriptionPage() {
             </Typography>
             {!currentSub.cancelAtPeriodEnd && !currentSub.scheduledPlan && (
               <Typography component="span" onClick={() => { if (!cancelMut.isPending) cancelMut.mutate(); }}
-                sx={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.35)', cursor: 'pointer', textDecoration: 'underline', '&:hover': { color: '#EF4444' } }}>
+                sx={{ fontSize: 12, fontWeight: 700, color: '#94A3B8', cursor: 'pointer', textDecoration: 'underline', '&:hover': { color: '#EF4444' } }}>
                 {cancelMut.isPending ? 'Annulation…' : "Annuler l'abonnement"}
               </Typography>
             )}
@@ -197,7 +197,7 @@ export default function SellerSubscriptionPage() {
               boxShadow: isCurrent ? `0 0 0 1px ${color}40, 0 12px 40px ${color}18` : 'none',
               display: 'flex', flexDirection: 'column',
               transition: 'transform 0.18s, border-color 0.18s',
-              '&:hover': { transform: 'translateY(-2px)', borderColor: isCurrent ? color : 'rgba(255,255,255,0.15)' },
+              '&:hover': { transform: 'translateY(-2px)', borderColor: isCurrent ? color : 'rgba(15,23,42,0.09)' },
             }}>
               {/* Accent top bar */}
               <Box sx={{ height: 3, background: `linear-gradient(90deg,${color},${color}99)` }} />
@@ -265,10 +265,10 @@ export default function SellerSubscriptionPage() {
                   }}
                   sx={{
                     textAlign: 'center', py: 1.2, borderRadius: '11px', cursor: (isCurrent || isScheduled) ? 'default' : 'pointer',
-                    bgcolor: (isCurrent || isScheduled) ? 'rgba(255,255,255,0.04)' : color,
+                    bgcolor: (isCurrent || isScheduled) ? '#FFFFFF' : color,
                     border: `1px solid ${(isCurrent || isScheduled) ? BORD : 'transparent'}`,
                     transition: 'all 0.15s',
-                    '&:hover': { bgcolor: (isCurrent || isScheduled) ? 'rgba(255,255,255,0.04)' : `${color}dd`, filter: (isCurrent || isScheduled) ? 'none' : 'brightness(0.95)' },
+                    '&:hover': { bgcolor: (isCurrent || isScheduled) ? 'rgba(15,23,42,0.04)' : `${color}dd`, filter: (isCurrent || isScheduled) ? 'none' : 'brightness(0.95)' },
                   }}>
                   {loadingPlanId === plan.id
                     ? <CircularProgress size={16} sx={{ color: (isCurrent || isScheduled) ? SUB : '#fff' }} />

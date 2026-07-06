@@ -36,18 +36,18 @@ function Field({ label, value, onChange, Icon, placeholder, disabled }: {
   return (
     <Box>
       <Typography sx={{ fontSize: 10.5, fontWeight: 700, mb: 0.6, letterSpacing: '0.5px', textTransform: 'uppercase',
-        color: focused ? alpha(ORANGE, 0.9) : 'rgba(255,255,255,0.3)', transition: 'color 0.2s' }}>
+        color: focused ? alpha(ORANGE, 0.9) : '#94A3B8', transition: 'color 0.2s' }}>
         {label}
       </Typography>
       <Box sx={{
         display: 'flex', alignItems: 'center', gap: 1.2, px: 1.5, minHeight: 48,
-        bgcolor: disabled ? 'rgba(255,255,255,0.04)' : (focused ? 'rgba(255,255,255,0.055)' : 'rgba(255,255,255,0.03)'),
-        border: `1.5px solid ${disabled ? 'rgba(255,255,255,0.1)' : (focused ? ORANGE : 'rgba(255,255,255,0.09)')}`,
+        bgcolor: disabled ? '#F1F5F9' : (focused ? '#FFFFFF' : '#F7F8FA'),
+        border: `1.5px solid ${disabled ? 'rgba(15,23,42,0.12)' : (focused ? ORANGE : 'rgba(15,23,42,0.09)')}`,
         borderRadius: '14px',
         boxShadow: focused ? `0 0 0 3px ${alpha(ORANGE, 0.1)}` : 'none',
         transition: 'all 0.2s',
       }}>
-        <Icon sx={{ fontSize: 17, color: focused ? ORANGE : 'rgba(255,255,255,0.22)', flexShrink: 0, transition: 'color 0.2s' }} />
+        <Icon sx={{ fontSize: 17, color: focused ? ORANGE : '#94A3B8', flexShrink: 0, transition: 'color 0.2s' }} />
         <InputBase
           value={value}
           onChange={e => onChange?.(e.target.value)}
@@ -56,9 +56,9 @@ function Field({ label, value, onChange, Icon, placeholder, disabled }: {
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           sx={{ flex: 1, '& input': {
-            color: disabled ? 'rgba(255,255,255,0.45)' : 'white',
+            color: disabled ? '#94A3B8' : '#0F172A',
             fontSize: 14, fontWeight: 500, p: 0,
-            '&::placeholder': { color: 'rgba(255,255,255,0.2)', opacity: 1 },
+            '&::placeholder': { color: '#94A3B8', opacity: 1 },
           }}}
         />
       </Box>
@@ -116,39 +116,36 @@ export default function ProfilePage() {
   ];
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: '#060B14' }}>
+    <Box sx={{ minHeight: '100vh', bgcolor: '#F7F8FA' }}>
 
       {/* ── Top banner ── */}
       <Box sx={{
         position: 'relative', overflow: 'hidden',
-        background: 'linear-gradient(160deg, #0F1E3A 0%, #0A1220 50%, #130818 100%)',
+        background: 'linear-gradient(160deg, rgba(255,107,0,0.08) 0%, rgba(255,107,0,0.02) 60%, #F7F8FA 100%)',
         pt: { xs: 3, sm: 4 }, pb: { xs: 9, sm: 11 },
         px: { xs: 2, sm: 4 },
       }}>
         {/* Glows */}
         <Box sx={{ position: 'absolute', width: 500, height: 500, top: '-30%', right: '-10%', borderRadius: '50%', pointerEvents: 'none',
           background: `radial-gradient(circle, ${alpha(ORANGE, 0.07)} 0%, transparent 60%)` }} />
-        <Box sx={{ position: 'absolute', inset: 0, pointerEvents: 'none', opacity: 0.018,
-          backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)',
-          backgroundSize: '48px 48px' }} />
         {/* Top orange accent */}
         <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px',
           background: `linear-gradient(90deg, transparent 10%, ${ORANGE} 50%, transparent 90%)`, opacity: 0.45 }} />
 
         <Box sx={{ maxWidth: 680, mx: 'auto', position: 'relative', zIndex: 1,
           display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography sx={{ fontWeight: 900, fontSize: { xs: 18, sm: 22 }, color: 'white', letterSpacing: '-0.4px' }}>
+          <Typography sx={{ fontWeight: 900, fontSize: { xs: 18, sm: 22 }, color: '#0F172A', letterSpacing: '-0.4px' }}>
             Mon profil
           </Typography>
           <Box onClick={() => { logout(); navigate('/home'); }} sx={{
             display: 'flex', alignItems: 'center', gap: 0.8, cursor: 'pointer',
             px: 1.5, py: 0.8, borderRadius: '12px',
-            border: '1px solid rgba(248,113,113,0.2)', bgcolor: 'rgba(248,113,113,0.06)',
+            border: '1px solid rgba(239,68,68,0.2)', bgcolor: 'rgba(239,68,68,0.06)',
             transition: 'all 0.18s',
-            '&:hover': { bgcolor: 'rgba(248,113,113,0.13)', borderColor: 'rgba(248,113,113,0.4)' },
+            '&:hover': { bgcolor: 'rgba(239,68,68,0.13)', borderColor: 'rgba(239,68,68,0.4)' },
           }}>
-            <LogoutRounded sx={{ fontSize: 15, color: '#F87171' }} />
-            <Typography sx={{ fontSize: 13, fontWeight: 700, color: '#F87171' }}>Déconnexion</Typography>
+            <LogoutRounded sx={{ fontSize: 15, color: '#EF4444' }} />
+            <Typography sx={{ fontSize: 13, fontWeight: 700, color: '#EF4444' }}>Déconnexion</Typography>
           </Box>
         </Box>
       </Box>
@@ -159,10 +156,9 @@ export default function ProfilePage() {
         {/* ── Avatar card ── */}
         <Box sx={{
           borderRadius: '24px', overflow: 'hidden', mb: 2,
-          background: 'rgba(12,18,32,0.95)',
-          backdropFilter: 'blur(20px)',
-          border: '1px solid rgba(255,255,255,0.08)',
-          boxShadow: '0 24px 64px rgba(0,0,0,0.5)',
+          background: '#FFFFFF',
+          border: '1px solid rgba(15,23,42,0.09)',
+          boxShadow: '0 8px 32px rgba(15,23,42,0.08)',
         }}>
           {/* Colored top strip */}
           <Box sx={{ height: 4, background: `linear-gradient(90deg, ${roleMeta.color}, ${alpha(roleMeta.color, 0.3)})` }} />
@@ -183,7 +179,7 @@ export default function ProfilePage() {
                 {/* Online dot */}
                 <Box sx={{ position: 'absolute', bottom: 2, right: 2,
                   width: 16, height: 16, borderRadius: '50%',
-                  bgcolor: GREEN, border: '2.5px solid #0C1220',
+                  bgcolor: GREEN, border: '2.5px solid #FFFFFF',
                   boxShadow: `0 0 8px ${alpha(GREEN, 0.6)}` }} />
                 {/* Camera overlay */}
                 <Box sx={{ position: 'absolute', inset: 0, borderRadius: '50%', cursor: 'pointer',
@@ -198,7 +194,7 @@ export default function ProfilePage() {
               {/* Info */}
               <Box sx={{ flex: 1, minWidth: 0, pt: 0.5 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, mb: 0.5, flexWrap: 'wrap' }}>
-                  <Typography sx={{ fontWeight: 900, fontSize: { xs: 20, sm: 24 }, color: 'white', letterSpacing: '-0.5px', lineHeight: 1.1 }}>
+                  <Typography sx={{ fontWeight: 900, fontSize: { xs: 20, sm: 24 }, color: '#0F172A', letterSpacing: '-0.5px', lineHeight: 1.1 }}>
                     {user.firstName} {user.lastName}
                   </Typography>
                   <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.6,
@@ -210,7 +206,7 @@ export default function ProfilePage() {
                     </Typography>
                   </Box>
                 </Box>
-                <Typography noWrap sx={{ fontSize: 13, color: 'rgba(255,255,255,0.38)', mb: 1.5 }}>{user.email}</Typography>
+                <Typography noWrap sx={{ fontSize: 13, color: '#94A3B8', mb: 1.5 }}>{user.email}</Typography>
 
                 {/* Stats row */}
                 <Box sx={{ display: 'flex', gap: 1 }}>
@@ -224,7 +220,7 @@ export default function ProfilePage() {
                       transition: 'all 0.18s',
                       '&:hover': { bgcolor: alpha(color, 0.15), borderColor: alpha(color, 0.35) },
                     }}>
-                      <Typography sx={{ fontWeight: 900, fontSize: 18, color: 'white', lineHeight: 1 }}>{value}</Typography>
+                      <Typography sx={{ fontWeight: 900, fontSize: 18, color: '#0F172A', lineHeight: 1 }}>{value}</Typography>
                       <Typography sx={{ fontSize: 11, color: alpha(color, 0.8), fontWeight: 600, mt: 0.2 }}>{label}</Typography>
                     </Box>
                   ))}
@@ -237,13 +233,14 @@ export default function ProfilePage() {
         {/* ── Informations ── */}
         <Box sx={{
           borderRadius: '20px', mb: 2, overflow: 'hidden',
-          background: 'rgba(255,255,255,0.025)',
-          border: '1px solid rgba(255,255,255,0.07)',
+          background: '#FFFFFF',
+          border: '1px solid rgba(15,23,42,0.09)',
+          boxShadow: '0 2px 12px rgba(15,23,42,0.05)',
         }}>
           {/* Header */}
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            px: { xs: 2, sm: 2.5 }, py: 2, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-            <Typography sx={{ fontWeight: 800, fontSize: 14.5, color: 'white' }}>Informations personnelles</Typography>
+            px: { xs: 2, sm: 2.5 }, py: 2, borderBottom: '1px solid rgba(15,23,42,0.09)' }}>
+            <Typography sx={{ fontWeight: 800, fontSize: 14.5, color: '#0F172A' }}>Informations personnelles</Typography>
             {!editing ? (
               <Box onClick={() => setEditing(true)} sx={{
                 display: 'flex', alignItems: 'center', gap: 0.7, cursor: 'pointer',
@@ -257,9 +254,9 @@ export default function ProfilePage() {
             ) : (
               <Box sx={{ display: 'flex', gap: 0.8 }}>
                 <IconButton size="small" onClick={() => setEditing(false)} sx={{
-                  bgcolor: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.4)',
+                  bgcolor: '#F1F5F9', color: '#475569',
                   borderRadius: '10px', width: 34, height: 34,
-                  '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' },
+                  '&:hover': { bgcolor: '#E2E8F0' },
                 }}>
                   <CloseRounded sx={{ fontSize: 16 }} />
                 </IconButton>
@@ -267,7 +264,7 @@ export default function ProfilePage() {
                   bgcolor: ORANGE, color: 'white', borderRadius: '10px', width: 34, height: 34,
                   boxShadow: `0 4px 14px ${alpha(ORANGE, 0.4)}`,
                   '&:hover': { bgcolor: '#e05e00' },
-                  '&.Mui-disabled': { bgcolor: alpha(ORANGE, 0.25), color: 'rgba(255,255,255,0.3)' },
+                  '&.Mui-disabled': { bgcolor: alpha(ORANGE, 0.25), color: 'rgba(255,255,255,0.6)' },
                 }}>
                   {saving ? <CircularProgress size={14} sx={{ color: 'white' }} /> : <SaveRounded sx={{ fontSize: 16 }} />}
                 </IconButton>
@@ -299,21 +296,21 @@ export default function ProfilePage() {
                   <Box key={label} sx={{
                     display: 'flex', alignItems: 'center', gap: 1.5,
                     py: 1.6, px: 0.5,
-                    borderBottom: '1px solid rgba(255,255,255,0.04)',
+                    borderBottom: '1px solid rgba(15,23,42,0.06)',
                     '&:last-child': { borderBottom: 'none' },
                     '&:nth-of-type(odd)': { pr: { sm: 2 } },
-                    '&:nth-of-type(even)': { pl: { sm: 2 }, borderLeft: { sm: '1px solid rgba(255,255,255,0.05)' } },
+                    '&:nth-of-type(even)': { pl: { sm: 2 }, borderLeft: { sm: '1px solid rgba(15,23,42,0.07)' } },
                   }}>
                     <Box sx={{ width: 34, height: 34, borderRadius: '10px', flexShrink: 0,
-                      bgcolor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)',
+                      bgcolor: '#F7F8FA', border: '1px solid rgba(15,23,42,0.09)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Icon sx={{ fontSize: 16, color: 'rgba(255,255,255,0.25)' }} />
+                      <Icon sx={{ fontSize: 16, color: '#94A3B8' }} />
                     </Box>
                     <Box sx={{ minWidth: 0 }}>
-                      <Typography sx={{ fontSize: 10.5, color: 'rgba(255,255,255,0.28)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                      <Typography sx={{ fontSize: 10.5, color: '#94A3B8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
                         {label}
                       </Typography>
-                      <Typography noWrap sx={{ fontSize: 13.5, fontWeight: 600, color: 'rgba(255,255,255,0.75)', mt: 0.1 }}>
+                      <Typography noWrap sx={{ fontSize: 13.5, fontWeight: 600, color: '#475569', mt: 0.1 }}>
                         {value}
                       </Typography>
                     </Box>
@@ -327,12 +324,13 @@ export default function ProfilePage() {
         {/* ── Quick links ── */}
         <Box sx={{
           borderRadius: '20px',
-          background: 'rgba(255,255,255,0.025)',
-          border: '1px solid rgba(255,255,255,0.07)',
+          background: '#FFFFFF',
+          border: '1px solid rgba(15,23,42,0.09)',
+          boxShadow: '0 2px 12px rgba(15,23,42,0.05)',
           overflow: 'hidden',
         }}>
-          <Typography sx={{ fontWeight: 800, fontSize: 14.5, color: 'white',
-            px: { xs: 2, sm: 2.5 }, py: 2, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          <Typography sx={{ fontWeight: 800, fontSize: 14.5, color: '#0F172A',
+            px: { xs: 2, sm: 2.5 }, py: 2, borderBottom: '1px solid rgba(15,23,42,0.09)' }}>
             Accès rapide
           </Typography>
           <Box sx={{ p: { xs: 1.5, sm: 2 }, display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1 }}>
@@ -340,8 +338,8 @@ export default function ProfilePage() {
               <Box key={to} component={Link} to={to} sx={{
                 display: 'flex', alignItems: 'center', gap: 1.5,
                 p: { xs: 1.5, sm: 1.8 }, borderRadius: '14px', textDecoration: 'none',
-                border: '1px solid rgba(255,255,255,0.05)',
-                bgcolor: 'rgba(255,255,255,0.02)',
+                border: '1px solid rgba(15,23,42,0.07)',
+                bgcolor: '#F7F8FA',
                 transition: 'all 0.18s',
                 '&:hover': {
                   bgcolor: alpha(color, 0.08),
@@ -357,10 +355,10 @@ export default function ProfilePage() {
                   <Icon className="ql-icon" sx={{ fontSize: 19, color: alpha(color, 0.8), transition: 'color 0.18s' }} />
                 </Box>
                 <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography sx={{ fontSize: 13.5, fontWeight: 700, color: 'rgba(255,255,255,0.8)', lineHeight: 1.3 }}>{label}</Typography>
-                  <Typography sx={{ fontSize: 11.5, color: 'rgba(255,255,255,0.28)', mt: 0.15 }}>{sub}</Typography>
+                  <Typography sx={{ fontSize: 13.5, fontWeight: 700, color: '#0F172A', lineHeight: 1.3 }}>{label}</Typography>
+                  <Typography sx={{ fontSize: 11.5, color: '#94A3B8', mt: 0.15 }}>{sub}</Typography>
                 </Box>
-                <ArrowForward className="ql-arrow" sx={{ fontSize: 15, color: 'rgba(255,255,255,0.15)', transition: 'all 0.18s', flexShrink: 0 }} />
+                <ArrowForward className="ql-arrow" sx={{ fontSize: 15, color: '#CBD5E1', transition: 'all 0.18s', flexShrink: 0 }} />
               </Box>
             ))}
           </Box>
@@ -368,7 +366,7 @@ export default function ProfilePage() {
 
         {/* ── Member since ── */}
         <Box sx={{ mt: 2, textAlign: 'center' }}>
-          <Typography sx={{ fontSize: 11.5, color: 'rgba(255,255,255,0.18)' }}>
+          <Typography sx={{ fontSize: 11.5, color: '#CBD5E1' }}>
             Membre depuis {new Date((user as any).createdAt ?? Date.now()).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
           </Typography>
         </Box>

@@ -16,22 +16,22 @@ import api from '../../api/axios';
 // ── Palette ────────────────────────────────────────────────────────────────
 
 const OR   = '#FF6B00';
-const BG   = '#060B14';
-const CARD = '#0D1424';
-const BORD = 'rgba(255,255,255,0.08)';
-const TXT  = 'rgba(255,255,255,0.92)';
-const SUB  = 'rgba(255,255,255,0.42)';
-const SUB2 = 'rgba(255,255,255,0.65)';
+const BG   = '#F7F8FA';
+const CARD = '#FFFFFF';
+const BORD = 'rgba(15,23,42,0.06)';
+const TXT  = '#0F172A';
+const SUB  = '#94A3B8';
+const SUB2 = '#94A3B8';
 const GRN  = '#10B981';
 const RED  = '#EF4444';
 
 const darkMenu = {
   PaperProps: {
     sx: {
-      bgcolor: '#111827', border: `1px solid ${BORD}`, borderRadius: '12px',
+      bgcolor: '#FFFFFF', border: `1px solid ${BORD}`, borderRadius: '12px', boxShadow: '0 8px 24px rgba(15,23,42,0.12)',
       '& .MuiMenuItem-root': {
         fontSize: 13, color: TXT, py: 1,
-        '&:hover': { bgcolor: 'rgba(255,255,255,0.06)' },
+        '&:hover': { bgcolor: 'rgba(15,23,42,0.04)' },
         '&.Mui-selected': { bgcolor: 'rgba(255,107,0,0.14)', color: OR, fontWeight: 700 },
       },
     },
@@ -40,9 +40,9 @@ const darkMenu = {
 
 const fieldSx = {
   '& .MuiOutlinedInput-root': {
-    bgcolor: '#0A1020', borderRadius: '10px', fontSize: 13.5, color: TXT,
+    bgcolor: '#F7F8FA', borderRadius: '10px', fontSize: 13.5, color: TXT,
     '& fieldset': { borderColor: BORD },
-    '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.2)' },
+    '&:hover fieldset': { borderColor: 'rgba(15,23,42,0.09)' },
     '&.Mui-focused fieldset': { borderColor: OR },
   },
   '& .MuiInputLabel-root': { color: SUB, fontSize: 13 },
@@ -119,7 +119,7 @@ function DarkToggle({ checked, onChange, label, sub }: { checked: boolean; onCha
   return (
     <Box onClick={() => onChange(!checked)}
       sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', py: 0.5,
-        '&:hover .track': { borderColor: 'rgba(255,255,255,0.2)' } }}>
+        '&:hover .track': { borderColor: 'rgba(15,23,42,0.09)' } }}>
       <Box>
         <Typography fontSize={13.5} fontWeight={500} color={TXT}>{label}</Typography>
         {sub && <Typography fontSize={12} color={SUB} mt={0.2}>{sub}</Typography>}
@@ -132,7 +132,7 @@ function DarkToggle({ checked, onChange, label, sub }: { checked: boolean; onCha
         <Box sx={{
           width: 18, height: 18, borderRadius: '50%', bgcolor: '#fff', position: 'absolute',
           top: '50%', transform: `translateY(-50%) translateX(${checked ? 22 : 2}px)`,
-          transition: 'transform 0.2s', boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
+          transition: 'transform 0.2s', boxShadow: '0 1px 4px rgba(15,23,42,0.15)',
         }} />
       </Box>
     </Box>
@@ -342,9 +342,9 @@ export default function AddProductPage() {
     <Box sx={{ bgcolor: BG, minHeight: '100vh', pb: 6 }}>
 
       {/* ── Sticky header ── */}
-      <Box sx={{ position: 'sticky', top: 0, zIndex: 100, bgcolor: '#080E1C', borderBottom: `1px solid ${BORD}`, px: { xs: 2, md: 3 }, py: 1.5, display: 'flex', alignItems: 'center', gap: 1.5, backdropFilter: 'blur(10px)' }}>
+      <Box sx={{ position: 'sticky', top: 0, zIndex: 100, bgcolor: '#FFFFFF', borderBottom: `1px solid ${BORD}`, px: { xs: 2, md: 3 }, py: 1.5, display: 'flex', alignItems: 'center', gap: 1.5, backdropFilter: 'blur(10px)' }}>
         <Box component={Link} to="/seller/products"
-          sx={{ width: 36, height: 36, borderRadius: '10px', bgcolor: CARD, border: `1px solid ${BORD}`, display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', '&:hover': { bgcolor: 'rgba(255,255,255,0.06)' } }}>
+          sx={{ width: 36, height: 36, borderRadius: '10px', bgcolor: CARD, border: `1px solid ${BORD}`, display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', '&:hover': { bgcolor: 'rgba(15,23,42,0.09)' } }}>
           <ArrowBack sx={{ fontSize: 18, color: SUB }} />
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, flex: 1 }}>
@@ -354,7 +354,7 @@ export default function AddProductPage() {
           <Typography fontWeight={800} fontSize={16} color={TXT}>Nouveau produit</Typography>
         </Box>
         <Button type="submit" form="listing-form" disabled={loading}
-          sx={{ bgcolor: OR, color: '#fff', borderRadius: '10px', fontWeight: 700, fontSize: 13.5, px: 3, py: 1, textTransform: 'none', '&:hover': { bgcolor: '#E05A00' }, '&.Mui-disabled': { bgcolor: 'rgba(255,107,0,0.3)', color: 'rgba(255,255,255,0.4)' } }}>
+          sx={{ bgcolor: OR, color: '#fff', borderRadius: '10px', fontWeight: 700, fontSize: 13.5, px: 3, py: 1, textTransform: 'none', '&:hover': { bgcolor: '#E05A00' }, '&.Mui-disabled': { bgcolor: 'rgba(255,107,0,0.3)', color: '#94A3B8' } }}>
           {loading ? <CircularProgress size={16} sx={{ color: '#fff' }} /> : 'Publier'}
         </Button>
       </Box>
@@ -375,7 +375,7 @@ export default function AddProductPage() {
             <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
               {mainImages.length < maxImages && (
                 <Box onClick={() => mainImgRef.current?.click()}
-                  sx={{ width: 96, height: 96, borderRadius: '12px', border: `2px dashed ${BORD}`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 0.8, cursor: 'pointer', bgcolor: 'rgba(255,255,255,0.02)', transition: 'all 0.15s', '&:hover': { borderColor: OR, bgcolor: `${OR}08` } }}>
+                  sx={{ width: 96, height: 96, borderRadius: '12px', border: `2px dashed ${BORD}`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 0.8, cursor: 'pointer', bgcolor: 'rgba(15,23,42,0.09)', transition: 'all 0.15s', '&:hover': { borderColor: OR, bgcolor: `${OR}08` } }}>
                   <AddPhotoAlternate sx={{ fontSize: 28, color: SUB }} />
                   <Typography fontSize={10.5} color={SUB} textAlign="center">{mainImages.length === 0 ? 'Photo\nprincipale' : 'Ajouter'}</Typography>
                 </Box>
@@ -468,7 +468,7 @@ export default function AddProductPage() {
               {form.categoryId && catType !== 'generic' && catType !== 'food' && catType !== 'cosmetics' && (
                 <Box sx={{ border: `1px solid ${BORD}`, borderRadius: '12px', overflow: 'hidden' }}>
                   <Box onClick={() => setShowAttrs(p => !p)}
-                    sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, py: 1.5, cursor: 'pointer', '&:hover': { bgcolor: 'rgba(255,255,255,0.03)' } }}>
+                    sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, py: 1.5, cursor: 'pointer', '&:hover': { bgcolor: 'rgba(15,23,42,0.04)' } }}>
                     <Typography fontSize={13} fontWeight={600} color={TXT}>
                       {catType === 'phone' || catType === 'electronics' ? '📱 Caractéristiques téléphone / électronique'
                         : catType === 'clothing' ? '👕 Caractéristiques vêtement'
@@ -573,7 +573,7 @@ export default function AddProductPage() {
                       const active = form.storeId === s.id || (!form.storeId && s.isPrimary);
                       return (
                         <Box key={s.id} onClick={() => setForm(p => ({ ...p, storeId: s.id }))}
-                          sx={{ px: 1.5, py: 0.7, borderRadius: '8px', cursor: 'pointer', fontSize: 12.5, fontWeight: 600, transition: 'all 0.15s', bgcolor: active ? 'rgba(255,107,0,0.12)' : 'rgba(255,255,255,0.04)', color: active ? OR : SUB2, border: `1px solid ${active ? `${OR}40` : BORD}` }}>
+                          sx={{ px: 1.5, py: 0.7, borderRadius: '8px', cursor: 'pointer', fontSize: 12.5, fontWeight: 600, transition: 'all 0.15s', bgcolor: active ? 'rgba(255,107,0,0.12)' : 'rgba(15,23,42,0.09)', color: active ? OR : SUB2, border: `1px solid ${active ? `${OR}40` : BORD}` }}>
                           {s.name}
                         </Box>
                       );
@@ -595,7 +595,7 @@ export default function AddProductPage() {
           {/* ── VARIANTES ── */}
           <Box sx={{ bgcolor: CARD, border: `1px solid ${BORD}`, borderRadius: '16px', mb: 2, overflow: 'hidden' }}>
             <Box onClick={() => setShowVariants(p => !p)}
-              sx={{ px: 3, py: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', '&:hover': { bgcolor: 'rgba(255,255,255,0.02)' } }}>
+              sx={{ px: 3, py: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', '&:hover': { bgcolor: 'rgba(15,23,42,0.04)' } }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                 <Typography fontSize={13} fontWeight={700} color={TXT} sx={{ textTransform: 'uppercase', letterSpacing: '0.6px' }}>Variantes couleur / taille</Typography>
                 {variants.length > 0 && (
@@ -619,7 +619,7 @@ export default function AddProductPage() {
                         const active = variants.some(v => v.size === s);
                         return (
                           <Box key={s} onClick={() => addQuickSize(s)}
-                            sx={{ px: 1.5, py: 0.6, borderRadius: '8px', cursor: 'pointer', fontSize: 12.5, fontWeight: 700, bgcolor: active ? OR : 'rgba(255,255,255,0.05)', color: active ? '#fff' : SUB2, border: `1px solid ${active ? OR : BORD}` }}>
+                            sx={{ px: 1.5, py: 0.6, borderRadius: '8px', cursor: 'pointer', fontSize: 12.5, fontWeight: 700, bgcolor: active ? OR : 'rgba(15,23,42,0.09)', color: active ? '#fff' : SUB2, border: `1px solid ${active ? OR : BORD}` }}>
                             {s}
                           </Box>
                         );
@@ -630,7 +630,7 @@ export default function AddProductPage() {
 
                 {/* Variant cards */}
                 {variants.map((v, i) => (
-                  <Box key={v.id} sx={{ p: 2, bgcolor: '#0A1020', borderRadius: '12px', border: `1px solid ${BORD}` }}>
+                  <Box key={v.id} sx={{ p: 2, bgcolor: '#F7F8FA', borderRadius: '12px', border: `1px solid ${BORD}` }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
                       <Typography fontSize={12.5} fontWeight={700} color={SUB2}>Variante {i + 1}</Typography>
                       <IconButton size="small" onClick={() => delVariant(v.id)}
@@ -667,7 +667,7 @@ export default function AddProductPage() {
 
           {/* Bottom submit */}
           <Button fullWidth type="submit" disabled={loading}
-            sx={{ py: 1.6, borderRadius: '14px', fontWeight: 800, fontSize: 15, bgcolor: OR, color: '#fff', textTransform: 'none', '&:hover': { bgcolor: '#E05A00' }, '&.Mui-disabled': { bgcolor: 'rgba(255,107,0,0.3)', color: 'rgba(255,255,255,0.4)' }, mb: 2 }}>
+            sx={{ py: 1.6, borderRadius: '14px', fontWeight: 800, fontSize: 15, bgcolor: OR, color: '#fff', textTransform: 'none', '&:hover': { bgcolor: '#E05A00' }, '&.Mui-disabled': { bgcolor: 'rgba(255,107,0,0.3)', color: '#94A3B8' }, mb: 2 }}>
             {loading ? <CircularProgress size={20} sx={{ color: '#fff' }} /> : 'Publier le produit'}
           </Button>
 

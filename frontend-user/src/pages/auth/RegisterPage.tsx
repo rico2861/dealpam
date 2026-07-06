@@ -64,7 +64,7 @@ function Field({
     status === 'ok'    ? '#34D399' :
     status === 'taken' ? '#F87171' :
     focused            ? accentColor :
-    'rgba(255,255,255,0.09)';
+    'rgba(15,23,42,0.12)';
 
   const glow =
     status === 'ok'    ? '0 0 0 3px rgba(52,211,153,0.12)' :
@@ -75,7 +75,7 @@ function Field({
     <Box>
       {label && (
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.75 }}>
-          <Typography sx={{ fontSize: 11.5, fontWeight: 700, color: focused ? alpha(accentColor, 0.85) : 'rgba(255,255,255,0.45)', letterSpacing: '0.5px', transition: 'color 0.2s', userSelect: 'none' }}>
+          <Typography sx={{ fontSize: 11.5, fontWeight: 700, color: focused ? alpha(accentColor, 0.85) : '#94A3B8', letterSpacing: '0.5px', transition: 'color 0.2s', userSelect: 'none' }}>
             {label}{required && <Box component="span" sx={{ color: accentColor, ml: 0.3 }}>*</Box>}
           </Typography>
           {badge}
@@ -87,7 +87,7 @@ function Field({
         pt: multiline ? 1.5 : 0,
         pb: multiline ? 1.5 : 0,
         minHeight: multiline ? undefined : 48,
-        bgcolor: focused ? 'rgba(255,255,255,0.055)' : 'rgba(255,255,255,0.03)',
+        bgcolor: focused ? '#FFFFFF' : '#F7F8FA',
         border: `1.5px solid ${borderColor}`,
         borderRadius: '14px',
         transition: 'all 0.22s ease',
@@ -95,7 +95,7 @@ function Field({
         cursor: 'text',
       }}>
         {startIcon && (
-          <Box sx={{ color: focused ? alpha(accentColor, 0.7) : 'rgba(255,255,255,0.22)', flexShrink: 0, display: 'flex', mt: multiline ? 0.3 : 0, transition: 'color 0.2s' }}>
+          <Box sx={{ color: focused ? alpha(accentColor, 0.7) : '#94A3B8', flexShrink: 0, display: 'flex', mt: multiline ? 0.3 : 0, transition: 'color 0.2s' }}>
             {startIcon}
           </Box>
         )}
@@ -112,13 +112,13 @@ function Field({
           sx={{
             flex: 1,
             '& input, & textarea': {
-              color: '#fff !important', WebkitTextFillColor: '#fff', fontSize: 14, fontWeight: 500,
-              p: 0, lineHeight: '24px', caretColor: '#fff',
-              '&::placeholder': { color: 'rgba(255,255,255,0.2)', opacity: 1 },
+              color: '#0F172A !important', WebkitTextFillColor: '#0F172A', fontSize: 14, fontWeight: 500,
+              p: 0, lineHeight: '24px', caretColor: '#0F172A',
+              '&::placeholder': { color: '#94A3B8', opacity: 1 },
               '&:-webkit-autofill, &:-webkit-autofill:hover, &:-webkit-autofill:focus': {
-                WebkitBoxShadow: '0 0 0 100px #0C1220 inset',
-                WebkitTextFillColor: '#fff',
-                caretColor: '#fff',
+                WebkitBoxShadow: '0 0 0 100px #FFFFFF inset',
+                WebkitTextFillColor: '#0F172A',
+                caretColor: '#0F172A',
                 transition: 'background-color 9999s ease-in-out 0s',
               },
             },
@@ -127,7 +127,7 @@ function Field({
         {endIcon && <Box sx={{ flexShrink: 0, display: 'flex', alignItems: 'center' }}>{endIcon}</Box>}
       </Box>
       {hint && (
-        <Typography sx={{ fontSize: 11.5, mt: 0.6, px: 0.5, lineHeight: 1.5, color: 'rgba(255,255,255,0.28)' }}>
+        <Typography sx={{ fontSize: 11.5, mt: 0.6, px: 0.5, lineHeight: 1.5, color: '#94A3B8' }}>
           {hint}
         </Typography>
       )}
@@ -137,7 +137,7 @@ function Field({
 
 /* ── Status adornment ── */
 function StatusIcon({ status }: { status: 'idle'|'checking'|'ok'|'taken' }) {
-  if (status === 'checking') return <CircularProgress size={14} sx={{ color: 'rgba(255,255,255,0.3)' }} />;
+  if (status === 'checking') return <CircularProgress size={14} sx={{ color: '#94A3B8' }} />;
   if (status === 'ok')       return <CheckCircle sx={{ fontSize: 17, color: '#34D399' }} />;
   if (status === 'taken')    return <ErrorOutline sx={{ fontSize: 17, color: '#F87171' }} />;
   return null;
@@ -150,7 +150,7 @@ function StepBar({ step, accent }: { step: number; accent: string }) {
       {STEPS.map((label, i) => {
         const done    = i < step;
         const current = i === step;
-        const color   = done ? '#10B981' : current ? accent : 'rgba(255,255,255,0.15)';
+        const color   = done ? '#10B981' : current ? accent : 'rgba(15,23,42,0.18)';
         return (
           <Box key={label} sx={{ display: 'flex', alignItems: 'center', flex: i < STEPS.length - 1 ? 1 : 'none' }}>
             <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.7 }}>
@@ -158,18 +158,18 @@ function StepBar({ step, accent }: { step: number; accent: string }) {
                 width: current ? 34 : 28, height: current ? 34 : 28,
                 borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
                 transition: 'all 0.35s cubic-bezier(.4,0,.2,1)',
-                bgcolor: done ? '#10B981' : current ? accent : 'rgba(255,255,255,0.05)',
+                bgcolor: done ? '#10B981' : current ? accent : '#F1F5F9',
                 border: `2px solid ${color}`,
                 boxShadow: current ? `0 0 0 4px ${alpha(accent, 0.18)}, 0 4px 16px ${alpha(accent, 0.3)}` : 'none',
               }}>
                 {done
                   ? <CheckCircle sx={{ fontSize: 15, color: 'white' }} />
-                  : <Typography sx={{ fontSize: current ? 13 : 11, fontWeight: 900, color: current ? 'white' : 'rgba(255,255,255,0.3)', lineHeight: 1 }}>{i + 1}</Typography>
+                  : <Typography sx={{ fontSize: current ? 13 : 11, fontWeight: 900, color: current ? 'white' : '#94A3B8', lineHeight: 1 }}>{i + 1}</Typography>
                 }
               </Box>
               <Typography sx={{
                 fontSize: 10.5, fontWeight: current ? 800 : 500, lineHeight: 1,
-                color: current ? 'white' : done ? '#10B981' : 'rgba(255,255,255,0.2)',
+                color: current ? '#0F172A' : done ? '#10B981' : '#94A3B8',
                 transition: 'color 0.3s', whiteSpace: 'nowrap',
               }}>
                 {label}
@@ -178,7 +178,7 @@ function StepBar({ step, accent }: { step: number; accent: string }) {
             {i < STEPS.length - 1 && (
               <Box sx={{
                 flex: 1, height: 2, mx: 1.5, borderRadius: 1,
-                bgcolor: i < step ? '#10B981' : 'rgba(255,255,255,0.07)',
+                bgcolor: i < step ? '#10B981' : 'rgba(15,23,42,0.09)',
                 transition: 'background 0.4s',
                 mb: 2.5,
               }} />
@@ -199,7 +199,7 @@ function PasswordStrength({ password }: { password: string }) {
   return (
     <Box sx={{ mt: 1.5 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
-        <Box sx={{ flex: 1, height: 3, bgcolor: 'rgba(255,255,255,0.07)', borderRadius: 3, overflow: 'hidden' }}>
+        <Box sx={{ flex: 1, height: 3, bgcolor: 'rgba(15,23,42,0.09)', borderRadius: 3, overflow: 'hidden' }}>
           <Box sx={{ height: '100%', width: `${(score / PASSWORD_RULES.length) * 100}%`, bgcolor: color, borderRadius: 3, transition: 'all 0.35s ease' }} />
         </Box>
         <Typography fontSize={11} fontWeight={700} color={color} sx={{ minWidth: 55, textAlign: 'right' }}>
@@ -214,8 +214,8 @@ function PasswordStrength({ password }: { password: string }) {
               icon={ok ? <CheckCircle sx={{ fontSize: '11px !important', color: '#10B981 !important' }} /> : undefined}
               sx={{
                 height: 20, fontSize: 10, fontWeight: ok ? 700 : 400,
-                bgcolor: ok ? alpha('#10B981', 0.15) : 'rgba(255,255,255,0.06)',
-                color: ok ? '#34D399' : 'rgba(255,255,255,0.3)',
+                bgcolor: ok ? alpha('#10B981', 0.15) : 'rgba(15,23,42,0.05)',
+                color: ok ? '#059669' : '#94A3B8',
                 border: `1px solid ${ok ? alpha('#10B981', 0.3) : 'transparent'}`,
                 transition: 'all 0.2s',
               }} />
@@ -255,12 +255,12 @@ function LeftPanel({ accent, badge, headline, sub, features, quote, stats }: {
       </Box>
 
       {/* Headline */}
-      <Typography sx={{ fontWeight: 900, fontSize: { lg: 36, xl: 44 }, color: 'white', lineHeight: 1.12, letterSpacing: '-1.5px', mb: 2.5 }}>
+      <Typography sx={{ fontWeight: 900, fontSize: { lg: 36, xl: 44 }, color: '#0F172A', lineHeight: 1.12, letterSpacing: '-1.5px', mb: 2.5 }}>
         {headline}
       </Typography>
 
       {/* Sub */}
-      <Typography sx={{ color: 'rgba(255,255,255,0.4)', fontSize: 14.5, lineHeight: 1.85, mb: 5 }}>
+      <Typography sx={{ color: '#475569', fontSize: 14.5, lineHeight: 1.85, mb: 5 }}>
         {sub}
       </Typography>
 
@@ -276,8 +276,8 @@ function LeftPanel({ accent, badge, headline, sub, features, quote, stats }: {
               <Icon sx={{ fontSize: 18, color: accent }} />
             </Box>
             <Box sx={{ pt: 0.2 }}>
-              <Typography sx={{ color: 'rgba(255,255,255,0.82)', fontSize: 13.5, fontWeight: 700, lineHeight: 1.35 }}>{title}</Typography>
-              <Typography sx={{ color: 'rgba(255,255,255,0.32)', fontSize: 12.5, lineHeight: 1.65, mt: 0.25 }}>{fs}</Typography>
+              <Typography sx={{ color: '#0F172A', fontSize: 13.5, fontWeight: 700, lineHeight: 1.35 }}>{title}</Typography>
+              <Typography sx={{ color: '#94A3B8', fontSize: 12.5, lineHeight: 1.65, mt: 0.25 }}>{fs}</Typography>
             </Box>
           </Box>
         ))}
@@ -285,27 +285,27 @@ function LeftPanel({ accent, badge, headline, sub, features, quote, stats }: {
 
       {/* Quote */}
       {quote && (
-        <Box sx={{ p: 2.2, borderRadius: '16px', bgcolor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+        <Box sx={{ p: 2.2, borderRadius: '16px', bgcolor: '#FFFFFF', border: '1px solid rgba(15,23,42,0.09)', boxShadow: '0 2px 12px rgba(15,23,42,0.05)' }}>
           <Box sx={{ width: 24, height: 2, bgcolor: accent, borderRadius: 1, mb: 1.5, opacity: 0.6 }} />
-          <Typography sx={{ fontSize: 13.5, color: 'rgba(255,255,255,0.6)', fontStyle: 'italic', lineHeight: 1.75, mb: 1.5 }}>
+          <Typography sx={{ fontSize: 13.5, color: '#475569', fontStyle: 'italic', lineHeight: 1.75, mb: 1.5 }}>
             "{quote.text}"
           </Typography>
           <Box>
-            <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: 'rgba(255,255,255,0.7)' }}>{quote.name}</Typography>
-            <Typography sx={{ fontSize: 11.5, color: 'rgba(255,255,255,0.28)', mt: 0.2 }}>{quote.store}</Typography>
+            <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: '#334155' }}>{quote.name}</Typography>
+            <Typography sx={{ fontSize: 11.5, color: '#94A3B8', mt: 0.2 }}>{quote.store}</Typography>
           </Box>
         </Box>
       )}
 
       {/* Stats bar */}
       {stats && (
-        <Box sx={{ display: 'flex', borderRadius: '14px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.07)' }}>
+        <Box sx={{ display: 'flex', borderRadius: '14px', overflow: 'hidden', border: '1px solid rgba(15,23,42,0.09)' }}>
           {stats.map(({ value, label }, i) => (
             <Box key={label} sx={{ flex: 1, py: 2, textAlign: 'center',
-              bgcolor: i % 2 === 0 ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.025)',
-              borderRight: i < stats.length - 1 ? '1px solid rgba(255,255,255,0.07)' : 'none' }}>
+              bgcolor: i % 2 === 0 ? '#FFFFFF' : '#F7F8FA',
+              borderRight: i < stats.length - 1 ? '1px solid rgba(15,23,42,0.09)' : 'none' }}>
               <Typography sx={{ fontWeight: 900, fontSize: 18, color: accent, letterSpacing: '-0.5px', lineHeight: 1 }}>{value}</Typography>
-              <Typography sx={{ fontSize: 11, color: 'rgba(255,255,255,0.28)', mt: 0.5, fontWeight: 500 }}>{label}</Typography>
+              <Typography sx={{ fontSize: 11, color: '#94A3B8', mt: 0.5, fontWeight: 500 }}>{label}</Typography>
             </Box>
           ))}
         </Box>
@@ -423,20 +423,20 @@ export default function RegisterPage() {
   const BUYER_PERKS  = ['50 000+ produits disponibles', 'Vendeurs vérifiés & certifiés', 'Suivi de commande en temps réel', 'Paiement 100 % sécurisé'];
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#060B14', colorScheme: 'dark' }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#F7F8FA' }}>
 
       {/* ── LEFT panel ── */}
       <Box sx={{
         flex: 1, display: { xs: 'none', lg: 'flex' }, flexDirection: 'column', justifyContent: 'center',
         p: { lg: 7, xl: 10 }, position: 'relative', overflow: 'hidden',
-        background: 'linear-gradient(155deg, #0A1628 0%, #0F1E3A 40%, #140A1A 100%)',
+        background: 'linear-gradient(155deg, #FFF4EB 0%, #FFF8F2 40%, #F7F3FE 100%)',
       }}>
         <Box sx={{ position: 'absolute', width: 700, height: 700, top: '-15%', left: '-15%', borderRadius: '50%', pointerEvents: 'none',
-          background: `radial-gradient(circle, ${alpha(accent, 0.11)} 0%, transparent 60%)`, transition: 'background 0.5s' }} />
+          background: `radial-gradient(circle, ${alpha(accent, 0.1)} 0%, transparent 60%)`, transition: 'background 0.5s' }} />
         <Box sx={{ position: 'absolute', width: 400, height: 400, bottom: '-10%', right: '-10%', borderRadius: '50%', pointerEvents: 'none',
-          background: 'radial-gradient(circle, rgba(56,189,248,0.05) 0%, transparent 60%)' }} />
+          background: 'radial-gradient(circle, rgba(99,102,241,0.05) 0%, transparent 60%)' }} />
         <Box sx={{ position: 'absolute', inset: 0, pointerEvents: 'none', opacity: 0.025,
-          backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)',
+          backgroundImage: 'linear-gradient(rgba(15,23,42,1) 1px, transparent 1px), linear-gradient(90deg, rgba(15,23,42,1) 1px, transparent 1px)',
           backgroundSize: '52px 52px' }} />
 
         <Box sx={{ position: 'relative', zIndex: 1, maxWidth: 440 }}>
@@ -484,8 +484,8 @@ export default function RegisterPage() {
         width: { xs: '100%', lg: 540 }, flexShrink: 0,
         display: 'flex', flexDirection: 'column', justifyContent: 'center',
         px: { xs: 3, sm: 6 }, py: 5,
-        bgcolor: '#0C1220',
-        borderLeft: '1px solid rgba(255,255,255,0.05)',
+        bgcolor: '#FFFFFF',
+        borderLeft: '1px solid rgba(15,23,42,0.09)',
         overflowY: 'auto', position: 'relative',
       }}>
         {/* Top accent line */}
@@ -494,10 +494,10 @@ export default function RegisterPage() {
 
         <Box sx={{ maxWidth: 420, width: '100%', mx: 'auto' }}>
           {/* Title */}
-          <Typography sx={{ fontWeight: 900, fontSize: { xs: 22, sm: 26 }, color: 'white', letterSpacing: '-0.6px', mb: 0.5 }}>
+          <Typography sx={{ fontWeight: 900, fontSize: { xs: 22, sm: 26 }, color: '#0F172A', letterSpacing: '-0.6px', mb: 0.5 }}>
             Créer un compte
           </Typography>
-          <Typography sx={{ fontSize: 13, color: 'rgba(255,255,255,0.32)', mb: 3.5 }}>
+          <Typography sx={{ fontSize: 13, color: '#94A3B8', mb: 3.5 }}>
             Déjà membre ?{' '}
             <Link to="/login" style={{ color: ORANGE, fontWeight: 700, textDecoration: 'none' }}>Se connecter →</Link>
           </Typography>
@@ -516,7 +516,7 @@ export default function RegisterPage() {
           {/* ══ Step 0: Role ══ */}
           {step === 0 && (
             <Box>
-              <Typography sx={{ fontSize: 11.5, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '1px', mb: 2 }}>
+              <Typography sx={{ fontSize: 11.5, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '1px', mb: 2 }}>
                 Je souhaite…
               </Typography>
               <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mb: 4 }}>
@@ -528,12 +528,12 @@ export default function RegisterPage() {
                   return (
                     <Box key={value} onClick={() => setRole(value)} sx={{
                       p: 3, textAlign: 'center', cursor: 'pointer', borderRadius: '18px',
-                      border: `1.5px solid ${active ? color : 'rgba(255,255,255,0.07)'}`,
-                      bgcolor: active ? alpha(color, 0.09) : 'rgba(255,255,255,0.02)',
+                      border: `1.5px solid ${active ? color : 'rgba(15,23,42,0.09)'}`,
+                      bgcolor: active ? alpha(color, 0.09) : '#FFFFFF',
                       transition: 'all 0.25s cubic-bezier(.4,0,.2,1)',
                       position: 'relative', overflow: 'hidden',
+                      boxShadow: active ? `0 8px 28px ${alpha(color, 0.22)}, inset 0 1px 0 ${alpha(color, 0.1)}` : '0 2px 12px rgba(15,23,42,0.05)',
                       '&:hover': { borderColor: alpha(color, 0.55), bgcolor: alpha(color, 0.06), transform: 'translateY(-3px)', boxShadow: `0 12px 32px ${alpha(color, 0.15)}` },
-                      boxShadow: active ? `0 8px 28px ${alpha(color, 0.22)}, inset 0 1px 0 ${alpha(color, 0.1)}` : 'none',
                     }}>
                       {active && (
                         <Box sx={{ position: 'absolute', top: 10, right: 10 }}>
@@ -543,18 +543,18 @@ export default function RegisterPage() {
                         </Box>
                       )}
                       <Box sx={{ width: 56, height: 56, borderRadius: '16px', mx: 'auto', mb: 1.8,
-                        background: active ? `linear-gradient(135deg, ${alpha(color, 0.25)}, ${alpha(color, 0.1)})` : `rgba(255,255,255,0.04)`,
+                        background: active ? `linear-gradient(135deg, ${alpha(color, 0.25)}, ${alpha(color, 0.1)})` : '#F1F5F9',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        border: `1px solid ${active ? alpha(color, 0.3) : 'rgba(255,255,255,0.06)'}`,
+                        border: `1px solid ${active ? alpha(color, 0.3) : 'rgba(15,23,42,0.09)'}`,
                         transition: 'all 0.25s',
                         boxShadow: active ? `0 4px 16px ${alpha(color, 0.2)}` : 'none',
                       }}>
-                        <Icon sx={{ color: active ? color : 'rgba(255,255,255,0.3)', fontSize: 26, transition: 'color 0.25s' }} />
+                        <Icon sx={{ color: active ? color : '#94A3B8', fontSize: 26, transition: 'color 0.25s' }} />
                       </Box>
-                      <Typography sx={{ fontWeight: 800, fontSize: 15, color: active ? color : 'rgba(255,255,255,0.65)', transition: 'color 0.25s' }}>
+                      <Typography sx={{ fontWeight: 800, fontSize: 15, color: active ? color : '#475569', transition: 'color 0.25s' }}>
                         {label}
                       </Typography>
-                      <Typography sx={{ fontSize: 12, color: 'rgba(255,255,255,0.28)', mt: 0.4 }}>{sub}</Typography>
+                      <Typography sx={{ fontSize: 12, color: '#94A3B8', mt: 0.4 }}>{sub}</Typography>
                     </Box>
                   );
                 })}
@@ -568,7 +568,7 @@ export default function RegisterPage() {
                   <Typography sx={{ fontSize: 12.5, fontWeight: 800, color: '#D8B4FE', letterSpacing: '0.3px', flexShrink: 0 }}>
                     ESSAI GRATUIT
                   </Typography>
-                  <Typography sx={{ fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.75)', lineHeight: 1.4 }}>
+                  <Typography sx={{ fontSize: 13, fontWeight: 500, color: '#475569', lineHeight: 1.4 }}>
                     30 jours sur le plan Business, activés automatiquement à la création de votre boutique.
                   </Typography>
                 </Box>
@@ -663,7 +663,7 @@ export default function RegisterPage() {
                   startIcon={<LockOutlined sx={{ fontSize: 18 }} />}
                   endIcon={
                     <IconButton onClick={() => setShowPwd(!showPwd)} size="small" tabIndex={-1}
-                      sx={{ color: 'rgba(255,255,255,0.22)', p: 0.5, '&:hover': { color: accent, bgcolor: 'transparent' } }}>
+                      sx={{ color: '#94A3B8', p: 0.5, '&:hover': { color: accent, bgcolor: 'transparent' } }}>
                       {showPwd ? <VisibilityOff sx={{ fontSize: 18 }} /> : <Visibility sx={{ fontSize: 18 }} />}
                     </IconButton>
                   }
@@ -694,8 +694,8 @@ export default function RegisterPage() {
                       <Storefront sx={{ color: '#A78BFA', fontSize: 19 }} />
                     </Box>
                     <Box>
-                      <Typography sx={{ fontWeight: 700, color: '#A78BFA', fontSize: 14 }}>Votre première boutique</Typography>
-                      <Typography sx={{ fontSize: 11.5, color: 'rgba(255,255,255,0.25)' }}>Visible après inscription</Typography>
+                      <Typography sx={{ fontWeight: 700, color: '#7C3AED', fontSize: 14 }}>Votre première boutique</Typography>
+                      <Typography sx={{ fontSize: 11.5, color: '#94A3B8' }}>Visible après inscription</Typography>
                     </Box>
                   </Box>
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.8 }}>
@@ -713,7 +713,7 @@ export default function RegisterPage() {
                     <Typography sx={{ fontSize: 12, fontWeight: 800, color: '#D8B4FE', letterSpacing: '0.3px', flexShrink: 0 }}>
                       ESSAI GRATUIT
                     </Typography>
-                    <Typography sx={{ fontSize: 12.5, fontWeight: 500, color: 'rgba(255,255,255,0.7)', lineHeight: 1.4 }}>
+                    <Typography sx={{ fontSize: 12.5, fontWeight: 500, color: '#475569', lineHeight: 1.4 }}>
                       30 jours sur le plan Business, sans engagement, dès la création de votre compte.
                     </Typography>
                   </Box>
@@ -731,8 +731,8 @@ export default function RegisterPage() {
                   }}>
                     <CheckCircle sx={{ fontSize: 30, color: '#10B981' }} />
                   </Box>
-                  <Typography sx={{ fontWeight: 800, fontSize: 15.5, color: 'white', mb: 0.5 }}>Tout est prêt !</Typography>
-                  <Typography sx={{ fontSize: 13, color: 'rgba(255,255,255,0.32)' }}>
+                  <Typography sx={{ fontWeight: 800, fontSize: 15.5, color: '#0F172A', mb: 0.5 }}>Tout est prêt !</Typography>
+                  <Typography sx={{ fontSize: 13, color: '#94A3B8' }}>
                     Cliquez ci-dessous pour rejoindre DealPam.
                   </Typography>
                 </Box>
@@ -750,10 +750,10 @@ export default function RegisterPage() {
             </Box>
           )}
 
-          <Typography sx={{ mt: 4, fontSize: 11, color: 'rgba(255,255,255,0.13)', textAlign: 'center', lineHeight: 1.8 }}>
+          <Typography sx={{ mt: 4, fontSize: 11, color: '#94A3B8', textAlign: 'center', lineHeight: 1.8 }}>
             En créant un compte, vous acceptez nos{' '}
-            <Link to="/terms" style={{ color: 'rgba(255,255,255,0.28)', textDecoration: 'none' }}>CGU</Link> et notre{' '}
-            <Link to="/privacy" style={{ color: 'rgba(255,255,255,0.28)', textDecoration: 'none' }}>Politique de confidentialité</Link>.
+            <Link to="/terms" style={{ color: '#94A3B8', textDecoration: 'none' }}>CGU</Link> et notre{' '}
+            <Link to="/privacy" style={{ color: '#94A3B8', textDecoration: 'none' }}>Politique de confidentialité</Link>.
           </Typography>
         </Box>
       </Box>
@@ -774,8 +774,8 @@ const submitSx = (accent: string) => ({
 
 const backSx = {
   py: 1.5, fontWeight: 700, fontSize: 13.5, borderRadius: '14px', textTransform: 'none' as const,
-  flex: 1, color: 'rgba(255,255,255,0.35)',
-  border: '1.5px solid rgba(255,255,255,0.07)',
-  bgcolor: 'rgba(255,255,255,0.03)',
-  '&:hover': { bgcolor: 'rgba(255,255,255,0.06)', borderColor: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.6)' },
+  flex: 1, color: '#475569',
+  border: '1.5px solid rgba(15,23,42,0.09)',
+  bgcolor: '#FFFFFF',
+  '&:hover': { bgcolor: '#F7F8FA', borderColor: 'rgba(15,23,42,0.15)', color: '#0F172A' },
 };

@@ -22,12 +22,12 @@ import { useCartStore } from '../../store/cart.store';
 const OR    = '#FF6B00';
 const ORD   = '#E05A00';
 const GRN   = '#10B981';
-const BG    = '#060B14';
-const CARD  = 'rgba(255,255,255,0.04)';
-const CARD2 = '#0D1424';
-const BORD  = 'rgba(255,255,255,0.08)';
-const TXT   = 'rgba(255,255,255,0.92)';
-const TXT2  = 'rgba(255,255,255,0.5)';
+const BG    = '#F7F8FA';
+const CARD  = '#F7F8FA';
+const CARD2 = '#FFFFFF';
+const BORD  = 'rgba(15,23,42,0.09)';
+const TXT   = '#0F172A';
+const TXT2  = '#94A3B8';
 
 const fmtHTG = (v: number) => `${v.toLocaleString('fr-HT')} HTG`;
 
@@ -167,7 +167,7 @@ function DeliveryStep({
                 bgcolor: active ? alpha(OR, 0.1) : CARD, transition: 'all 0.15s', flex: '1 1 auto', minWidth: 155,
                 '&:hover': { borderColor: alpha(OR, 0.5) } }}>
               <Icon sx={{ fontSize: 19, color: active ? OR : TXT2 }} />
-              <Typography fontWeight={active ? 700 : 500} color={active ? OR : 'rgba(255,255,255,0.7)'} fontSize={13}>{label}</Typography>
+              <Typography fontWeight={active ? 700 : 500} color={active ? OR : '#475569'} fontSize={13}>{label}</Typography>
             </Box>
           );
         })}
@@ -193,7 +193,7 @@ function DeliveryStep({
                         bgcolor: active ? alpha(OR, 0.08) : CARD, transition: 'all 0.15s',
                         '&:hover': { borderColor: alpha(OR, 0.4) } }}>
                       <Radio checked={active} onChange={() => {}} size="small"
-                        sx={{ p: 0, color: active ? OR : 'rgba(255,255,255,0.2)', '&.Mui-checked': { color: OR } }} />
+                        sx={{ p: 0, color: active ? OR : 'rgba(15,23,42,0.2)', '&.Mui-checked': { color: OR } }} />
                       <Box sx={{ flex: 1 }}>
                         <Typography fontWeight={700} fontSize={13.5} color={active ? OR : TXT}>{zName}</Typography>
                         {z.name && !!z.departments?.length && (
@@ -235,11 +235,11 @@ function DeliveryStep({
                     <Typography fontWeight={700} fontSize={13.5} color={TXT}>Mon profil</Typography>
                     <Chip label="Défaut" size="small" sx={{ height: 18, fontSize: 10, bgcolor: alpha(GRN, 0.12), color: GRN, fontWeight: 700 }} />
                   </Box>
-                  <Typography fontSize={13} color="rgba(255,255,255,0.55)">
+                  <Typography fontSize={13} color="#475569">
                     {profile.firstName} {profile.lastName} · {profile.phone}
                   </Typography>
                   <Typography fontSize={12} color={TXT2}>{profile.city}, {profile.department}</Typography>
-                  <Typography fontSize={11.5} color="rgba(255,165,0,0.8)" mt={0.5}>
+                  <Typography fontSize={11.5} color="#B45309" mt={0.5}>
                     Pour une livraison précise, ajoutez votre adresse complète ci-dessous.
                   </Typography>
                 </Box>
@@ -255,13 +255,13 @@ function DeliveryStep({
                     bgcolor: active ? alpha(OR, 0.07) : CARD, transition: 'all 0.15s',
                     '&:hover': { borderColor: alpha(OR, 0.4) } }}>
                   <Radio checked={active} onChange={() => {}} size="small"
-                    sx={{ p: 0, mt: 0.2, color: active ? OR : 'rgba(255,255,255,0.2)', '&.Mui-checked': { color: OR } }} />
+                    sx={{ p: 0, mt: 0.2, color: active ? OR : 'rgba(15,23,42,0.2)', '&.Mui-checked': { color: OR } }} />
                   <Box sx={{ flex: 1 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.3 }}>
                       <Typography fontWeight={700} fontSize={13.5} color={TXT}>{addr.label}</Typography>
                       {addr.isDefault && <Chip label="Défaut" size="small" sx={{ height: 18, fontSize: 10, bgcolor: alpha(GRN, 0.12), color: GRN, fontWeight: 700 }} />}
                     </Box>
-                    <Typography fontSize={13} color="rgba(255,255,255,0.55)">{addr.fullName} · {addr.phone}</Typography>
+                    <Typography fontSize={13} color="#475569">{addr.fullName} · {addr.phone}</Typography>
                     <Typography fontSize={12} color={TXT2}>{addr.line1}, {addr.city}, {addr.department}</Typography>
                   </Box>
                 </Box>
@@ -276,8 +276,8 @@ function DeliveryStep({
                 <Warning sx={{ fontSize: 18, color: '#FBBF24' }} />
                 <Typography fontSize={13.5} fontWeight={700} color="#FBBF24">Ce vendeur ne livre pas dans votre région</Typography>
               </Box>
-              <Typography fontSize={12.5} color="rgba(255,255,255,0.6)" mb={1.5}>
-                Votre adresse est au <strong style={{ color: 'rgba(255,255,255,0.8)' }}>{selDept}</strong> mais ce vendeur ne couvre pas ce département.
+              <Typography fontSize={12.5} color="#475569" mb={1.5}>
+                Votre adresse est au <strong style={{ color: '#0F172A' }}>{selDept}</strong> mais ce vendeur ne couvre pas ce département.
                 Contactez-le directement pour vous arranger.
               </Typography>
               <Button variant="outlined" startIcon={<ChatBubbleOutline />} onClick={onContactVendor} size="small"
@@ -308,10 +308,10 @@ function DeliveryStep({
                   bgcolor: active ? alpha(OR, 0.07) : CARD, transition: 'all 0.15s',
                   '&:hover': { borderColor: alpha(OR, 0.4) } }}>
                 <Radio checked={active} onChange={() => {}} size="small"
-                  sx={{ p: 0, mt: 0.2, color: active ? OR : 'rgba(255,255,255,0.2)', '&.Mui-checked': { color: OR } }} />
+                  sx={{ p: 0, mt: 0.2, color: active ? OR : 'rgba(15,23,42,0.2)', '&.Mui-checked': { color: OR } }} />
                 <Box>
                   <Typography fontWeight={700} fontSize={13.5} mb={0.2} color={TXT}>{pt.name}</Typography>
-                  <Typography fontSize={13} color="rgba(255,255,255,0.55)">
+                  <Typography fontSize={13} color="#475569">
                     <LocationOn sx={{ fontSize: 13, verticalAlign: 'middle', mr: 0.3 }} />
                     {pt.address}, {pt.city} · {pt.dept}
                   </Typography>
@@ -328,13 +328,13 @@ function DeliveryStep({
       {deliveryType === 'CONTACT' && (
         <Box sx={{ p: 2.2, borderRadius: '14px', border: `1px solid ${alpha(OR, 0.25)}`, bgcolor: alpha(OR, 0.06), mb: 2 }}>
           <Typography fontSize={13.5} fontWeight={700} mb={0.5} color={TXT}>Contact direct avec le vendeur</Typography>
-          <Typography fontSize={13} color="rgba(255,255,255,0.6)">
+          <Typography fontSize={13} color="#475569">
             Votre commande sera envoyée au vendeur. Il vous contactera pour organiser la livraison et le paiement.
           </Typography>
           {storeInfo?.phone && (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 1 }}>
               <Phone sx={{ fontSize: 14, color: TXT2 }} />
-              <Typography fontSize={13} color="rgba(255,255,255,0.7)">{storeInfo.phone}</Typography>
+              <Typography fontSize={13} color="#475569">{storeInfo.phone}</Typography>
             </Box>
           )}
           {storeInfo?.whatsapp && (
@@ -354,7 +354,7 @@ function DeliveryStep({
         }
         sx={{ mt: 1, py: 1.4, borderRadius: '14px', fontWeight: 800, textTransform: 'none', fontSize: 14.5,
           bgcolor: OR, boxShadow: `0 8px 24px ${alpha(OR, 0.3)}`, '&:hover': { bgcolor: ORD },
-          '&.Mui-disabled': { bgcolor: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.25)' } }}>
+          '&.Mui-disabled': { bgcolor: '#F1F5F9', color: '#94A3B8' } }}>
         Continuer vers le paiement
       </Button>
 
@@ -373,7 +373,7 @@ function PaymentStep({ paymentMethods, selectedPayment, setSelectedPayment, note
 
       {paymentMethods.length === 0 ? (
         <Box sx={{ p: 2, borderRadius: '14px', border: `1px dashed ${alpha(OR, 0.3)}`, bgcolor: alpha(OR, 0.05), mb: 2 }}>
-          <Typography fontSize={13} color="rgba(255,255,255,0.65)">
+          <Typography fontSize={13} color="#475569">
             Ce vendeur n'a pas précisé ses modes de paiement. Contactez-le directement.
           </Typography>
         </Box>
@@ -397,7 +397,7 @@ function PaymentStep({ paymentMethods, selectedPayment, setSelectedPayment, note
                   <Typography fontSize={11.5} color={TXT2}>{info.hint}</Typography>
                 </Box>
                 <Radio checked={active} onChange={() => {}} size="small"
-                  sx={{ color: active ? info.color : 'rgba(255,255,255,0.2)', '&.Mui-checked': { color: info.color } }} />
+                  sx={{ color: active ? info.color : 'rgba(15,23,42,0.2)', '&.Mui-checked': { color: info.color } }} />
               </Box>
             );
           })}
@@ -419,7 +419,7 @@ function PaymentStep({ paymentMethods, selectedPayment, setSelectedPayment, note
               <ContentCopy sx={{ fontSize: 14, color: TXT2 }} />
             </IconButton>
           </Box>
-          <Typography fontSize={12} color="rgba(255,255,255,0.5)" mt={0.5}>
+          <Typography fontSize={12} color="#94A3B8" mt={0.5}>
             Après paiement, soumettez votre référence de transaction à l'étape suivante.
           </Typography>
         </Box>
@@ -427,7 +427,7 @@ function PaymentStep({ paymentMethods, selectedPayment, setSelectedPayment, note
 
       {selectedPayment === 'BANK_TRANSFER' && (
         <Box sx={{ p: 2, borderRadius: '14px', border: `1px solid ${alpha('#818CF8', 0.25)}`, bgcolor: alpha('#818CF8', 0.06), mb: 2 }}>
-          <Typography fontSize={13} color="rgba(255,255,255,0.65)">
+          <Typography fontSize={13} color="#475569">
             Effectuez un virement bancaire et conservez la référence. Vous la soumettrez après confirmation.
           </Typography>
         </Box>
@@ -450,13 +450,13 @@ function PaymentStep({ paymentMethods, selectedPayment, setSelectedPayment, note
 
       <Box sx={{ display: 'flex', gap: 1.5 }}>
         <Button onClick={onBack} variant="outlined" sx={{ px: 2.5, borderRadius: '14px', flex: 1, fontWeight: 700, textTransform: 'none',
-          borderColor: BORD, color: 'rgba(255,255,255,0.7)', '&:hover': { borderColor: alpha(OR, 0.5), bgcolor: 'transparent' } }}>
+          borderColor: BORD, color: '#475569', '&:hover': { borderColor: alpha(OR, 0.5), bgcolor: 'transparent' } }}>
           Retour
         </Button>
         <Button onClick={onNext} variant="contained" disabled={(paymentMethods.length > 0 && !selectedPayment) || placing}
           sx={{ flex: 2, py: 1.4, borderRadius: '14px', fontWeight: 800, textTransform: 'none', fontSize: 14.5,
             bgcolor: OR, boxShadow: `0 8px 24px ${alpha(OR, 0.3)}`, '&:hover': { bgcolor: ORD },
-            '&.Mui-disabled': { bgcolor: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.25)' } }}>
+            '&.Mui-disabled': { bgcolor: '#F1F5F9', color: '#94A3B8' } }}>
           {placing ? <CircularProgress size={18} sx={{ color: 'white' }} /> : 'Confirmer la commande'}
         </Button>
       </Box>
@@ -574,7 +574,7 @@ export default function CheckoutPage() {
   if (items.length === 0) return (
     <Box sx={{ bgcolor: BG, minHeight: '100vh' }}>
       <Container maxWidth="sm" sx={{ py: 10, textAlign: 'center' }}>
-        <ShoppingCart sx={{ fontSize: 64, color: 'rgba(255,255,255,0.15)', mb: 2 }} />
+        <ShoppingCart sx={{ fontSize: 64, color: '#CBD5E1', mb: 2 }} />
         <Typography fontWeight={800} fontSize={22} color={TXT} mb={1}>Votre panier est vide</Typography>
         <Button component={Link} to="/products" variant="contained"
           sx={{ borderRadius: '14px', textTransform: 'none', fontWeight: 700, bgcolor: OR, '&:hover': { bgcolor: ORD } }}>
@@ -611,13 +611,13 @@ export default function CheckoutPage() {
             <Box key={label} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flex: i === 0 ? 1 : 'unset' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Box sx={{ width: 26, height: 26, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  bgcolor: step >= i ? OR : 'rgba(255,255,255,0.08)', color: step >= i ? 'white' : 'rgba(255,255,255,0.4)',
+                  bgcolor: step >= i ? OR : '#F1F5F9', color: step >= i ? 'white' : '#94A3B8',
                   fontWeight: 800, fontSize: 12.5, transition: 'all 0.2s' }}>
                   {i + 1}
                 </Box>
                 <Typography fontSize={13} fontWeight={700} color={step >= i ? TXT : TXT2}>{label}</Typography>
               </Box>
-              {i === 0 && <Box sx={{ flex: 1, height: 2, bgcolor: step >= 1 ? OR : 'rgba(255,255,255,0.08)', borderRadius: 1, transition: 'all 0.2s' }} />}
+              {i === 0 && <Box sx={{ flex: 1, height: 2, bgcolor: step >= 1 ? OR : '#F1F5F9', borderRadius: 1, transition: 'all 0.2s' }} />}
             </Box>
           ))}
         </Box>
@@ -669,7 +669,7 @@ export default function CheckoutPage() {
                   return (
                     <Box key={item.id} sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
                       <Box sx={{ width: 52, height: 52, borderRadius: '12px', overflow: 'hidden',
-                        bgcolor: 'rgba(255,255,255,0.03)', border: `1px solid ${BORD}`, flexShrink: 0, position: 'relative' }}>
+                        bgcolor: '#F1F5F9', border: `1px solid ${BORD}`, flexShrink: 0, position: 'relative' }}>
                         {img && <Box component="img" src={img} alt={p?.name} sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
                         <Box sx={{ position: 'absolute', top: -6, right: -6, width: 18, height: 18,
                           borderRadius: '50%', bgcolor: OR, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -677,7 +677,7 @@ export default function CheckoutPage() {
                         </Box>
                       </Box>
                       <Box sx={{ flex: 1, minWidth: 0 }}>
-                        <Typography fontSize={12.5} fontWeight={500} noWrap color="rgba(255,255,255,0.8)">{p?.name}</Typography>
+                        <Typography fontSize={12.5} fontWeight={500} noWrap color="#0F172A">{p?.name}</Typography>
                         {item.color && <Typography fontSize={11} color={TXT2}>{item.color}{item.size ? ` · ${item.size}` : ''}</Typography>}
                       </Box>
                       <Typography fontWeight={700} fontSize={13} color={TXT} flexShrink={0}>{fmtHTG(price * item.quantity)}</Typography>
@@ -689,12 +689,12 @@ export default function CheckoutPage() {
               <Divider sx={{ mb: 1.5, borderColor: BORD }} />
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography fontSize={13} color="rgba(255,255,255,0.5)">Sous-total</Typography>
-                  <Typography fontSize={13} fontWeight={600} color="rgba(255,255,255,0.8)">{fmtHTG(subtotal)}</Typography>
+                  <Typography fontSize={13} color="#94A3B8">Sous-total</Typography>
+                  <Typography fontSize={13} fontWeight={600} color="#0F172A">{fmtHTG(subtotal)}</Typography>
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography fontSize={13} color="rgba(255,255,255,0.5)">Livraison</Typography>
-                  <Typography fontSize={13} fontWeight={600} color={shippingCost === 0 ? GRN : 'rgba(255,255,255,0.8)'}>
+                  <Typography fontSize={13} color="#94A3B8">Livraison</Typography>
+                  <Typography fontSize={13} fontWeight={600} color={shippingCost === 0 ? GRN : '#0F172A'}>
                     {shippingCost === 0 ? 'Gratuite' : fmtHTG(shippingCost)}
                   </Typography>
                 </Box>

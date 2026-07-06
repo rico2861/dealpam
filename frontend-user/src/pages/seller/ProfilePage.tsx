@@ -15,12 +15,12 @@ import api from '../../api/axios';
 import { useAuthStore } from '../../store/auth.store';
 
 const OR   = '#FF6B00';
-const BG   = '#060B14';
-const CARD = '#0D1424';
-const BORD = 'rgba(255,255,255,0.08)';
-const TXT  = 'rgba(255,255,255,0.92)';
-const SUB  = 'rgba(255,255,255,0.42)';
-const SUB2 = 'rgba(255,255,255,0.65)';
+const BG   = '#F7F8FA';
+const CARD = '#FFFFFF';
+const BORD = 'rgba(15,23,42,0.06)';
+const TXT  = '#0F172A';
+const SUB  = '#94A3B8';
+const SUB2 = '#94A3B8';
 const GRN  = '#10B981';
 const RED  = '#EF4444';
 const YLW  = '#F59E0B';
@@ -52,9 +52,9 @@ const DEPTS = ['Ouest','Nord','Nord-Est','Nord-Ouest','Sud','Sud-Est','Grand-Ans
 
 const fieldSx = {
   '& .MuiOutlinedInput-root': {
-    color: TXT, borderRadius: '12px', bgcolor: 'rgba(255,255,255,0.03)',
+    color: TXT, borderRadius: '12px', bgcolor: 'rgba(15,23,42,0.09)',
     '& fieldset': { borderColor: BORD },
-    '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.18)' },
+    '&:hover fieldset': { borderColor: 'rgba(15,23,42,0.09)' },
     '&.Mui-focused fieldset': { borderColor: OR },
   },
   '& .MuiInputLabel-root': { color: SUB },
@@ -115,9 +115,9 @@ function AwayMessageSection() {
       </Typography>
       <Box onClick={() => setEnabled(p => !p)} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, cursor: 'pointer', mb: 2 }}>
         <Box sx={{ width: 42, height: 24, borderRadius: '12px', position: 'relative', transition: 'all 0.2s',
-          bgcolor: enabled ? OR : 'rgba(255,255,255,0.12)' }}>
+          bgcolor: enabled ? OR : 'rgba(15,23,42,0.12)' }}>
           <Box sx={{ position: 'absolute', top: 3, left: enabled ? 21 : 3, width: 18, height: 18, borderRadius: '50%',
-            bgcolor: 'white', transition: 'left 0.2s', boxShadow: '0 1px 4px rgba(0,0,0,0.3)' }} />
+            bgcolor: 'white', transition: 'left 0.2s', boxShadow: '0 1px 4px rgba(15,23,42,0.15)' }} />
         </Box>
         <Typography fontSize={13} fontWeight={600} color={enabled ? TXT : SUB}>{enabled ? 'Activé' : 'Désactivé'}</Typography>
       </Box>
@@ -128,7 +128,7 @@ function AwayMessageSection() {
       )}
       <Button onClick={save} disabled={saving} startIcon={saving ? <CircularProgress size={14} color="inherit" /> : <Save sx={{ fontSize: 16 }} />}
         sx={{ bgcolor: OR, color: '#fff', borderRadius: '10px', fontWeight: 700, px: 2.5,
-          '&:hover': { bgcolor: '#E05A00' }, '&:disabled': { bgcolor: 'rgba(255,255,255,0.07)', color: SUB } }}>
+          '&:hover': { bgcolor: '#E05A00' }, '&:disabled': { bgcolor: 'rgba(15,23,42,0.04)', color: SUB } }}>
         Sauvegarder
       </Button>
     </Box>
@@ -273,7 +273,7 @@ export default function SellerProfilePage() {
           )}
         </Box>
         <LinearProgress variant="determinate" value={verProgress}
-          sx={{ height: 5, borderRadius: 3, bgcolor: 'rgba(255,255,255,0.1)',
+          sx={{ height: 5, borderRadius: 3, bgcolor: 'rgba(15,23,42,0.09)',
             '& .MuiLinearProgress-bar': { bgcolor: verProgress === 100 ? GRN : BLU, borderRadius: 3 } }} />
       </Box>
 
@@ -300,7 +300,7 @@ export default function SellerProfilePage() {
             <Button fullWidth onClick={() => profileMut.mutate(profile)} disabled={profileMut.isPending}
               startIcon={profileMut.isPending ? <CircularProgress size={14} color="inherit" /> : <Save sx={{ fontSize: 16 }} />}
               sx={{ mt: 2, py: 1.3, borderRadius: '12px', fontWeight: 800, bgcolor: OR, color: '#fff',
-                '&:hover': { bgcolor: '#E05A00' }, '&:disabled': { bgcolor: 'rgba(255,255,255,0.07)', color: SUB } }}>
+                '&:hover': { bgcolor: '#E05A00' }, '&:disabled': { bgcolor: 'rgba(15,23,42,0.04)', color: SUB } }}>
               Enregistrer
             </Button>
           )}
@@ -317,7 +317,7 @@ export default function SellerProfilePage() {
               { label: 'Username',  value: (user as any)?.username ? `@${(user as any).username}` : '—' },
               { label: 'Téléphone', value: (user as any)?.phone ?? '—' },
             ].map(({ label, value }) => (
-              <Box key={label} sx={{ display: 'flex', gap: 1.5, px: 1.5, py: 1, borderRadius: '9px', bgcolor: 'rgba(255,255,255,0.03)' }}>
+              <Box key={label} sx={{ display: 'flex', gap: 1.5, px: 1.5, py: 1, borderRadius: '9px', bgcolor: 'rgba(15,23,42,0.09)' }}>
                 <Typography fontSize={12} color={SUB} sx={{ minWidth: 80 }}>{label}</Typography>
                 <Typography fontSize={12.5} fontWeight={600} color={TXT}>{value || '—'}</Typography>
               </Box>
@@ -337,7 +337,7 @@ export default function SellerProfilePage() {
         <SectionHead icon={Description} label="Documents officiels" color={YLW} />
 
         {/* Upload zone */}
-        <Box sx={{ p: 2, borderRadius: '12px', border: `1.5px dashed rgba(255,255,255,0.12)`, bgcolor: 'rgba(255,255,255,0.02)', mb: 2.5 }}>
+        <Box sx={{ p: 2, borderRadius: '12px', border: `1.5px dashed rgba(15,23,42,0.09)`, bgcolor: 'rgba(15,23,42,0.09)', mb: 2.5 }}>
           <Typography fontSize={13} fontWeight={700} color={TXT} mb={0.5}>Envoyer un document</Typography>
           <Typography fontSize={11.5} color={SUB} mb={1.5}>
             Vos documents sont strictement confidentiels — consultables uniquement par vous et notre équipe de vérification.
@@ -355,7 +355,7 @@ export default function SellerProfilePage() {
               <Button onClick={() => fileRef.current?.click()} disabled={uploading}
                 startIcon={uploading ? <CircularProgress size={14} color="inherit" /> : <Upload sx={{ fontSize: 16 }} />}
                 sx={{ bgcolor: OR, color: '#fff', borderRadius: '10px', fontWeight: 700, whiteSpace: 'nowrap',
-                  '&:hover': { bgcolor: '#E05A00' }, '&:disabled': { bgcolor: 'rgba(255,255,255,0.07)', color: SUB } }}>
+                  '&:hover': { bgcolor: '#E05A00' }, '&:disabled': { bgcolor: 'rgba(15,23,42,0.04)', color: SUB } }}>
                 {uploading ? 'Envoi…' : uploadType === 'SELFIE' ? 'Prendre un selfie' : 'Choisir un fichier'}
               </Button>
               <Typography fontSize={10} color={SUB} mt={0.5} textAlign="center">PDF, JPG, PNG — max 10 MB</Typography>
@@ -375,7 +375,7 @@ export default function SellerProfilePage() {
               const fileName = doc.fileName?.replace(/^(PUBLIC:|PRIVATE:)/, '') ?? 'Document';
               return (
                 <Box key={doc.id} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, p: 1.5, borderRadius: '12px',
-                  bgcolor: 'rgba(255,255,255,0.03)', border: `1px solid ${BORD}` }}>
+                  bgcolor: 'rgba(15,23,42,0.09)', border: `1px solid ${BORD}` }}>
                   <Description sx={{ fontSize: 20, flexShrink: 0,
                     color: doc.isValid === true ? GRN : doc.isValid === false ? RED : YLW }} />
                   <Box sx={{ flex: 1, minWidth: 0 }}>

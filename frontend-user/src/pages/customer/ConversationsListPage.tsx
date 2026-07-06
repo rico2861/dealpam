@@ -7,10 +7,10 @@ import api from '../../api/axios';
 import { useAuthStore } from '../../store/auth.store';
 
 const OR     = '#FF6B00';
-const BG     = '#060B14';
-const CARD   = 'rgba(255,255,255,0.035)';
-const CARD_H = 'rgba(255,255,255,0.065)';
-const BORD   = 'rgba(255,255,255,0.07)';
+const BG     = '#F7F8FA';
+const CARD   = '#FFFFFF';
+const CARD_H = '#F1F5F9';
+const BORD   = 'rgba(15,23,42,0.09)';
 
 interface ConvUser {
   userId: string;
@@ -101,7 +101,7 @@ export default function ConversationsListPage() {
         bgcolor: BG,
         borderRadius: { xs: 0, sm: '20px' },
         border: { xs: 'none', sm: `1px solid ${BORD}` },
-        boxShadow: { xs: 'none', sm: '0 24px 70px rgba(0,0,0,0.5)' },
+        boxShadow: { xs: 'none', sm: '0 8px 32px rgba(15,23,42,0.08)' },
         overflow: 'hidden',
         position: 'relative',
       }}>
@@ -116,7 +116,7 @@ export default function ConversationsListPage() {
         <Box sx={{
           px: { xs: 2, sm: 3 }, pt: { xs: 2.5, sm: 3 }, pb: 2, flexShrink: 0,
           borderBottom: `1px solid ${BORD}`,
-          background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%)',
+          background: '#FFFFFF',
         }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
@@ -128,10 +128,10 @@ export default function ConversationsListPage() {
                 <ChatBubbleOutline sx={{ fontSize: 16, color: OR }} />
               </Box>
               <Box>
-                <Typography sx={{ fontWeight: 900, fontSize: 19, color: 'white', letterSpacing: '-0.5px', lineHeight: 1.15 }}>
+                <Typography sx={{ fontWeight: 900, fontSize: 19, color: '#0F172A', letterSpacing: '-0.5px', lineHeight: 1.15 }}>
                   Messages
                 </Typography>
-                <Typography sx={{ fontSize: 11.5, color: 'rgba(255,255,255,0.35)', mt: 0.2 }}>
+                <Typography sx={{ fontSize: 11.5, color: '#94A3B8', mt: 0.2 }}>
                   {conversations.length} conversation{conversations.length !== 1 ? 's' : ''}
                 </Typography>
               </Box>
@@ -150,17 +150,17 @@ export default function ConversationsListPage() {
 
           <Box sx={{
             display: 'flex', alignItems: 'center', gap: 1,
-            bgcolor: 'rgba(255,255,255,0.05)', border: `1px solid ${BORD}`,
+            bgcolor: '#F7F8FA', border: `1px solid ${BORD}`,
             borderRadius: '12px', px: 1.8, py: 1.05,
             '&:focus-within': { borderColor: 'rgba(255,107,0,0.5)', bgcolor: 'rgba(255,107,0,0.04)', boxShadow: `0 0 0 3px rgba(255,107,0,0.08)` },
             transition: 'all 0.2s',
           }}>
-            <Search sx={{ fontSize: 17, color: 'rgba(255,255,255,0.25)', flexShrink: 0 }} />
+            <Search sx={{ fontSize: 17, color: '#94A3B8', flexShrink: 0 }} />
             <InputBase
               placeholder="Rechercher une conversation…"
               value={search}
               onChange={e => setSearch(e.target.value)}
-              sx={{ flex: 1, '& input': { color: 'rgba(255,255,255,0.85)', fontSize: 13.5, padding: 0, '&::placeholder': { color: 'rgba(255,255,255,0.2)', opacity: 1 } } }}
+              sx={{ flex: 1, '& input': { color: '#0F172A', fontSize: 13.5, padding: 0, '&::placeholder': { color: '#94A3B8', opacity: 1 } } }}
             />
           </Box>
         </Box>
@@ -170,7 +170,7 @@ export default function ConversationsListPage() {
           flex: 1, minHeight: 0, overflowY: 'auto', px: { xs: 1.2, sm: 1.5 }, py: 1.5,
           scrollbarWidth: 'thin', '&::-webkit-scrollbar': { width: 4 },
           '&::-webkit-scrollbar-track': { bgcolor: 'transparent' },
-          '&::-webkit-scrollbar-thumb': { bgcolor: 'rgba(255,255,255,0.08)', borderRadius: 4 },
+          '&::-webkit-scrollbar-thumb': { bgcolor: 'rgba(15,23,42,0.12)', borderRadius: 4 },
         }}>
           {isLoading && (
             <Box sx={{ display: 'flex', justifyContent: 'center', pt: 8 }}>
@@ -187,10 +187,10 @@ export default function ConversationsListPage() {
               }}>
                 <ChatBubbleOutline sx={{ fontSize: 27, color: 'rgba(255,107,0,0.5)' }} />
               </Box>
-              <Typography sx={{ color: 'rgba(255,255,255,0.5)', fontSize: 14.5, fontWeight: 700, mb: 0.6 }}>
+              <Typography sx={{ color: '#475569', fontSize: 14.5, fontWeight: 700, mb: 0.6 }}>
                 {search ? 'Aucun résultat' : 'Aucune conversation'}
               </Typography>
-              <Typography sx={{ color: 'rgba(255,255,255,0.25)', fontSize: 12.5 }}>
+              <Typography sx={{ color: '#94A3B8', fontSize: 12.5 }}>
                 {search ? 'Essayez un autre nom.' : 'Contactez un vendeur depuis une fiche produit pour démarrer.'}
               </Typography>
             </Box>
@@ -215,12 +215,12 @@ export default function ConversationsListPage() {
                   bgcolor: 'transparent', border: '1px solid transparent',
                   '&::after': idx < filtered.length - 1 ? {
                     content: '""', position: 'absolute', left: 62, right: 12, bottom: -1,
-                    height: '1px', bgcolor: 'rgba(255,255,255,0.045)',
+                    height: '1px', bgcolor: 'rgba(15,23,42,0.06)',
                   } : undefined,
                   '&:hover': {
-                    bgcolor: CARD_H, borderColor: 'rgba(255,255,255,0.12)',
+                    bgcolor: CARD_H, borderColor: 'rgba(15,23,42,0.1)',
                     transform: 'translateX(3px)',
-                    boxShadow: '0 6px 20px rgba(0,0,0,0.25)',
+                    boxShadow: '0 6px 20px rgba(15,23,42,0.08)',
                     '&::after': { opacity: 0 },
                   },
                   '&:active': { transform: 'translateX(3px) scale(0.99)' },
@@ -273,14 +273,14 @@ export default function ConversationsListPage() {
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.3 }}>
                     <Typography sx={{
                       fontSize: 14, fontWeight: unread > 0 ? 800 : 600,
-                      color: unread > 0 ? 'white' : 'rgba(255,255,255,0.75)',
+                      color: unread > 0 ? '#0F172A' : '#475569',
                     }} noWrap>
                       {label(conv)}
                     </Typography>
                     {conv.lastMessageAt && (
                       <Typography sx={{
                         fontSize: 10.5, flexShrink: 0, ml: 1,
-                        color: unread > 0 ? OR : 'rgba(255,255,255,0.25)',
+                        color: unread > 0 ? OR : '#94A3B8',
                         fontWeight: unread > 0 ? 700 : 400,
                       }}>
                         {fmtTime(conv.lastMessageAt)}
@@ -289,7 +289,7 @@ export default function ConversationsListPage() {
                   </Box>
                   <Typography sx={{
                     fontSize: 12.5, lineHeight: 1.4,
-                    color: unread > 0 ? 'rgba(255,255,255,0.55)' : 'rgba(255,255,255,0.28)',
+                    color: unread > 0 ? '#475569' : '#94A3B8',
                     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                   }}>
                     {conv.lastMessage ?? 'Démarrez la conversation'}

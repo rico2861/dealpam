@@ -16,12 +16,12 @@ import { useSnackbar } from 'notistack';
 import api from '../../api/axios';
 
 const OR   = '#FF6B00';
-const BG   = '#060B14';
-const CARD = '#0D1424';
-const BORD = 'rgba(255,255,255,0.08)';
-const TXT  = 'rgba(255,255,255,0.92)';
-const SUB  = 'rgba(255,255,255,0.42)';
-const SUB2 = 'rgba(255,255,255,0.65)';
+const BG   = '#F7F8FA';
+const CARD = '#FFFFFF';
+const BORD = 'rgba(15,23,42,0.06)';
+const TXT  = '#0F172A';
+const SUB  = '#94A3B8';
+const SUB2 = '#94A3B8';
 const GRN  = '#10B981';
 const RED  = '#EF4444';
 const BLU  = '#3B82F6';
@@ -59,9 +59,9 @@ const DEFAULT_SCHEDULE = Object.fromEntries(
 
 const fieldSx = {
   '& .MuiOutlinedInput-root': {
-    color: TXT, borderRadius: '12px', bgcolor: 'rgba(255,255,255,0.03)',
+    color: TXT, borderRadius: '12px', bgcolor: 'rgba(15,23,42,0.09)',
     '& fieldset': { borderColor: BORD },
-    '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.18)' },
+    '&:hover fieldset': { borderColor: 'rgba(15,23,42,0.09)' },
     '&.Mui-focused fieldset': { borderColor: OR },
   },
   '& .MuiInputLabel-root': { color: SUB },
@@ -73,10 +73,10 @@ const fieldSx = {
 const darkMenu = {
   PaperProps: {
     sx: {
-      bgcolor: '#111827', border: `1px solid ${BORD}`, borderRadius: '12px',
+      bgcolor: '#FFFFFF', border: `1px solid ${BORD}`, borderRadius: '12px', boxShadow: '0 8px 24px rgba(15,23,42,0.12)',
       '& .MuiMenuItem-root': {
         fontSize: 13, color: TXT, py: 1,
-        '&:hover': { bgcolor: 'rgba(255,255,255,0.06)' },
+        '&:hover': { bgcolor: 'rgba(15,23,42,0.04)' },
         '&.Mui-selected': { bgcolor: 'rgba(255,107,0,0.14)', color: OR, fontWeight: 700 },
         '&.Mui-selected:hover': { bgcolor: 'rgba(255,107,0,0.2)' },
       },
@@ -103,9 +103,9 @@ function TimeInput({ label, value, onChange, disabled }: { label: string; value:
       <Box sx={{ position: 'relative' }}>
         <input type="time" value={value} disabled={disabled} onChange={e => onChange(e.target.value)}
           style={{
-            width: '100%', padding: '8px 10px', background: disabled ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.04)',
-            border: `1px solid ${disabled ? 'rgba(255,255,255,0.04)' : BORD}`, borderRadius: '10px',
-            color: disabled ? 'rgba(255,255,255,0.2)' : TXT, fontSize: '13px', outline: 'none',
+            width: '100%', padding: '8px 10px', background: disabled ? '#FFFFFF' : '#FFFFFF',
+            border: `1px solid ${disabled ? 'rgba(15,23,42,0.09)' : BORD}`, borderRadius: '10px',
+            color: disabled ? '#94A3B8' : TXT, fontSize: '13px', outline: 'none',
             colorScheme: 'dark', fontFamily: 'inherit',
           }} />
       </Box>
@@ -222,11 +222,11 @@ function StoreForm({ initial, onSave, loading, _onDataChange }: {
           return (
             <Box key={d.key} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 1.8, py: 1.2,
               borderBottom: i < DAYS.length - 1 ? `1px solid ${BORD}` : 'none',
-              bgcolor: day.closed ? 'rgba(255,255,255,0.01)' : 'transparent' }}>
+              bgcolor: day.closed ? '#FFFFFF' : 'transparent' }}>
               {/* Day toggle */}
               <Box onClick={() => toggleDayClosed(d.key)} sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer', minWidth: 90 }}>
                 <Box sx={{ width: 34, height: 19, borderRadius: '10px', position: 'relative', transition: 'all 0.2s', flexShrink: 0,
-                  bgcolor: day.closed ? 'rgba(255,255,255,0.1)' : 'rgba(139,92,246,0.4)', border: `1px solid ${day.closed ? BORD : '#8B5CF6'}` }}>
+                  bgcolor: day.closed ? 'rgba(15,23,42,0.09)' : 'rgba(139,92,246,0.4)', border: `1px solid ${day.closed ? BORD : '#8B5CF6'}` }}>
                   <Box sx={{ position: 'absolute', top: 2, left: day.closed ? 2 : 16, width: 13, height: 13, borderRadius: '50%',
                     bgcolor: 'white', transition: 'left 0.2s' }} />
                 </Box>
@@ -255,9 +255,9 @@ function StoreForm({ initial, onSave, loading, _onDataChange }: {
           return (
             <Box key={m} onClick={() => togglePay(m)} sx={{
               px: 1.5, py: 0.8, borderRadius: '10px', cursor: 'pointer', transition: 'all 0.14s',
-              bgcolor: active ? 'rgba(255,107,0,0.14)' : 'rgba(255,255,255,0.04)',
+              bgcolor: active ? 'rgba(255,107,0,0.14)' : '#FFFFFF',
               border: '1px solid', borderColor: active ? 'rgba(255,107,0,0.4)' : BORD,
-              '&:hover': { borderColor: active ? 'rgba(255,107,0,0.55)' : 'rgba(255,255,255,0.15)' },
+              '&:hover': { borderColor: active ? 'rgba(255,107,0,0.55)' : 'rgba(15,23,42,0.09)' },
             }}>
               <Typography fontSize={12.5} fontWeight={700} color={active ? OR : SUB}>{PAYMENT_LABELS[m]}</Typography>
             </Box>
@@ -304,7 +304,7 @@ function StoreForm({ initial, onSave, loading, _onDataChange }: {
       <SecHead icon={<LocationOnOutlined sx={{ fontSize: 14 }} />} label="Points de retrait" color="#EC4899" />
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mb: 0.5 }}>
         {form.pickupPoints.map((pt, i) => (
-          <Box key={i} sx={{ p: 1.8, borderRadius: '12px', bgcolor: 'rgba(255,255,255,0.02)', border: `1px solid ${BORD}`, position: 'relative' }}>
+          <Box key={i} sx={{ p: 1.8, borderRadius: '12px', bgcolor: 'rgba(15,23,42,0.09)', border: `1px solid ${BORD}`, position: 'relative' }}>
             <Box onClick={() => removePickup(i)} sx={{ position: 'absolute', top: 12, right: 12, width: 26, height: 26, borderRadius: '7px',
               cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
               border: '1px solid rgba(239,68,68,0.25)', '&:hover': { bgcolor: 'rgba(239,68,68,0.1)' } }}>
@@ -341,7 +341,7 @@ function StoreDialog({ open, title, initial, onClose, onSave, loading }: {
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth scroll="paper"
       PaperProps={{ sx: {
-        bgcolor: '#0A1020', border: `1px solid ${BORD}`, borderRadius: '20px',
+        bgcolor: '#F7F8FA', border: `1px solid ${BORD}`, borderRadius: '20px',
         display: 'flex', flexDirection: 'column', maxHeight: '92vh',
       }}}>
       {/* Sticky header */}
@@ -360,7 +360,7 @@ function StoreDialog({ open, title, initial, onClose, onSave, loading }: {
         </Box>
         <Box onClick={onClose} sx={{ width: 32, height: 32, borderRadius: '9px', cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid ${BORD}`,
-          '&:hover': { bgcolor: 'rgba(255,255,255,0.06)' } }}>
+          '&:hover': { bgcolor: 'rgba(15,23,42,0.04)' } }}>
           <Close sx={{ fontSize: 16, color: SUB }} />
         </Box>
       </Box>
@@ -369,7 +369,7 @@ function StoreDialog({ open, title, initial, onClose, onSave, loading }: {
       <DialogContent sx={{ px: 3, py: 2.5, overflowY: 'auto', flex: 1,
         '&::-webkit-scrollbar': { width: 5 },
         '&::-webkit-scrollbar-track': { bgcolor: 'transparent' },
-        '&::-webkit-scrollbar-thumb': { bgcolor: 'rgba(255,255,255,0.12)', borderRadius: 3 },
+        '&::-webkit-scrollbar-thumb': { bgcolor: 'rgba(15,23,42,0.09)', borderRadius: 3 },
       }}>
         <StoreForm initial={initial} onSave={d => setFormData(d)} loading={loading} _onDataChange={setFormData} />
       </DialogContent>
@@ -377,7 +377,7 @@ function StoreDialog({ open, title, initial, onClose, onSave, loading }: {
       {/* Sticky footer */}
       <Box sx={{ px: 3, py: 2, borderTop: `1px solid ${BORD}`, flexShrink: 0,
         display: 'flex', gap: 1.5, alignItems: 'center',
-        bgcolor: 'rgba(255,255,255,0.02)' }}>
+        bgcolor: '#FFFFFF' }}>
         <Button onClick={onClose} sx={{ color: SUB2, borderRadius: '11px', px: 2.5, fontWeight: 600 }}>
           Annuler
         </Button>
@@ -385,7 +385,7 @@ function StoreDialog({ open, title, initial, onClose, onSave, loading }: {
           startIcon={loading ? <CircularProgress size={16} color="inherit" /> : null}
           sx={{ flex: 1, py: 1.3, borderRadius: '12px', fontWeight: 800, fontSize: 14,
             bgcolor: OR, color: '#fff', boxShadow: '0 4px 14px rgba(255,107,0,0.3)',
-            '&:hover': { bgcolor: '#E05A00' }, '&:disabled': { bgcolor: 'rgba(255,255,255,0.07)', color: SUB } }}>
+            '&:hover': { bgcolor: '#E05A00' }, '&:disabled': { bgcolor: 'rgba(15,23,42,0.04)', color: SUB } }}>
           {loading ? 'Enregistrement…' : initial ? 'Enregistrer les modifications' : 'Créer la boutique'}
         </Button>
       </Box>
@@ -399,7 +399,7 @@ function StoreCard({ store, onEdit, onDelete, onCopy }: any) {
     <Box sx={{
       borderRadius: '16px', bgcolor: CARD, overflow: 'hidden', transition: 'all 0.18s',
       border: `1px solid ${store.isPrimary ? 'rgba(255,107,0,0.28)' : BORD}`,
-      '&:hover': { borderColor: store.isPrimary ? 'rgba(255,107,0,0.45)' : 'rgba(255,255,255,0.13)', transform: 'translateY(-1px)' },
+      '&:hover': { borderColor: store.isPrimary ? 'rgba(255,107,0,0.45)' : 'rgba(15,23,42,0.09)', transform: 'translateY(-1px)' },
     }}>
       {store.isPrimary && <Box sx={{ height: 2.5, background: `linear-gradient(90deg,${OR},#D95500)` }} />}
 
@@ -439,7 +439,7 @@ function StoreCard({ store, onEdit, onDelete, onCopy }: any) {
           {/* Actions */}
           <Box sx={{ display: 'flex', gap: 0.5, flexShrink: 0 }}>
             {[
-              { icon: <ContentCopy sx={{ fontSize: 13 }} />, action: () => onCopy(store.slug), col: SUB2, hov: 'rgba(255,255,255,0.06)', bc: 'rgba(255,255,255,0.18)' },
+              { icon: <ContentCopy sx={{ fontSize: 13 }} />, action: () => onCopy(store.slug), col: SUB2, hov: 'rgba(15,23,42,0.06)', bc: '#94A3B8' },
               { icon: <Edit sx={{ fontSize: 13 }} />, action: () => onEdit(store), col: OR, hov: 'rgba(255,107,0,0.08)', bc: 'rgba(255,107,0,0.38)' },
               ...(!store.isPrimary ? [{ icon: <Delete sx={{ fontSize: 13 }} />, action: () => onDelete(store), col: RED, hov: 'rgba(239,68,68,0.08)', bc: 'rgba(239,68,68,0.38)' }] : []),
             ].map(({ icon, action, col, hov, bc }, i) => (
@@ -455,7 +455,7 @@ function StoreCard({ store, onEdit, onDelete, onCopy }: any) {
 
         {/* Row 2: stats inline + link */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0, borderRadius: '10px', overflow: 'hidden',
-          border: `1px solid ${BORD}`, bgcolor: 'rgba(255,255,255,0.02)', mb: 1.2 }}>
+          border: `1px solid ${BORD}`, bgcolor: 'rgba(15,23,42,0.09)', mb: 1.2 }}>
           {[
             { icon: <Inventory2Outlined sx={{ fontSize: 12, color: OR }} />, val: store._count?.products ?? 0, lbl: 'produits' },
             { icon: <Star sx={{ fontSize: 12, color: '#F59E0B' }} />, val: (store.avgRating ?? 0).toFixed(1), lbl: `(${store.totalReviews ?? 0})` },
@@ -472,7 +472,7 @@ function StoreCard({ store, onEdit, onDelete, onCopy }: any) {
 
         {/* Link */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1.2, py: 0.7, borderRadius: '8px',
-          bgcolor: 'rgba(255,255,255,0.02)', border: `1px solid ${BORD}` }}>
+          bgcolor: 'rgba(15,23,42,0.09)', border: `1px solid ${BORD}` }}>
           <Typography fontSize={11} color={SUB} sx={{ flex: 1, fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             dealpam.com/store/{store.slug}
           </Typography>
@@ -570,7 +570,7 @@ export default function SellerStoresPage() {
       {isLoading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 12 }}><CircularProgress sx={{ color: OR }} /></Box>
       ) : stores.length === 0 ? (
-        <Box sx={{ textAlign: 'center', py: 12, borderRadius: '20px', bgcolor: CARD, border: `1px dashed rgba(255,255,255,0.1)` }}>
+        <Box sx={{ textAlign: 'center', py: 12, borderRadius: '20px', bgcolor: CARD, border: `1px dashed rgba(15,23,42,0.09)` }}>
           <Box sx={{ width: 80, height: 80, borderRadius: '24px', bgcolor: 'rgba(255,107,0,0.1)',
             border: '1px solid rgba(255,107,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', mx: 'auto', mb: 2.5 }}>
             <StorefrontOutlined sx={{ fontSize: 36, color: OR }} />

@@ -15,12 +15,12 @@ import { useSnackbar } from 'notistack';
 import api from '../../api/axios';
 
 const OR   = '#FF6B00';
-const BG   = '#060B14';
-const CARD = '#0D1424';
-const BORD = 'rgba(255,255,255,0.08)';
-const TXT  = 'rgba(255,255,255,0.92)';
-const SUB  = 'rgba(255,255,255,0.42)';
-const SUB2 = 'rgba(255,255,255,0.65)';
+const BG   = '#F7F8FA';
+const CARD = '#FFFFFF';
+const BORD = 'rgba(15,23,42,0.06)';
+const TXT  = '#0F172A';
+const SUB  = '#94A3B8';
+const SUB2 = '#94A3B8';
 const GRN  = '#10B981';
 const RED  = '#EF4444';
 const BLU  = '#3B82F6';
@@ -31,9 +31,9 @@ function Pill({ children, active, onClick, color = OR }: { children: React.React
   return (
     <Box onClick={onClick} sx={{
       px: 1.4, py: 0.6, borderRadius: '8px', cursor: 'pointer', transition: 'all 0.14s',
-      bgcolor: active ? `${color}22` : 'rgba(255,255,255,0.04)',
+      bgcolor: active ? `${color}22` : '#FFFFFF',
       border: '1px solid', borderColor: active ? `${color}55` : BORD,
-      '&:hover': { borderColor: active ? `${color}77` : 'rgba(255,255,255,0.14)' },
+      '&:hover': { borderColor: active ? `${color}77` : 'rgba(15,23,42,0.09)' },
     }}>
       <Typography fontSize={12} fontWeight={700} color={active ? color : SUB}>{children}</Typography>
     </Box>
@@ -64,9 +64,9 @@ const statusLabel = (s: string) => STATUS_MAP[s]?.label || s;
 
 const fieldSx = {
   '& .MuiOutlinedInput-root': {
-    color: TXT, borderRadius: '12px', bgcolor: 'rgba(255,255,255,0.03)',
+    color: TXT, borderRadius: '12px', bgcolor: 'rgba(15,23,42,0.09)',
     '& fieldset': { borderColor: BORD },
-    '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.18)' },
+    '&:hover fieldset': { borderColor: 'rgba(15,23,42,0.09)' },
     '&.Mui-focused fieldset': { borderColor: OR },
   },
   '& .MuiInputLabel-root': { color: SUB },
@@ -95,7 +95,7 @@ function SearchableSelector({
     <Box sx={{ position: 'relative' }}>
       {/* Trigger */}
       <Box onClick={() => setOpen(p => !p)}
-        sx={{ p: '10px 14px', borderRadius: '12px', cursor: 'pointer', bgcolor: 'rgba(255,255,255,0.03)', border: `1px solid ${open ? OR : BORD}`, display: 'flex', alignItems: 'center', gap: 1.2, transition: 'all 0.15s', '&:hover': { borderColor: 'rgba(255,255,255,0.18)' } }}>
+        sx={{ p: '10px 14px', borderRadius: '12px', cursor: 'pointer', bgcolor: 'rgba(15,23,42,0.09)', border: `1px solid ${open ? OR : BORD}`, display: 'flex', alignItems: 'center', gap: 1.2, transition: 'all 0.15s', '&:hover': { borderColor: 'rgba(15,23,42,0.09)' } }}>
         {selected ? (
           <>
             {selected.img
@@ -118,7 +118,7 @@ function SearchableSelector({
 
       {/* Dropdown */}
       <Collapse in={open}>
-        <Box sx={{ mt: 0.5, borderRadius: '12px', bgcolor: '#0A1020', border: `1px solid ${BORD}`, overflow: 'hidden', boxShadow: '0 8px 30px rgba(0,0,0,0.5)' }}>
+        <Box sx={{ mt: 0.5, borderRadius: '12px', bgcolor: '#F7F8FA', border: `1px solid ${BORD}`, overflow: 'hidden', boxShadow: '0 8px 30px rgba(15,23,42,0.15)' }}>
           {/* Search input */}
           <Box sx={{ p: 1.2, borderBottom: `1px solid ${BORD}`, display: 'flex', alignItems: 'center', gap: 1 }}>
             <Search sx={{ fontSize: 15, color: SUB, flexShrink: 0 }} />
@@ -127,12 +127,12 @@ function SearchableSelector({
               style={{ flex: 1, background: 'none', border: 'none', outline: 'none', fontSize: 13, color: TXT, padding: '2px 0' }} />
           </Box>
           {/* List */}
-          <Box sx={{ maxHeight: 220, overflowY: 'auto', '&::-webkit-scrollbar': { width: 4 }, '&::-webkit-scrollbar-thumb': { bgcolor: 'rgba(255,255,255,0.1)', borderRadius: 2 } }}>
+          <Box sx={{ maxHeight: 220, overflowY: 'auto', '&::-webkit-scrollbar': { width: 4 }, '&::-webkit-scrollbar-thumb': { bgcolor: 'rgba(15,23,42,0.09)', borderRadius: 2 } }}>
             {filtered.length === 0 ? (
               <Box sx={{ py: 3, textAlign: 'center' }}><Typography fontSize={13} color={SUB}>Aucun résultat</Typography></Box>
             ) : filtered.map(item => (
               <Box key={item.id} onClick={() => { onChange(item.id); setOpen(false); setQ(''); }}
-                sx={{ display: 'flex', alignItems: 'center', gap: 1.2, px: 1.5, py: 1, cursor: 'pointer', transition: 'all 0.1s', bgcolor: item.id === value ? `${OR}12` : 'transparent', '&:hover': { bgcolor: 'rgba(255,255,255,0.05)' } }}>
+                sx={{ display: 'flex', alignItems: 'center', gap: 1.2, px: 1.5, py: 1, cursor: 'pointer', transition: 'all 0.1s', bgcolor: item.id === value ? `${OR}12` : 'transparent', '&:hover': { bgcolor: 'rgba(15,23,42,0.04)' } }}>
                 {item.img
                   ? <Avatar src={item.img} variant="rounded" sx={{ width: 32, height: 32, borderRadius: '7px', flexShrink: 0 }} />
                   : <Box sx={{ width: 32, height: 32, borderRadius: '7px', bgcolor: `${OR}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Inventory sx={{ fontSize: 15, color: OR }} /></Box>
@@ -159,7 +159,7 @@ function PayMethodCard({ method, selected, onClick, balance, budget }: { method:
   const color = selected ? (insufficient ? RED : OR) : BORD;
 
   return (
-    <Box onClick={onClick} sx={{ flex: 1, p: 2, borderRadius: '14px', cursor: 'pointer', border: `1.5px solid ${color}`, bgcolor: selected ? `${color}10` : 'rgba(255,255,255,0.02)', transition: 'all 0.15s', '&:hover': { borderColor: selected ? color : 'rgba(255,255,255,0.18)' } }}>
+    <Box onClick={onClick} sx={{ flex: 1, p: 2, borderRadius: '14px', cursor: 'pointer', border: `1.5px solid ${color}`, bgcolor: selected ? `${color}10` : 'rgba(15,23,42,0.09)', transition: 'all 0.15s', '&:hover': { borderColor: selected ? color : 'rgba(15,23,42,0.09)' } }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.8 }}>
         {isWallet ? <AccountBalanceWallet sx={{ fontSize: 20, color: selected ? (insufficient ? RED : OR) : SUB }} /> : <OpenInNew sx={{ fontSize: 20, color: selected ? OR : SUB }} />}
         <Typography fontWeight={700} fontSize={13.5} color={selected ? (insufficient ? RED : OR) : SUB2}>
@@ -410,10 +410,10 @@ export default function AdsPage() {
       {/* Campaign list */}
       {isLoading ? (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-          {[...Array(3)].map((_, i) => <Skeleton key={i} height={110} sx={{ borderRadius: '16px', bgcolor: 'rgba(255,255,255,0.04)', transform: 'none' }} />)}
+          {[...Array(3)].map((_, i) => <Skeleton key={i} height={110} sx={{ borderRadius: '16px', bgcolor: 'rgba(15,23,42,0.09)', transform: 'none' }} />)}
         </Box>
       ) : list.length === 0 ? (
-        <Box sx={{ textAlign: 'center', py: 12, borderRadius: '20px', bgcolor: CARD, border: `1px dashed rgba(255,255,255,0.1)` }}>
+        <Box sx={{ textAlign: 'center', py: 12, borderRadius: '20px', bgcolor: CARD, border: `1px dashed rgba(15,23,42,0.09)` }}>
           <Box sx={{ width: 80, height: 80, borderRadius: '24px', bgcolor: 'rgba(255,107,0,0.1)', border: '1px solid rgba(255,107,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', mx: 'auto', mb: 2.5 }}>
             <Campaign sx={{ fontSize: 36, color: OR }} />
           </Box>
@@ -435,7 +435,7 @@ export default function AdsPage() {
             const expanded = statsId === c.id;
             const isStore = !c.productId && c.storeId;
             return (
-              <Box key={c.id} sx={{ borderRadius: '18px', bgcolor: CARD, border: `1px solid ${BORD}`, transition: 'all 0.15s', '&:hover': { borderColor: 'rgba(255,255,255,0.12)' }, overflow: 'hidden' }}>
+              <Box key={c.id} sx={{ borderRadius: '18px', bgcolor: CARD, border: `1px solid ${BORD}`, transition: 'all 0.15s', '&:hover': { borderColor: 'rgba(15,23,42,0.09)' }, overflow: 'hidden' }}>
                 <Box sx={{ p: 2.5 }}>
                   <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
                     <Avatar variant="rounded" src={img}
@@ -522,13 +522,13 @@ export default function AdsPage() {
                       </Typography>
                     </Box>
                     <LinearProgress variant="determinate" value={pct}
-                      sx={{ height: 5, borderRadius: 3, bgcolor: 'rgba(255,255,255,0.06)', '& .MuiLinearProgress-bar': { borderRadius: 3, bgcolor: pct > 80 ? RED : OR } }} />
+                      sx={{ height: 5, borderRadius: 3, bgcolor: 'rgba(15,23,42,0.09)', '& .MuiLinearProgress-bar': { borderRadius: 3, bgcolor: pct > 80 ? RED : OR } }} />
                   </Box>
                 </Box>
 
                 {expanded && stats && (
                   <Box sx={{ px: 2.5, pb: 2.5 }}>
-                    <Box sx={{ p: 2, borderRadius: '12px', bgcolor: 'rgba(255,255,255,0.03)', border: `1px solid ${BORD}` }}>
+                    <Box sx={{ p: 2, borderRadius: '12px', bgcolor: 'rgba(15,23,42,0.09)', border: `1px solid ${BORD}` }}>
                       <Typography fontWeight={700} fontSize={12} color={SUB} mb={1.5} sx={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}>Performance détaillée</Typography>
                       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 1 }}>
                         {[
@@ -582,7 +582,7 @@ export default function AdsPage() {
                   const sel = form.targetType === type;
                   return (
                     <Box key={type} onClick={() => setForm(f => ({ ...f, targetType: type, productId: '', storeId: '' }))}
-                      sx={{ flex: 1, cursor: 'pointer', p: 1.8, borderRadius: '12px', transition: 'all 0.15s', border: `1.5px solid ${sel ? OR : BORD}`, bgcolor: sel ? 'rgba(255,107,0,0.08)' : 'rgba(255,255,255,0.02)', '&:hover': { borderColor: sel ? OR : 'rgba(255,255,255,0.15)' } }}>
+                      sx={{ flex: 1, cursor: 'pointer', p: 1.8, borderRadius: '12px', transition: 'all 0.15s', border: `1.5px solid ${sel ? OR : BORD}`, bgcolor: sel ? 'rgba(255,107,0,0.08)' : 'rgba(15,23,42,0.09)', '&:hover': { borderColor: sel ? OR : 'rgba(15,23,42,0.09)' } }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.3 }}>
                         <Icon sx={{ fontSize: 17, color: sel ? OR : SUB }} />
                         <Typography fontWeight={700} fontSize={13} color={sel ? OR : TXT}>{label}</Typography>
@@ -664,7 +664,7 @@ export default function AdsPage() {
                   const sel = form.targetingMode === mode;
                   return (
                     <Box key={mode} onClick={() => setForm(f => ({ ...f, targetingMode: mode as any }))}
-                      sx={{ flex: 1, cursor: 'pointer', p: 1.8, borderRadius: '12px', transition: 'all 0.15s', border: `1.5px solid ${sel ? OR : BORD}`, bgcolor: sel ? 'rgba(255,107,0,0.08)' : 'rgba(255,255,255,0.02)', '&:hover': { borderColor: sel ? OR : 'rgba(255,255,255,0.15)' } }}>
+                      sx={{ flex: 1, cursor: 'pointer', p: 1.8, borderRadius: '12px', transition: 'all 0.15s', border: `1.5px solid ${sel ? OR : BORD}`, bgcolor: sel ? 'rgba(255,107,0,0.08)' : 'rgba(15,23,42,0.09)', '&:hover': { borderColor: sel ? OR : 'rgba(15,23,42,0.09)' } }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.4, color: sel ? OR : SUB }}>{icon}
                         <Typography fontWeight={700} fontSize={13} color={sel ? OR : TXT}>{label}</Typography>
                       </Box>
@@ -753,7 +753,7 @@ export default function AdsPage() {
           <Button onClick={() => { setOpen(false); resetForm(); }} disabled={submitting} sx={{ color: SUB2, borderRadius: '10px', textTransform: 'none' }}>Annuler</Button>
           <Button onClick={handleSubmit} disabled={submitting}
             endIcon={submitting ? <CircularProgress size={14} color="inherit" /> : (form.paymentMethod === 'MONCASH' ? <OpenInNew sx={{ fontSize: 15 }} /> : undefined)}
-            sx={{ bgcolor: OR, color: '#fff', borderRadius: '10px', fontWeight: 700, px: 3, textTransform: 'none', boxShadow: '0 4px 12px rgba(255,107,0,0.3)', '&:hover': { bgcolor: '#E05A00' }, '&:disabled': { bgcolor: 'rgba(255,255,255,0.07)', color: SUB } }}>
+            sx={{ bgcolor: OR, color: '#fff', borderRadius: '10px', fontWeight: 700, px: 3, textTransform: 'none', boxShadow: '0 4px 12px rgba(255,107,0,0.3)', '&:hover': { bgcolor: '#E05A00' }, '&:disabled': { bgcolor: 'rgba(15,23,42,0.09)', color: SUB } }}>
             {submitting ? 'Création…' : form.paymentMethod === 'MONCASH' ? 'Créer & payer via MonCash →' : 'Créer la campagne →'}
           </Button>
         </DialogActions>
@@ -765,7 +765,7 @@ export default function AdsPage() {
         <DialogTitle sx={{ color: TXT, fontWeight: 900, fontSize: 17 }}>Payer la campagne</DialogTitle>
         <DialogContent>
           {payingCampaign && (
-            <Box sx={{ mb: 2, p: 1.8, borderRadius: '12px', bgcolor: 'rgba(255,255,255,0.04)', border: `1px solid ${BORD}` }}>
+            <Box sx={{ mb: 2, p: 1.8, borderRadius: '12px', bgcolor: 'rgba(15,23,42,0.09)', border: `1px solid ${BORD}` }}>
               <Typography fontSize={13.5} fontWeight={700} color={TXT} mb={0.3}>{payingCampaign.name}</Typography>
               <Typography fontSize={13} color={OR} fontWeight={800}>{Number(payingCampaign.totalBudget).toLocaleString()} HTG</Typography>
             </Box>
@@ -784,7 +784,7 @@ export default function AdsPage() {
           <Button onClick={() => setPayOpen(false)} disabled={payLoading} sx={{ color: SUB2, borderRadius: '10px', textTransform: 'none' }}>Annuler</Button>
           <Button onClick={handlePayExisting} disabled={payLoading || (payMethod === 'WALLET' && payingCampaign && walletBalance < payingCampaign.totalBudget)}
             endIcon={payLoading ? <CircularProgress size={14} color="inherit" /> : (payMethod === 'MONCASH' ? <OpenInNew sx={{ fontSize: 15 }} /> : undefined)}
-            sx={{ bgcolor: OR, color: '#fff', fontWeight: 700, borderRadius: '10px', px: 2.5, textTransform: 'none', '&:hover': { bgcolor: '#E05A00' }, '&:disabled': { bgcolor: 'rgba(255,255,255,0.07)', color: SUB } }}>
+            sx={{ bgcolor: OR, color: '#fff', fontWeight: 700, borderRadius: '10px', px: 2.5, textTransform: 'none', '&:hover': { bgcolor: '#E05A00' }, '&:disabled': { bgcolor: 'rgba(15,23,42,0.09)', color: SUB } }}>
             {payLoading ? 'En cours…' : payMethod === 'MONCASH' ? 'Payer via MonCash →' : 'Confirmer le paiement Wallet'}
           </Button>
         </DialogActions>

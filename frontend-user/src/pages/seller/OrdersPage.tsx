@@ -14,12 +14,12 @@ import { useSnackbar } from 'notistack';
 import api from '../../api/axios';
 
 const OR   = '#FF6B00';
-const BG   = '#060B14';
-const CARD = '#0D1424';
-const BORD = 'rgba(255,255,255,0.08)';
-const TXT  = 'rgba(255,255,255,0.92)';
-const SUB  = 'rgba(255,255,255,0.42)';
-const SUB2 = 'rgba(255,255,255,0.65)';
+const BG   = '#F7F8FA';
+const CARD = '#FFFFFF';
+const BORD = 'rgba(15,23,42,0.06)';
+const TXT  = '#0F172A';
+const SUB  = '#94A3B8';
+const SUB2 = '#94A3B8';
 const GRN  = '#10B981';
 const RED  = '#EF4444';
 const YLW  = '#F59E0B';
@@ -68,9 +68,9 @@ function OrderCard({ order, onUpdate }: { order: any; onUpdate: (id: string, sta
     <Box sx={{
       borderRadius: '16px', bgcolor: CARD, overflow: 'hidden',
       border: `1px solid ${urgent ? 'rgba(239,68,68,0.4)' : BORD}`,
-      boxShadow: urgent ? '0 0 0 1px rgba(239,68,68,0.2), 0 8px 24px rgba(0,0,0,0.3)' : '0 4px 16px rgba(0,0,0,0.2)',
+      boxShadow: urgent ? '0 0 0 1px rgba(239,68,68,0.2), 0 8px 24px rgba(15,23,42,0.1)' : '0 4px 16px rgba(15,23,42,0.06)',
       transition: 'all 0.18s',
-      '&:hover': { borderColor: urgent ? 'rgba(239,68,68,0.55)' : 'rgba(255,255,255,0.14)', transform: 'translateY(-1px)' },
+      '&:hover': { borderColor: urgent ? 'rgba(239,68,68,0.55)' : 'rgba(15,23,42,0.09)', transform: 'translateY(-1px)' },
     }}>
 
       {/* Urgent banner */}
@@ -123,7 +123,7 @@ function OrderCard({ order, onUpdate }: { order: any; onUpdate: (id: string, sta
       </Box>
 
       {/* Customer + items */}
-      <Box sx={{ px: 2.5, py: 1.5, borderTop: `1px solid ${BORD}`, bgcolor: 'rgba(255,255,255,0.015)' }}>
+      <Box sx={{ px: 2.5, py: 1.5, borderTop: `1px solid ${BORD}`, bgcolor: 'rgba(15,23,42,0.09)' }}>
         {/* Customer row */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, mb: order.items?.length > 0 ? 1.5 : 0 }}>
           <Avatar sx={{ width: 30, height: 30, bgcolor: 'rgba(59,130,246,0.2)', color: BLU, fontSize: 12, fontWeight: 900, border: '1px solid rgba(59,130,246,0.25)' }}>
@@ -148,7 +148,7 @@ function OrderCard({ order, onUpdate }: { order: any; onUpdate: (id: string, sta
           <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 1.2, py: 0.6,
             borderBottom: i < Math.min(order.items.length, 2) - 1 ? `1px solid ${BORD}` : 'none' }}>
             <Box sx={{ width: 34, height: 34, borderRadius: '8px', overflow: 'hidden', flexShrink: 0,
-              bgcolor: 'rgba(255,255,255,0.05)', border: `1px solid ${BORD}` }}>
+              bgcolor: 'rgba(15,23,42,0.09)', border: `1px solid ${BORD}` }}>
               {item.product?.images?.[0]?.urlThumb && (
                 <Box component="img" src={item.product.images[0].urlThumb} alt=""
                   sx={{ width: '100%', height: '100%', objectFit: 'cover' }}/>
@@ -335,15 +335,15 @@ export default function SellerOrdersPage() {
               sx={{
                 px: 1.5, py: 0.8, borderRadius: '9px', cursor: 'pointer', transition: 'all 0.14s',
                 display: 'flex', alignItems: 'center', gap: 0.8,
-                bgcolor: sel ? 'rgba(255,107,0,0.14)' : 'rgba(255,255,255,0.04)',
+                bgcolor: sel ? 'rgba(255,107,0,0.14)' : '#FFFFFF',
                 border: '1px solid',
                 borderColor: sel ? 'rgba(255,107,0,0.4)' : BORD,
-                '&:hover': { borderColor: sel ? 'rgba(255,107,0,0.5)' : 'rgba(255,255,255,0.14)' },
+                '&:hover': { borderColor: sel ? 'rgba(255,107,0,0.5)' : 'rgba(15,23,42,0.09)' },
               }}>
               <Typography fontSize={13} fontWeight={600} color={sel ? OR : SUB2}>{label}</Typography>
               {count > 0 && (
                 <Box sx={{ px: 0.8, py: 0.1, borderRadius: '5px',
-                  bgcolor: isAlert ? 'rgba(239,68,68,0.2)' : sel ? 'rgba(255,107,0,0.2)' : 'rgba(255,255,255,0.08)' }}>
+                  bgcolor: isAlert ? 'rgba(239,68,68,0.2)' : sel ? 'rgba(255,107,0,0.2)' : '#FFFFFF' }}>
                   <Typography fontSize={11} fontWeight={800}
                     color={isAlert ? RED : sel ? OR : SUB}>{count}</Typography>
                 </Box>
@@ -391,13 +391,13 @@ export default function SellerOrdersPage() {
         <DialogActions sx={{ px: 2.5, pb: 2.5, gap: 1 }}>
           <Button onClick={() => setCancelDlg(null)}
             sx={{ color: SUB2, borderRadius: '10px', border: `1px solid ${BORD}`,
-              '&:hover': { borderColor: 'rgba(255,255,255,0.18)' } }}>
+              '&:hover': { borderColor: 'rgba(15,23,42,0.09)' } }}>
             Revenir
           </Button>
           <Button onClick={() => cancelDlg && updateMut.mutate({ id: cancelDlg.id, status: 'CANCELLED' })}
             disabled={updateMut.isPending}
             sx={{ bgcolor: RED, color: '#fff', borderRadius: '10px', fontWeight: 700, px: 2.5,
-              '&:hover': { bgcolor: '#DC2626' }, '&:disabled': { bgcolor: 'rgba(255,255,255,0.07)', color: SUB } }}>
+              '&:hover': { bgcolor: '#DC2626' }, '&:disabled': { bgcolor: 'rgba(15,23,42,0.04)', color: SUB } }}>
             {updateMut.isPending ? <CircularProgress size={15} color="inherit"/> : 'Confirmer l\'annulation'}
           </Button>
         </DialogActions>

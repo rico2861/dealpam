@@ -8,7 +8,7 @@ export default function NotFoundPage() {
   return (
     <Box sx={{
       minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: 'linear-gradient(145deg, #060B14 0%, #0C1628 60%, #060B14 100%)',
+      background: 'linear-gradient(145deg, #F7F8FA 0%, #F1F5F9 60%, #F7F8FA 100%)',
       position: 'relative', overflow: 'hidden', px: 3,
     }}>
       {/* Background glows */}
@@ -17,11 +17,6 @@ export default function NotFoundPage() {
       <Box sx={{ position: 'absolute', width: 500, height: 500, borderRadius: '50%', bottom: '-15%', right: '-10%', pointerEvents: 'none',
         background: 'radial-gradient(circle, rgba(99,102,241,0.06) 0%, transparent 60%)' }} />
 
-      {/* Grid texture */}
-      <Box sx={{ position: 'absolute', inset: 0, pointerEvents: 'none', opacity: 0.02,
-        backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)',
-        backgroundSize: '60px 60px' }} />
-
       <Box sx={{ position: 'relative', zIndex: 1, textAlign: 'center', maxWidth: 520 }}>
 
         {/* 404 number */}
@@ -29,7 +24,7 @@ export default function NotFoundPage() {
           <Typography sx={{
             fontSize: { xs: 120, sm: 160, md: 200 },
             fontWeight: 900, lineHeight: 1,
-            background: `linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)`,
+            background: `linear-gradient(135deg, rgba(15,23,42,0.1) 0%, rgba(15,23,42,0.03) 100%)`,
             WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
             backgroundClip: 'text',
             letterSpacing: '-8px',
@@ -62,10 +57,10 @@ export default function NotFoundPage() {
           <SearchOutlined sx={{ fontSize: 34, color: ORANGE }} />
         </Box>
 
-        <Typography sx={{ fontWeight: 900, fontSize: { xs: 22, sm: 28 }, color: 'white', letterSpacing: '-0.5px', mb: 1.2 }}>
+        <Typography sx={{ fontWeight: 900, fontSize: { xs: 22, sm: 28 }, color: '#0F172A', letterSpacing: '-0.5px', mb: 1.2 }}>
           Cette page n'existe pas
         </Typography>
-        <Typography sx={{ fontSize: { xs: 14, sm: 15 }, color: 'rgba(255,255,255,0.38)', lineHeight: 1.8, mb: 4.5, maxWidth: 380, mx: 'auto' }}>
+        <Typography sx={{ fontSize: { xs: 14, sm: 15 }, color: '#94A3B8', lineHeight: 1.8, mb: 4.5, maxWidth: 380, mx: 'auto' }}>
           L'adresse que vous avez saisie est introuvable. Elle a peut-être été déplacée ou supprimée.
         </Typography>
 
@@ -89,11 +84,11 @@ export default function NotFoundPage() {
             onClick={() => window.history.back()}
             startIcon={<ArrowBack sx={{ fontSize: 17 }} />}
             sx={{
-              color: 'rgba(255,255,255,0.5)', fontWeight: 700, fontSize: 14,
+              color: '#475569', fontWeight: 700, fontSize: 14,
               borderRadius: '14px', textTransform: 'none', px: 3, py: 1.3,
-              border: '1.5px solid rgba(255,255,255,0.1)',
-              bgcolor: 'rgba(255,255,255,0.03)',
-              '&:hover': { bgcolor: 'rgba(255,255,255,0.07)', color: 'white', borderColor: 'rgba(255,255,255,0.2)' },
+              border: '1.5px solid rgba(15,23,42,0.1)',
+              bgcolor: '#FFFFFF',
+              '&:hover': { bgcolor: '#F1F5F9', color: '#0F172A', borderColor: 'rgba(15,23,42,0.18)' },
               transition: 'all 0.2s',
             }}>
             Page précédente
@@ -101,7 +96,7 @@ export default function NotFoundPage() {
         </Box>
 
         {/* Bottom hint */}
-        <Typography sx={{ mt: 5, fontSize: 12, color: 'rgba(255,255,255,0.15)' }}>
+        <Typography sx={{ mt: 5, fontSize: 12, color: '#94A3B8' }}>
           Vous cherchez quelque chose ?{' '}
           <Box component={Link} to="/products" sx={{ color: alpha(ORANGE, 0.7), textDecoration: 'none', fontWeight: 600,
             '&:hover': { color: ORANGE } }}>

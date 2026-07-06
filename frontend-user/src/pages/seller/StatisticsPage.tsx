@@ -8,12 +8,12 @@ import { useQuery } from '@tanstack/react-query';
 import api from '../../api/axios';
 
 const OR   = '#FF6B00';
-const BG   = '#060B14';
-const CARD = '#0D1424';
-const BORD = 'rgba(255,255,255,0.08)';
-const TXT  = 'rgba(255,255,255,0.92)';
-const SUB  = 'rgba(255,255,255,0.42)';
-const SUB2 = 'rgba(255,255,255,0.65)';
+const BG   = '#F7F8FA';
+const CARD = '#FFFFFF';
+const BORD = 'rgba(15,23,42,0.06)';
+const TXT  = '#0F172A';
+const SUB  = '#94A3B8';
+const SUB2 = '#94A3B8';
 const GRN  = '#10B981';
 const BLU  = '#3B82F6';
 const PUR  = '#8B5CF6';
@@ -55,7 +55,7 @@ function BarRow({ label, value, max, color }: { label: string; value: number; ma
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 1, borderBottom: `1px solid ${BORD}`, '&:last-child': { borderBottom: 'none' } }}>
       <Typography fontSize={13} color={SUB2} sx={{ flex: 1, minWidth: 0 }} noWrap>{label}</Typography>
-      <Box sx={{ width: 120, height: 4, borderRadius: 2, bgcolor: 'rgba(255,255,255,0.06)', flexShrink: 0 }}>
+      <Box sx={{ width: 120, height: 4, borderRadius: 2, bgcolor: 'rgba(15,23,42,0.09)', flexShrink: 0 }}>
         <Box sx={{ height: '100%', width: `${pct}%`, borderRadius: 2, bgcolor: color }} />
       </Box>
       <Typography fontSize={12} fontWeight={700} color={TXT} sx={{ minWidth: 40, textAlign: 'right' }}>{fmt(value)}</Typography>
@@ -112,7 +112,7 @@ export default function StatisticsPage() {
           {PERIODS.map(p => (
             <Box key={p.key} onClick={() => setPeriod(p.key)} sx={{
               px: 1.4, py: 0.7, borderRadius: '9px', cursor: 'pointer', transition: 'all 0.14s',
-              bgcolor: period === p.key ? 'rgba(255,107,0,0.15)' : 'rgba(255,255,255,0.04)',
+              bgcolor: period === p.key ? 'rgba(255,107,0,0.15)' : '#FFFFFF',
               border: '1px solid', borderColor: period === p.key ? 'rgba(255,107,0,0.4)' : BORD,
             }}>
               <Typography fontSize={12.5} fontWeight={700} color={period === p.key ? OR : SUB}>{p.label}</Typography>
@@ -192,7 +192,7 @@ export default function StatisticsPage() {
                 { label: 'Commandes totales',  value: String(totalOrders),          color: OR },
                 { label: 'Panier moyen',       value: totalOrders > 0 ? `${fmt(Math.round(totalRevenue / totalOrders))} HTG` : '—', color: BLU },
               ].map(({ label, value, color }) => (
-                <Box key={label} sx={{ p: 2, borderRadius: '12px', bgcolor: 'rgba(255,255,255,0.03)', border: `1px solid ${BORD}` }}>
+                <Box key={label} sx={{ p: 2, borderRadius: '12px', bgcolor: 'rgba(15,23,42,0.09)', border: `1px solid ${BORD}` }}>
                   <Typography fontSize={18} fontWeight={900} color={color}>{value}</Typography>
                   <Typography fontSize={12} color={SUB} mt={0.3}>{label}</Typography>
                 </Box>

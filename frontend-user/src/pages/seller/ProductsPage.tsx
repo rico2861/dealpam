@@ -14,12 +14,12 @@ import { useSnackbar } from 'notistack';
 import api from '../../api/axios';
 
 const OR   = '#FF6B00';
-const BG   = '#060B14';
-const CARD = '#0D1424';
-const BORD = 'rgba(255,255,255,0.08)';
-const TXT  = 'rgba(255,255,255,0.92)';
-const SUB  = 'rgba(255,255,255,0.42)';
-const SUB2 = 'rgba(255,255,255,0.65)';
+const BG   = '#F7F8FA';
+const CARD = '#FFFFFF';
+const BORD = 'rgba(15,23,42,0.06)';
+const TXT  = '#0F172A';
+const SUB  = '#94A3B8';
+const SUB2 = '#94A3B8';
 const GRN  = '#10B981';
 const RED  = '#EF4444';
 const YLW  = '#F59E0B';
@@ -28,8 +28,8 @@ const STATUS: Record<string, { label: string; color: string; icon: any }> = {
   PUBLISHED:      { label: 'Publié',       color: GRN,              icon: CheckCircle },
   PENDING_REVIEW: { label: 'En révision',  color: YLW,              icon: Warning },
   REJECTED:       { label: 'Rejeté',       color: RED,              icon: Block },
-  DRAFT:          { label: 'Brouillon',    color: 'rgba(255,255,255,0.35)', icon: RadioButtonUnchecked },
-  ARCHIVED:       { label: 'Archivé',      color: 'rgba(255,255,255,0.25)', icon: Archive },
+  DRAFT:          { label: 'Brouillon',    color: '#94A3B8', icon: RadioButtonUnchecked },
+  ARCHIVED:       { label: 'Archivé',      color: '#94A3B8', icon: Archive },
 };
 
 function fmt(v: number) { return `${Number(v).toLocaleString('fr-HT')} HTG`; }
@@ -112,13 +112,13 @@ export default function SellerProductsPage() {
           {FILTERS.map(f => (
             <Box key={f.key} onClick={() => setFilter(f.key)}
               sx={{ px: 1.5, py: 0.7, borderRadius: '8px', cursor: 'pointer', transition: 'all 0.15s',
-                bgcolor: filter === f.key ? 'rgba(255,107,0,0.15)' : 'rgba(255,255,255,0.04)',
+                bgcolor: filter === f.key ? 'rgba(255,107,0,0.15)' : '#FFFFFF',
                 border: '1px solid', borderColor: filter === f.key ? 'rgba(255,107,0,0.4)' : BORD,
-                '&:hover': { borderColor: 'rgba(255,255,255,0.15)' },
+                '&:hover': { borderColor: 'rgba(15,23,42,0.09)' },
                 display: 'flex', alignItems: 'center', gap: 0.8 }}>
               <Typography fontSize={13} fontWeight={600} color={filter === f.key ? OR : SUB2}>{f.label}</Typography>
               <Box sx={{ px: 0.7, py: 0.05, borderRadius: '5px',
-                bgcolor: filter === f.key ? 'rgba(255,107,0,0.2)' : 'rgba(255,255,255,0.08)' }}>
+                bgcolor: filter === f.key ? 'rgba(255,107,0,0.2)' : '#FFFFFF' }}>
                 <Typography fontSize={11} fontWeight={700} color={filter === f.key ? OR : SUB}>{f.count}</Typography>
               </Box>
             </Box>
@@ -130,8 +130,8 @@ export default function SellerProductsPage() {
             onChange={e => setSearch(e.target.value)}
             InputProps={{ startAdornment: <InputAdornment position="start"><Search sx={{ fontSize: 16, color: SUB }}/></InputAdornment> }}
             sx={{ width: '100%',
-              '& .MuiOutlinedInput-root': { bgcolor: 'rgba(255,255,255,0.04)', borderRadius: '10px', color: TXT, fontSize: 13,
-                '& fieldset': { borderColor: BORD }, '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.15)' },
+              '& .MuiOutlinedInput-root': { bgcolor: 'rgba(15,23,42,0.09)', borderRadius: '10px', color: TXT, fontSize: 13,
+                '& fieldset': { borderColor: BORD }, '&:hover fieldset': { borderColor: 'rgba(15,23,42,0.09)' },
                 '&.Mui-focused fieldset': { borderColor: OR } },
               '& input::placeholder': { color: SUB } }}
           />
@@ -183,7 +183,7 @@ export default function SellerProductsPage() {
                   gridTemplateColumns: { xs: '1fr', md: '48px 1fr 140px 80px 120px 100px 160px' },
                   gap: 1, px: 2, py: 1.8, alignItems: 'center',
                   borderBottom: i < filtered.length - 1 ? `1px solid ${BORD}` : 'none',
-                  '&:hover': { bgcolor: 'rgba(255,255,255,0.02)' }, transition: 'all 0.12s' }}>
+                  '&:hover': { bgcolor: 'rgba(15,23,42,0.04)' }, transition: 'all 0.12s' }}>
 
                 {/* Avatar */}
                 <Box sx={{ display: { xs: 'none', md: 'flex' } }}>
@@ -288,7 +288,7 @@ export default function SellerProductsPage() {
           <Button onClick={handleDelete} disabled={deleting}
             startIcon={deleting ? <CircularProgress size={14} color="inherit"/> : <Delete sx={{ fontSize: 16 }}/>}
             sx={{ bgcolor: RED, color: '#fff', borderRadius: '10px', fontWeight: 700, px: 2.5,
-              '&:hover': { bgcolor: '#DC2626' }, '&:disabled': { bgcolor: 'rgba(255,255,255,0.07)', color: SUB } }}>
+              '&:hover': { bgcolor: '#DC2626' }, '&:disabled': { bgcolor: 'rgba(15,23,42,0.04)', color: SUB } }}>
             {deleting ? 'Suppression…' : 'Supprimer'}
           </Button>
         </DialogActions>

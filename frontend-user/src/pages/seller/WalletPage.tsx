@@ -14,12 +14,12 @@ import api from '../../api/axios';
 
 // ── Palette ────────────────────────────────────────────────────────────────
 const OR   = '#FF6B00';
-const BG   = '#060B14';
-const CARD = '#0D1424';
-const BORD = 'rgba(255,255,255,0.08)';
-const TXT  = 'rgba(255,255,255,0.92)';
-const SUB  = 'rgba(255,255,255,0.40)';
-const SUB2 = 'rgba(255,255,255,0.65)';
+const BG   = '#F7F8FA';
+const CARD = '#FFFFFF';
+const BORD = 'rgba(15,23,42,0.06)';
+const TXT  = '#0F172A';
+const SUB  = '#94A3B8';
+const SUB2 = '#94A3B8';
 const GRN  = '#10B981';
 const RED  = '#EF4444';
 const YLW  = '#F59E0B';
@@ -66,7 +66,7 @@ function TxRow({ tx }: { tx: any }) {
     <Box sx={{ borderBottom: `1px solid ${BORD}`, '&:last-child': { borderBottom: 'none' } }}>
       {/* Main row */}
       <Box onClick={() => setExpanded(p => !p)}
-        sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 1.8, px: { xs: 1.5, md: 2.5 }, cursor: 'pointer', transition: 'all 0.15s', '&:hover': { bgcolor: 'rgba(255,255,255,0.02)' } }}>
+        sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 1.8, px: { xs: 1.5, md: 2.5 }, cursor: 'pointer', transition: 'all 0.15s', '&:hover': { bgcolor: 'rgba(15,23,42,0.04)' } }}>
 
         {/* Icon */}
         <Box sx={{ width: 40, height: 40, borderRadius: '11px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: `${meta.color}15`, border: `1px solid ${meta.color}25` }}>
@@ -106,7 +106,7 @@ function TxRow({ tx }: { tx: any }) {
 
       {/* Expanded details */}
       <Collapse in={expanded}>
-        <Box sx={{ mx: { xs: 1.5, md: 2.5 }, mb: 1.5, p: 2, borderRadius: '12px', bgcolor: 'rgba(255,255,255,0.03)', border: `1px solid ${BORD}` }}>
+        <Box sx={{ mx: { xs: 1.5, md: 2.5 }, mb: 1.5, p: 2, borderRadius: '12px', bgcolor: 'rgba(15,23,42,0.09)', border: `1px solid ${BORD}` }}>
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', md: 'repeat(3,1fr)' }, gap: 2 }}>
 
             <Box>
@@ -269,12 +269,12 @@ export default function WalletPage() {
         ) : (
           <>
             {/* ── Balance hero ── */}
-            <Box sx={{ borderRadius: '20px', p: { xs: 2.5, md: 4 }, mb: 2.5, position: 'relative', overflow: 'hidden', background: 'linear-gradient(135deg, #140A00 0%, #251200 50%, rgba(255,107,0,0.12) 100%)', border: '1px solid rgba(255,107,0,0.2)', boxShadow: '0 20px 60px rgba(0,0,0,0.4)' }}>
+            <Box sx={{ borderRadius: '20px', p: { xs: 2.5, md: 4 }, mb: 2.5, position: 'relative', overflow: 'hidden', background: 'linear-gradient(135deg, #FFFFFF 0%, #FFF7F0 50%, rgba(255,107,0,0.08) 100%)', border: '1px solid rgba(255,107,0,0.2)', boxShadow: '0 20px 60px rgba(15,23,42,0.08)' }}>
               {/* Decorative circle */}
               <Box sx={{ position: 'absolute', right: -40, top: -40, width: 200, height: 200, borderRadius: '50%', bgcolor: 'rgba(255,107,0,0.06)', pointerEvents: 'none' }} />
 
               <Typography fontSize={12} fontWeight={700} color={SUB2} textTransform="uppercase" letterSpacing="1px" mb={1}>Solde disponible</Typography>
-              <Typography fontWeight={900} color="#fff"
+              <Typography fontWeight={900} color="#0F172A"
                 sx={{ fontSize: { xs: 38, md: 56 }, lineHeight: 1, letterSpacing: '-2px', mb: 1 }}>
                 {fmt(wallet?.balance ?? 0)}
               </Typography>
@@ -327,10 +327,10 @@ export default function WalletPage() {
                 </Box>
 
                 {/* Filter tabs */}
-                <Box sx={{ display: 'flex', gap: 0.5, bgcolor: 'rgba(255,255,255,0.04)', borderRadius: '10px', p: 0.5 }}>
+                <Box sx={{ display: 'flex', gap: 0.5, bgcolor: 'rgba(15,23,42,0.09)', borderRadius: '10px', p: 0.5 }}>
                   {FILTER_TABS.map(tab => (
                     <Box key={tab.key} onClick={() => setFilter(tab.key as any)}
-                      sx={{ px: 1.5, py: 0.6, borderRadius: '7px', cursor: 'pointer', transition: 'all 0.15s', bgcolor: filter === tab.key ? OR : 'transparent', '&:hover': { bgcolor: filter === tab.key ? '#E05A00' : 'rgba(255,255,255,0.06)' } }}>
+                      sx={{ px: 1.5, py: 0.6, borderRadius: '7px', cursor: 'pointer', transition: 'all 0.15s', bgcolor: filter === tab.key ? OR : 'transparent', '&:hover': { bgcolor: filter === tab.key ? '#E05A00' : 'rgba(15,23,42,0.09)' } }}>
                       <Typography fontSize={12} fontWeight={600} color={filter === tab.key ? '#fff' : SUB2}>{tab.label}</Typography>
                     </Box>
                   ))}
@@ -366,7 +366,7 @@ export default function WalletPage() {
 
       {/* ── Recharge dialog ── */}
       <Dialog open={open} onClose={() => !loading && setOpen(false)} maxWidth="xs" fullWidth
-        PaperProps={{ sx: { bgcolor: '#0A1020', border: `1px solid ${BORD}`, borderRadius: '20px' } }}>
+        PaperProps={{ sx: { bgcolor: '#F7F8FA', border: `1px solid ${BORD}`, borderRadius: '20px' } }}>
         <DialogContent sx={{ p: 0 }}>
 
           {/* Dialog header */}
@@ -390,7 +390,7 @@ export default function WalletPage() {
               <Box sx={{ display: 'flex', gap: 0.8, flexWrap: 'wrap' }}>
                 {[25, 50, 100, 250, 500, 1000].map(v => (
                   <Box key={v} onClick={() => setAmount(String(v))}
-                    sx={{ px: 1.5, py: 0.7, borderRadius: '8px', cursor: 'pointer', transition: 'all 0.15s', bgcolor: amount === String(v) ? OR : 'rgba(255,255,255,0.05)', border: `1px solid ${amount === String(v) ? OR : BORD}`, '&:hover': { border: `1px solid ${OR}50` } }}>
+                    sx={{ px: 1.5, py: 0.7, borderRadius: '8px', cursor: 'pointer', transition: 'all 0.15s', bgcolor: amount === String(v) ? OR : 'rgba(15,23,42,0.09)', border: `1px solid ${amount === String(v) ? OR : BORD}`, '&:hover': { border: `1px solid ${OR}50` } }}>
                     <Typography fontSize={12.5} fontWeight={700} color={amount === String(v) ? '#fff' : SUB2}>{v} HTG</Typography>
                   </Box>
                 ))}
@@ -401,16 +401,16 @@ export default function WalletPage() {
               onChange={e => setAmount(e.target.value)}
               inputProps={{ min: MIN_RECHARGE }}
               helperText={`Minimum ${MIN_RECHARGE} HTG`}
-              sx={{ '& .MuiOutlinedInput-root': { bgcolor: '#0A1020', borderRadius: '10px', fontSize: 15, color: TXT, fontWeight: 700, '& fieldset': { borderColor: BORD }, '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.2)' }, '&.Mui-focused fieldset': { borderColor: OR } }, '& .MuiInputLabel-root': { color: SUB }, '& .MuiInputLabel-root.Mui-focused': { color: OR }, '& .MuiFormHelperText-root': { color: SUB } }} />
+              sx={{ '& .MuiOutlinedInput-root': { bgcolor: '#F7F8FA', borderRadius: '10px', fontSize: 15, color: TXT, fontWeight: 700, '& fieldset': { borderColor: BORD }, '&:hover fieldset': { borderColor: 'rgba(15,23,42,0.09)' }, '&.Mui-focused fieldset': { borderColor: OR } }, '& .MuiInputLabel-root': { color: SUB }, '& .MuiInputLabel-root.Mui-focused': { color: OR }, '& .MuiFormHelperText-root': { color: SUB } }} />
 
             <Box sx={{ display: 'flex', gap: 1 }}>
               <Button onClick={() => setOpen(false)} disabled={loading}
-                sx={{ flex: 1, py: 1.2, borderRadius: '10px', fontWeight: 600, color: SUB2, textTransform: 'none', border: `1px solid ${BORD}`, '&:hover': { bgcolor: 'rgba(255,255,255,0.05)' } }}>
+                sx={{ flex: 1, py: 1.2, borderRadius: '10px', fontWeight: 600, color: SUB2, textTransform: 'none', border: `1px solid ${BORD}`, '&:hover': { bgcolor: 'rgba(15,23,42,0.09)' } }}>
                 Annuler
               </Button>
               <Button onClick={handleRecharge} disabled={loading || !amount || parseFloat(amount) < MIN_RECHARGE}
                 endIcon={loading ? <CircularProgress size={15} color="inherit" /> : <OpenInNew sx={{ fontSize: 15 }} />}
-                sx={{ flex: 2, py: 1.2, borderRadius: '10px', fontWeight: 700, fontSize: 14, bgcolor: OR, color: '#fff', textTransform: 'none', '&:hover': { bgcolor: '#E05A00' }, '&.Mui-disabled': { bgcolor: 'rgba(255,107,0,0.25)', color: 'rgba(255,255,255,0.4)' } }}>
+                sx={{ flex: 2, py: 1.2, borderRadius: '10px', fontWeight: 700, fontSize: 14, bgcolor: OR, color: '#fff', textTransform: 'none', '&:hover': { bgcolor: '#E05A00' }, '&.Mui-disabled': { bgcolor: 'rgba(255,107,0,0.25)', color: '#94A3B8' } }}>
                 {loading ? 'Connexion MonCash…' : 'Payer avec MonCash'}
               </Button>
             </Box>

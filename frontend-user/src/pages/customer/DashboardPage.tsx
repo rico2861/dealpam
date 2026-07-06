@@ -33,11 +33,12 @@ function StatCard({ icon: Icon, label, value, color, to }: any) {
   return (
     <Box onClick={() => to && navigate(to)} sx={{
       p: { xs: 2, sm: 2.5 }, borderRadius: '18px', cursor: to ? 'pointer' : 'default',
-      background: 'rgba(255,255,255,0.025)',
-      border: '1px solid rgba(255,255,255,0.07)',
+      background: '#FFFFFF',
+      border: '1px solid rgba(15,23,42,0.09)',
+      boxShadow: '0 2px 12px rgba(15,23,42,0.05)',
       transition: 'all 0.22s',
       '&:hover': to ? {
-        background: 'rgba(255,255,255,0.05)',
+        background: '#FFFFFF',
         borderColor: alpha(color, 0.35),
         transform: 'translateY(-2px)',
         boxShadow: `0 8px 24px ${alpha(color, 0.15)}`,
@@ -49,12 +50,12 @@ function StatCard({ icon: Icon, label, value, color, to }: any) {
           display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Icon sx={{ fontSize: 20, color }} />
         </Box>
-        {to && <ArrowForward sx={{ fontSize: 15, color: 'rgba(255,255,255,0.2)' }} />}
+        {to && <ArrowForward sx={{ fontSize: 15, color: '#CBD5E1' }} />}
       </Box>
-      <Typography sx={{ fontWeight: 900, fontSize: { xs: 24, sm: 28 }, color: 'white', letterSpacing: '-1px', lineHeight: 1 }}>
+      <Typography sx={{ fontWeight: 900, fontSize: { xs: 24, sm: 28 }, color: '#0F172A', letterSpacing: '-1px', lineHeight: 1 }}>
         {value ?? <CircularProgress size={18} sx={{ color }} />}
       </Typography>
-      <Typography sx={{ fontSize: 12.5, color: 'rgba(255,255,255,0.38)', mt: 0.5, fontWeight: 500 }}>{label}</Typography>
+      <Typography sx={{ fontSize: 12.5, color: '#94A3B8', mt: 0.5, fontWeight: 500 }}>{label}</Typography>
     </Box>
   );
 }
@@ -64,8 +65,8 @@ function QuickAction({ icon: Icon, label, sub, color, to }: any) {
     <Box component={Link} to={to} sx={{
       display: 'flex', alignItems: 'center', gap: 1.8,
       p: 2, borderRadius: '16px', textDecoration: 'none',
-      background: 'rgba(255,255,255,0.02)',
-      border: '1px solid rgba(255,255,255,0.06)',
+      background: '#F7F8FA',
+      border: '1px solid rgba(15,23,42,0.07)',
       transition: 'all 0.18s',
       '&:hover': {
         background: alpha(color, 0.07),
@@ -79,10 +80,10 @@ function QuickAction({ icon: Icon, label, sub, color, to }: any) {
         <Icon sx={{ fontSize: 20, color }} />
       </Box>
       <Box sx={{ flex: 1, minWidth: 0 }}>
-        <Typography sx={{ fontSize: 13.5, fontWeight: 700, color: 'rgba(255,255,255,0.82)', lineHeight: 1.3 }}>{label}</Typography>
-        <Typography sx={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', mt: 0.2 }}>{sub}</Typography>
+        <Typography sx={{ fontSize: 13.5, fontWeight: 700, color: '#0F172A', lineHeight: 1.3 }}>{label}</Typography>
+        <Typography sx={{ fontSize: 12, color: '#94A3B8', mt: 0.2 }}>{sub}</Typography>
       </Box>
-      <ArrowForward className="qa-arrow" sx={{ fontSize: 16, color: 'rgba(255,255,255,0.2)', transition: 'all 0.18s' }} />
+      <ArrowForward className="qa-arrow" sx={{ fontSize: 16, color: '#CBD5E1', transition: 'all 0.18s' }} />
     </Box>
   );
 }
@@ -110,22 +111,18 @@ export default function DashboardPage() {
   const greeting = hour < 12 ? 'Bonjour' : hour < 18 ? 'Bonsoir' : 'Bonsoir';
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: '#060B14', py: { xs: 3, sm: 4 }, px: { xs: 2, sm: 3, lg: 4 } }}>
+    <Box sx={{ minHeight: '100vh', bgcolor: '#F7F8FA', py: { xs: 3, sm: 4 }, px: { xs: 2, sm: 3, lg: 4 } }}>
       <Box sx={{ maxWidth: 1100, mx: 'auto' }}>
 
         {/* ── Hero greeting ── */}
         <Box sx={{
           mb: { xs: 3, sm: 4 }, p: { xs: 2.5, sm: 3.5 }, borderRadius: '22px', position: 'relative', overflow: 'hidden',
-          background: 'linear-gradient(135deg, #0F1E3A 0%, #0A1220 60%, #160C1A 100%)',
-          border: '1px solid rgba(255,255,255,0.07)',
+          background: 'linear-gradient(135deg, rgba(255,107,0,0.07) 0%, rgba(255,107,0,0.02) 60%, #FFFFFF 100%)',
+          border: '1px solid rgba(15,23,42,0.09)',
         }}>
           {/* Glow */}
           <Box sx={{ position: 'absolute', width: 400, height: 400, top: '-30%', right: '-5%', borderRadius: '50%', pointerEvents: 'none',
             background: `radial-gradient(circle, ${alpha(ORANGE, 0.08)} 0%, transparent 60%)` }} />
-          {/* Grid */}
-          <Box sx={{ position: 'absolute', inset: 0, pointerEvents: 'none', opacity: 0.018,
-            backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)',
-            backgroundSize: '44px 44px' }} />
 
           <Box sx={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
             <Box>
@@ -135,10 +132,10 @@ export default function DashboardPage() {
                   animation: 'ping 2s ease-in-out infinite', '@keyframes ping': { '0%,100%': { opacity: 1, transform: 'scale(1)' }, '50%': { opacity: 0.4, transform: 'scale(0.85)' } } }} />
                 <Typography sx={{ fontSize: 11, fontWeight: 700, color: ORANGE }}>Compte actif</Typography>
               </Box>
-              <Typography sx={{ fontWeight: 900, fontSize: { xs: 22, sm: 28 }, color: 'white', letterSpacing: '-0.8px', lineHeight: 1.15 }}>
+              <Typography sx={{ fontWeight: 900, fontSize: { xs: 22, sm: 28 }, color: '#0F172A', letterSpacing: '-0.8px', lineHeight: 1.15 }}>
                 {greeting}, <Box component="span" sx={{ color: ORANGE }}>{user?.firstName}</Box>
               </Typography>
-              <Typography sx={{ fontSize: 13.5, color: 'rgba(255,255,255,0.32)', mt: 0.6 }}>
+              <Typography sx={{ fontSize: 13.5, color: '#94A3B8', mt: 0.6 }}>
                 Bienvenue sur votre espace personnel DealPam.
               </Typography>
             </Box>
@@ -153,8 +150,8 @@ export default function DashboardPage() {
               }}>
                 <StorefrontOutlined sx={{ fontSize: 18, color: ORANGE }} />
                 <Box>
-                  <Typography sx={{ fontSize: 12.5, fontWeight: 800, color: 'white', lineHeight: 1.2 }}>Devenir vendeur</Typography>
-                  <Typography sx={{ fontSize: 10.5, color: 'rgba(255,255,255,0.3)' }}>Ouvrez votre boutique</Typography>
+                  <Typography sx={{ fontSize: 12.5, fontWeight: 800, color: '#0F172A', lineHeight: 1.2 }}>Devenir vendeur</Typography>
+                  <Typography sx={{ fontSize: 10.5, color: '#94A3B8' }}>Ouvrez votre boutique</Typography>
                 </Box>
                 <ArrowForward sx={{ fontSize: 14, color: ORANGE, ml: 0.5 }} />
               </Box>
@@ -174,9 +171,9 @@ export default function DashboardPage() {
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1fr 320px' }, gap: { xs: 2, sm: 3 } }}>
 
           {/* Recent orders */}
-          <Box sx={{ p: { xs: 2, sm: 3 }, borderRadius: '20px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+          <Box sx={{ p: { xs: 2, sm: 3 }, borderRadius: '20px', background: '#FFFFFF', border: '1px solid rgba(15,23,42,0.09)', boxShadow: '0 2px 12px rgba(15,23,42,0.05)' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2.5 }}>
-              <Typography sx={{ fontWeight: 800, fontSize: 15, color: 'white' }}>Commandes récentes</Typography>
+              <Typography sx={{ fontWeight: 800, fontSize: 15, color: '#0F172A' }}>Commandes récentes</Typography>
               <Box component={Link} to="/account/orders" sx={{
                 display: 'flex', alignItems: 'center', gap: 0.5, textDecoration: 'none',
                 fontSize: 12.5, fontWeight: 700, color: ORANGE,
@@ -193,11 +190,11 @@ export default function DashboardPage() {
             ) : recentOrders.length === 0 ? (
               <Box sx={{ textAlign: 'center', py: 6 }}>
                 <Box sx={{ width: 56, height: 56, borderRadius: '16px', mx: 'auto', mb: 2,
-                  bgcolor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+                  bgcolor: '#F1F5F9', border: '1px solid rgba(15,23,42,0.09)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <ShoppingBagOutlined sx={{ fontSize: 26, color: 'rgba(255,255,255,0.2)' }} />
+                  <ShoppingBagOutlined sx={{ fontSize: 26, color: '#CBD5E1' }} />
                 </Box>
-                <Typography sx={{ color: 'rgba(255,255,255,0.35)', fontSize: 14, mb: 2 }}>Aucune commande pour l'instant</Typography>
+                <Typography sx={{ color: '#94A3B8', fontSize: 14, mb: 2 }}>Aucune commande pour l'instant</Typography>
                 <Box component={Link} to="/products" sx={{
                   display: 'inline-flex', alignItems: 'center', gap: 0.8, textDecoration: 'none',
                   px: 2.5, py: 1, borderRadius: '12px',
@@ -218,26 +215,26 @@ export default function DashboardPage() {
                     <Box component={Link} to={`/account/orders/${order.id}`} key={order.id} sx={{
                       display: 'flex', alignItems: 'center', gap: 2,
                       p: { xs: 1.5, sm: 2 }, borderRadius: '14px', textDecoration: 'none',
-                      border: '1px solid rgba(255,255,255,0.05)',
-                      bgcolor: 'rgba(255,255,255,0.018)',
+                      border: '1px solid rgba(15,23,42,0.07)',
+                      bgcolor: '#F7F8FA',
                       transition: 'all 0.16s',
-                      '&:hover': { bgcolor: 'rgba(255,255,255,0.04)', borderColor: alpha(sc, 0.25) },
+                      '&:hover': { bgcolor: '#F1F5F9', borderColor: alpha(sc, 0.25) },
                     }}>
                       {/* Thumb */}
                       <Box sx={{ width: { xs: 44, sm: 52 }, height: { xs: 44, sm: 52 }, borderRadius: '12px', flexShrink: 0,
-                        bgcolor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
+                        bgcolor: '#F1F5F9', border: '1px solid rgba(15,23,42,0.09)',
                         overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         {firstItem?.product?.images?.[0]?.url
                           ? <Box component="img" src={firstItem.product.images[0].url} alt="" sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          : <ShoppingBagOutlined sx={{ fontSize: 20, color: 'rgba(255,255,255,0.2)' }} />}
+                          : <ShoppingBagOutlined sx={{ fontSize: 20, color: '#CBD5E1' }} />}
                       </Box>
 
                       <Box sx={{ flex: 1, minWidth: 0 }}>
-                        <Typography noWrap sx={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.8)' }}>
+                        <Typography noWrap sx={{ fontSize: 13, fontWeight: 700, color: '#0F172A' }}>
                           {firstItem?.product?.name ?? `Commande #${order.id.slice(-6).toUpperCase()}`}
                           {order.items?.length > 1 ? ` +${order.items.length - 1} article${order.items.length > 2 ? 's' : ''}` : ''}
                         </Typography>
-                        <Typography sx={{ fontSize: 11.5, color: 'rgba(255,255,255,0.28)', mt: 0.3 }}>
+                        <Typography sx={{ fontSize: 11.5, color: '#94A3B8', mt: 0.3 }}>
                           {new Date(order.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
                         </Typography>
                       </Box>
@@ -247,7 +244,7 @@ export default function DashboardPage() {
                           <StatusIcon sx={{ fontSize: 13, color: sc }} />
                           <Typography sx={{ fontSize: 11.5, fontWeight: 700, color: sc }}>{STATUS_LABEL[order.status]}</Typography>
                         </Box>
-                        <Typography sx={{ fontSize: 13, fontWeight: 800, color: 'white' }}>
+                        <Typography sx={{ fontSize: 13, fontWeight: 800, color: '#0F172A' }}>
                           {Number(order.totalAmount ?? 0).toLocaleString('fr-FR')} HTG
                         </Typography>
                       </Box>
@@ -262,8 +259,8 @@ export default function DashboardPage() {
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
 
             {/* Quick actions */}
-            <Box sx={{ p: { xs: 2, sm: 2.5 }, borderRadius: '20px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
-              <Typography sx={{ fontWeight: 800, fontSize: 14, color: 'white', mb: 2 }}>Accès rapide</Typography>
+            <Box sx={{ p: { xs: 2, sm: 2.5 }, borderRadius: '20px', background: '#FFFFFF', border: '1px solid rgba(15,23,42,0.09)', boxShadow: '0 2px 12px rgba(15,23,42,0.05)' }}>
+              <Typography sx={{ fontWeight: 800, fontSize: 14, color: '#0F172A', mb: 2 }}>Accès rapide</Typography>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.2 }}>
                 <QuickAction icon={ShoppingBagOutlined}   label="Mes commandes"   sub="Suivre & gérer"       color={ORANGE}  to="/account/orders" />
                 <QuickAction icon={FavoriteBorderOutlined} label="Mes favoris"     sub="Articles sauvegardés" color={PURPLE}  to="/account/wishlist" />
@@ -273,7 +270,7 @@ export default function DashboardPage() {
             </Box>
 
             {/* Profile snippet */}
-            <Box sx={{ p: { xs: 2, sm: 2.5 }, borderRadius: '20px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+            <Box sx={{ p: { xs: 2, sm: 2.5 }, borderRadius: '20px', background: '#FFFFFF', border: '1px solid rgba(15,23,42,0.09)', boxShadow: '0 2px 12px rgba(15,23,42,0.05)' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
                 <Box sx={{ width: 44, height: 44, borderRadius: '14px', flexShrink: 0,
                   bgcolor: alpha(ORANGE, 0.15), border: `1.5px solid ${alpha(ORANGE, 0.25)}`,
@@ -282,10 +279,10 @@ export default function DashboardPage() {
                   {user?.firstName?.[0]}
                 </Box>
                 <Box sx={{ minWidth: 0 }}>
-                  <Typography sx={{ fontSize: 14, fontWeight: 800, color: 'white', lineHeight: 1.3 }}>
+                  <Typography sx={{ fontSize: 14, fontWeight: 800, color: '#0F172A', lineHeight: 1.3 }}>
                     {user?.firstName} {user?.lastName}
                   </Typography>
-                  <Typography sx={{ fontSize: 11.5, color: 'rgba(255,255,255,0.3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <Typography sx={{ fontSize: 11.5, color: '#94A3B8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {user?.email}
                   </Typography>
                 </Box>
@@ -298,16 +295,16 @@ export default function DashboardPage() {
                 {user?.city && (
                   <Chip label={user.city} size="small"
                     sx={{ height: 22, fontSize: 10.5, fontWeight: 600, borderRadius: '8px',
-                      bgcolor: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.4)', border: '1px solid rgba(255,255,255,0.08)' }} />
+                      bgcolor: '#F1F5F9', color: '#475569', border: '1px solid rgba(15,23,42,0.09)' }} />
                 )}
               </Box>
 
               <Box component={Link} to="/account/profile" sx={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.8, textDecoration: 'none',
                 mt: 2, py: 1, borderRadius: '12px',
-                border: '1.5px solid rgba(255,255,255,0.08)',
-                bgcolor: 'rgba(255,255,255,0.03)',
-                fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.45)',
+                border: '1.5px solid rgba(15,23,42,0.09)',
+                bgcolor: '#F7F8FA',
+                fontSize: 13, fontWeight: 700, color: '#475569',
                 transition: 'all 0.18s',
                 '&:hover': { borderColor: alpha(ORANGE, 0.35), color: ORANGE, bgcolor: alpha(ORANGE, 0.05) },
               }}>

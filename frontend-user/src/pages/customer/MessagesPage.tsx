@@ -10,9 +10,10 @@ import api from '../../api/axios';
 import { useAuthStore } from '../../store/auth.store';
 
 const OR   = '#FF6B00';
-const BG   = '#060B14';
-const CARD = 'rgba(255,255,255,0.035)';
-const BORD = 'rgba(255,255,255,0.07)';
+const BG   = '#F7F8FA';
+const CARD = '#FFFFFF';
+const BORD = 'rgba(15,23,42,0.09)';
+const SHADOW = '0 2px 12px rgba(15,23,42,0.05)';
 
 export default function MessagesPage() {
   const { userId: sellerUserId } = useParams();
@@ -120,18 +121,18 @@ export default function MessagesPage() {
         bgcolor: BG,
         borderRadius: { xs: 0, sm: '20px' },
         border: { xs: 'none', sm: `1px solid ${BORD}` },
-        boxShadow: { xs: 'none', sm: '0 20px 60px rgba(0,0,0,0.45)' },
+        boxShadow: { xs: 'none', sm: '0 8px 32px rgba(15,23,42,0.08)' },
         overflow: 'hidden',
         transition: 'box-shadow 0.2s',
       }}>
 
       {/* Header */}
       <Box sx={{ px: { xs: 2, sm: 3 }, py: 1.8, borderBottom: `1px solid ${BORD}`,
-        display: 'flex', alignItems: 'center', gap: 1.5, bgcolor: 'rgba(255,255,255,0.02)', flexShrink: 0 }}>
+        display: 'flex', alignItems: 'center', gap: 1.5, bgcolor: '#FFFFFF', flexShrink: 0 }}>
         <IconButton onClick={() => navigate(-1)}
-          sx={{ color: 'rgba(255,255,255,0.5)', bgcolor: CARD, border: `1px solid ${BORD}`,
+          sx={{ color: '#475569', bgcolor: CARD, border: `1px solid ${BORD}`,
             borderRadius: '10px', width: 36, height: 36, transition: 'all 0.15s',
-            '&:hover': { color: 'white', borderColor: 'rgba(255,255,255,0.2)', transform: 'translateX(-1px)' } }}>
+            '&:hover': { color: '#0F172A', borderColor: 'rgba(15,23,42,0.18)', transform: 'translateX(-1px)' } }}>
           <ArrowBack sx={{ fontSize: 18 }} />
         </IconButton>
         {otherParticipant ? (
@@ -140,14 +141,14 @@ export default function MessagesPage() {
               {otherParticipant.firstName?.[0]}
             </Avatar>
             <Box sx={{ minWidth: 0 }}>
-              <Typography fontWeight={800} fontSize={14.5} color="white" noWrap>
+              <Typography fontWeight={800} fontSize={14.5} color="#0F172A" noWrap>
                 {otherParticipant.firstName} {otherParticipant.lastName}
               </Typography>
-              <Typography fontSize={11.5} color="rgba(255,255,255,0.3)">Vendeur</Typography>
+              <Typography fontSize={11.5} color="#94A3B8">Vendeur</Typography>
             </Box>
           </>
         ) : (
-          <Typography fontWeight={700} fontSize={15} color="white">Conversation</Typography>
+          <Typography fontWeight={700} fontSize={15} color="#0F172A">Conversation</Typography>
         )}
       </Box>
 
@@ -156,7 +157,7 @@ export default function MessagesPage() {
         display: 'flex', flexDirection: 'column', gap: 1,
         scrollbarWidth: 'thin', '&::-webkit-scrollbar': { width: 4 },
         '&::-webkit-scrollbar-track': { bgcolor: 'transparent' },
-        '&::-webkit-scrollbar-thumb': { bgcolor: 'rgba(255,255,255,0.08)', borderRadius: 4 },
+        '&::-webkit-scrollbar-thumb': { bgcolor: 'rgba(15,23,42,0.12)', borderRadius: 4 },
       }}>
         {!convId || isLoading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', pt: 6 }}>
@@ -171,7 +172,7 @@ export default function MessagesPage() {
             }}>
               <Send sx={{ fontSize: 24, color: alpha(OR, 0.5) }} />
             </Box>
-            <Typography fontSize={13.5} color="rgba(255,255,255,0.3)">
+            <Typography fontSize={13.5} color="#94A3B8">
               Envoyez un message pour démarrer la conversation.
             </Typography>
           </Box>
@@ -193,6 +194,7 @@ export default function MessagesPage() {
                     borderRadius: isMine ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
                     bgcolor: isMine ? OR : CARD,
                     border: isMine ? 'none' : `1px solid ${BORD}`,
+                    boxShadow: isMine ? 'none' : SHADOW,
                     overflow: 'hidden',
                   }}>
                     {isImg && (
@@ -206,20 +208,20 @@ export default function MessagesPage() {
                       <Box component="a" href={msg.mediaUrl} target="_blank" rel="noopener"
                         sx={{ display: 'flex', alignItems: 'center', gap: 1, textDecoration: 'none', px: 1, py: 0.3 }}>
                         {/\.pdf($|\?)/i.test(msg.mediaUrl)
-                          ? <PictureAsPdfOutlined sx={{ fontSize: 22, color: isMine ? 'white' : '#F87171', flexShrink: 0 }} />
-                          : <InsertDriveFileOutlined sx={{ fontSize: 22, color: isMine ? 'white' : '#93C5FD', flexShrink: 0 }} />}
-                        <Typography fontSize={13} fontWeight={600} color={isMine ? 'white' : 'rgba(255,255,255,0.85)'} sx={{ wordBreak: 'break-all' }}>
+                          ? <PictureAsPdfOutlined sx={{ fontSize: 22, color: isMine ? 'white' : '#EF4444', flexShrink: 0 }} />
+                          : <InsertDriveFileOutlined sx={{ fontSize: 22, color: isMine ? 'white' : '#6366F1', flexShrink: 0 }} />}
+                        <Typography fontSize={13} fontWeight={600} color={isMine ? 'white' : '#0F172A'} sx={{ wordBreak: 'break-all' }}>
                           {msg.content}
                         </Typography>
                       </Box>
                     )}
                     {!isImg && !isFile && (
-                      <Typography fontSize={13.5} color={isMine ? 'white' : 'rgba(255,255,255,0.8)'} lineHeight={1.5}>
+                      <Typography fontSize={13.5} color={isMine ? 'white' : '#0F172A'} lineHeight={1.5}>
                         {msg.content}
                       </Typography>
                     )}
                   </Box>
-                  <Typography fontSize={10.5} color="rgba(255,255,255,0.2)" sx={{ mt: 0.4, textAlign: isMine ? 'right' : 'left', px: 0.5 }}>
+                  <Typography fontSize={10.5} color="#94A3B8" sx={{ mt: 0.4, textAlign: isMine ? 'right' : 'left', px: 0.5 }}>
                     {new Date(msg.createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                   </Typography>
                 </Box>
@@ -233,12 +235,12 @@ export default function MessagesPage() {
       {/* Upload progress */}
       {uploading && (
         <LinearProgress variant="determinate" value={uploadProgress}
-          sx={{ flexShrink: 0, bgcolor: CARD, '& .MuiLinearProgress-bar': { bgcolor: OR } }} />
+          sx={{ flexShrink: 0, bgcolor: '#F1F5F9', '& .MuiLinearProgress-bar': { bgcolor: OR } }} />
       )}
 
       {/* Input */}
       <Box sx={{ px: { xs: 2, sm: 3 }, py: 1.5, borderTop: `1px solid ${BORD}`, flexShrink: 0,
-        bgcolor: 'rgba(255,255,255,0.02)', display: 'flex', gap: 1, alignItems: 'flex-end' }}>
+        bgcolor: '#FFFFFF', display: 'flex', gap: 1, alignItems: 'flex-end' }}>
         <input
           ref={fileRef} type="file" accept="image/*,.pdf,.doc,.docx,.xlsx"
           style={{ display: 'none' }}
@@ -251,7 +253,7 @@ export default function MessagesPage() {
               disabled={uploading || !convId}
               sx={{
                 width: 44, height: 44, borderRadius: '12px', flexShrink: 0,
-                color: 'rgba(255,255,255,0.4)', bgcolor: CARD, border: `1px solid ${BORD}`,
+                color: '#94A3B8', bgcolor: '#F7F8FA', border: `1px solid ${BORD}`,
                 '&:hover': { color: OR, borderColor: alpha(OR, 0.4), bgcolor: alpha(OR, 0.08) },
               }}>
               <AttachFile sx={{ fontSize: 19 }} />
@@ -265,27 +267,27 @@ export default function MessagesPage() {
           placeholder="Écrire un message..."
           sx={{
             '& .MuiOutlinedInput-root': {
-              borderRadius: '14px', bgcolor: CARD, color: 'white',
+              borderRadius: '14px', bgcolor: '#F7F8FA', color: '#0F172A',
               '& fieldset': { borderColor: BORD },
-              '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.15)' },
+              '&:hover fieldset': { borderColor: 'rgba(15,23,42,0.18)' },
               '&.Mui-focused fieldset': { borderColor: OR },
             },
             '& .MuiInputBase-input': {
-              color: 'white', fontSize: 14,
-              '&::placeholder': { color: 'rgba(255,255,255,0.25)', opacity: 1 },
+              color: '#0F172A', fontSize: 14,
+              '&::placeholder': { color: '#94A3B8', opacity: 1 },
             },
           }}
         />
         <IconButton onClick={() => send()} disabled={!text.trim() || sending || !convId}
           sx={{
-            width: 44, height: 44, bgcolor: text.trim() ? OR : 'rgba(255,255,255,0.05)',
-            color: text.trim() ? 'white' : 'rgba(255,255,255,0.2)',
+            width: 44, height: 44, bgcolor: text.trim() ? OR : '#F1F5F9',
+            color: text.trim() ? 'white' : '#CBD5E1',
             borderRadius: '12px', flexShrink: 0,
             transition: 'all 0.15s',
-            '&:hover': { bgcolor: text.trim() ? '#E05A00' : 'rgba(255,255,255,0.05)' },
-            '&.Mui-disabled': { bgcolor: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.15)' },
+            '&:hover': { bgcolor: text.trim() ? '#E05A00' : '#F1F5F9' },
+            '&.Mui-disabled': { bgcolor: '#F1F5F9', color: '#CBD5E1' },
           }}>
-          {sending ? <CircularProgress size={18} sx={{ color: 'rgba(255,255,255,0.4)' }} /> : <Send sx={{ fontSize: 18 }} />}
+          {sending ? <CircularProgress size={18} sx={{ color: '#94A3B8' }} /> : <Send sx={{ fontSize: 18 }} />}
         </IconButton>
       </Box>
       </Box>

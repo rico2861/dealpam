@@ -11,12 +11,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../api/axios';
 
 const OR   = '#FF6B00';
-const BG   = '#060B14';
-const CARD = '#0D1424';
-const BORD = 'rgba(255,255,255,0.08)';
-const TXT  = 'rgba(255,255,255,0.92)';
-const SUB  = 'rgba(255,255,255,0.42)';
-const SUB2 = 'rgba(255,255,255,0.65)';
+const BG   = '#F7F8FA';
+const CARD = '#FFFFFF';
+const BORD = 'rgba(15,23,42,0.06)';
+const TXT  = '#0F172A';
+const SUB  = '#94A3B8';
+const SUB2 = '#94A3B8';
 const GRN  = '#10B981';
 const RED  = '#EF4444';
 const YLW  = '#F59E0B';
@@ -33,10 +33,10 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }>
 const darkMenu = {
   PaperProps: {
     sx: {
-      bgcolor: '#111827', border: `1px solid ${BORD}`, borderRadius: '12px',
+      bgcolor: '#FFFFFF', border: `1px solid ${BORD}`, borderRadius: '12px', boxShadow: '0 8px 24px rgba(15,23,42,0.12)',
       '& .MuiMenuItem-root': {
         fontSize: 13, color: TXT, py: 1,
-        '&:hover': { bgcolor: 'rgba(255,255,255,0.06)' },
+        '&:hover': { bgcolor: 'rgba(15,23,42,0.04)' },
         '&.Mui-selected': { bgcolor: 'rgba(255,107,0,0.14)', color: OR, fontWeight: 700 },
       },
     },
@@ -74,7 +74,7 @@ function ApptDialog({ appt, onClose }: { appt: any; onClose: () => void }) {
 
   return (
     <Dialog open onClose={onClose} maxWidth="sm" fullWidth
-      PaperProps={{ sx: { bgcolor: '#0A1020', border: `1px solid ${BORD}`, borderRadius: '20px' } }}>
+      PaperProps={{ sx: { bgcolor: '#F7F8FA', border: `1px solid ${BORD}`, borderRadius: '20px' } }}>
       <DialogContent sx={{ p: 0 }}>
 
         {/* Header */}
@@ -120,7 +120,7 @@ function ApptDialog({ appt, onClose }: { appt: any; onClose: () => void }) {
           </Box>
 
           {/* Client info */}
-          <Box sx={{ p: 2, borderRadius: '12px', bgcolor: 'rgba(255,255,255,0.03)', border: `1px solid ${BORD}` }}>
+          <Box sx={{ p: 2, borderRadius: '12px', bgcolor: 'rgba(15,23,42,0.09)', border: `1px solid ${BORD}` }}>
             <Typography fontSize={11} fontWeight={700} color={SUB} sx={{ textTransform: 'uppercase', letterSpacing: '0.8px', mb: 1.5 }}>Client</Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -144,7 +144,7 @@ function ApptDialog({ appt, onClose }: { appt: any; onClose: () => void }) {
 
           {/* Client note */}
           {appt.note && (
-            <Box sx={{ p: 2, borderRadius: '12px', bgcolor: 'rgba(255,255,255,0.03)', border: `1px solid ${BORD}` }}>
+            <Box sx={{ p: 2, borderRadius: '12px', bgcolor: 'rgba(15,23,42,0.09)', border: `1px solid ${BORD}` }}>
               <Typography fontSize={11} fontWeight={700} color={SUB} sx={{ textTransform: 'uppercase', letterSpacing: '0.8px', mb: 0.8 }}>Note du client</Typography>
               <Typography fontSize={13} color={SUB2}>{appt.note}</Typography>
             </Box>
@@ -153,7 +153,7 @@ function ApptDialog({ appt, onClose }: { appt: any; onClose: () => void }) {
           {/* Seller note */}
           <TextField fullWidth multiline rows={2} label="Votre note (optionnelle)" value={note}
             onChange={e => setNote(e.target.value)}
-            sx={{ '& .MuiOutlinedInput-root': { bgcolor: '#0A1020', borderRadius: '10px', fontSize: 13, color: TXT, '& fieldset': { borderColor: BORD }, '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.2)' }, '&.Mui-focused fieldset': { borderColor: OR } }, '& .MuiInputLabel-root': { color: SUB, fontSize: 13 }, '& .MuiInputLabel-root.Mui-focused': { color: OR } }} />
+            sx={{ '& .MuiOutlinedInput-root': { bgcolor: '#F7F8FA', borderRadius: '10px', fontSize: 13, color: TXT, '& fieldset': { borderColor: BORD }, '&:hover fieldset': { borderColor: 'rgba(15,23,42,0.09)' }, '&.Mui-focused fieldset': { borderColor: OR } }, '& .MuiInputLabel-root': { color: SUB, fontSize: 13 }, '& .MuiInputLabel-root.Mui-focused': { color: OR } }} />
 
           {/* Actions */}
           {appt.status === 'PENDING' && (
@@ -199,7 +199,7 @@ function ApptCard({ appt, onClick }: { appt: any; onClick: () => void }) {
         p: 2.5, borderRadius: '14px', cursor: 'pointer', transition: 'all 0.15s',
         bgcolor: isPending ? `${YLW}08` : CARD,
         border: `1px solid ${isPending ? `${YLW}25` : BORD}`,
-        '&:hover': { border: `1px solid rgba(255,255,255,0.16)`, transform: 'translateY(-1px)' },
+        '&:hover': { border: `1px solid rgba(15,23,42,0.09)`, transform: 'translateY(-1px)' },
       }}>
 
       <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1.5 }}>

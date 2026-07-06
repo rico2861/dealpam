@@ -14,12 +14,12 @@ import api from '../../api/axios';
 
 /* ── palette ─────────────────────────────────────────────────────────────── */
 const OR   = '#FF6B00';
-const BG   = '#060B14';
-const CARD = '#0D1424';
-const BORD = 'rgba(255,255,255,0.08)';
-const TXT  = 'rgba(255,255,255,0.92)';
-const SUB  = 'rgba(255,255,255,0.45)';
-const SUB2 = 'rgba(255,255,255,0.65)';
+const BG   = '#F7F8FA';
+const CARD = '#FFFFFF';
+const BORD = 'rgba(15,23,42,0.06)';
+const TXT  = '#0F172A';
+const SUB  = '#94A3B8';
+const SUB2 = '#94A3B8';
 const GRN  = '#10B981';
 const RED  = '#EF4444';
 const GLD  = '#F59E0B';
@@ -42,7 +42,7 @@ function KpiCard({ icon: Icon, label, value, sub, color, to }: {
   const inner = (
     <Box sx={{ p:2.5, borderRadius:'16px', bgcolor:CARD, border:`1px solid ${BORD}`,
       height:'100%', transition:'all 0.22s', cursor: to ? 'pointer' : 'default',
-      '&:hover': to ? { borderColor:'rgba(255,107,0,0.3)', transform:'translateY(-2px)', boxShadow:'0 12px 32px rgba(0,0,0,0.4)' } : {} }}>
+      '&:hover': to ? { borderColor:'rgba(255,107,0,0.3)', transform:'translateY(-2px)', boxShadow:'0 12px 32px rgba(15,23,42,0.12)' } : {} }}>
       <Box sx={{ width:44, height:44, borderRadius:'12px', mb:2,
         bgcolor:`${color}18`, border:`1px solid ${color}30`,
         display:'flex', alignItems:'center', justifyContent:'center' }}>
@@ -110,7 +110,7 @@ export default function SellerDashboard() {
         <Box sx={{ display:'flex', gap:1.5 }}>
           <Button component={Link} to="/seller/chat" variant="outlined" startIcon={<Chat sx={{ fontSize:16 }}/>}
             sx={{ borderRadius:'10px', fontSize:13, borderColor:BORD, color:SUB2,
-              '&:hover':{ borderColor:'rgba(255,255,255,0.2)', bgcolor:'rgba(255,255,255,0.04)', color:TXT } }}>
+              '&:hover':{ borderColor:'rgba(15,23,42,0.09)', bgcolor:'rgba(15,23,42,0.09)', color:TXT } }}>
             Messages
           </Button>
           <Button component={Link} to="/seller/products/add" startIcon={<Add sx={{ fontSize:16 }}/>}
@@ -154,12 +154,12 @@ export default function SellerDashboard() {
           background: expiring
             ? 'linear-gradient(135deg,rgba(245,158,11,0.12),rgba(239,68,68,0.08))'
             : sub.isTrial
-              ? 'linear-gradient(135deg,#1a0f00,#2b1600)'
-              : 'linear-gradient(135deg,#0a1628,#0f2244)',
+              ? 'linear-gradient(135deg,rgba(255,107,0,0.10),rgba(255,107,0,0.03))'
+              : 'linear-gradient(135deg,rgba(37,99,235,0.10),rgba(37,99,235,0.03))',
           border: expiring ? '1px solid rgba(245,158,11,0.3)' : sub.isTrial ? `1px solid rgba(255,107,0,0.35)` : `1px solid rgba(37,99,235,0.3)` }}>
           <Box sx={{ display:'flex', justifyContent:'space-between', alignItems:'center', mb:1.5, flexWrap:'wrap', gap:1 }}>
             <Box sx={{ display:'flex', alignItems:'center', gap:1.5 }}>
-              {expiring ? <WarningAmber sx={{ color:GLD, fontSize:22 }}/> : sub.isTrial ? <Typography fontSize={13} fontWeight={800} color={OR}>ESSAI</Typography> : <CheckCircle sx={{ color:'rgba(255,255,255,0.7)', fontSize:22 }}/>}
+              {expiring ? <WarningAmber sx={{ color:GLD, fontSize:22 }}/> : sub.isTrial ? <Typography fontSize={13} fontWeight={800} color={OR}>ESSAI</Typography> : <CheckCircle sx={{ color:'#0F172A', fontSize:22 }}/>}
               <Box>
                 <Typography fontWeight={800} fontSize={15} color={expiring?GLD:sub.isTrial?OR:TXT}>
                   {sub.isTrial ? 'Période d\'essai — Plan Business' : (sub.plan?.name ?? 'Plan actif')}
@@ -173,12 +173,12 @@ export default function SellerDashboard() {
               </Box>
             </Box>
             <Chip label={expiring?`${daysLeft} jour(s) restant(s)`:`${daysLeft} jour(s) restant(s)`}
-              sx={{ bgcolor: expiring ? 'rgba(245,158,11,0.15)' : sub.isTrial ? 'rgba(255,107,0,0.15)' : 'rgba(255,255,255,0.1)',
+              sx={{ bgcolor: expiring ? 'rgba(245,158,11,0.15)' : sub.isTrial ? 'rgba(255,107,0,0.15)' : '#FFFFFF',
                 color: expiring ? GLD : sub.isTrial ? OR : TXT, fontWeight:700, fontSize:12 }}/>
           </Box>
           <LinearProgress variant="determinate" value={progress}
             sx={{ height:5, borderRadius:3,
-              bgcolor: expiring ? 'rgba(245,158,11,0.15)' : 'rgba(255,255,255,0.08)',
+              bgcolor: expiring ? 'rgba(245,158,11,0.15)' : '#FFFFFF',
               '& .MuiLinearProgress-bar':{ bgcolor: expiring ? GLD : sub.isTrial ? OR : '#3B82F6', borderRadius:3 } }}/>
           {sub.isTrial && (
             <Box sx={{ display:'flex', justifyContent:'space-between', alignItems:'center', mt:1.5 }}>
@@ -265,7 +265,7 @@ export default function SellerDashboard() {
               sx={{ color:OR, fontSize:12, fontWeight:600, '&:hover':{ bgcolor:'rgba(255,107,0,0.08)' } }}>Gérer</Button>
           </Box>
           {(stats?.stores ?? []).map((store: any) => (
-            <Box key={store.id} sx={{ mb:2, p:1.5, borderRadius:'10px', bgcolor:'rgba(255,255,255,0.03)', border:`1px solid ${BORD}` }}>
+            <Box key={store.id} sx={{ mb:2, p:1.5, borderRadius:'10px', bgcolor:'rgba(15,23,42,0.09)', border:`1px solid ${BORD}` }}>
               <Box sx={{ display:'flex', alignItems:'center', gap:1.5 }}>
                 <Avatar sx={{ width:32, height:32, bgcolor:`${OR}1A`, color:OR, fontWeight:900, fontSize:13, borderRadius:'8px', border:'1px solid rgba(255,107,0,0.2)', flexShrink:0 }}>
                   {store.name?.[0]}
@@ -288,7 +288,7 @@ export default function SellerDashboard() {
             <Box sx={{ textAlign:'center', py:4 }}>
               <Typography fontSize={13} color={SUB} mb={1}>Aucune boutique</Typography>
               <Button component={Link} to="/seller/stores" variant="outlined" size="small"
-                sx={{ borderRadius:'8px', borderColor:BORD, color:SUB2, mt:1, '&:hover':{ borderColor:'rgba(255,255,255,0.2)' } }}>
+                sx={{ borderRadius:'8px', borderColor:BORD, color:SUB2, mt:1, '&:hover':{ borderColor:'rgba(15,23,42,0.09)' } }}>
                 Créer une boutique
               </Button>
             </Box>
@@ -315,7 +315,7 @@ export default function SellerDashboard() {
             {stats.recentOrders.map((o: any) => (
               <Box key={o.id} sx={{ display:'grid', gridTemplateColumns:'1fr 2fr 1.2fr 1fr 0.8fr', gap:1,
                 px:1, py:1.5, borderTop:`1px solid ${BORD}`, alignItems:'center',
-                '&:hover':{ bgcolor:'rgba(255,255,255,0.02)', borderRadius:'8px' }, transition:'all 0.13s' }}>
+                '&:hover':{ bgcolor:'rgba(15,23,42,0.09)', borderRadius:'8px' }, transition:'all 0.13s' }}>
                 <Typography fontSize={12.5} color={TXT} noWrap>
                   {o.user?.firstName} {o.user?.lastName?.[0]}.
                 </Typography>

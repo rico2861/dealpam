@@ -13,12 +13,12 @@ import { useSnackbar } from 'notistack';
 import api from '../../api/axios';
 
 const OR   = '#FF6B00';
-const BG   = '#060B14';
-const CARD = '#0D1424';
-const BORD = 'rgba(255,255,255,0.08)';
-const TXT  = 'rgba(255,255,255,0.92)';
-const SUB  = 'rgba(255,255,255,0.42)';
-const SUB2 = 'rgba(255,255,255,0.65)';
+const BG   = '#F7F8FA';
+const CARD = '#FFFFFF';
+const BORD = 'rgba(15,23,42,0.06)';
+const TXT  = '#0F172A';
+const SUB  = '#94A3B8';
+const SUB2 = '#94A3B8';
 const GLD  = '#F59E0B';
 
 const KW_COLORS = ['#FF6B00','#F59E0B','#10B981','#3B82F6','#8B5CF6','#EC4899','#EF4444','#06B6D4'];
@@ -37,11 +37,11 @@ function KeywordRow({ word, count, max, index }: { word: string; count: number; 
           <Typography fontSize={11} color={SUB} fontWeight={600}>{count} rech.</Typography>
         </Box>
         <LinearProgress variant="determinate" value={pct}
-          sx={{ height: 3, borderRadius: 2, bgcolor: 'rgba(255,255,255,0.06)', '& .MuiLinearProgress-bar': { bgcolor: color, borderRadius: 2 } }} />
+          sx={{ height: 3, borderRadius: 2, bgcolor: 'rgba(15,23,42,0.09)', '& .MuiLinearProgress-bar': { bgcolor: color, borderRadius: 2 } }} />
       </Box>
       <Box onClick={copy} sx={{ width: 26, height: 26, borderRadius: '7px', cursor: 'pointer', flexShrink: 0,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        border: `1px solid ${BORD}`, '&:hover': { bgcolor: 'rgba(255,255,255,0.06)', borderColor: 'rgba(255,255,255,0.18)' } }}>
+        border: `1px solid ${BORD}`, '&:hover': { bgcolor: 'rgba(15,23,42,0.09)', borderColor: 'rgba(15,23,42,0.09)' } }}>
         <ContentCopy sx={{ fontSize: 12, color: SUB }} />
       </Box>
     </Box>
@@ -109,7 +109,7 @@ export default function BoosterIaPage() {
         <Box sx={{ borderRadius: '16px', bgcolor: CARD, border: `1px solid ${BORD}`, p: 2, mb: 2 }}>
           <Typography fontSize={13} fontWeight={700} color={TXT} mb={1.2}>Que vendez-vous ?</Typography>
           <Box sx={{ display: 'flex', gap: 1, alignItems: 'center',
-            bgcolor: 'rgba(255,255,255,0.04)', border: `1px solid ${isElite ? BORD : 'rgba(255,255,255,0.05)'}`,
+            bgcolor: 'rgba(15,23,42,0.09)', border: `1px solid ${isElite ? BORD : 'rgba(15,23,42,0.09)'}`,
             borderRadius: '12px', px: 1.5, py: 1,
             '&:focus-within': { borderColor: isElite ? 'rgba(255,107,0,0.45)' : BORD },
             transition: 'all 0.18s' }}>
@@ -124,7 +124,7 @@ export default function BoosterIaPage() {
             />
             <Box onClick={handleAnalyze}
               sx={{ display: 'flex', alignItems: 'center', gap: 0.7, px: 1.8, py: 0.7, borderRadius: '9px', flexShrink: 0,
-                bgcolor: isElite && input.trim() && !loading ? OR : 'rgba(255,255,255,0.06)',
+                bgcolor: isElite && input.trim() && !loading ? OR : '#FFFFFF',
                 cursor: isElite && input.trim() && !loading ? 'pointer' : 'default', transition: 'all 0.15s',
                 '&:hover': { bgcolor: isElite && input.trim() ? '#E05A00' : undefined } }}>
               {loading
@@ -171,7 +171,7 @@ export default function BoosterIaPage() {
                   <Typography fontSize={11} fontWeight={900} color={KW_COLORS[i]} sx={{ minWidth: 22, textAlign: 'center' }}>#{i+1}</Typography>
                   <Typography fontSize={13} fontWeight={700} color={TXT} flex={1}>{k}</Typography>
                   <LinearProgress variant="determinate" value={90 - i*15}
-                    sx={{ width: 80, height: 3, borderRadius: 2, bgcolor: 'rgba(255,255,255,0.06)', '& .MuiLinearProgress-bar': { bgcolor: KW_COLORS[i] } }} />
+                    sx={{ width: 80, height: 3, borderRadius: 2, bgcolor: 'rgba(15,23,42,0.09)', '& .MuiLinearProgress-bar': { bgcolor: KW_COLORS[i] } }} />
                 </Box>
               ))}
             </Box>
@@ -211,16 +211,16 @@ export default function BoosterIaPage() {
                 <AutoAwesome sx={{ fontSize: 17, color: OR }} />
                 <Typography fontWeight={800} fontSize={14} color={TXT}>Titre optimisé suggéré</Typography>
               </Box>
-              <Box sx={{ position: 'relative', p: 1.8, borderRadius: '12px', bgcolor: 'rgba(255,255,255,0.03)', border: `1px solid ${BORD}`, mb: 1.2 }}>
+              <Box sx={{ position: 'relative', p: 1.8, borderRadius: '12px', bgcolor: 'rgba(15,23,42,0.09)', border: `1px solid ${BORD}`, mb: 1.2 }}>
                 <Typography fontSize={14} fontWeight={700} color={TXT} lineHeight={1.5} pr={4}>{result.suggested_title}</Typography>
                 <Typography fontSize={11} color={SUB} mt={0.5}>{(result.suggested_title || '').length}/80 car.</Typography>
                 <Box onClick={copyTitle} sx={{ position: 'absolute', top: 12, right: 12, width: 28, height: 28, borderRadius: '8px',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  border: `1px solid ${BORD}`, cursor: 'pointer', '&:hover': { bgcolor: 'rgba(255,255,255,0.06)' } }}>
+                  border: `1px solid ${BORD}`, cursor: 'pointer', '&:hover': { bgcolor: 'rgba(15,23,42,0.09)' } }}>
                   {copiedTitle ? <Check sx={{ fontSize: 13, color: '#10B981' }} /> : <ContentCopy sx={{ fontSize: 13, color: SUB }} />}
                 </Box>
               </Box>
-              <Box sx={{ p: 1.8, borderRadius: '12px', bgcolor: 'rgba(255,255,255,0.03)', border: `1px solid ${BORD}` }}>
+              <Box sx={{ p: 1.8, borderRadius: '12px', bgcolor: 'rgba(15,23,42,0.09)', border: `1px solid ${BORD}` }}>
                 <Typography fontSize={10} fontWeight={700} color={SUB} mb={0.6} sx={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}>Description suggérée</Typography>
                 <Typography fontSize={13} color={SUB2} lineHeight={1.6}>{result.suggested_description}</Typography>
               </Box>
@@ -263,7 +263,7 @@ export default function BoosterIaPage() {
                 </Box>
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.7 }}>
                   {result.top_queries.map((q: any) => (
-                    <Box key={q.term} sx={{ px: 1.2, py: 0.5, borderRadius: '7px', bgcolor: 'rgba(255,255,255,0.04)', border: `1px solid ${BORD}`,
+                    <Box key={q.term} sx={{ px: 1.2, py: 0.5, borderRadius: '7px', bgcolor: 'rgba(15,23,42,0.09)', border: `1px solid ${BORD}`,
                       '&:hover': { borderColor: 'rgba(255,107,0,0.3)', bgcolor: 'rgba(255,107,0,0.06)' }, cursor: 'default', transition: 'all 0.13s' }}>
                       <Typography fontSize={12} color={SUB2}>{q.term} <span style={{ color: SUB, fontSize: 10 }}>({q.count})</span></Typography>
                     </Box>

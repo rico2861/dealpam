@@ -15,11 +15,11 @@ import { useQuery } from '@tanstack/react-query';
 import api from '../../api/axios';
 
 const OR   = '#FF6B00';
-const BG   = '#060B14';
-const SIDE = '#080E1C';
-const BORD = 'rgba(255,255,255,0.07)';
-const TXT  = 'rgba(255,255,255,0.92)';
-const SUB  = 'rgba(255,255,255,0.38)';
+const BG   = '#F7F8FA';
+const SIDE = '#FFFFFF';
+const BORD = 'rgba(15,23,42,0.06)';
+const TXT  = '#0F172A';
+const SUB  = '#94A3B8';
 const W    = 240;
 
 const GROUPS = [
@@ -74,7 +74,7 @@ function NavItem({ path, label, icon: Icon, count, onClick }: {
         bgcolor: active ? 'rgba(255,107,0,0.12)' : 'transparent',
         border: '1px solid',
         borderColor: active ? 'rgba(255,107,0,0.28)' : 'transparent',
-        '&:hover': { bgcolor: active ? 'rgba(255,107,0,0.14)' : 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.06)' },
+        '&:hover': { bgcolor: active ? 'rgba(255,107,0,0.14)' : 'rgba(15,23,42,0.09)', borderColor: 'rgba(15,23,42,0.09)' },
       }}>
       <Box sx={{ flexShrink: 0 }}>
         {count && count > 0 ? (
@@ -109,14 +109,14 @@ function SidebarContent({ badges, onClose, stats }: {
       {/* Logo */}
       <Box sx={{ px: 2.5, py: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${BORD}`, flexShrink: 0 }}>
         <Box component={Link} to="/" sx={{ textDecoration: 'none' }}>
-          <Typography sx={{ fontWeight: 900, fontSize: 21, letterSpacing: '-0.5px', color: 'white', lineHeight: 1 }}>
+          <Typography sx={{ fontWeight: 900, fontSize: 21, letterSpacing: '-0.5px', color: TXT, lineHeight: 1 }}>
             Deal<span style={{ color: OR }}>Pam</span>
           </Typography>
           <Typography sx={{ fontSize: 10, color: SUB, mt: 0.2 }}>Espace Vendeur</Typography>
         </Box>
         {onClose && (
           <IconButton onClick={onClose} size="small"
-            sx={{ color: SUB, borderRadius: '8px', '&:hover': { color: TXT, bgcolor: 'rgba(255,255,255,0.06)' } }}>
+            sx={{ color: SUB, borderRadius: '8px', '&:hover': { color: TXT, bgcolor: 'rgba(15,23,42,0.09)' } }}>
             <Close fontSize="small" />
           </IconButton>
         )}
@@ -124,7 +124,7 @@ function SidebarContent({ badges, onClose, stats }: {
 
       {/* Status pill */}
       {stats && (
-        <Box sx={{ mx: 2, mt: 1.5, mb: 0.5, px: 1.5, py: 1, borderRadius: '10px', bgcolor: 'rgba(255,255,255,0.03)', border: `1px solid ${BORD}`, display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Box sx={{ mx: 2, mt: 1.5, mb: 0.5, px: 1.5, py: 1, borderRadius: '10px', bgcolor: 'rgba(15,23,42,0.09)', border: `1px solid ${BORD}`, display: 'flex', alignItems: 'center', gap: 1 }}>
           <Box sx={{ width: 7, height: 7, borderRadius: '50%', flexShrink: 0, bgcolor: isApproved ? '#10B981' : '#F59E0B', boxShadow: isApproved ? '0 0 6px #10B981' : '0 0 6px #F59E0B' }} />
           <Typography fontSize={12} fontWeight={600} color={isApproved ? '#34D399' : '#FCD34D'} noWrap>
             {isApproved ? 'Boutique active' : 'En attente'}
@@ -138,10 +138,10 @@ function SidebarContent({ badges, onClose, stats }: {
       )}
 
       {/* Nav */}
-      <Box sx={{ flex: 1, overflowY: 'auto', px: 1.5, py: 1, scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.15) transparent', '&::-webkit-scrollbar': { width: 6 }, '&::-webkit-scrollbar-track': { bgcolor: 'transparent' }, '&::-webkit-scrollbar-thumb': { bgcolor: 'rgba(255,255,255,0.12)', borderRadius: 3, '&:hover': { bgcolor: 'rgba(255,255,255,0.25)' } } }}>
+      <Box sx={{ flex: 1, overflowY: 'auto', px: 1.5, py: 1, scrollbarWidth: 'thin', scrollbarColor: 'rgba(15,23,42,0.09) transparent', '&::-webkit-scrollbar': { width: 6 }, '&::-webkit-scrollbar-track': { bgcolor: 'transparent' }, '&::-webkit-scrollbar-thumb': { bgcolor: 'rgba(15,23,42,0.09)', borderRadius: 3, '&:hover': { bgcolor: 'rgba(15,23,42,0.09)' } } }}>
         {GROUPS.map((g, gi) => (
           <Box key={gi} sx={{ mb: 2 }}>
-            <Typography sx={{ px: 1.5, mb: 0.8, fontSize: 9.5, fontWeight: 700, color: 'rgba(255,255,255,0.2)', textTransform: 'uppercase', letterSpacing: '1px' }}>
+            <Typography sx={{ px: 1.5, mb: 0.8, fontSize: 9.5, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '1px' }}>
               {g.label}
             </Typography>
             {g.items.map(({ path, label, icon, badge }) => (
@@ -174,7 +174,7 @@ function SidebarContent({ badges, onClose, stats }: {
 
       {/* User card */}
       <Box sx={{ p: 1.5, flexShrink: 0 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, p: 1.2, borderRadius: '10px', bgcolor: 'rgba(255,255,255,0.04)', border: `1px solid ${BORD}`, mb: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, p: 1.2, borderRadius: '10px', bgcolor: 'rgba(15,23,42,0.09)', border: `1px solid ${BORD}`, mb: 1 }}>
           <Avatar sx={{ width: 32, height: 32, bgcolor: OR, color: '#fff', fontSize: 13, fontWeight: 900, flexShrink: 0 }}>
             {user?.firstName?.[0]?.toUpperCase()}
           </Avatar>
@@ -190,7 +190,7 @@ function SidebarContent({ badges, onClose, stats }: {
         </Box>
         <Box sx={{ display: 'flex', gap: 0.8 }}>
           <Box component={Link} to="/" onClick={onClose}
-            sx={{ flex: 1, display: 'flex', alignItems: 'center', gap: 0.8, px: 1.2, py: 0.9, borderRadius: '8px', textDecoration: 'none', '&:hover': { bgcolor: 'rgba(255,255,255,0.05)' }, transition: 'all 0.15s' }}>
+            sx={{ flex: 1, display: 'flex', alignItems: 'center', gap: 0.8, px: 1.2, py: 0.9, borderRadius: '8px', textDecoration: 'none', '&:hover': { bgcolor: 'rgba(15,23,42,0.09)' }, transition: 'all 0.15s' }}>
             <ArrowBack sx={{ fontSize: 14, color: SUB }} />
             <Typography fontSize={12} color={SUB}>Marketplace</Typography>
           </Box>
@@ -252,10 +252,10 @@ export default function SellerLayout() {
         {isMobile && (
           <Box sx={{ position: 'sticky', top: 0, zIndex: 50, bgcolor: SIDE, borderBottom: `1px solid ${BORD}`, px: 2, py: 1.5, display: 'flex', alignItems: 'center', gap: 1.5 }}>
             <IconButton onClick={() => setDrawerOpen(true)} size="small"
-              sx={{ color: 'rgba(255,255,255,0.7)', bgcolor: 'rgba(255,255,255,0.07)', borderRadius: '8px', p: '7px', '&:hover': { bgcolor: 'rgba(255,255,255,0.12)' } }}>
+              sx={{ color: TXT, bgcolor: 'rgba(15,23,42,0.06)', borderRadius: '8px', p: '7px', '&:hover': { bgcolor: 'rgba(15,23,42,0.09)' } }}>
               <MenuIcon sx={{ fontSize: 20 }} />
             </IconButton>
-            <Typography fontWeight={900} sx={{ color: 'white', fontSize: 19, letterSpacing: '-0.5px', flex: 1, lineHeight: 1 }}>
+            <Typography fontWeight={900} sx={{ color: TXT, fontSize: 19, letterSpacing: '-0.5px', flex: 1, lineHeight: 1 }}>
               Deal<span style={{ color: OR }}>Pam</span>
               <Typography component="span" sx={{ fontSize: 10, color: SUB, ml: 0.5 }}>Vendeur</Typography>
             </Typography>
@@ -263,8 +263,8 @@ export default function SellerLayout() {
               <Tooltip title={`${badges.pendingOrders} commande(s) en attente`}>
                 <Box component={Link} to="/seller/orders" sx={{ textDecoration: 'none' }}>
                   <Badge badgeContent={badges.pendingOrders} color="error">
-                    <Box sx={{ width: 36, height: 36, borderRadius: '8px', bgcolor: 'rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <ShoppingBag sx={{ fontSize: 18, color: 'rgba(255,255,255,0.6)' }} />
+                    <Box sx={{ width: 36, height: 36, borderRadius: '8px', bgcolor: 'rgba(15,23,42,0.09)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <ShoppingBag sx={{ fontSize: 18, color: '#475569' }} />
                     </Box>
                   </Badge>
                 </Box>

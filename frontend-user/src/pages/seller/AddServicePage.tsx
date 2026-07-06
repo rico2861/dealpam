@@ -12,12 +12,12 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import api from '../../api/axios';
 
 const OR   = '#FF6B00';
-const BG   = '#060B14';
-const CARD = '#0D1424';
-const BORD = 'rgba(255,255,255,0.08)';
-const TXT  = 'rgba(255,255,255,0.92)';
-const SUB  = 'rgba(255,255,255,0.42)';
-const SUB2 = 'rgba(255,255,255,0.65)';
+const BG   = '#F7F8FA';
+const CARD = '#FFFFFF';
+const BORD = 'rgba(15,23,42,0.06)';
+const TXT  = '#0F172A';
+const SUB  = '#94A3B8';
+const SUB2 = '#94A3B8';
 const GRN  = '#10B981';
 const BLU  = '#3B82F6';
 const PUR  = '#8B5CF6';
@@ -25,10 +25,10 @@ const PUR  = '#8B5CF6';
 const darkMenu = {
   PaperProps: {
     sx: {
-      bgcolor: '#111827', border: `1px solid ${BORD}`, borderRadius: '12px',
+      bgcolor: '#FFFFFF', border: `1px solid ${BORD}`, borderRadius: '12px', boxShadow: '0 8px 24px rgba(15,23,42,0.12)',
       '& .MuiMenuItem-root': {
         fontSize: 13, color: TXT, py: 1,
-        '&:hover': { bgcolor: 'rgba(255,255,255,0.06)' },
+        '&:hover': { bgcolor: 'rgba(15,23,42,0.04)' },
         '&.Mui-selected': { bgcolor: 'rgba(255,107,0,0.14)', color: OR, fontWeight: 700 },
       },
     },
@@ -37,9 +37,9 @@ const darkMenu = {
 
 const fieldSx = {
   '& .MuiOutlinedInput-root': {
-    bgcolor: '#0A1020', borderRadius: '10px', fontSize: 13, color: TXT,
+    bgcolor: '#F7F8FA', borderRadius: '10px', fontSize: 13, color: TXT,
     '& fieldset': { borderColor: BORD },
-    '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.2)' },
+    '&:hover fieldset': { borderColor: 'rgba(15,23,42,0.09)' },
     '&.Mui-focused fieldset': { borderColor: OR },
   },
   '& .MuiInputLabel-root': { color: SUB, fontSize: 13 },
@@ -85,7 +85,7 @@ function ImagePicker({ images, onChange }: { images: File[]; onChange: (files: F
           <Box key={i} sx={{ position: 'relative', width: 90, height: 90 }}>
             <Box component="img" src={src} sx={{ width: 90, height: 90, borderRadius: '10px', objectFit: 'cover', border: `1px solid ${BORD}` }} />
             <Box onClick={() => onChange(images.filter((_, j) => j !== i))}
-              sx={{ position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: '50%', bgcolor: '#EF4444', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 6px rgba(0,0,0,0.5)' }}>
+              sx={{ position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: '50%', bgcolor: '#EF4444', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 6px rgba(15,23,42,0.2)' }}>
               <Close sx={{ fontSize: 12, color: '#fff' }} />
             </Box>
           </Box>
@@ -275,7 +275,7 @@ export default function AddServicePage() {
         <Box sx={{ maxWidth: 700, mx: 'auto' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 4 }}>
             <Box onClick={() => navigate('/seller/products')}
-              sx={{ width: 36, height: 36, borderRadius: '10px', bgcolor: CARD, border: `1px solid ${BORD}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', '&:hover': { bgcolor: 'rgba(255,255,255,0.06)' } }}>
+              sx={{ width: 36, height: 36, borderRadius: '10px', bgcolor: CARD, border: `1px solid ${BORD}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', '&:hover': { bgcolor: 'rgba(15,23,42,0.09)' } }}>
               <ArrowBack sx={{ fontSize: 18, color: SUB }} />
             </Box>
             <Box>
@@ -290,7 +290,7 @@ export default function AddServicePage() {
               const active = listingType === t.key;
               return (
                 <Box key={t.key} onClick={() => setListingType(t.key)}
-                  sx={{ p: 3, borderRadius: '16px', cursor: 'pointer', transition: 'all 0.15s', bgcolor: active ? `${t.color}14` : CARD, border: `1.5px solid ${active ? t.color : BORD}`, display: 'flex', alignItems: 'center', gap: 2, '&:hover': { border: `1.5px solid ${active ? t.color : 'rgba(255,255,255,0.18)'}` } }}>
+                  sx={{ p: 3, borderRadius: '16px', cursor: 'pointer', transition: 'all 0.15s', bgcolor: active ? `${t.color}14` : CARD, border: `1.5px solid ${active ? t.color : BORD}`, display: 'flex', alignItems: 'center', gap: 2, '&:hover': { border: `1.5px solid ${active ? t.color : 'rgba(15,23,42,0.09)'}` } }}>
                   <Box sx={{ width: 52, height: 52, borderRadius: '14px', bgcolor: `${t.color}18`, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid ${t.color}30` }}>
                     <Icon sx={{ fontSize: 26, color: t.color }} />
                   </Box>
@@ -305,7 +305,7 @@ export default function AddServicePage() {
           </Box>
 
           <Button fullWidth disabled={!listingType} onClick={() => setStep('form')}
-            sx={{ mt: 3, py: 1.5, borderRadius: '12px', fontWeight: 700, fontSize: 14, bgcolor: listingType ? OR : 'rgba(255,255,255,0.06)', color: listingType ? '#fff' : SUB, textTransform: 'none', '&:hover': { bgcolor: listingType ? '#E05A00' : undefined }, '&.Mui-disabled': { bgcolor: 'rgba(255,255,255,0.06)', color: SUB } }}>
+            sx={{ mt: 3, py: 1.5, borderRadius: '12px', fontWeight: 700, fontSize: 14, bgcolor: listingType ? OR : 'rgba(15,23,42,0.09)', color: listingType ? '#fff' : SUB, textTransform: 'none', '&:hover': { bgcolor: listingType ? '#E05A00' : undefined }, '&.Mui-disabled': { bgcolor: 'rgba(15,23,42,0.09)', color: SUB } }}>
             Continuer →
           </Button>
         </Box>
@@ -322,7 +322,7 @@ export default function AddServicePage() {
         {/* Header */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
           <Box onClick={() => setStep('type')}
-            sx={{ width: 36, height: 36, borderRadius: '10px', bgcolor: CARD, border: `1px solid ${BORD}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', '&:hover': { bgcolor: 'rgba(255,255,255,0.06)' } }}>
+            sx={{ width: 36, height: 36, borderRadius: '10px', bgcolor: CARD, border: `1px solid ${BORD}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', '&:hover': { bgcolor: 'rgba(15,23,42,0.09)' } }}>
             <ArrowBack sx={{ fontSize: 18, color: SUB }} />
           </Box>
           <Box sx={{ width: 36, height: 36, borderRadius: '10px', bgcolor: `${selectedType?.color}18`, border: `1px solid ${selectedType?.color}30`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -423,7 +423,7 @@ export default function AddServicePage() {
 
         {/* Submit */}
         <Button fullWidth onClick={handleSubmit} disabled={mutation.isPending}
-          sx={{ py: 1.6, borderRadius: '12px', fontWeight: 800, fontSize: 14, bgcolor: OR, color: '#fff', textTransform: 'none', '&:hover': { bgcolor: '#E05A00' }, '&.Mui-disabled': { bgcolor: 'rgba(255,107,0,0.3)', color: 'rgba(255,255,255,0.5)' } }}>
+          sx={{ py: 1.6, borderRadius: '12px', fontWeight: 800, fontSize: 14, bgcolor: OR, color: '#fff', textTransform: 'none', '&:hover': { bgcolor: '#E05A00' }, '&.Mui-disabled': { bgcolor: 'rgba(255,107,0,0.3)', color: '#94A3B8' } }}>
           {mutation.isPending ? <CircularProgress size={20} sx={{ color: '#fff' }} /> : 'Publier l\'annonce'}
         </Button>
 

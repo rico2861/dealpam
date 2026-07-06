@@ -48,33 +48,33 @@ export default function OrdersPage() {
   const filtered = (orders ?? []).filter((o: any) => filter === 'all' || o.status === filter);
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: '#060B14', py: { xs: 3, sm: 4 }, px: { xs: 2, sm: 3, lg: 4 } }}>
+    <Box sx={{ minHeight: '100vh', bgcolor: '#F7F8FA', py: { xs: 3, sm: 4 }, px: { xs: 2, sm: 3, lg: 4 } }}>
       <Box sx={{ maxWidth: 860, mx: 'auto' }}>
 
         {/* ── Header ── */}
         <Box sx={{ mb: 3 }}>
-          <Typography sx={{ fontWeight: 900, fontSize: { xs: 22, sm: 26 }, color: 'white', letterSpacing: '-0.6px', mb: 0.5 }}>
+          <Typography sx={{ fontWeight: 900, fontSize: { xs: 22, sm: 26 }, color: '#0F172A', letterSpacing: '-0.6px', mb: 0.5 }}>
             Mes commandes
           </Typography>
-          <Typography sx={{ fontSize: 13.5, color: 'rgba(255,255,255,0.32)' }}>
+          <Typography sx={{ fontSize: 13.5, color: '#94A3B8' }}>
             {isLoading ? '…' : `${orders?.length ?? 0} commande${(orders?.length ?? 0) !== 1 ? 's' : ''} au total`}
           </Typography>
         </Box>
 
         {/* ── Filters ── */}
         <Box sx={{ display: 'flex', gap: 1, mb: 3, flexWrap: 'wrap' }}>
-          <FilterListOutlined sx={{ fontSize: 17, color: 'rgba(255,255,255,0.25)', alignSelf: 'center', mr: 0.5 }} />
+          <FilterListOutlined sx={{ fontSize: 17, color: '#94A3B8', alignSelf: 'center', mr: 0.5 }} />
           {FILTERS.map(f => {
             const active = filter === f.key;
             return (
               <Box key={f.key} onClick={() => setFilter(f.key)} sx={{
                 px: 1.6, py: 0.65, borderRadius: '20px', cursor: 'pointer',
                 fontSize: 12.5, fontWeight: 700,
-                bgcolor: active ? ORANGE : 'rgba(255,255,255,0.04)',
-                color: active ? 'white' : 'rgba(255,255,255,0.4)',
-                border: active ? `1.5px solid ${ORANGE}` : '1.5px solid rgba(255,255,255,0.07)',
+                bgcolor: active ? ORANGE : '#FFFFFF',
+                color: active ? 'white' : '#475569',
+                border: active ? `1.5px solid ${ORANGE}` : '1.5px solid rgba(15,23,42,0.09)',
                 transition: 'all 0.18s',
-                '&:hover': active ? {} : { bgcolor: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.7)' },
+                '&:hover': active ? {} : { bgcolor: 'rgba(15,23,42,0.04)', color: '#0F172A' },
               }}>
                 {f.label}
               </Box>
@@ -94,8 +94,9 @@ export default function OrdersPage() {
           <Box sx={{
             textAlign: 'center', py: { xs: 8, sm: 12 }, px: 4,
             borderRadius: '24px',
-            background: 'rgba(255,255,255,0.02)',
-            border: '1px solid rgba(255,255,255,0.06)',
+            background: '#FFFFFF',
+            border: '1px solid rgba(15,23,42,0.09)',
+            boxShadow: '0 2px 12px rgba(15,23,42,0.05)',
           }}>
             <Box sx={{
               width: 72, height: 72, borderRadius: '22px', mx: 'auto', mb: 3,
@@ -107,10 +108,10 @@ export default function OrdersPage() {
               <ShoppingBagOutlined sx={{ fontSize: 32, color: alpha(ORANGE, 0.8) }} />
             </Box>
 
-            <Typography sx={{ fontWeight: 800, fontSize: 18, color: 'white', mb: 1 }}>
+            <Typography sx={{ fontWeight: 800, fontSize: 18, color: '#0F172A', mb: 1 }}>
               {filter === 'all' ? 'Aucune commande' : 'Aucune commande dans ce filtre'}
             </Typography>
-            <Typography sx={{ fontSize: 13.5, color: 'rgba(255,255,255,0.32)', mb: 3.5, lineHeight: 1.75 }}>
+            <Typography sx={{ fontSize: 13.5, color: '#94A3B8', mb: 3.5, lineHeight: 1.75 }}>
               {filter === 'all'
                 ? 'Vous n\'avez pas encore passé de commande.\nDécouvrez nos produits et faites votre premier achat.'
                 : 'Essayez un autre filtre ou revenez plus tard.'}
@@ -145,14 +146,15 @@ export default function OrdersPage() {
                 <Box component={Link} to={`/account/orders/${order.id}`} key={order.id} sx={{
                   display: 'flex', alignItems: 'center', gap: { xs: 1.5, sm: 2.5 },
                   p: { xs: 1.8, sm: 2.5 }, borderRadius: '18px', textDecoration: 'none',
-                  background: 'rgba(255,255,255,0.025)',
-                  border: '1px solid rgba(255,255,255,0.06)',
+                  background: '#FFFFFF',
+                  border: '1px solid rgba(15,23,42,0.09)',
+                  boxShadow: '0 2px 12px rgba(15,23,42,0.05)',
                   transition: 'all 0.18s',
                   '&:hover': {
-                    background: 'rgba(255,255,255,0.045)',
+                    background: '#FFFFFF',
                     borderColor: alpha(meta.color, 0.3),
                     transform: 'translateY(-1px)',
-                    boxShadow: `0 8px 24px rgba(0,0,0,0.25)`,
+                    boxShadow: `0 8px 24px rgba(15,23,42,0.1)`,
                   },
                 }}>
 
@@ -160,21 +162,21 @@ export default function OrdersPage() {
                   <Box sx={{
                     width: { xs: 52, sm: 64 }, height: { xs: 52, sm: 64 },
                     borderRadius: '14px', flexShrink: 0, overflow: 'hidden',
-                    bgcolor: 'rgba(255,255,255,0.05)',
-                    border: '1px solid rgba(255,255,255,0.08)',
+                    bgcolor: '#F1F5F9',
+                    border: '1px solid rgba(15,23,42,0.09)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}>
                     {firstItem?.imageUrl
                       ? <Box component="img" src={firstItem.imageUrl} alt=""
                           sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      : <ShoppingBagOutlined sx={{ fontSize: 24, color: 'rgba(255,255,255,0.15)' }} />
+                      : <ShoppingBagOutlined sx={{ fontSize: 24, color: '#CBD5E1' }} />
                     }
                   </Box>
 
                   {/* Info */}
                   <Box sx={{ flex: 1, minWidth: 0 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5, flexWrap: 'wrap' }}>
-                      <Typography sx={{ fontWeight: 800, fontSize: { xs: 12, sm: 13 }, color: 'rgba(255,255,255,0.5)', fontFamily: 'monospace' }}>
+                      <Typography sx={{ fontWeight: 800, fontSize: { xs: 12, sm: 13 }, color: '#475569', fontFamily: 'monospace' }}>
                         #{order.id.slice(-8).toUpperCase()}
                       </Typography>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5,
@@ -184,22 +186,22 @@ export default function OrdersPage() {
                       </Box>
                     </Box>
 
-                    <Typography noWrap sx={{ fontSize: { xs: 13, sm: 14 }, fontWeight: 700, color: 'rgba(255,255,255,0.82)', mb: 0.4 }}>
+                    <Typography noWrap sx={{ fontSize: { xs: 13, sm: 14 }, fontWeight: 700, color: '#0F172A', mb: 0.4 }}>
                       {firstItem?.product?.name ?? firstItem?.productName ?? 'Commande'}
                       {extraCount > 0 && (
-                        <Box component="span" sx={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', fontWeight: 500, ml: 0.8 }}>
+                        <Box component="span" sx={{ fontSize: 12, color: '#94A3B8', fontWeight: 500, ml: 0.8 }}>
                           +{extraCount} article{extraCount > 1 ? 's' : ''}
                         </Box>
                       )}
                     </Typography>
 
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
-                      <StorefrontOutlined sx={{ fontSize: 12, color: 'rgba(255,255,255,0.25)' }} />
-                      <Typography sx={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>
+                      <StorefrontOutlined sx={{ fontSize: 12, color: '#94A3B8' }} />
+                      <Typography sx={{ fontSize: 12, color: '#94A3B8' }}>
                         {order.store?.name ?? 'Boutique'}
                       </Typography>
-                      <Box component="span" sx={{ color: 'rgba(255,255,255,0.12)', mx: 0.5 }}>·</Box>
-                      <Typography sx={{ fontSize: 12, color: 'rgba(255,255,255,0.28)' }}>
+                      <Box component="span" sx={{ color: '#CBD5E1', mx: 0.5 }}>·</Box>
+                      <Typography sx={{ fontSize: 12, color: '#94A3B8' }}>
                         {new Date(order.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
                       </Typography>
                     </Box>
@@ -207,11 +209,11 @@ export default function OrdersPage() {
 
                   {/* Amount + arrow */}
                   <Box sx={{ textAlign: 'right', flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0.8 }}>
-                    <Typography sx={{ fontWeight: 900, fontSize: { xs: 14, sm: 16 }, color: 'white', letterSpacing: '-0.3px' }}>
+                    <Typography sx={{ fontWeight: 900, fontSize: { xs: 14, sm: 16 }, color: '#0F172A', letterSpacing: '-0.3px' }}>
                       {Number(order.totalHTG ?? order.totalAmount ?? 0).toLocaleString('fr-FR')}
-                      <Box component="span" sx={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.35)', ml: 0.5 }}>HTG</Box>
+                      <Box component="span" sx={{ fontSize: 11, fontWeight: 600, color: '#94A3B8', ml: 0.5 }}>HTG</Box>
                     </Typography>
-                    <ArrowForward sx={{ fontSize: 15, color: 'rgba(255,255,255,0.18)' }} />
+                    <ArrowForward sx={{ fontSize: 15, color: '#CBD5E1' }} />
                   </Box>
                 </Box>
               );

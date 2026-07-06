@@ -17,11 +17,11 @@ import { getOrCreatePublicKey, encryptMsg, decryptMsg, isEncrypted } from '../..
 
 const API_URL  = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 const ORANGE   = '#FF6B00';
-const DARK_BG  = '#060B14';
-const PANEL_BG = '#080E1C';
-const CARD_BG  = '#0D1424';
-const BORD     = 'rgba(255,255,255,0.07)';
-const BUBBLE_BG = 'rgba(255,255,255,0.06)';
+const DARK_BG  = '#F7F8FA';
+const PANEL_BG = '#F1F5F9';
+const CARD_BG  = '#FFFFFF';
+const BORD     = 'rgba(15,23,42,0.06)';
+const BUBBLE_BG = 'rgba(15,23,42,0.06)';
 const PURPLE   = '#8B5CF6';
 
 interface Msg {
@@ -81,18 +81,18 @@ function MediaBubble({ url, name, mine }: { url: string; name?: string; mine: bo
   const isImg = /\.(jpg|jpeg|png|gif|webp|svg)/i.test(url);
   if (isImg) return (
     <Box component="a" href={url} target="_blank" rel="noreferrer" sx={{ display: 'block', mt: 0.5 }}>
-      <Box component="img" src={url} alt="image" sx={{ maxWidth: 220, maxHeight: 220, borderRadius: '10px', objectFit: 'cover', display: 'block', border: '1px solid rgba(255,255,255,0.1)' }} />
+      <Box component="img" src={url} alt="image" sx={{ maxWidth: 220, maxHeight: 220, borderRadius: '10px', objectFit: 'cover', display: 'block', border: '1px solid rgba(15,23,42,0.09)' }} />
     </Box>
   );
   return (
     <Box component="a" href={url} target="_blank" rel="noreferrer" sx={{
       display: 'flex', alignItems: 'center', gap: 1, textDecoration: 'none',
       mt: 0.5, px: 1.5, py: 1, borderRadius: '10px',
-      bgcolor: mine ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.07)',
-      border: `1px solid ${mine ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.1)'}`,
+      bgcolor: mine ? 'rgba(0,0,0,0.15)' : '#FFFFFF',
+      border: `1px solid ${mine ? 'rgba(15,23,42,0.09)' : 'rgba(15,23,42,0.09)'}`,
     }}>
-      {isPdf ? <PictureAsPdfOutlined sx={{ fontSize: 20, color: '#F87171' }} /> : <InsertDriveFileOutlined sx={{ fontSize: 20, color: '#93C5FD' }} />}
-      <Typography sx={{ fontSize: 12, color: 'white', fontWeight: 600 }}>{name ?? 'Fichier joint'}</Typography>
+      {isPdf ? <PictureAsPdfOutlined sx={{ fontSize: 20, color: '#F87171' }} /> : <InsertDriveFileOutlined sx={{ fontSize: 20, color: '#3B82F6' }} />}
+      <Typography sx={{ fontSize: 12, color: mine ? 'white' : '#0F172A', fontWeight: 600 }}>{name ?? 'Fichier joint'}</Typography>
     </Box>
   );
 }
@@ -354,17 +354,17 @@ export default function SellerChatPage() {
         flexShrink: 0, overflow: 'hidden',
         display: { xs: active ? 'none' : 'flex', sm: 'flex' },
         flexDirection: 'column',
-        background: 'linear-gradient(180deg,#0a1020 0%,#080E1C 100%)',
+        background: 'linear-gradient(180deg,#FFFFFF 0%,#F7F8FA 100%)',
         borderRight: `1px solid ${BORD}`,
       }}>
         {/* Header */}
         <Box sx={{ px: 2.5, pt: 3, pb: 2, flexShrink: 0 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 2.5 }}>
             <Box sx={{ flex: 1 }}>
-              <Typography sx={{ fontWeight: 900, fontSize: 18, color: 'white', letterSpacing: '-0.5px', lineHeight: 1 }}>
+              <Typography sx={{ fontWeight: 900, fontSize: 18, color: '#0F172A', letterSpacing: '-0.5px', lineHeight: 1 }}>
                 Messages
               </Typography>
-              <Typography sx={{ fontSize: 11, color: 'rgba(255,255,255,0.28)', mt: 0.4 }}>
+              <Typography sx={{ fontSize: 11, color: '#94A3B8', mt: 0.4 }}>
                 {conversations.length} conversation{conversations.length !== 1 ? 's' : ''}
               </Typography>
             </Box>
@@ -384,14 +384,14 @@ export default function SellerChatPage() {
           {/* Search */}
           <Box sx={{
             display: 'flex', alignItems: 'center', gap: 1,
-            bgcolor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
+            bgcolor: 'rgba(15,23,42,0.09)', border: '1px solid rgba(15,23,42,0.09)',
             borderRadius: '12px', px: 1.5, py: 1.1,
             '&:focus-within': { borderColor: 'rgba(255,107,0,0.5)', bgcolor: 'rgba(255,107,0,0.04)', boxShadow: '0 0 0 3px rgba(255,107,0,0.08)' },
             transition: 'all 0.2s',
           }}>
-            <Search sx={{ fontSize: 15, color: 'rgba(255,255,255,0.22)', flexShrink: 0 }} />
+            <Search sx={{ fontSize: 15, color: '#94A3B8', flexShrink: 0 }} />
             <InputBase placeholder="Rechercher une conversation…" value={search} onChange={e => setSearch(e.target.value)}
-              sx={{ flex: 1, '& input': { color: 'rgba(255,255,255,0.8)', fontSize: 12.5, padding: 0, '&::placeholder': { color: 'rgba(255,255,255,0.18)', opacity: 1 } } }}
+              sx={{ flex: 1, '& input': { color: '#0F172A', fontSize: 12.5, padding: 0, '&::placeholder': { color: '#94A3B8', opacity: 1 } } }}
             />
           </Box>
         </Box>
@@ -399,7 +399,7 @@ export default function SellerChatPage() {
         {/* Section label */}
         {filtered.length > 0 && (
           <Box sx={{ px: 2.5, mb: 1 }}>
-            <Typography sx={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.2)', textTransform: 'uppercase', letterSpacing: '1px' }}>
+            <Typography sx={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '1px' }}>
               Récentes
             </Typography>
           </Box>
@@ -410,7 +410,7 @@ export default function SellerChatPage() {
           '&::-webkit-scrollbar': { width: 0 } }}>
           {filtered.length === 0 && (
             <Box sx={{ py: 8, textAlign: 'center' }}>
-              <Typography sx={{ color: 'rgba(255,255,255,0.16)', fontSize: 13 }}>Aucune conversation</Typography>
+              <Typography sx={{ color: '#94A3B8', fontSize: 13 }}>Aucune conversation</Typography>
             </Box>
           )}
           {filtered.map((conv) => {
@@ -432,12 +432,12 @@ export default function SellerChatPage() {
                   : 'transparent',
                 border: '1px solid',
                 borderColor: sel ? 'rgba(255,107,0,0.35)' : 'transparent',
-                boxShadow: sel ? '0 4px 16px rgba(0,0,0,0.3)' : 'none',
+                boxShadow: sel ? '0 4px 16px rgba(255,107,0,0.15)' : 'none',
                 '&:hover': {
                   background: sel
                     ? 'linear-gradient(135deg,rgba(255,107,0,0.2),rgba(255,107,0,0.1))'
-                    : 'rgba(255,255,255,0.04)',
-                  borderColor: sel ? 'rgba(255,107,0,0.4)' : 'rgba(255,255,255,0.07)',
+                    : 'rgba(15,23,42,0.06)',
+                  borderColor: sel ? 'rgba(255,107,0,0.4)' : 'rgba(15,23,42,0.09)',
                   transform: 'translateX(2px)',
                 },
                 '&:active': { transform: 'scale(0.99)' },
@@ -456,7 +456,7 @@ export default function SellerChatPage() {
                   ) : other?.user.avatar ? (
                     <Box component="img" src={other.user.avatar} alt={name}
                       sx={{ width: 46, height: 46, borderRadius: '14px', objectFit: 'cover',
-                        border: `2px solid ${sel ? 'rgba(255,107,0,0.4)' : 'rgba(255,255,255,0.08)'}` }}/>
+                        border: `2px solid ${sel ? 'rgba(255,107,0,0.4)' : 'rgba(15,23,42,0.09)'}` }}/>
                   ) : (
                     <Box sx={{ width: 46, height: 46, borderRadius: '14px',
                       background: `linear-gradient(135deg,hsl(${hue},50%,28%),hsl(${hue},40%,18%))`,
@@ -469,11 +469,11 @@ export default function SellerChatPage() {
                   )}
                   {!sup && online && (
                     <Box sx={{ position: 'absolute', bottom: -2, right: -2, width: 12, height: 12, borderRadius: '50%',
-                      bgcolor: '#10B981', border: `2.5px solid #0a1020`, boxShadow: '0 0 8px rgba(16,185,129,0.6)' }} />
+                      bgcolor: '#10B981', border: `2.5px solid #FFFFFF`, boxShadow: '0 0 8px rgba(16,185,129,0.6)' }} />
                   )}
                   {unread > 0 && (
                     <Box sx={{ position: 'absolute', top: -4, right: -4, minWidth: 18, height: 18, borderRadius: '6px',
-                      bgcolor: ORANGE, border: '2px solid #0a1020',
+                      bgcolor: ORANGE, border: '2px solid #FFFFFF',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       boxShadow: '0 2px 8px rgba(255,107,0,0.5)',
                       animation: 'dp-pulse 2s ease-in-out infinite',
@@ -494,20 +494,20 @@ export default function SellerChatPage() {
                     <Typography sx={{
                       fontSize: 13.5, lineHeight: 1,
                       fontWeight: sel ? 800 : unread > 0 ? 700 : 500,
-                      color: sel ? 'white' : unread > 0 ? 'rgba(255,255,255,0.88)' : 'rgba(255,255,255,0.5)',
+                      color: sel ? '#0F172A' : unread > 0 ? '#0F172A' : '#475569',
                     }} noWrap>
                       {convLabel(conv)}
                     </Typography>
                     {conv.lastMessageAt && (
                       <Typography sx={{ fontSize: 10.5, flexShrink: 0, ml: 1,
-                        color: unread > 0 ? ORANGE : 'rgba(255,255,255,0.2)',
+                        color: unread > 0 ? ORANGE : '#94A3B8',
                         fontWeight: unread > 0 ? 700 : 400 }}>
                         {fmtTime(conv.lastMessageAt)}
                       </Typography>
                     )}
                   </Box>
                   <Typography sx={{ fontSize: 12, lineHeight: 1.3,
-                    color: unread > 0 ? 'rgba(255,255,255,0.48)' : 'rgba(255,255,255,0.2)',
+                    color: unread > 0 ? '#475569' : '#94A3B8',
                     fontWeight: unread > 0 ? 500 : 400,
                     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {conv.lastMessage ?? 'Démarrez la conversation'}
@@ -540,10 +540,10 @@ export default function SellerChatPage() {
                 </Box>
               </Box>
             </Box>
-            <Typography sx={{ fontSize: 15, fontWeight: 700, color: 'rgba(255,255,255,0.35)', mb: 0.8, letterSpacing: '-0.2px' }}>
+            <Typography sx={{ fontSize: 15, fontWeight: 700, color: '#94A3B8', mb: 0.8, letterSpacing: '-0.2px' }}>
               Aucune conversation sélectionnée
             </Typography>
-            <Typography sx={{ fontSize: 13, color: 'rgba(255,255,255,0.15)', textAlign: 'center', maxWidth: 260, lineHeight: 1.6 }}>
+            <Typography sx={{ fontSize: 13, color: '#94A3B8', textAlign: 'center', maxWidth: 260, lineHeight: 1.6 }}>
               Choisissez une conversation à gauche pour commencer à échanger avec vos clients
             </Typography>
             {/* Mini stats */}
@@ -554,11 +554,11 @@ export default function SellerChatPage() {
                   { label: 'Non lues', value: conversations.reduce((s, c) => s + (getMe(c)?.unreadCount ?? 0), 0) },
                 ].map(({ label, value }) => (
                   <Box key={label} sx={{ px: 2, py: 1.2, borderRadius: '10px',
-                    bgcolor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', textAlign: 'center' }}>
-                    <Typography sx={{ fontWeight: 800, fontSize: 18, color: value > 0 ? ORANGE : 'rgba(255,255,255,0.4)', lineHeight: 1 }}>
+                    bgcolor: 'rgba(15,23,42,0.09)', border: '1px solid rgba(15,23,42,0.09)', textAlign: 'center' }}>
+                    <Typography sx={{ fontWeight: 800, fontSize: 18, color: value > 0 ? ORANGE : '#475569', lineHeight: 1 }}>
                       {value}
                     </Typography>
-                    <Typography sx={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', mt: 0.3 }}>{label}</Typography>
+                    <Typography sx={{ fontSize: 11, color: '#94A3B8', mt: 0.3 }}>{label}</Typography>
                   </Box>
                 ))}
               </Box>
@@ -575,7 +575,7 @@ export default function SellerChatPage() {
             }}>
               <Box sx={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '1px', background: `linear-gradient(90deg, transparent, rgba(255,107,0,0.3), transparent)` }} />
 
-              <IconButton size="small" sx={{ display: { sm: 'none' }, color: 'rgba(255,255,255,0.5)' }} onClick={() => { setActive(null); activeRef.current = null; }}>
+              <IconButton size="small" sx={{ display: { sm: 'none' }, color: '#475569' }} onClick={() => { setActive(null); activeRef.current = null; }}>
                 <ArrowBack />
               </IconButton>
 
@@ -585,7 +585,7 @@ export default function SellerChatPage() {
                 </Avatar>
               ) : (
                 <Box sx={{ position: 'relative' }}>
-                  <Avatar src={otherParticipant?.user.avatar ?? undefined} sx={{ width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.08)', fontWeight: 800, fontSize: 15, color: 'white', border: '1.5px solid rgba(255,255,255,0.1)' }}>
+                  <Avatar src={otherParticipant?.user.avatar ?? undefined} sx={{ width: 40, height: 40, bgcolor: 'rgba(15,23,42,0.09)', fontWeight: 800, fontSize: 15, color: '#0F172A', border: '1.5px solid rgba(15,23,42,0.09)' }}>
                     {otherParticipant?.user.firstName?.[0] ?? '?'}
                   </Avatar>
                   {onlineIds.has(otherParticipant?.userId ?? '') && (
@@ -595,7 +595,7 @@ export default function SellerChatPage() {
               )}
 
               <Box sx={{ flex: 1, minWidth: 0 }}>
-                <Typography sx={{ fontWeight: 700, fontSize: 14, color: 'white' }} noWrap>
+                <Typography sx={{ fontWeight: 700, fontSize: 14, color: '#0F172A' }} noWrap>
                   {activeConv ? convLabel(activeConv) : ''}
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.1 }}>
@@ -612,8 +612,8 @@ export default function SellerChatPage() {
                     <Typography sx={{ fontSize: 11.5, color: '#10B981', fontWeight: 600 }}>Support · répond rapidement</Typography>
                   ) : (
                     <>
-                      <FiberManualRecord sx={{ fontSize: 8, color: onlineIds.has(otherParticipant?.userId ?? '') ? '#10B981' : 'rgba(255,255,255,0.2)' }} />
-                      <Typography sx={{ fontSize: 11.5, color: 'rgba(255,255,255,0.3)' }}>
+                      <FiberManualRecord sx={{ fontSize: 8, color: onlineIds.has(otherParticipant?.userId ?? '') ? '#10B981' : '#94A3B8' }} />
+                      <Typography sx={{ fontSize: 11.5, color: '#94A3B8' }}>
                         {onlineIds.has(otherParticipant?.userId ?? '') ? 'En ligne' : 'Hors ligne'}
                       </Typography>
                     </>
@@ -635,9 +635,9 @@ export default function SellerChatPage() {
               {/* Status badge */}
               {activeConv?.status && (
                 <Box sx={{ px: 1, py: 0.35, borderRadius: '20px', flexShrink: 0,
-                  bgcolor: activeConv.status === 'OPEN' ? alpha('#10B981', 0.12) : 'rgba(255,255,255,0.05)',
-                  border: `1px solid ${activeConv.status === 'OPEN' ? alpha('#10B981', 0.25) : 'rgba(255,255,255,0.08)'}` }}>
-                  <Typography sx={{ fontSize: 10.5, fontWeight: 700, color: activeConv.status === 'OPEN' ? '#10B981' : 'rgba(255,255,255,0.3)' }}>
+                  bgcolor: activeConv.status === 'OPEN' ? alpha('#10B981', 0.12) : '#FFFFFF',
+                  border: `1px solid ${activeConv.status === 'OPEN' ? alpha('#10B981', 0.25) : 'rgba(15,23,42,0.09)'}` }}>
+                  <Typography sx={{ fontSize: 10.5, fontWeight: 700, color: activeConv.status === 'OPEN' ? '#10B981' : '#94A3B8' }}>
                     {activeConv.status === 'OPEN' ? 'Ouvert' : activeConv.status === 'RESOLVED' ? 'Résolu' : 'Fermé'}
                   </Typography>
                 </Box>
@@ -652,9 +652,9 @@ export default function SellerChatPage() {
             }} sx={{
               flex: 1, overflowY: 'auto', px: { xs: 1.5, sm: 2.5 }, py: 2,
               display: 'flex', flexDirection: 'column', gap: 0.3,
-              scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.07) transparent',
+              scrollbarWidth: 'thin', scrollbarColor: 'rgba(15,23,42,0.06) transparent',
               '&::-webkit-scrollbar': { width: 4 },
-              '&::-webkit-scrollbar-thumb': { bgcolor: 'rgba(255,255,255,0.08)', borderRadius: 2 },
+              '&::-webkit-scrollbar-thumb': { bgcolor: 'rgba(15,23,42,0.09)', borderRadius: 2 },
               '& > *': { width: '100%', maxWidth: 860, mx: 'auto' },
             }}>
               {loadingMsgs && (
@@ -665,7 +665,7 @@ export default function SellerChatPage() {
 
               {!loadingMsgs && messages.length === 0 && (
                 <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', py: 8 }}>
-                  <Typography sx={{ color: 'rgba(255,255,255,0.2)', fontSize: 13 }}>Aucun message — envoyez le premier !</Typography>
+                  <Typography sx={{ color: '#94A3B8', fontSize: 13 }}>Aucun message — envoyez le premier !</Typography>
                 </Box>
               )}
 
@@ -673,9 +673,9 @@ export default function SellerChatPage() {
                 <Box key={date}>
                   {/* Date separator */}
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, my: 2 }}>
-                    <Box sx={{ flex: 1, height: '1px', bgcolor: 'rgba(255,255,255,0.06)' }} />
-                    <Typography sx={{ fontSize: 10.5, color: 'rgba(255,255,255,0.2)', fontWeight: 600, px: 1 }}>{date}</Typography>
-                    <Box sx={{ flex: 1, height: '1px', bgcolor: 'rgba(255,255,255,0.06)' }} />
+                    <Box sx={{ flex: 1, height: '1px', bgcolor: '#FFFFFF' }} />
+                    <Typography sx={{ fontSize: 10.5, color: '#94A3B8', fontWeight: 600, px: 1 }}>{date}</Typography>
+                    <Box sx={{ flex: 1, height: '1px', bgcolor: '#FFFFFF' }} />
                   </Box>
 
                   {gMsgs.map((msg, idx) => {
@@ -703,9 +703,9 @@ export default function SellerChatPage() {
                           <Box sx={{ width: 30, flexShrink: 0 }}>
                             {showAvatar && (
                               <Avatar src={msg.sender?.avatar ?? undefined} sx={{ width: 30, height: 30,
-                                bgcolor: bot ? alpha(PURPLE, 0.18) : admin ? alpha(ORANGE, 0.18) : 'rgba(255,255,255,0.07)',
+                                bgcolor: bot ? alpha(PURPLE, 0.18) : admin ? alpha(ORANGE, 0.18) : '#FFFFFF',
                                 fontSize: 12, fontWeight: 700,
-                                border: `1px solid ${bot ? alpha(PURPLE, 0.3) : admin ? alpha(ORANGE, 0.25) : 'rgba(255,255,255,0.08)'}` }}>
+                                border: `1px solid ${bot ? alpha(PURPLE, 0.3) : admin ? alpha(ORANGE, 0.25) : 'rgba(15,23,42,0.09)'}` }}>
                                 {bot ? <SmartToyOutlined sx={{ fontSize: 14, color: PURPLE }} />
                                      : admin ? <SupportAgent sx={{ fontSize: 14, color: ORANGE }} />
                                      : (msg.sender?.firstName?.[0] ?? '?')}
@@ -717,7 +717,7 @@ export default function SellerChatPage() {
                         <Box sx={{ maxWidth: { xs: '80%', sm: '65%' }, display: 'flex', flexDirection: 'column', alignItems: mine ? 'flex-end' : 'flex-start' }}>
                           {!mine && showAvatar && (
                             <Typography sx={{ fontSize: 10, mb: 0.4, ml: 0.5, fontWeight: 700,
-                              color: bot ? alpha(PURPLE, 0.7) : admin ? alpha(ORANGE, 0.7) : 'rgba(255,255,255,0.3)' }}>
+                              color: bot ? alpha(PURPLE, 0.7) : admin ? alpha(ORANGE, 0.7) : '#94A3B8' }}>
                               {bot ? '🤖 DealPam IA' : admin ? 'Support DealPam' : `${msg.sender?.firstName ?? ''} ${msg.sender?.lastName ?? ''}`}
                             </Typography>
                           )}
@@ -727,23 +727,23 @@ export default function SellerChatPage() {
                             bgcolor: mine ? ORANGE : bot ? alpha(PURPLE, 0.12) : BUBBLE_BG,
                             borderRadius: mine ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
                             boxShadow: mine ? `0 2px 10px ${alpha(ORANGE, 0.35)}` : bot ? `0 0 0 1px ${alpha(PURPLE, 0.25)}` : 'none',
-                            border: mine ? 'none' : bot ? `1px solid ${alpha(PURPLE, 0.2)}` : '1px solid rgba(255,255,255,0.07)',
+                            border: mine ? 'none' : bot ? `1px solid ${alpha(PURPLE, 0.2)}` : '1px solid rgba(15,23,42,0.09)',
                           }}>
                             {msg.mediaUrl && <MediaBubble url={msg.mediaUrl} name={msg.type !== 'IMAGE' ? msg.content : undefined} mine={mine} />}
                             {(msg.type === 'TEXT' || msg.type === 'BOT' || !msg.mediaUrl) && (
-                              <Typography sx={{ fontSize: 13.5, color: mine ? 'white' : 'rgba(255,255,255,0.8)', lineHeight: 1.5, wordBreak: 'break-word' }}>
+                              <Typography sx={{ fontSize: 13.5, color: mine ? 'white' : '#0F172A', lineHeight: 1.5, wordBreak: 'break-word' }}>
                                 {msg.content}
                               </Typography>
                             )}
                           </Box>
 
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4, mt: 0.3, px: 0.5 }}>
-                            <Typography sx={{ fontSize: 9.5, color: 'rgba(255,255,255,0.18)' }}>{fmtTime(msg.createdAt)}</Typography>
+                            <Typography sx={{ fontSize: 9.5, color: '#94A3B8' }}>{fmtTime(msg.createdAt)}</Typography>
                             {mine && isLast && (
                               <Tooltip title={msg.isRead ? 'Lu' : 'Envoyé'} placement="left">
                                 {msg.isRead
                                   ? <DoneAll sx={{ fontSize: 13, color: '#60A5FA' }} />
-                                  : <Done sx={{ fontSize: 13, color: 'rgba(255,255,255,0.25)' }} />
+                                  : <Done sx={{ fontSize: 13, color: '#94A3B8' }} />
                                 }
                               </Tooltip>
                             )}
@@ -759,9 +759,9 @@ export default function SellerChatPage() {
               {typing && (
                 <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 0.8, mb: 0.4 }}>
                   <Box sx={{ width: 30 }} />
-                  <Box sx={{ bgcolor: BUBBLE_BG, border: '1px solid rgba(255,255,255,0.07)', borderRadius: '18px 18px 18px 4px', px: 1.5, py: 1, display: 'flex', gap: 0.4, alignItems: 'center' }}>
+                  <Box sx={{ bgcolor: BUBBLE_BG, border: '1px solid rgba(15,23,42,0.09)', borderRadius: '18px 18px 18px 4px', px: 1.5, py: 1, display: 'flex', gap: 0.4, alignItems: 'center' }}>
                     {[0,1,2].map(i => (
-                      <Box key={i} sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.3)',
+                      <Box key={i} sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: 'rgba(15,23,42,0.09)',
                         animation: 'dp-bounce 1.2s ease infinite', animationDelay: `${i * 0.2}s`,
                         '@keyframes dp-bounce': { '0%,80%,100%': { transform: 'scale(0.7)', opacity: 0.5 }, '40%': { transform: 'scale(1)', opacity: 1 } } }} />
                     ))}
@@ -777,24 +777,24 @@ export default function SellerChatPage() {
               <Box onClick={() => scrollBottom(true)} sx={{
                 position: 'absolute', bottom: 80, right: 20,
                 width: 36, height: 36, borderRadius: '50%', cursor: 'pointer',
-                bgcolor: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(8px)',
-                border: '1px solid rgba(255,255,255,0.12)',
+                bgcolor: '#FFFFFF', backdropFilter: 'blur(8px)',
+                border: '1px solid rgba(15,23,42,0.09)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.4)', transition: 'all 0.15s',
-                '&:hover': { bgcolor: 'rgba(255,255,255,0.14)' }, zIndex: 5,
+                boxShadow: '0 4px 12px rgba(15,23,42,0.15)', transition: 'all 0.15s',
+                '&:hover': { bgcolor: 'rgba(15,23,42,0.04)' }, zIndex: 5,
               }}>
-                <KeyboardArrowDown sx={{ fontSize: 21, color: 'white' }} />
+                <KeyboardArrowDown sx={{ fontSize: 21, color: '#0F172A' }} />
               </Box>
             )}
 
             {/* Upload progress */}
             {uploadPct !== null && (
-              <Box sx={{ px: 2.5, py: 0.8, bgcolor: 'rgba(255,255,255,0.02)', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+              <Box sx={{ px: 2.5, py: 0.8, bgcolor: 'rgba(15,23,42,0.09)', borderTop: '1px solid rgba(15,23,42,0.09)' }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.4 }}>
-                  <Typography sx={{ fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>Envoi en cours…</Typography>
+                  <Typography sx={{ fontSize: 11, color: '#94A3B8' }}>Envoi en cours…</Typography>
                   <Typography sx={{ fontSize: 11, color: ORANGE, fontWeight: 700 }}>{uploadPct}%</Typography>
                 </Box>
-                <Box sx={{ height: 3, borderRadius: 2, bgcolor: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
+                <Box sx={{ height: 3, borderRadius: 2, bgcolor: 'rgba(15,23,42,0.09)', overflow: 'hidden' }}>
                   <Box sx={{ height: '100%', width: `${uploadPct}%`, bgcolor: ORANGE, borderRadius: 2, transition: 'width 0.2s' }} />
                 </Box>
               </Box>
@@ -804,8 +804,8 @@ export default function SellerChatPage() {
             <Box sx={{ px: 2, py: 1.5, bgcolor: PANEL_BG, borderTop: `1px solid ${BORD}`, display: 'flex', gap: 1.2, alignItems: 'flex-end', flexShrink: 0 }}>
               <Tooltip title="Joindre image ou fichier" placement="top">
                 <IconButton size="small" onClick={() => fileRef.current?.click()} sx={{
-                  color: 'rgba(255,255,255,0.3)', borderRadius: '10px', width: 38, height: 38,
-                  border: `1px solid ${BORD}`, bgcolor: 'rgba(255,255,255,0.03)', flexShrink: 0,
+                  color: '#94A3B8', borderRadius: '10px', width: 38, height: 38,
+                  border: `1px solid ${BORD}`, bgcolor: 'rgba(15,23,42,0.09)', flexShrink: 0,
                   '&:hover': { color: ORANGE, borderColor: 'rgba(255,107,0,0.35)', bgcolor: 'rgba(255,107,0,0.08)' },
                   transition: 'all 0.18s',
                 }}>
@@ -815,7 +815,7 @@ export default function SellerChatPage() {
 
               <Box sx={{
                 flex: 1, display: 'flex', alignItems: 'flex-end',
-                bgcolor: 'rgba(255,255,255,0.04)', border: `1px solid ${BORD}`,
+                bgcolor: 'rgba(15,23,42,0.09)', border: `1px solid ${BORD}`,
                 borderRadius: '12px', px: 1.5, py: 1,
                 '&:focus-within': { borderColor: 'rgba(255,107,0,0.5)', boxShadow: '0 0 0 3px rgba(255,107,0,0.08)', bgcolor: 'rgba(255,107,0,0.03)' },
                 transition: 'all 0.18s',
@@ -829,20 +829,20 @@ export default function SellerChatPage() {
                     if (active && socketRef.current) socketRef.current.emit('chat:typing', { conversationId: active });
                   }}
                   onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMsg(); } }}
-                  sx={{ flex: 1, '& textarea, & input': { color: 'rgba(255,255,255,0.85)', fontSize: 13.5, lineHeight: 1.5, '&::placeholder': { color: 'rgba(255,255,255,0.18)', opacity: 1 } } }}
+                  sx={{ flex: 1, '& textarea, & input': { color: '#0F172A', fontSize: 13.5, lineHeight: 1.5, '&::placeholder': { color: '#94A3B8', opacity: 1 } } }}
                 />
               </Box>
 
               <IconButton onClick={sendMsg} disabled={!text.trim() || sending} sx={{
                 width: 40, height: 40, borderRadius: '10px', flexShrink: 0,
-                background: text.trim() ? `linear-gradient(135deg,${ORANGE},#D95500)` : 'rgba(255,255,255,0.05)',
-                color: text.trim() ? 'white' : 'rgba(255,255,255,0.18)',
+                background: text.trim() ? `linear-gradient(135deg,${ORANGE},#D95500)` : '#FFFFFF',
+                color: text.trim() ? 'white' : '#94A3B8',
                 boxShadow: text.trim() ? '0 4px 14px rgba(255,107,0,0.35)' : 'none',
                 transition: 'all 0.18s',
                 '&:hover': { transform: text.trim() ? 'scale(1.06)' : 'none', boxShadow: text.trim() ? '0 6px 18px rgba(255,107,0,0.45)' : 'none' },
-                '&.Mui-disabled': { background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.1)' },
+                '&.Mui-disabled': { background: '#FFFFFF', color: '#FFFFFF' },
               }}>
-                {sending ? <CircularProgress size={15} sx={{ color: 'rgba(255,255,255,0.5)' }} /> : <Send sx={{ fontSize: 17 }} />}
+                {sending ? <CircularProgress size={15} sx={{ color: '#475569' }} /> : <Send sx={{ fontSize: 17 }} />}
               </IconButton>
             </Box>
           </>

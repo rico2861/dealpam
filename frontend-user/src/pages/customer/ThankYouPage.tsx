@@ -10,10 +10,11 @@ import {
 import { useAuthStore } from '../../store/auth.store';
 
 const OR   = '#FF6B00';
-const BG   = '#060B14';
+const BG   = '#F7F8FA';
 const GRN  = '#10B981';
-const CARD = 'rgba(255,255,255,0.035)';
-const BORD = 'rgba(255,255,255,0.07)';
+const CARD = '#FFFFFF';
+const BORD = 'rgba(15,23,42,0.09)';
+const SHADOW = '0 2px 12px rgba(15,23,42,0.05)';
 
 const PAYMENT_LABELS: Record<string, { label: string; Icon: any; color: string }> = {
   MONCASH:       { label: 'MonCash',          Icon: Smartphone,     color: OR },
@@ -88,32 +89,32 @@ function SubscriptionThankYou({ state, firstName }: { state: any; firstName: str
             </Box>
           </Box>
 
-          <Typography fontWeight={900} fontSize={26} color="white" letterSpacing="-0.5px" mb={1}>
+          <Typography fontWeight={900} fontSize={26} color="#0F172A" letterSpacing="-0.5px" mb={1}>
             {firstName ? `Merci ${firstName} !` : 'Merci pour votre paiement !'}
           </Typography>
-          <Typography fontSize={14} color="rgba(255,255,255,0.45)" lineHeight={1.7}>
+          <Typography fontSize={14} color="#94A3B8" lineHeight={1.7}>
             {isScheduled
-              ? <>Votre passage au plan <Box component="span" fontWeight={800} color={OR}>{TIER_LABELS[tier || ''] || tier}</Box> est programmé{effectiveDate ? <> pour le <Box component="span" fontWeight={800} color="white">{effectiveDate}</Box></> : ''}.</>
+              ? <>Votre passage au plan <Box component="span" fontWeight={800} color={OR}>{TIER_LABELS[tier || ''] || tier}</Box> est programmé{effectiveDate ? <> pour le <Box component="span" fontWeight={800} color="#0F172A">{effectiveDate}</Box></> : ''}.</>
               : <>Votre abonnement <Box component="span" fontWeight={800} color={OR}>{TIER_LABELS[tier || ''] || tier}</Box> est maintenant actif.</>}
           </Typography>
         </Box>
 
-        <Box sx={{ bgcolor: CARD, border: `1px solid ${BORD}`, borderRadius: '20px', px: 2.5, py: 2.5, mb: 2.5 }}>
+        <Box sx={{ bgcolor: CARD, border: `1px solid ${BORD}`, boxShadow: SHADOW, borderRadius: '20px', px: 2.5, py: 2.5, mb: 2.5 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, mb: 1.5 }}>
             <Star sx={{ fontSize: 16, color: OR }} />
-            <Typography fontSize={13} fontWeight={700} color="rgba(255,255,255,0.7)">
+            <Typography fontSize={13} fontWeight={700} color="#0F172A">
               Plan {TIER_LABELS[tier || ''] || tier}
             </Typography>
           </Box>
           {amount !== undefined && (
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography fontSize={13} color="rgba(255,255,255,0.45)">Montant payé</Typography>
+              <Typography fontSize={13} color="#94A3B8">Montant payé</Typography>
               <Typography fontWeight={900} fontSize={18} color={GRN}>
                 {Number(amount).toLocaleString()} HTG
               </Typography>
             </Box>
           )}
-          <Typography fontSize={12} color="rgba(255,255,255,0.3)" mt={1.5}>
+          <Typography fontSize={12} color="#94A3B8" mt={1.5}>
             {isScheduled
               ? `Votre plan actuel reste inchangé jusqu'au ${effectiveDate ?? 'terme de la période en cours'} — aucune interruption, aucun remboursement au prorata.`
               : 'Toutes les fonctionnalités de votre plan sont disponibles immédiatement dans votre espace vendeur.'}
@@ -123,8 +124,8 @@ function SubscriptionThankYou({ state, firstName }: { state: any; firstName: str
         <Box sx={{ display: 'flex', gap: 1.5 }}>
           <Button component={Link} to="/seller/subscription" variant="outlined" sx={{
             flex: 1, py: 1.4, borderRadius: '14px', fontWeight: 700, fontSize: 13.5,
-            textTransform: 'none', borderColor: BORD, color: 'rgba(255,255,255,0.5)',
-            '&:hover': { borderColor: 'rgba(255,255,255,0.2)', color: 'white', bgcolor: 'rgba(255,255,255,0.04)' },
+            textTransform: 'none', borderColor: BORD, color: '#475569',
+            '&:hover': { borderColor: 'rgba(15,23,42,0.18)', color: '#0F172A', bgcolor: '#FFFFFF' },
           }}>
             Mon abonnement
           </Button>
@@ -138,8 +139,8 @@ function SubscriptionThankYou({ state, firstName }: { state: any; firstName: str
         </Box>
 
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mt: 3 }}>
-          <ShoppingBag sx={{ fontSize: 14, color: 'rgba(255,255,255,0.12)' }} />
-          <Typography fontSize={12} color="rgba(255,255,255,0.15)">
+          <ShoppingBag sx={{ fontSize: 14, color: '#94A3B8' }} />
+          <Typography fontSize={12} color="#94A3B8">
             DealPam · Marketplace Haïtienne
           </Typography>
         </Box>
@@ -184,10 +185,10 @@ function ProductThankYou({ state, firstName }: { state: any; firstName: string }
             </Box>
           </Box>
 
-          <Typography fontWeight={900} fontSize={28} color="white" letterSpacing="-0.5px" mb={1}>
+          <Typography fontWeight={900} fontSize={28} color="#0F172A" letterSpacing="-0.5px" mb={1}>
             {firstName ? `Merci ${firstName} !` : 'Commande passée !'}
           </Typography>
-          <Typography fontSize={14} color="rgba(255,255,255,0.4)" lineHeight={1.7}>
+          <Typography fontSize={14} color="#94A3B8" lineHeight={1.7}>
             Votre commande a été transmise au vendeur avec succès.
           </Typography>
 
@@ -202,28 +203,28 @@ function ProductThankYou({ state, firstName }: { state: any; firstName: string }
           ))}
         </Box>
 
-        <Box sx={{ bgcolor: CARD, border: `1px solid ${BORD}`, borderRadius: '20px', overflow: 'hidden', mb: 2 }}>
+        <Box sx={{ bgcolor: CARD, border: `1px solid ${BORD}`, boxShadow: SHADOW, borderRadius: '20px', overflow: 'hidden', mb: 2 }}>
           {firstOrder?.items?.length > 0 && (
             <Box sx={{ px: 2.5, py: 2, borderBottom: `1px solid ${BORD}` }}>
-              <Typography fontSize={11.5} fontWeight={700} color="rgba(255,255,255,0.3)"
+              <Typography fontSize={11.5} fontWeight={700} color="#94A3B8"
                 textTransform="uppercase" letterSpacing="0.6px" mb={1.5}>
                 Articles commandés
               </Typography>
               {firstOrder.items.map((item: any, i: number) => (
                 <Box key={i} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.8 }}>
-                  <Typography fontSize={13} color="rgba(255,255,255,0.6)" sx={{
+                  <Typography fontSize={13} color="#0F172A" sx={{
                     flex: 1, overflow: 'hidden', display: '-webkit-box',
                     WebkitLineClamp: 1, WebkitBoxOrient: 'vertical' }}>
                     {item.productName} × {item.quantity}
                   </Typography>
-                  <Typography fontSize={13} fontWeight={600} color="rgba(255,255,255,0.7)" flexShrink={0} ml={1}>
+                  <Typography fontSize={13} fontWeight={600} color="#0F172A" flexShrink={0} ml={1}>
                     {Number(item.subtotal).toLocaleString()} HTG
                   </Typography>
                 </Box>
               ))}
               <Divider sx={{ borderColor: BORD, mt: 1.2, mb: 1 }} />
               <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                <Typography fontWeight={800} fontSize={14} color="white">Total</Typography>
+                <Typography fontWeight={800} fontSize={14} color="#0F172A">Total</Typography>
                 <Typography fontWeight={900} fontSize={16} color={OR}>
                   {Number(firstOrder.totalHTG ?? firstOrder.subtotalHTG ?? 0).toLocaleString()} HTG
                 </Typography>
@@ -234,10 +235,10 @@ function ProductThankYou({ state, firstName }: { state: any; firstName: string }
           <Box sx={{ px: 2.5, py: 2, display: 'flex', flexDirection: 'column', gap: 1.2 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
               {delivType === 'PICKUP'
-                ? <DirectionsWalk sx={{ fontSize: 16, color: 'rgba(255,255,255,0.3)', flexShrink: 0 }} />
-                : <LocalShipping sx={{ fontSize: 16, color: 'rgba(255,255,255,0.3)', flexShrink: 0 }} />
+                ? <DirectionsWalk sx={{ fontSize: 16, color: '#94A3B8', flexShrink: 0 }} />
+                : <LocalShipping sx={{ fontSize: 16, color: '#94A3B8', flexShrink: 0 }} />
               }
-              <Typography fontSize={13} color="rgba(255,255,255,0.5)">
+              <Typography fontSize={13} color="#0F172A">
                 {DELIVERY_LABELS[delivType] ?? delivType}
                 {firstOrder?.pickupPointName && ` — ${firstOrder.pickupPointName}`}
               </Typography>
@@ -246,21 +247,21 @@ function ProductThankYou({ state, firstName }: { state: any; firstName: string }
             {payment && (
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
                 <payment.Icon sx={{ fontSize: 16, color: payment.color, flexShrink: 0 }} />
-                <Typography fontSize={13} color="rgba(255,255,255,0.5)">
-                  Paiement : <Box component="span" fontWeight={700} color="rgba(255,255,255,0.7)">{payment.label}</Box>
+                <Typography fontSize={13} color="#0F172A">
+                  Paiement : <Box component="span" fontWeight={700} color="#0F172A">{payment.label}</Box>
                 </Typography>
               </Box>
             )}
 
             {storeInfo?.moncashPhone && ['MONCASH', 'NATCASH'].includes(firstOrder?.chosenPaymentMethod) && (
               <Box sx={{ mt: 0.5, p: 1.5, bgcolor: alpha(OR, 0.07), borderRadius: '12px', border: `1px solid ${alpha(OR, 0.2)}` }}>
-                <Typography fontSize={12} color="rgba(255,255,255,0.4)" mb={0.5}>
+                <Typography fontSize={12} color="#94A3B8" mb={0.5}>
                   Numéro {PAYMENT_LABELS[firstOrder.chosenPaymentMethod]?.label} du vendeur :
                 </Typography>
                 <Typography fontWeight={900} fontSize={20} letterSpacing={2} color={OR}>
                   {storeInfo.moncashPhone}
                 </Typography>
-                <Typography fontSize={11.5} color="rgba(255,255,255,0.3)" mt={0.5}>
+                <Typography fontSize={11.5} color="#94A3B8" mt={0.5}>
                   Effectuez le paiement puis soumettez votre référence dans "Mes commandes".
                 </Typography>
               </Box>
@@ -269,10 +270,10 @@ function ProductThankYou({ state, firstName }: { state: any; firstName: string }
         </Box>
 
         {storeInfo && (
-          <Box sx={{ bgcolor: CARD, border: `1px solid ${BORD}`, borderRadius: '20px', px: 2.5, py: 2, mb: 2 }}>
+          <Box sx={{ bgcolor: CARD, border: `1px solid ${BORD}`, boxShadow: SHADOW, borderRadius: '20px', px: 2.5, py: 2, mb: 2 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, mb: 1.5 }}>
               <Storefront sx={{ fontSize: 16, color: OR }} />
-              <Typography fontSize={13} fontWeight={700} color="rgba(255,255,255,0.7)">
+              <Typography fontSize={13} fontWeight={700} color="#0F172A">
                 {storeInfo.name}
               </Typography>
             </Box>
@@ -280,21 +281,21 @@ function ProductThankYou({ state, firstName }: { state: any; firstName: string }
             {storeInfo.phone && (
               <Box component="a" href={`tel:${storeInfo.phone}`}
                 sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.8, textDecoration: 'none' }}>
-                <Phone sx={{ fontSize: 14, color: 'rgba(255,255,255,0.25)' }} />
-                <Typography fontSize={13} color="rgba(255,255,255,0.45)">{storeInfo.phone}</Typography>
+                <Phone sx={{ fontSize: 14, color: '#94A3B8' }} />
+                <Typography fontSize={13} color="#94A3B8">{storeInfo.phone}</Typography>
               </Box>
             )}
             {storeInfo.email && (
               <Box component="a" href={`mailto:${storeInfo.email}`}
                 sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.8, textDecoration: 'none' }}>
-                <Email sx={{ fontSize: 14, color: 'rgba(255,255,255,0.25)' }} />
-                <Typography fontSize={13} color="rgba(255,255,255,0.45)">{storeInfo.email}</Typography>
+                <Email sx={{ fontSize: 14, color: '#94A3B8' }} />
+                <Typography fontSize={13} color="#94A3B8">{storeInfo.email}</Typography>
               </Box>
             )}
             {(storeInfo.address || storeInfo.city) && (
               <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, mb: 0.8 }}>
-                <LocationOn sx={{ fontSize: 14, color: 'rgba(255,255,255,0.25)', mt: 0.2, flexShrink: 0 }} />
-                <Typography fontSize={13} color="rgba(255,255,255,0.45)">
+                <LocationOn sx={{ fontSize: 14, color: '#94A3B8', mt: 0.2, flexShrink: 0 }} />
+                <Typography fontSize={13} color="#94A3B8">
                   {[storeInfo.address, storeInfo.city, storeInfo.department].filter(Boolean).join(', ')}
                 </Typography>
               </Box>
@@ -315,26 +316,26 @@ function ProductThankYou({ state, firstName }: { state: any; firstName: string }
         <Box sx={{ display: 'flex', gap: 1.5 }}>
           <Button component={Link} to="/account/orders" variant="outlined" sx={{
             flex: 1, py: 1.4, borderRadius: '14px', fontWeight: 700, fontSize: 13.5,
-            textTransform: 'none', borderColor: BORD, color: 'rgba(255,255,255,0.5)',
-            '&:hover': { borderColor: 'rgba(255,255,255,0.2)', color: 'white', bgcolor: 'rgba(255,255,255,0.04)' },
+            textTransform: 'none', borderColor: BORD, color: '#475569',
+            '&:hover': { borderColor: 'rgba(15,23,42,0.18)', color: '#0F172A', bgcolor: '#FFFFFF' },
           }}>
             Mes commandes
           </Button>
           <Button component={Link} to="/products" variant="contained" endIcon={<ArrowForward />} sx={{
             flex: 1.3, py: 1.4, borderRadius: '14px', fontWeight: 800, fontSize: 13.5,
-            textTransform: 'none', bgcolor: OR, '&:hover': { bgcolor: '#E05A00' },
+            textTransform: 'none', bgcolor: OR, color: 'white', '&:hover': { bgcolor: '#E05A00' },
             boxShadow: `0 4px 20px ${alpha(OR, 0.4)}`,
           }}>
             <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-              <Typography fontSize={10} fontWeight={500} color="rgba(255,255,255,0.7)" lineHeight={1}>Continuer</Typography>
-              <Typography fontSize={13.5} fontWeight={800} lineHeight={1.3}>mes achats</Typography>
+              <Typography fontSize={10} fontWeight={500} color="rgba(255,255,255,0.75)" lineHeight={1}>Continuer</Typography>
+              <Typography fontSize={13.5} fontWeight={800} lineHeight={1.3} color="white">mes achats</Typography>
             </Box>
           </Button>
         </Box>
 
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mt: 3 }}>
-          <ShoppingBag sx={{ fontSize: 14, color: 'rgba(255,255,255,0.12)' }} />
-          <Typography fontSize={12} color="rgba(255,255,255,0.15)">
+          <ShoppingBag sx={{ fontSize: 14, color: '#CBD5E1' }} />
+          <Typography fontSize={12} color="#94A3B8">
             DealPam · Marketplace Haïtienne
           </Typography>
         </Box>

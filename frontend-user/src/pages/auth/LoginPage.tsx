@@ -79,32 +79,32 @@ export default function LoginPage() {
   };
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#060B14', colorScheme: 'dark' }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#F7F8FA' }}>
 
       {/* ── LEFT — branding (hidden on mobile) ── */}
       <Box sx={{
         flex: 1, display: { xs: 'none', lg: 'flex' }, flexDirection: 'column',
         justifyContent: 'center', p: { lg: 7, xl: 10 },
         position: 'relative', overflow: 'hidden',
-        background: 'linear-gradient(155deg, #0A1628 0%, #0F1E3A 40%, #1A120A 100%)',
+        background: 'linear-gradient(155deg, #FFF4EB 0%, #FFF8F2 40%, #FDF3E7 100%)',
       }}>
         {/* Glows */}
         <Box sx={{ position: 'absolute', width: 700, height: 700, top: '-15%', left: '-15%', borderRadius: '50%', pointerEvents: 'none',
-          background: `radial-gradient(circle, ${alpha(ORANGE, 0.12)} 0%, transparent 60%)` }} />
+          background: `radial-gradient(circle, ${alpha(ORANGE, 0.1)} 0%, transparent 60%)` }} />
         <Box sx={{ position: 'absolute', width: 500, height: 500, bottom: '-10%', right: '-10%', borderRadius: '50%', pointerEvents: 'none',
-          background: 'radial-gradient(circle, rgba(56,189,248,0.06) 0%, transparent 60%)' }} />
+          background: 'radial-gradient(circle, rgba(99,102,241,0.06) 0%, transparent 60%)' }} />
         {/* Grid */}
         <Box sx={{ position: 'absolute', inset: 0, pointerEvents: 'none', opacity: 0.035,
-          backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)',
+          backgroundImage: 'linear-gradient(rgba(15,23,42,1) 1px, transparent 1px), linear-gradient(90deg, rgba(15,23,42,1) 1px, transparent 1px)',
           backgroundSize: '52px 52px' }} />
 
         <Box sx={{ position: 'relative', zIndex: 1, maxWidth: 440 }}>
           {/* Headline */}
-          <Typography sx={{ fontWeight: 900, fontSize: { lg: 42, xl: 52 }, color: 'white', lineHeight: 1.08, letterSpacing: '-2px', mb: 2.5 }}>
+          <Typography sx={{ fontWeight: 900, fontSize: { lg: 42, xl: 52 }, color: '#0F172A', lineHeight: 1.08, letterSpacing: '-2px', mb: 2.5 }}>
             Achetez & vendez<br />
             <Box component="span" sx={{ color: ORANGE }}>en toute confiance</Box>
           </Typography>
-          <Typography sx={{ color: 'rgba(255,255,255,0.45)', fontSize: 16, lineHeight: 1.75, mb: 6 }}>
+          <Typography sx={{ color: '#475569', fontSize: 16, lineHeight: 1.75, mb: 6 }}>
             La plateforme e-commerce numéro&nbsp;1 d'Haïti.
           </Typography>
 
@@ -117,17 +117,17 @@ export default function LoginPage() {
                   display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <Icon sx={{ color: ORANGE, fontSize: 19 }} />
                 </Box>
-                <Typography sx={{ color: 'rgba(255,255,255,0.65)', fontSize: 14.5 }}>{text}</Typography>
+                <Typography sx={{ color: '#334155', fontSize: 14.5 }}>{text}</Typography>
               </Box>
             ))}
           </Box>
 
           {/* Stats */}
-          <Box sx={{ display: 'flex', gap: 0, borderTop: '1px solid rgba(255,255,255,0.07)', pt: 4 }}>
+          <Box sx={{ display: 'flex', gap: 0, borderTop: '1px solid rgba(15,23,42,0.09)', pt: 4 }}>
             {STATS.map(({ value, label }, i) => (
-              <Box key={label} sx={{ flex: 1, pl: i > 0 ? 3 : 0, borderLeft: i > 0 ? '1px solid rgba(255,255,255,0.07)' : 'none', ml: i > 0 ? 3 : 0 }}>
-                <Typography sx={{ fontWeight: 900, fontSize: 22, color: 'white', letterSpacing: '-0.5px' }}>{value}</Typography>
-                <Typography sx={{ color: 'rgba(255,255,255,0.35)', fontSize: 12, mt: 0.3 }}>{label}</Typography>
+              <Box key={label} sx={{ flex: 1, pl: i > 0 ? 3 : 0, borderLeft: i > 0 ? '1px solid rgba(15,23,42,0.09)' : 'none', ml: i > 0 ? 3 : 0 }}>
+                <Typography sx={{ fontWeight: 900, fontSize: 22, color: '#0F172A', letterSpacing: '-0.5px' }}>{value}</Typography>
+                <Typography sx={{ color: '#94A3B8', fontSize: 12, mt: 0.3 }}>{label}</Typography>
               </Box>
             ))}
           </Box>
@@ -139,8 +139,8 @@ export default function LoginPage() {
         width: { xs: '100%', lg: 480 }, flexShrink: 0,
         display: 'flex', flexDirection: 'column', justifyContent: 'center',
         px: { xs: 3, sm: 6, lg: 6 }, py: { xs: 5, lg: 4 },
-        bgcolor: '#0C1220',
-        borderLeft: '1px solid rgba(255,255,255,0.05)',
+        bgcolor: '#FFFFFF',
+        borderLeft: '1px solid rgba(15,23,42,0.09)',
         position: 'relative',
       }}>
         {/* Subtle top glow */}
@@ -149,10 +149,10 @@ export default function LoginPage() {
 
 
         <Box sx={{ maxWidth: 380, width: '100%', mx: 'auto' }}>
-          <Typography sx={{ fontWeight: 900, fontSize: { xs: 26, sm: 30 }, color: 'white', letterSpacing: '-0.8px', mb: 0.8 }}>
+          <Typography sx={{ fontWeight: 900, fontSize: { xs: 26, sm: 30 }, color: '#0F172A', letterSpacing: '-0.8px', mb: 0.8 }}>
             Connexion
           </Typography>
-          <Typography sx={{ fontSize: 14, color: 'rgba(255,255,255,0.38)', mb: 4 }}>
+          <Typography sx={{ fontSize: 14, color: '#94A3B8', mb: 4 }}>
             Pas encore de compte ?{' '}
             <Link to="/register" style={{ color: ORANGE, fontWeight: 700, textDecoration: 'none' }}>Créer un compte →</Link>
           </Typography>
@@ -165,7 +165,7 @@ export default function LoginPage() {
                 </Box>
                 <Typography fontSize={14} fontWeight={800} color="#EF4444">Compte désactivé</Typography>
               </Box>
-              <Typography fontSize={13} color="rgba(255,255,255,0.7)" lineHeight={1.6} mb={1.5}>
+              <Typography fontSize={13} color="#475569" lineHeight={1.6} mb={1.5}>
                 Votre compte a été désactivé par l'équipe DealPam. Vous ne pouvez plus accéder à la plateforme.
               </Typography>
               <Button component="a" href="mailto:support@dealpam.com" target="_blank"
@@ -194,7 +194,7 @@ export default function LoginPage() {
             {/* Identifier */}
             <Box>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                <Typography sx={{ fontSize: 11.5, fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.8px' }}>
+                <Typography sx={{ fontSize: 11.5, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.8px' }}>
                   Email ou nom d'utilisateur
                 </Typography>
                 {idType && (
@@ -208,8 +208,8 @@ export default function LoginPage() {
                 InputProps={{ startAdornment: (
                   <InputAdornment position="start">
                     {idType === 'username'
-                      ? <Person sx={{ color: alpha('#fff', 0.3), fontSize: 18 }} />
-                      : <AlternateEmail sx={{ color: alpha('#fff', 0.3), fontSize: 18 }} />}
+                      ? <Person sx={{ color: '#94A3B8', fontSize: 18 }} />
+                      : <AlternateEmail sx={{ color: '#94A3B8', fontSize: 18 }} />}
                   </InputAdornment>
                 ) }}
               />
@@ -218,7 +218,7 @@ export default function LoginPage() {
             {/* Password */}
             <Box>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                <Typography sx={{ fontSize: 11.5, fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.8px' }}>
+                <Typography sx={{ fontSize: 11.5, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.8px' }}>
                   Mot de passe
                 </Typography>
                 <Link to="/forgot-password" style={{ color: ORANGE, fontSize: 12.5, fontWeight: 600, textDecoration: 'none' }}>
@@ -229,11 +229,11 @@ export default function LoginPage() {
                 placeholder="••••••••••••" autoComplete="current-password"
                 onChange={e => setPassword(e.target.value)} sx={fieldSx}
                 InputProps={{
-                  startAdornment: <InputAdornment position="start"><LockOutlined sx={{ color: alpha('#fff', 0.3), fontSize: 18 }} /></InputAdornment>,
+                  startAdornment: <InputAdornment position="start"><LockOutlined sx={{ color: '#94A3B8', fontSize: 18 }} /></InputAdornment>,
                   endAdornment: (
                     <InputAdornment position="end">
                       <IconButton onClick={() => setShowPwd(!showPwd)} edge="end" size="small" tabIndex={-1}
-                        sx={{ color: alpha('#fff', 0.3), '&:hover': { color: ORANGE, bgcolor: 'transparent' } }}>
+                        sx={{ color: '#94A3B8', '&:hover': { color: ORANGE, bgcolor: 'transparent' } }}>
                         {showPwd ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
                       </IconButton>
                     </InputAdornment>
@@ -244,8 +244,8 @@ export default function LoginPage() {
 
             <FormControlLabel
               control={<Checkbox checked={remember} onChange={e => setRemember(e.target.checked)} size="small"
-                sx={{ color: 'rgba(255,255,255,0.2)', '&.Mui-checked': { color: ORANGE } }} />}
-              label={<Typography sx={{ fontSize: 13, color: 'rgba(255,255,255,0.4)' }}>Se souvenir de moi</Typography>}
+                sx={{ color: 'rgba(15,23,42,0.25)', '&.Mui-checked': { color: ORANGE } }} />}
+              label={<Typography sx={{ fontSize: 13, color: '#94A3B8' }}>Se souvenir de moi</Typography>}
               sx={{ mt: -0.5 }}
             />
 
@@ -267,25 +267,25 @@ export default function LoginPage() {
 
           {/* Divider */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, my: 3.5 }}>
-            <Box sx={{ flex: 1, height: '1px', bgcolor: 'rgba(255,255,255,0.06)' }} />
-            <Typography sx={{ fontSize: 12, color: 'rgba(255,255,255,0.2)', fontWeight: 500 }}>Nouveau sur DealPam ?</Typography>
-            <Box sx={{ flex: 1, height: '1px', bgcolor: 'rgba(255,255,255,0.06)' }} />
+            <Box sx={{ flex: 1, height: '1px', bgcolor: 'rgba(15,23,42,0.09)' }} />
+            <Typography sx={{ fontSize: 12, color: '#94A3B8', fontWeight: 500 }}>Nouveau sur DealPam ?</Typography>
+            <Box sx={{ flex: 1, height: '1px', bgcolor: 'rgba(15,23,42,0.09)' }} />
           </Box>
 
           <Button fullWidth component={Link} to="/register" variant="outlined"
             sx={{
               py: 1.5, fontWeight: 700, fontSize: 14, borderRadius: '14px', textTransform: 'none',
-              borderColor: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.55)',
+              borderColor: 'rgba(15,23,42,0.15)', color: '#475569',
               '&:hover': { borderColor: alpha(ORANGE, 0.5), color: ORANGE, bgcolor: alpha(ORANGE, 0.05) },
               transition: 'all 0.2s',
             }}>
             Créer un compte gratuitement
           </Button>
 
-          <Typography sx={{ mt: 3, fontSize: 11, color: 'rgba(255,255,255,0.18)', textAlign: 'center', lineHeight: 1.7 }}>
+          <Typography sx={{ mt: 3, fontSize: 11, color: '#94A3B8', textAlign: 'center', lineHeight: 1.7 }}>
             En vous connectant, vous acceptez nos{' '}
-            <Link to="/terms" style={{ color: 'rgba(255,255,255,0.3)', textDecoration: 'none' }}>CGU</Link> et notre{' '}
-            <Link to="/privacy" style={{ color: 'rgba(255,255,255,0.3)', textDecoration: 'none' }}>Politique de confidentialité</Link>.
+            <Link to="/terms" style={{ color: '#94A3B8', textDecoration: 'none' }}>CGU</Link> et notre{' '}
+            <Link to="/privacy" style={{ color: '#94A3B8', textDecoration: 'none' }}>Politique de confidentialité</Link>.
           </Typography>
         </Box>
       </Box>
@@ -295,18 +295,18 @@ export default function LoginPage() {
 
 const fieldSx = {
   '& .MuiOutlinedInput-root': {
-    bgcolor: 'rgba(255,255,255,0.04)', borderRadius: '12px', color: 'white',
-    '& fieldset': { borderColor: 'rgba(255,255,255,0.09)' },
+    bgcolor: '#FFFFFF', borderRadius: '12px', color: '#0F172A',
+    '& fieldset': { borderColor: 'rgba(15,23,42,0.15)' },
     '&:hover fieldset': { borderColor: `rgba(255,107,0,0.35)` },
     '&.Mui-focused fieldset': { borderColor: '#FF6B00', boxShadow: '0 0 0 3px rgba(255,107,0,0.1)' },
   },
   '& .MuiInputBase-input': {
-    color: '#fff !important', WebkitTextFillColor: '#fff', fontSize: 14.5, caretColor: '#fff',
-    '&::placeholder': { color: 'rgba(255,255,255,0.18)', opacity: 1 },
+    color: '#0F172A !important', WebkitTextFillColor: '#0F172A', fontSize: 14.5, caretColor: '#0F172A',
+    '&::placeholder': { color: '#94A3B8', opacity: 1 },
     '&:-webkit-autofill, &:-webkit-autofill:hover, &:-webkit-autofill:focus': {
-      WebkitBoxShadow: '0 0 0 100px #0C1220 inset',
-      WebkitTextFillColor: '#fff',
-      caretColor: '#fff',
+      WebkitBoxShadow: '0 0 0 100px #FFFFFF inset',
+      WebkitTextFillColor: '#0F172A',
+      caretColor: '#0F172A',
       transition: 'background-color 9999s ease-in-out 0s',
     },
   },
