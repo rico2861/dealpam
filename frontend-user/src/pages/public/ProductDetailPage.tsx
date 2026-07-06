@@ -321,8 +321,9 @@ export default function ProductDetailPage() {
                 </Box>
               )}
 
-              <Box sx={{ position:'relative', bgcolor:CARD, borderRadius:{ xs:0, md:'20px' },
+              <Box sx={{ position:'relative', bgcolor:CARD, borderRadius:{ xs:0, md:'24px' },
                 border:{ xs:'none', md:`1px solid ${BORD}` }, flex:1, minWidth:0,
+                boxShadow:{ xs:'none', md:'0 8px 32px rgba(15,23,42,0.06)' },
                 height:{ xs:'72vw', sm:'55vw', md:380, lg:420 }, maxHeight:480, overflow:'hidden' }}>
 
                 <Box onTouchStart={onTS} onTouchEnd={onTE} onClick={()=>setLb(true)}
@@ -338,7 +339,8 @@ export default function ProductDetailPage() {
                     background:`linear-gradient(135deg,#B91C1C,${RED})`,
                     color:'#fff', fontWeight:900, fontSize:{ xs:13, md:16 },
                     px:{ xs:1.5, md:2 }, py:{ xs:0.5, md:0.7 },
-                    borderRadius:'10px', boxShadow:'0 4px 14px rgba(239,68,68,0.4)' }}>
+                    borderRadius:'12px', boxShadow:'0 6px 18px rgba(239,68,68,0.45)',
+                    letterSpacing:'-0.3px' }}>
                     -{disc}%
                   </Box>
                 )}
@@ -446,7 +448,7 @@ export default function ProductDetailPage() {
 
             {/* title */}
             <Typography fontWeight={900} color={TXT}
-              sx={{ fontSize:{ xs:22, md:28 }, lineHeight:1.2, letterSpacing:'-0.5px', mb:1.5 }}>
+              sx={{ fontSize:{ xs:22, sm:26, md:30 }, lineHeight:1.18, letterSpacing:'-0.6px', mb:1.5 }}>
               {product.name}
             </Typography>
 
@@ -667,7 +669,8 @@ export default function ProductDetailPage() {
 
             {/* store card */}
             {product.store&&(
-              <Box sx={{ display:'flex', gap:{ xs:1.2, sm:2 }, alignItems:'center', p:2, borderRadius:'14px', bgcolor:CARD, border:`1px solid ${BORD}`, mb:3.5 }}>
+              <Box sx={{ display:'flex', gap:{ xs:1.2, sm:2 }, alignItems:'center', p:2, borderRadius:'16px', bgcolor:CARD, border:`1px solid ${BORD}`, mb:3.5,
+                boxShadow:'0 2px 10px rgba(15,23,42,0.04)', transition:'box-shadow 0.2s', '&:hover':{ boxShadow:'0 6px 20px rgba(15,23,42,0.08)' } }}>
                 {product.store.logoUrl
                   ? <Box component="img" src={product.store.logoUrl} alt={product.store.name} sx={{ width:50, height:50, borderRadius:'10px', objectFit:'cover', flexShrink:0 }}/>
                   : <Avatar sx={{ width:50, height:50, bgcolor:`${OR}1A`, color:OR, fontWeight:900, fontSize:20, borderRadius:'10px', flexShrink:0, border:`1px solid rgba(255,107,0,0.2)` }}>{product.store.name?.[0]?.toUpperCase()}</Avatar>}
@@ -704,7 +707,7 @@ export default function ProductDetailPage() {
             {/* specs */}
             <Box sx={{ mb:3 }}>
               <Typography fontSize={12} fontWeight={700} color={SUB} textTransform="uppercase" letterSpacing="0.8px" mb={1.8}>Informations</Typography>
-              <Box sx={{ borderRadius:'14px', border:`1px solid ${BORD}`, overflow:'hidden' }}>
+              <Box sx={{ borderRadius:'16px', border:`1px solid ${BORD}`, overflow:'hidden', boxShadow:'0 2px 10px rgba(15,23,42,0.03)' }}>
                 {[
                   { l:'État',      v:cond.label },
                   { l:'Stock',     v:stock>0?`${stock} disponibles`:'Rupture' },
@@ -734,17 +737,18 @@ export default function ProductDetailPage() {
             )}
 
             {/* tabs */}
-            <Box sx={{ borderBottom:`1px solid ${BORD}`, display:'flex', mb:3 }}>
+            <Box sx={{ display:'flex', gap:0.5, mb:3, p:0.5, borderRadius:'14px', bgcolor:'rgba(15,23,42,0.05)', width:'fit-content', maxWidth:'100%', overflowX:'auto' }}>
               {(['desc','spec','rev'] as const)
                 .filter(k => k!=='spec'||hasA)
                 .map(k => {
                   const label = k==='desc'?'Description':k==='spec'?'Caractéristiques':`Avis (${product.totalReviews||0})`;
                   return (
                     <Box key={k} onClick={()=>setTab(k)}
-                      sx={{ px:3, py:1.8, fontSize:14, fontWeight:tab===k?800:500,
-                        color:tab===k?TXT:SUB, cursor:'pointer',
-                        borderBottom:`2px solid ${tab===k?OR:'transparent'}`, mb:'-1px',
-                        transition:'all 0.13s', '&:hover':{ color:TXT } }}>
+                      sx={{ px:2.4, py:1.1, fontSize:13.5, fontWeight:tab===k?800:600, whiteSpace:'nowrap',
+                        color:tab===k?TXT:SUB, cursor:'pointer', borderRadius:'11px',
+                        bgcolor:tab===k?CARD:'transparent',
+                        boxShadow:tab===k?'0 2px 8px rgba(15,23,42,0.08)':'none',
+                        transition:'all 0.16s', '&:hover':{ color:TXT } }}>
                       {label}
                     </Box>
                   );
@@ -821,8 +825,10 @@ export default function ProductDetailPage() {
 
           {/* ── RIGHT sticky buy box ───────────────────────────────────────── */}
           <Box sx={{ display:{ xs:'none', lg:'block' }, width:320, flexShrink:0, position:'sticky', top:80, alignSelf:'flex-start', pt:3 }}>
-            <Box sx={{ bgcolor:CARD, borderRadius:'20px', p:3, border:`1px solid ${BORD}`,
-              boxShadow:'0 8px 32px rgba(15,23,42,0.08)' }}>
+            <Box sx={{ bgcolor:CARD, borderRadius:'22px', p:3, border:`1px solid ${BORD}`,
+              boxShadow:'0 12px 40px rgba(15,23,42,0.10)', position:'relative', overflow:'hidden',
+              '&::before':{ content:'""', position:'absolute', top:0, left:0, right:0, height:4,
+                background:`linear-gradient(90deg,${OR},#FF8C38)` } }}>
               <Typography fontSize={13} fontWeight={600} color={SUB} mb={0.5} noWrap sx={{ maxWidth:280 }}>{product.name}</Typography>
               {exchangeRate&&(
                 <Box sx={{ display:'inline-flex', borderRadius:'8px', border:`1px solid ${BORD}`, overflow:'hidden', mb:1 }}>
@@ -956,9 +962,9 @@ export default function ProductDetailPage() {
 
       {/* mobile sticky bottom */}
       <Box sx={{ display:{ xs:'flex', lg:'none' }, position:'fixed', bottom:56, left:0, right:0, zIndex:1200,
-        bgcolor:'rgba(255,255,255,0.96)', backdropFilter:'blur(20px)',
-        borderTop:`1px solid ${BORD}`, boxShadow:'0 -4px 20px rgba(15,23,42,0.08)',
-        p:1.5, gap:1.2, alignItems:'center' }}>
+        bgcolor:'rgba(255,255,255,0.97)', backdropFilter:'blur(20px)',
+        borderTop:`1px solid ${BORD}`, boxShadow:'0 -6px 24px rgba(15,23,42,0.10)',
+        p:1.5, pb:'calc(12px + env(safe-area-inset-bottom))', gap:1.2, alignItems:'center' }}>
         <Box sx={{ flex:1, minWidth:0 }}>
           <Typography fontWeight={900} sx={{ fontSize:20, color:TXT, lineHeight:1, letterSpacing:'-1px' }}>{fmtDisplay(cur)}</Typography>
           {sale&&<Typography fontSize={11} color={SUB} sx={{ textDecoration:'line-through' }}>{fmtDisplay(orig)}</Typography>}
