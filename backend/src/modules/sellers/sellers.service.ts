@@ -1,12 +1,25 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UploadService } from '../upload/upload.service';
+import { MailService } from '../mail/mail.service';
+
+// Types de document qui prouvent l'identité du vendeur — leur (re)soumission
+// après un rejet remet automatiquement le dossier "en attente".
+const IDENTITY_DOC_TYPES = ['IDENTITY', 'SELFIE'];
+
+// Ne jamais renvoyer "url" côté API — ce champ n'est plus une URL publique
+// valide et ne doit de toute façon jamais transiter par une réponse JSON.
+// La consultation passe uniquement par getMyDocumentUrl / getAdminDocumentUrl.
+const DOC_SAFE_SELECT = {
+  id: true, sellerId: true, type: true, publicId: true, fileName: true, isValid: true, createdAt: true,
+} as const;
 
 @Injectable()
 export class SellersService {
   constructor(
     private prisma: PrismaService,
     private uploadService: UploadService,
+    private mailService: MailService,
   ) {}
 
   // ── Buyer → Seller conversion ─────────────────────────────────────────────
@@ -140,7 +153,7 @@ export class SellersService {
           orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
         },
         subscriptions: { include: { plan: true }, orderBy: { createdAt: 'desc' }, take: 3 },
-        documents: true,
+        documents: { select: DOC_SAFE_SELECT },
         adCampaigns: { select: { id: true, name: true, status: true, totalBudget: true, createdAt: true }, take: 5 },
       },
     });
@@ -151,7 +164,10 @@ export class SellersService {
   // ── Admin: approve / reject / suspend ────────────────────────────────────
 
   async approve(id: string, adminId: string) {
-    const s = await this.prisma.seller.findUnique({ where: { id } });
+    const s = await this.prisma.seller.findUnique({
+      where: { id },
+      include: { user: true, stores: { where: { isPrimary: true }, take: 1 } },
+    });
     if (!s) throw new NotFoundException();
     const updated = await this.prisma.seller.update({
       where: { id },
@@ -159,11 +175,21 @@ export class SellersService {
     });
     // Marque la boutique principale comme vérifiée si au moins 1 document valide
     await this._syncStoreVerification(id);
+    if (s.user?.email) {
+      this.mailService.sendSellerApproved(s.user.email, s.user.firstName, s.stores[0]?.name ?? '')
+        .catch(() => null);
+    }
     return updated;
   }
 
   async reject(id: string, reason: string) {
-    return this.prisma.seller.update({ where: { id }, data: { status: 'REJECTED', rejectionReason: reason } });
+    const s = await this.prisma.seller.findUnique({ where: { id }, include: { user: true } });
+    if (!s) throw new NotFoundException();
+    const updated = await this.prisma.seller.update({ where: { id }, data: { status: 'REJECTED', rejectionReason: reason } });
+    if (s.user?.email) {
+      this.mailService.sendSellerRejected(s.user.email, s.user.firstName, reason).catch(() => null);
+    }
+    return updated;
   }
 
   async suspend(id: string) {
@@ -182,7 +208,7 @@ export class SellersService {
       include: {
         stores:        { orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }] },
         subscriptions: { where: { isActive: true }, include: { plan: true }, take: 1 },
-        documents:     true,
+        documents:     { select: DOC_SAFE_SELECT },
       },
     });
   }
@@ -194,17 +220,18 @@ export class SellersService {
     if (!seller) throw new NotFoundException('Vendeur introuvable');
     return this.prisma.businessDocument.findMany({
       where: { sellerId: seller.id },
+      select: DOC_SAFE_SELECT,
       orderBy: { createdAt: 'desc' },
     });
   }
 
   async uploadDocument(userId: string, file: Express.Multer.File, type: string, isPublic = false) {
-    const seller = await this.prisma.seller.findUnique({ where: { userId } });
+    const seller = await this.prisma.seller.findUnique({ where: { userId }, include: { user: true } });
     if (!seller) throw new NotFoundException('Vendeur introuvable');
 
     const result = await this.uploadService.uploadDocument(file, 'seller-documents');
 
-    return this.prisma.businessDocument.create({
+    const doc = await this.prisma.businessDocument.create({
       data: {
         sellerId: seller.id,
         type,
@@ -216,6 +243,39 @@ export class SellersService {
         // We encode as JSON-like prefix: "PUBLIC:" or "PRIVATE:"
       },
     });
+
+    // Resoumission après rejet : un document d'identité (ID ou selfie) remet
+    // automatiquement le dossier "en attente" et prévient le vendeur par email.
+    if (seller.status === 'REJECTED' && IDENTITY_DOC_TYPES.includes(type)) {
+      await this.prisma.seller.update({
+        where: { id: seller.id },
+        data:  { status: 'PENDING', rejectionReason: null },
+      });
+      if (seller.user?.email) {
+        this.mailService.sendSellerDocsPending(seller.user.email, seller.user.firstName).catch(() => null);
+      }
+    }
+
+    return doc;
+  }
+
+  // ── Consultation sécurisée d'un document (URL signée, 5 min) ─────────────
+  // Le vendeur ne peut voir que ses propres documents ; l'admin peut voir
+  // ceux de n'importe quel vendeur. Jamais d'URL publique directe exposée.
+  async getMyDocumentUrl(userId: string, docId: string) {
+    const seller = await this.prisma.seller.findUnique({ where: { userId } });
+    if (!seller) throw new NotFoundException('Vendeur introuvable');
+    const doc = await this.prisma.businessDocument.findUnique({ where: { id: docId } });
+    if (!doc || doc.sellerId !== seller.id) throw new ForbiddenException('Document introuvable');
+    const url = await this.uploadService.getDocumentSignedUrl(doc.publicId, doc.fileName);
+    return { url };
+  }
+
+  async getAdminDocumentUrl(sellerId: string, docId: string) {
+    const doc = await this.prisma.businessDocument.findUnique({ where: { id: docId } });
+    if (!doc || doc.sellerId !== sellerId) throw new NotFoundException('Document introuvable');
+    const url = await this.uploadService.getDocumentSignedUrl(doc.publicId, doc.fileName);
+    return { url };
   }
 
   async updateDocumentVisibility(userId: string, docId: string, isPublic: boolean) {
@@ -231,15 +291,10 @@ export class SellersService {
     });
   }
 
-  async deleteDocument(userId: string, docId: string) {
-    const seller = await this.prisma.seller.findUnique({ where: { userId } });
-    if (!seller) throw new NotFoundException('Vendeur introuvable');
-    const doc = await this.prisma.businessDocument.findUnique({ where: { id: docId } });
-    if (!doc || doc.sellerId !== seller.id) throw new ForbiddenException('Document introuvable');
-    // Delete the file from R2 (documents folder, single file — not 3-size variant)
-    try { await this.uploadService.deleteImage(doc.publicId, 'seller-documents'); } catch { /* ignore if already gone */ }
-    return this.prisma.businessDocument.delete({ where: { id: docId } });
-  }
+  // Suppression volontairement indisponible : les documents KYC doivent rester
+  // en base en permanence (pas de suppression automatique, sauf politique de
+  // rétention définie explicitement plus tard). Un vendeur qui s'est trompé
+  // soumet simplement un nouveau document — l'historique complet reste consultable.
 
   async adminValidateDocument(sellerId: string, docId: string, isValid: boolean) {
     const doc = await this.prisma.businessDocument.findUnique({ where: { id: docId } });

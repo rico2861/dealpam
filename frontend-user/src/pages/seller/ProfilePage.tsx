@@ -1,11 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
 import {
   Box, Typography, Button, TextField, CircularProgress,
-  LinearProgress, Dialog, DialogTitle, DialogContent, DialogActions,
+  LinearProgress,
   InputBase,
 } from '@mui/material';
 import {
-  Save, Upload, Delete, Visibility, VisibilityOff, CheckCircle,
+  Save, Upload, Visibility, CheckCircle,
   PendingOutlined, ErrorOutline, Description, Person, Business,
   Lock, ChatBubbleOutline,
 } from '@mui/icons-material';
@@ -29,7 +29,8 @@ const PUR  = '#8B5CF6';
 
 const DOC_TYPES = [
   { value: 'PATENTE',               label: 'Patente commerciale',       required: true },
-  { value: 'IDENTITY',              label: 'Pièce d\'identité (CIN)',   required: true },
+  { value: 'IDENTITY',              label: 'Pièce d\'identité (CIN, passeport, permis)', required: true },
+  { value: 'SELFIE',                label: 'Selfie (vérification faciale)', required: true },
   { value: 'BUSINESS_REGISTRATION', label: 'Enregistrement commercial', required: false },
   { value: 'TAX',                   label: 'Document fiscal (NIF)',     required: false },
   { value: 'LEGAL',                 label: 'Document juridique',        required: false },
@@ -140,9 +141,8 @@ export default function SellerProfilePage() {
   const { enqueueSnackbar } = useSnackbar();
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploadType, setUploadType] = useState('PATENTE');
-  const [uploadPublic, setUploadPublic] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [deleteDoc, setDeleteDoc] = useState<any>(null);
+  const [viewingDoc, setViewingDoc] = useState<string | null>(null);
   const [profile, setProfile] = useState({ businessType: '', businessCity: '', businessDept: '', businessAddress: '' });
   const [profileTouched, setProfileTouched] = useState(false);
 
@@ -170,16 +170,15 @@ export default function SellerProfilePage() {
     onError: () => enqueueSnackbar('Erreur lors de la mise à jour', { variant: 'error' }),
   });
 
-  const visibilityMut = useMutation({
-    mutationFn: ({ docId, isPublic }: any) => api.patch(`/sellers/me/documents/${docId}/visibility`, { isPublic }),
-    onSuccess: () => { refetchDocs(); enqueueSnackbar('Visibilité mise à jour', { variant: 'success' }); },
-  });
-
-  const deleteMut = useMutation({
-    mutationFn: (docId: string) => api.delete(`/sellers/me/documents/${docId}`),
-    onSuccess: () => { refetchDocs(); setDeleteDoc(null); enqueueSnackbar('Document supprimé', { variant: 'info' }); },
-    onError: () => enqueueSnackbar('Erreur', { variant: 'error' }),
-  });
+  const viewDocument = async (docId: string) => {
+    setViewingDoc(docId);
+    try {
+      const { data } = await api.get(`/sellers/me/documents/${docId}/view`);
+      window.open(data.url, '_blank', 'noopener,noreferrer');
+    } catch {
+      enqueueSnackbar('Impossible de charger le document', { variant: 'error' });
+    } finally { setViewingDoc(null); }
+  };
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -189,17 +188,16 @@ export default function SellerProfilePage() {
       const fd = new FormData();
       fd.append('file', file);
       fd.append('type', uploadType);
-      fd.append('isPublic', String(uploadPublic));
       await api.post('/sellers/me/documents', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
       refetchDocs();
-      enqueueSnackbar('Document uploadé !', { variant: 'success' });
+      qc.invalidateQueries({ queryKey: ['sellerMe'] });
+      enqueueSnackbar('Document envoyé !', { variant: 'success' });
     } catch (err: any) {
       enqueueSnackbar(err.response?.data?.message || 'Erreur upload', { variant: 'error' });
     } finally { setUploading(false); e.target.value = ''; }
   };
 
   const pf = (k: string) => (e: any) => { setProfile(p => ({ ...p, [k]: e.target.value })); setProfileTouched(true); };
-  const getDocVisibility = (doc: any) => doc.fileName?.startsWith('PUBLIC:') ?? false;
   const getDocLabel = (type: string) => DOC_TYPES.find(d => d.value === type)?.label ?? type;
 
   if (isLoading) return <Box sx={{ display: 'flex', justifyContent: 'center', py: 12 }}><CircularProgress sx={{ color: OR }} /></Box>;
@@ -216,6 +214,42 @@ export default function SellerProfilePage() {
         <Typography fontWeight={900} fontSize={{ xs: 20, md: 24 }} color={TXT} letterSpacing="-0.5px">Profil & Documents</Typography>
         <Typography fontSize={13} color={SUB}>Complétez votre profil pour obtenir le badge de confiance DealPam</Typography>
       </Box>
+
+      {/* Statut de vérification du compte */}
+      {sellerData?.status === 'REJECTED' && (
+        <Box sx={{ mb: 2.5, p: 2.5, borderRadius: '16px', bgcolor: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+            <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: RED, flexShrink: 0 }} />
+            <Typography fontWeight={800} fontSize={14} color={RED}>Vérification refusée</Typography>
+          </Box>
+          {sellerData?.rejectionReason && (
+            <Typography fontSize={12.5} color={SUB2} mb={1}>
+              <strong style={{ color: TXT }}>Motif :</strong> {sellerData.rejectionReason}
+            </Typography>
+          )}
+          <Typography fontSize={12} color={SUB}>
+            Corrigez les documents concernés et envoyez-les à nouveau ci-dessous — votre dossier repassera automatiquement "en attente" dès la resoumission.
+          </Typography>
+        </Box>
+      )}
+      {sellerData?.status === 'PENDING' && (
+        <Box sx={{ mb: 2.5, p: 2, borderRadius: '16px', bgcolor: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)',
+          display: 'flex', alignItems: 'center', gap: 1.2 }}>
+          <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: YLW, flexShrink: 0 }} />
+          <Typography fontSize={13} color={SUB2}>
+            <strong style={{ color: TXT }}>En attente de vérification</strong> — notre équipe examine votre dossier (gratuit, généralement sous 24-48h).
+          </Typography>
+        </Box>
+      )}
+      {sellerData?.status === 'APPROVED' && (
+        <Box sx={{ mb: 2.5, p: 2, borderRadius: '16px', bgcolor: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)',
+          display: 'flex', alignItems: 'center', gap: 1.2 }}>
+          <CheckCircle sx={{ fontSize: 16, color: GRN, flexShrink: 0 }} />
+          <Typography fontSize={13} color={SUB2}>
+            <strong style={{ color: TXT }}>Compte vérifié</strong> — votre identité a été validée par notre équipe.
+          </Typography>
+        </Box>
+      )}
 
       {/* Progress bar */}
       <Box sx={{ borderRadius: '16px', mb: 2.5, p: 2.5, overflow: 'hidden', position: 'relative',
@@ -304,27 +338,25 @@ export default function SellerProfilePage() {
 
         {/* Upload zone */}
         <Box sx={{ p: 2, borderRadius: '12px', border: `1.5px dashed rgba(255,255,255,0.12)`, bgcolor: 'rgba(255,255,255,0.02)', mb: 2.5 }}>
-          <Typography fontSize={13} fontWeight={700} color={TXT} mb={1.5}>Uploader un nouveau document</Typography>
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr auto' }, gap: 1.5, alignItems: 'center' }}>
+          <Typography fontSize={13} fontWeight={700} color={TXT} mb={0.5}>Envoyer un document</Typography>
+          <Typography fontSize={11.5} color={SUB} mb={1.5}>
+            Vos documents sont strictement confidentiels — consultables uniquement par vous et notre équipe de vérification.
+          </Typography>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr auto' }, gap: 1.5, alignItems: 'center' }}>
             <TextField size="small" select label="Type de document" value={uploadType} onChange={e => setUploadType(e.target.value)}
               SelectProps={{ native: true }} sx={fieldSx}>
               {DOC_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}{t.required ? ' *' : ''}</option>)}
             </TextField>
-            <Box onClick={() => setUploadPublic(p => !p)} sx={{ display: 'flex', alignItems: 'center', gap: 1.2, cursor: 'pointer' }}>
-              <Box sx={{ width: 36, height: 20, borderRadius: '10px', position: 'relative',
-                bgcolor: uploadPublic ? BLU : 'rgba(255,255,255,0.1)', transition: 'all 0.2s' }}>
-                <Box sx={{ position: 'absolute', top: 2, left: uploadPublic ? 18 : 2, width: 16, height: 16, borderRadius: '50%',
-                  bgcolor: 'white', transition: 'left 0.2s' }} />
-              </Box>
-              <Typography fontSize={12} color={SUB2}>{uploadPublic ? 'Visible marketplace' : 'Privé (admin)'}</Typography>
-            </Box>
             <Box>
-              <input type="file" ref={fileRef} style={{ display: 'none' }} accept=".pdf,.jpg,.jpeg,.png,.webp" onChange={handleUpload} />
+              <input type="file" ref={fileRef} style={{ display: 'none' }}
+                accept={uploadType === 'SELFIE' ? 'image/*' : '.pdf,.jpg,.jpeg,.png,.webp'}
+                capture={uploadType === 'SELFIE' ? 'user' : undefined}
+                onChange={handleUpload} />
               <Button onClick={() => fileRef.current?.click()} disabled={uploading}
                 startIcon={uploading ? <CircularProgress size={14} color="inherit" /> : <Upload sx={{ fontSize: 16 }} />}
                 sx={{ bgcolor: OR, color: '#fff', borderRadius: '10px', fontWeight: 700, whiteSpace: 'nowrap',
                   '&:hover': { bgcolor: '#E05A00' }, '&:disabled': { bgcolor: 'rgba(255,255,255,0.07)', color: SUB } }}>
-                {uploading ? 'Envoi…' : 'Choisir un fichier'}
+                {uploading ? 'Envoi…' : uploadType === 'SELFIE' ? 'Prendre un selfie' : 'Choisir un fichier'}
               </Button>
               <Typography fontSize={10} color={SUB} mt={0.5} textAlign="center">PDF, JPG, PNG — max 10 MB</Typography>
             </Box>
@@ -335,12 +367,11 @@ export default function SellerProfilePage() {
         {(docs as any[]).length === 0 ? (
           <Box sx={{ textAlign: 'center', py: 5 }}>
             <Description sx={{ fontSize: 44, color: BORD, mb: 1.5 }} />
-            <Typography fontSize={13} color={SUB}>Aucun document uploadé</Typography>
+            <Typography fontSize={13} color={SUB}>Aucun document envoyé</Typography>
           </Box>
         ) : (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
             {(docs as any[]).map((doc: any) => {
-              const isPublic = getDocVisibility(doc);
               const fileName = doc.fileName?.replace(/^(PUBLIC:|PRIVATE:)/, '') ?? 'Document';
               return (
                 <Box key={doc.id} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, p: 1.5, borderRadius: '12px',
@@ -351,31 +382,14 @@ export default function SellerProfilePage() {
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', mb: 0.3 }}>
                       <Typography fontSize={13} fontWeight={600} color={TXT}>{getDocLabel(doc.type)}</Typography>
                       <DocStatus isValid={doc.isValid} />
-                      <Box sx={{ px: 0.8, py: 0.15, borderRadius: '5px',
-                        bgcolor: isPublic ? 'rgba(16,185,129,0.1)' : 'rgba(255,255,255,0.06)',
-                        border: `1px solid ${isPublic ? 'rgba(16,185,129,0.25)' : BORD}` }}>
-                        <Typography fontSize={9.5} fontWeight={600} color={isPublic ? GRN : SUB}>
-                          {isPublic ? 'Public' : 'Privé'}
-                        </Typography>
-                      </Box>
                     </Box>
                     <Typography fontSize={11} color={SUB} noWrap>{fileName}</Typography>
                   </Box>
                   <Box sx={{ display: 'flex', gap: 0.8, flexShrink: 0 }}>
-                    <Box onClick={() => visibilityMut.mutate({ docId: doc.id, isPublic: !isPublic })}
-                      sx={{ width: 28, height: 28, borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        border: `1px solid ${BORD}`, '&:hover': { bgcolor: 'rgba(255,255,255,0.06)' } }}>
-                      {isPublic ? <Visibility sx={{ fontSize: 14, color: GRN }} /> : <VisibilityOff sx={{ fontSize: 14, color: SUB }} />}
-                    </Box>
-                    <Box onClick={() => window.open(doc.url, '_blank')}
+                    <Box onClick={() => viewDocument(doc.id)}
                       sx={{ width: 28, height: 28, borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
                         border: `1px solid ${BORD}`, '&:hover': { bgcolor: 'rgba(59,130,246,0.1)' } }}>
-                      <Description sx={{ fontSize: 14, color: BLU }} />
-                    </Box>
-                    <Box onClick={() => setDeleteDoc(doc)}
-                      sx={{ width: 28, height: 28, borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        border: '1px solid rgba(239,68,68,0.2)', '&:hover': { bgcolor: 'rgba(239,68,68,0.1)' } }}>
-                      <Delete sx={{ fontSize: 14, color: RED }} />
+                      {viewingDoc === doc.id ? <CircularProgress size={12} sx={{ color: BLU }} /> : <Visibility sx={{ fontSize: 14, color: BLU }} />}
                     </Box>
                   </Box>
                 </Box>
@@ -407,26 +421,6 @@ export default function SellerProfilePage() {
 
       {/* Away message */}
       <AwayMessageSection />
-
-      {/* Delete dialog */}
-      <Dialog open={!!deleteDoc} onClose={() => setDeleteDoc(null)} maxWidth="xs" fullWidth
-        PaperProps={{ sx: { bgcolor: CARD, border: `1px solid ${BORD}`, borderRadius: '20px' } }}>
-        <DialogTitle sx={{ color: TXT, fontWeight: 800, fontSize: 17 }}>Supprimer le document ?</DialogTitle>
-        <DialogContent>
-          <Box sx={{ p: 1.5, borderRadius: '10px', bgcolor: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
-            <Typography fontSize={13} color={RED}>Ce document sera définitivement supprimé et ne pourra pas être récupéré.</Typography>
-          </Box>
-        </DialogContent>
-        <DialogActions sx={{ p: 2.5, pt: 1, gap: 1 }}>
-          <Button onClick={() => setDeleteDoc(null)}
-            sx={{ color: SUB2, borderRadius: '10px' }}>Annuler</Button>
-          <Button onClick={() => deleteMut.mutate(deleteDoc?.id)} disabled={deleteMut.isPending}
-            sx={{ bgcolor: RED, color: '#fff', borderRadius: '10px', fontWeight: 700, px: 2.5,
-              '&:hover': { bgcolor: '#DC2626' }, '&:disabled': { bgcolor: 'rgba(255,255,255,0.07)', color: SUB } }}>
-            {deleteMut.isPending ? <CircularProgress size={16} color="inherit" /> : 'Supprimer'}
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Box>
   );
 }

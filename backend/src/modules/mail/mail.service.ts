@@ -267,6 +267,20 @@ export class MailService {
     await this.send(to, `✅ Votre boutique "${storeName}" est approuvée — DealPam`, this.layout('Boutique approuvée', `Votre boutique ${storeName} est validée et prête à vendre.`, body), 'seller');
   }
 
+  // ── 3b. SELLER DOCS SUBMITTED / RESUBMITTED — awaiting review ─────────────
+
+  async sendSellerDocsPending(to: string, firstName: string): Promise<void> {
+    const body = `
+      ${this.hero('⏳', '#EFF6FF', 'Documents reçus', 'Votre dossier est en cours de vérification')}
+      ${this.greeting(firstName)}
+      ${this.para('Nous avons bien reçu vos documents d\'identité. Notre équipe va les examiner et vous recevrez un email dès que la vérification sera terminée.')}
+      ${this.alert('Ce contrôle est gratuit et généralement traité sous 24 à 48h.', 'info')}
+      ${this.divider()}
+      <p style="margin:0;color:${BRAND.muted};font-size:13px;text-align:center;">Une question ? Contactez-nous à <a href="mailto:sellers@dealpam.com">sellers@dealpam.com</a></p>
+    `;
+    await this.send(to, 'Documents reçus — vérification en cours — DealPam', this.layout('Documents en cours de vérification', 'Votre dossier vendeur est en cours de vérification.', body), 'seller');
+  }
+
   // ── 4. SELLER REJECTED ─────────────────────────────────────────────────────
 
   async sendSellerRejected(to: string, firstName: string, reason?: string): Promise<void> {

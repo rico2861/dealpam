@@ -160,6 +160,21 @@ export default function SellersPage() {
   const suspendMut    = useMutation({ mutationFn: (id: string) => api.post(`/sellers/${id}/suspend`), onSuccess: () => { qc.invalidateQueries({ queryKey: ['sellers'] }); enqueueSnackbar('Vendeur suspendu', { variant: 'warning' }); } });
   const reactivateMut = useMutation({ mutationFn: (id: string) => api.post(`/sellers/${id}/reactivate`), onSuccess: () => { qc.invalidateQueries({ queryKey: ['sellers'] }); enqueueSnackbar('Vendeur réactivé', { variant: 'success' }); } });
 
+  const [viewingDoc, setViewingDoc] = useState<string | null>(null);
+  const viewDocument = async (sellerId: string, docId: string) => {
+    setViewingDoc(docId);
+    try {
+      const { data } = await api.get(`/sellers/${sellerId}/documents/${docId}/view`);
+      window.open(data.url, '_blank', 'noopener,noreferrer');
+    } catch {
+      enqueueSnackbar('Impossible de charger le document', { variant: 'error' });
+    } finally { setViewingDoc(null); }
+  };
+  const validateDocMut = useMutation({
+    mutationFn: ({ sellerId, docId, isValid }: any) => api.patch(`/sellers/${sellerId}/documents/${docId}/validate`, { isValid }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['seller-detail', detailId] }); enqueueSnackbar('Document mis à jour', { variant: 'success' }); },
+  });
+
   const columns: GridColDef[] = [
     {
       field: 'user', headerName: 'Vendeur', flex: 1.5, minWidth: 200,
@@ -346,6 +361,12 @@ export default function SellersPage() {
                 </Box>
               </Box>
 
+              {detailData.status === 'REJECTED' && detailData.rejectionReason && (
+                <Alert severity="error" sx={{ borderRadius: 2 }}>
+                  <strong>Motif du rejet :</strong> {detailData.rejectionReason}
+                </Alert>
+              )}
+
               <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
                 <AlternateEmail sx={{ fontSize: 15, color: '#999' }} />
                 <Typography fontSize={12.5}>{detailData.user?.email}</Typography>
@@ -383,6 +404,40 @@ export default function SellersPage() {
                   </Box>
                 </Box>
               ))}
+
+              <Divider />
+
+              <Typography fontSize={12} fontWeight={700} color="#555" textTransform="uppercase" letterSpacing={0.5}>
+                Documents KYC ({detailData.documents?.length ?? 0})
+              </Typography>
+              {(detailData.documents ?? []).length === 0 ? (
+                <Typography fontSize={12.5} color="#999">Aucun document soumis</Typography>
+              ) : (
+                (detailData.documents ?? []).map((doc: any) => (
+                  <Box key={doc.id} sx={{ display: 'flex', alignItems: 'center', gap: 1.2, p: 1.2, bgcolor: '#F9FAFB', borderRadius: 2 }}>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography fontSize={12.5} fontWeight={700}>{doc.type}</Typography>
+                      <Typography fontSize={11} color="#888" noWrap>{doc.fileName?.replace(/^(PUBLIC:|PRIVATE:)/, '')}</Typography>
+                    </Box>
+                    <Chip
+                      label={doc.isValid === true ? 'Validé' : doc.isValid === false ? 'Rejeté' : 'En attente'}
+                      size="small"
+                      sx={{ height: 20, fontSize: 10, fontWeight: 700,
+                        bgcolor: alpha(doc.isValid === true ? '#10B981' : doc.isValid === false ? '#EF4444' : '#F59E0B', 0.12),
+                        color: doc.isValid === true ? '#10B981' : doc.isValid === false ? '#EF4444' : '#F59E0B' }}
+                    />
+                    <IconButton size="small" onClick={() => viewDocument(detailData.id, doc.id)} disabled={viewingDoc === doc.id}>
+                      {viewingDoc === doc.id ? <CircularProgress size={14} /> : <Visibility sx={{ fontSize: 16 }} />}
+                    </IconButton>
+                    <IconButton size="small" onClick={() => validateDocMut.mutate({ sellerId: detailData.id, docId: doc.id, isValid: true })} sx={{ color: '#10B981' }}>
+                      <CheckCircle sx={{ fontSize: 16 }} />
+                    </IconButton>
+                    <IconButton size="small" onClick={() => validateDocMut.mutate({ sellerId: detailData.id, docId: doc.id, isValid: false })} sx={{ color: '#EF4444' }}>
+                      <Cancel sx={{ fontSize: 16 }} />
+                    </IconButton>
+                  </Box>
+                ))
+              )}
 
               {detailData.subscriptions?.filter((s: any) => s.isActive).length > 0 && (
                 <>

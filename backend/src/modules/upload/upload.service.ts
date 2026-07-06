@@ -1,5 +1,6 @@
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const sharp = require('sharp') as (input: Buffer) => any;
 import { randomBytes } from 'crypto';
@@ -21,10 +22,17 @@ export class UploadService {
   private s3: S3Client;
   private bucket: string;
   private cdnUrl: string;
+  // Bucket dédié aux documents d'identité (KYC) — idéalement un bucket R2
+  // SANS accès public (pas de domaine pub-*.r2.dev ni domaine custom), pour
+  // que ces fichiers ne soient jamais accessibles autrement que via une URL
+  // signée à courte durée de vie générée par ce service. Si non configuré,
+  // retombe sur le bucket public par défaut (à éviter en production KYC).
+  private docsBucket: string;
 
   constructor() {
     this.bucket = process.env.R2_BUCKET_NAME || 'dealpam';
     this.cdnUrl = process.env.R2_PUBLIC_URL || `${process.env.R2_ENDPOINT}/${this.bucket}`;
+    this.docsBucket = process.env.R2_DOCS_BUCKET_NAME || this.bucket;
 
     this.s3 = new S3Client({
       region: 'auto',
@@ -76,15 +84,35 @@ export class UploadService {
     const publicId = this.generateId();
     const key = `${folder}/${publicId}${ext}`;
 
+    // Pas de CacheControl "public" : ces fichiers ne doivent jamais être mis
+    // en cache par un CDN ni servis directement — uniquement via URL signée.
     await this.s3.send(new PutObjectCommand({
-      Bucket: this.bucket,
+      Bucket: this.docsBucket,
       Key: key,
       Body: file.buffer,
       ContentType: file.mimetype,
-      CacheControl: 'public, max-age=31536000, immutable',
     }));
 
-    return { url: `${this.cdnUrl}/${key}`, publicId };
+    // "url" ici n'est PAS une URL publique valide si docsBucket est privé —
+    // elle sert uniquement de référence interne pour reconstruire la clé
+    // (voir getDocumentSignedUrl). Ne jamais renvoyer ce champ tel quel à un client.
+    return { url: `${this.docsBucket}/${key}`, publicId };
+  }
+
+  // ── URL signée temporaire pour consulter un document privé ────────────────
+  // Seule façon légitime d'accéder à un document KYC : lien valide 5 minutes,
+  // généré à la demande pour un admin ou le vendeur propriétaire du document.
+  async getDocumentSignedUrl(publicId: string, fileName: string, folder = 'seller-documents', expiresInSeconds = 300): Promise<string> {
+    const ext = path.extname(fileName).toLowerCase() || '.pdf';
+    const key = `${folder}/${publicId}${ext}`;
+    const command = new GetObjectCommand({ Bucket: this.docsBucket, Key: key });
+    return getSignedUrl(this.s3, command, { expiresIn: expiresInSeconds });
+  }
+
+  async deleteDocument(publicId: string, fileName: string, folder = 'seller-documents'): Promise<void> {
+    const ext = path.extname(fileName).toLowerCase() || '.pdf';
+    const key = `${folder}/${publicId}${ext}`;
+    await this.s3.send(new DeleteObjectCommand({ Bucket: this.docsBucket, Key: key }));
   }
 
   // ── Delete ────────────────────────────────────────────────────────────────

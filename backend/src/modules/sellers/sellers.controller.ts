@@ -1,5 +1,5 @@
 import {
-  Controller, Get, Post, Patch, Delete, Param, Body, Query,
+  Controller, Get, Post, Patch, Param, Body, Query,
   UseGuards, UseInterceptors, UploadedFile, BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -13,7 +13,7 @@ import { CurrentUser } from '../../shared/decorators/current-user.decorator';
 import { Public } from '../../shared/decorators/public.decorator';
 import { SellersService } from './sellers.service';
 
-const DOC_TYPES = ['PATENTE', 'IDENTITY', 'BUSINESS_REGISTRATION', 'TAX', 'LEGAL', 'OTHER'] as const;
+const DOC_TYPES = ['PATENTE', 'IDENTITY', 'SELFIE', 'BUSINESS_REGISTRATION', 'TAX', 'LEGAL', 'OTHER'] as const;
 
 class UploadDocDto {
   @IsEnum(DOC_TYPES)
@@ -110,11 +110,11 @@ export class SellersController {
     return this.sellersService.updateDocumentVisibility(u.id, docId, dto.isPublic);
   }
 
-  @Delete('me/documents/:docId')
+  @Get('me/documents/:docId/view')
   @Roles('SELLER') @UseGuards(RolesGuard)
-  @ApiOperation({ summary: 'Supprimer un document' })
-  deleteDocument(@CurrentUser() u: any, @Param('docId') docId: string) {
-    return this.sellersService.deleteDocument(u.id, docId);
+  @ApiOperation({ summary: 'Obtenir une URL signée (5 min) pour consulter mon document' })
+  viewMyDocument(@CurrentUser() u: any, @Param('docId') docId: string) {
+    return this.sellersService.getMyDocumentUrl(u.id, docId);
   }
 
   // ── Seller profile update ─────────────────────────────────────────────────
@@ -155,6 +155,14 @@ export class SellersController {
 
   @Post(':id/reactivate') @Roles('ADMIN', 'SUPER_ADMIN') @UseGuards(RolesGuard)
   reactivate(@Param('id') id: string) { return this.sellersService.reactivate(id); }
+
+  // Admin: obtenir une URL signée (5 min) pour consulter un document vendeur
+  @Get(':sellerId/documents/:docId/view')
+  @Roles('ADMIN', 'SUPER_ADMIN', 'MODERATOR') @UseGuards(RolesGuard)
+  @ApiOperation({ summary: 'Admin: consulter un document vendeur (URL signée temporaire)' })
+  viewSellerDocument(@Param('sellerId') sellerId: string, @Param('docId') docId: string) {
+    return this.sellersService.getAdminDocumentUrl(sellerId, docId);
+  }
 
   // Admin: validate/invalidate a document
   @Patch(':sellerId/documents/:docId/validate')
