@@ -226,7 +226,7 @@ export default function ProductDetailPage() {
   };
 
   /* ── go to checkout (second CTA state) ──────────────────────────────────── */
-  const placeOrder = () => navigate('/checkout');
+  const placeOrder = () => navigate('/account/checkout');
 
   /* ── open platform chat with seller ─────────────────────────────────────── */
   const contactSeller = async () => {
