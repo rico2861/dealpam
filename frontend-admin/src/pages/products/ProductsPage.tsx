@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Container, Typography, Card, Box, Chip, Button, Tab, Tabs, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Avatar, CircularProgress } from '@mui/material';
+import { Container, Typography, Card, Box, Chip, Button, Tab, Tabs, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Avatar, CircularProgress, Tooltip } from '@mui/material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
-import { CheckCircle, Cancel, Visibility } from '@mui/icons-material';
+import { CheckCircle, Cancel, Visibility, Flag } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import api from '../../api/axios';
@@ -17,7 +17,7 @@ export default function ProductsPage() {
 
   const { data, isLoading } = useQuery({
     queryKey: ['adminProducts', tab],
-    queryFn: () => api.get(`/products?status=${tab}&limit=100`).then(r => r.data?.data || []),
+    queryFn: () => api.get(`/products/admin-list?status=${tab}&limit=100`).then(r => r.data?.data || []),
   });
 
   const approveMutation = useMutation({
@@ -34,7 +34,16 @@ export default function ProductsPage() {
     { field: 'img', headerName: '', width: 56, renderCell: (p) => (
       <Avatar variant="rounded" src={p.row.images?.[0]?.url} sx={{ width: 36, height: 36 }}>{p.row.name?.[0]}</Avatar>
     ), sortable: false },
-    { field: 'name', headerName: 'Produit', flex: 2, minWidth: 180 },
+    { field: 'name', headerName: 'Produit', flex: 2, minWidth: 180, renderCell: (p) => (
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.7, height: '100%' }}>
+        {p.row.isFlagged && (
+          <Tooltip title={p.row.flagReason || 'Contenu potentiellement sensible — à vérifier'}>
+            <Flag sx={{ fontSize: 16, color: '#EF4444' }} />
+          </Tooltip>
+        )}
+        <span>{p.row.name}</span>
+      </Box>
+    ) },
     { field: 'store', headerName: 'Boutique', flex: 1, minWidth: 120, renderCell: (p) => p.row.store?.name || '—' },
     { field: 'price', headerName: 'Prix (HTG)', width: 110, renderCell: (p) => `${Number(p.row.price).toLocaleString()} HTG` },
     { field: 'stock', headerName: 'Stock', width: 80, align: 'center' },

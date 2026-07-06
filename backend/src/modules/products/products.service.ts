@@ -3,6 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { UploadService } from '../upload/upload.service';
 import { EventsService } from '../events/events.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
+import { scanForProhibitedContent } from './content-moderation.util';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { FilterProductsDto } from './dto/filter-products.dto';
@@ -236,6 +237,11 @@ export class ProductsService {
     const parseColors = this.parseArrayField(dto.colors);
     const parseDepts  = this.parseArrayField(dto.deliveryDepts);
 
+    // Détection automatique de contenu potentiellement illicite (armes, drogues,
+    // contrefaçon…) — ne bloque jamais seule, force juste une revue admin même
+    // pour les types normalement publiés directement (services, etc.).
+    const moderation = scanForProhibitedContent(dto.name, dto.subtitle, dto.description);
+
     const product = await this.prisma.product.create({
       data: {
         storeId:     store.id,
@@ -263,8 +269,13 @@ export class ProductsService {
         requiresAppointment: (dto as any).requiresAppointment ?? false,
         serviceConfig: (dto as any).serviceConfig || null,
         priceUnit:   (dto as any).priceUnit || null,
-        // Services/RE/Freelance sont publiés directement ; produits physiques passent en révision
-        status:      (dto as any).productType && (dto as any).productType !== 'PHYSICAL'
+        isFlagged:   moderation.isFlagged,
+        flagReason:  moderation.reason,
+        // Services/RE/Freelance sont publiés directement ; produits physiques
+        // passent en révision ; un contenu suspect force la révision dans tous les cas.
+        status:      moderation.isFlagged
+                       ? 'PENDING_REVIEW'
+                       : (dto as any).productType && (dto as any).productType !== 'PHYSICAL'
                        ? 'PUBLISHED'
                        : 'PENDING_REVIEW',
         isFeatured:  sub.plan.tier === 'PREMIUM' || sub.plan.tier === 'ELITE',
@@ -396,6 +407,12 @@ export class ProductsService {
     // storeId must never be reassigned via update — ownership is fixed at creation
     const { storeId: _ignoredStoreId, ...safeDto } = dto as any;
 
+    const moderation = scanForProhibitedContent(
+      (dto as any).name ?? product.name,
+      (dto as any).subtitle ?? (product as any).subtitle,
+      (dto as any).description ?? product.description,
+    );
+
     await this.prisma.product.update({
       where: { id: productId },
       data: {
@@ -403,6 +420,8 @@ export class ProductsService {
         attributes: attributes !== undefined ? attributes : undefined,
         variants: undefined,
         status: 'PENDING_REVIEW',
+        isFlagged: moderation.isFlagged,
+        flagReason: moderation.reason,
       } as any,
     });
 
@@ -518,9 +537,11 @@ export class ProductsService {
     });
   }
 
-  async findAllAdmin(page = 1, limit = 50) {
+  async findAllAdmin(page = 1, limit = 50, status?: string) {
+    const where = status ? { status } : {};
     const [data, total] = await Promise.all([
       this.prisma.product.findMany({
+        where,
         skip: (page - 1) * limit, take: limit,
         orderBy: { createdAt: 'desc' },
         include: {
@@ -529,7 +550,7 @@ export class ProductsService {
           category: { select: { name: true, slug: true } },
         },
       }),
-      this.prisma.product.count(),
+      this.prisma.product.count({ where }),
     ]);
     return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }

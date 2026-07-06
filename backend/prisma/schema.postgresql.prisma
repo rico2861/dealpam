@@ -446,6 +446,10 @@ model Product {
   totalSold       Int       @default(0) @map("total_sold")
   viewCount       Int       @default(0) @map("view_count")
   rejectionReason String?   @map("rejection_reason")
+  // Détection automatique de mots-clés interdits (armes, drogues, contrefaçon…)
+  // à la publication — ne bloque jamais seul, force juste une revue admin.
+  isFlagged       Boolean   @default(false) @map("is_flagged")
+  flagReason      String?   @map("flag_reason")
 
   // Category-specific attributes stored as JSON (phone: brand/model/storage/ram; clothing: material/gender; etc.) — stocké en JSON.stringify()
   attributes      String?       @map("attributes")
