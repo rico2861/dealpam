@@ -67,12 +67,17 @@ export default defineConfig({
             },
           },
           {
-            // All other API calls — stale while revalidate
+            // Tout le reste (commandes, notifications, wallet, dashboard, chat…) —
+            // toujours essayer le réseau en premier. Le cache de secours ne sert
+            // qu'en cas de coupure réseau, jamais à la place d'une réponse fraîche :
+            // ces données changent en temps réel (statut de commande, paiement…)
+            // et ne doivent jamais rester figées pendant 24h comme avant.
             urlPattern: /^https?:\/\/.*\/v1\//,
-            handler: 'StaleWhileRevalidate',
+            handler: 'NetworkFirst',
             options: {
               cacheName: 'api-other',
-              expiration: { maxEntries: 60, maxAgeSeconds: 86400 },
+              expiration: { maxEntries: 100, maxAgeSeconds: 60 },
+              networkTimeoutSeconds: 8,
             },
           },
         ],

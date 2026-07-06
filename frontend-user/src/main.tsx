@@ -27,11 +27,14 @@ function AppSnackbarProvider({ children }: { children: React.ReactNode }) {
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000,   // 5 min — serve from cache without re-fetching
+      // 30s — assez court pour que commandes/statuts/notifications restent à
+      // jour, assez long pour ne pas re-fetcher à chaque micro-interaction.
+      // (refetchOnMount/refetchOnWindowFocus par défaut de react-query = true,
+      // donc changer de page ou revenir sur l'onglet rafraîchit les données
+      // périmées — c'était désactivé avant, ce qui gelait tout jusqu'au reload.)
+      staleTime: 30 * 1000,
       gcTime:    30 * 60 * 1000,  // 30 min — keep inactive data in memory
       retry: false,
-      refetchOnWindowFocus: false,
-      refetchOnMount: false,
     },
   },
 });
