@@ -49,6 +49,49 @@ const ATTR: Record<string, string> = {
   volume:'Volume',skinType:'Type peau',duration:'Durée',locationType:'Lieu',
 };
 
+/* ── countdown "clearance deal" banner — expiry is fixed per product/session
+   so it doesn't visually reset on every reload (still creates urgency) ───── */
+function useCountdown(slug?: string) {
+  const [left, setLeft] = useState(0);
+  useEffect(() => {
+    if (!slug) return;
+    const key = `dealExpiry:${slug}`;
+    let expiry = Number(localStorage.getItem(key));
+    if (!expiry || expiry < Date.now()) {
+      expiry = Date.now() + (12 * 3600 + Math.floor(Math.random() * 6 * 3600)) * 1000;
+      localStorage.setItem(key, String(expiry));
+    }
+    const tick = () => setLeft(Math.max(0, expiry - Date.now()));
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [slug]);
+  const h = String(Math.floor(left / 3_600_000)).padStart(2, '0');
+  const m = String(Math.floor((left % 3_600_000) / 60_000)).padStart(2, '0');
+  const s = String(Math.floor((left % 60_000) / 1000)).padStart(2, '0');
+  return { h, m, s };
+}
+
+function CountdownBanner({ slug }: { slug?: string }) {
+  const { h, m, s } = useCountdown(slug);
+  return (
+    <Box sx={{ display:'flex', alignItems:'center', gap:1.2, mb:2, px:1.6, py:1, borderRadius:'12px',
+      background:`linear-gradient(135deg,#B91C1C,${RED})`, boxShadow:'0 6px 18px rgba(239,68,68,0.3)' }}>
+      <FlashOn sx={{ fontSize:17, color:'#fff' }}/>
+      <Typography fontSize={12.5} fontWeight={800} color="#fff" sx={{ flex:1 }}>Offre flash — se termine dans</Typography>
+      <Box sx={{ display:'flex', gap:0.4 }}>
+        {[h,m,s].map((v,i)=>(
+          <React.Fragment key={i}>
+            <Box sx={{ bgcolor:'rgba(0,0,0,0.25)', color:'#fff', fontWeight:900, fontSize:12.5,
+              px:0.8, py:0.3, borderRadius:'6px', minWidth:26, textAlign:'center', fontVariantNumeric:'tabular-nums' }}>{v}</Box>
+            {i<2&&<Typography color="#fff" fontWeight={800} sx={{ lineHeight:'22px' }}>:</Typography>}
+          </React.Fragment>
+        ))}
+      </Box>
+    </Box>
+  );
+}
+
 function saveHist(p: any) {
   try {
     const prev: any[] = JSON.parse(localStorage.getItem('viewHistory') || '[]');
@@ -152,7 +195,7 @@ export default function ProductDetailPage() {
   const { data: sponR } = useQuery({ queryKey:['spon',dept],        queryFn:()=>api.get(`/products?sponsored=true&department=${dept}&limit=10`).then(r=>r.data?.data??[]), enabled:true });
   const { data: stR   } = useQuery({ queryKey:['stprod',stId],      queryFn:()=>api.get(`/products?storeId=${stId}&limit=8`).then(r=>r.data?.data??[]), enabled:!!stId });
   useQuery({ queryKey:['wl',product?.id], queryFn:()=>api.get('/wishlist').then(r=>{ setLiked(r.data.some((w:any)=>w.productId===product?.id)); return r.data; }), enabled:!!product?.id&&!!user&&!!localStorage.getItem('accessToken') });
-  useQuery({ queryKey:['cart-check',product?.id], queryFn:()=>api.get('/cart').then(r=>{ setInCart(r.data.items?.some((i:any)=>i.productId===product?.id)); return r.data; }), enabled:!!product?.id&&!!user&&!!localStorage.getItem('accessToken') });
+  const { data: miniCart } = useQuery({ queryKey:['cart-check',product?.id], queryFn:()=>api.get('/cart').then(r=>{ setInCart(r.data.items?.some((i:any)=>i.productId===product?.id)); return r.data; }), enabled:!!product?.id&&!!user&&!!localStorage.getItem('accessToken') });
 
   useEffect(()=>{ setIdx(0); setClr(null); setSz(null); }, [slug]);
   useEffect(()=>{
@@ -227,6 +270,30 @@ export default function ProductDetailPage() {
 
   /* ── go to checkout (second CTA state) ──────────────────────────────────── */
   const placeOrder = () => navigate('/account/checkout');
+
+  /* ── "Acheter maintenant" — add to cart (if needed) then jump straight to checkout ── */
+  const buyNow = async () => {
+    if (!user || !localStorage.getItem('accessToken')) {
+      navigate(`/login?next=${encodeURIComponent(window.location.pathname)}`);
+      return;
+    }
+    if (colors.length > 0 && !clr) {
+      document.getElementById('color-picker')?.scrollIntoView({ behavior:'smooth', block:'center' });
+      enqueueSnackbar('Veuillez choisir une couleur', { variant:'warning' });
+      return;
+    }
+    if (inCart) { placeOrder(); return; }
+    setLoading(true);
+    try {
+      await api.post('/cart/items', { productId:product.id, quantity:qty, color:clr||undefined, size:sz||undefined, variantId:av?.id||undefined });
+      await fetchCount();
+      setInCart(true);
+      placeOrder();
+    } catch(err:any) {
+      if (err?.response?.status === 401) navigate(`/login?next=${encodeURIComponent(window.location.pathname)}`);
+      else enqueueSnackbar("Erreur lors de l'ajout", { variant:'error' });
+    } finally { setLoading(false); }
+  };
 
   /* ── open platform chat with seller ─────────────────────────────────────── */
   const contactSeller = async () => {
@@ -484,6 +551,7 @@ export default function ProductDetailPage() {
 
             {/* price — mobile only: desktop shows it in the sticky buy box on the right */}
             <Box sx={{ display:{ xs:'block', lg:'none' } }}>
+              {sale&&<CountdownBanner slug={slug}/>}
               {exchangeRate&&(
                 <Box sx={{ display:'inline-flex', borderRadius:'8px', border:`1px solid ${BORD}`, overflow:'hidden', mb:1 }}>
                   {(['HTG','USD'] as const).map(c=>(
@@ -516,18 +584,25 @@ export default function ProductDetailPage() {
                   Couleur <Typography component="span" fontWeight={700} color={TXT} textTransform="none" letterSpacing={0} fontSize={13}>— {clr||'—'}</Typography>
                 </Typography>
                 <Box sx={{ display:'flex', gap:1.5, flexWrap:'wrap' }}>
-                  {colors.map(({ color:c, hex, img })=>{
+                  {colors.map(({ color:c, hex, img }, i)=>{
                     const sel = clr===c;
                     return (
                       <Tooltip key={c} title={c} arrow>
-                        <Box onClick={()=>{ if(clr===c){setClr(null);setIdx(0);}else{setClr(c);setSz(null);setIdx(0);} }}
-                          sx={{ width:48, height:48, borderRadius:'10px', cursor:'pointer', overflow:'hidden', position:'relative',
-                            outline:`2.5px solid ${sel?OR:'transparent'}`, outlineOffset:3,
-                            transition:'all 0.2s cubic-bezier(0.34,1.56,0.64,1)', '&:hover':{ transform:'scale(1.1)' } }}>
-                          {img ? <Box component="img" src={img} alt={c} sx={{ width:'100%', height:'100%', objectFit:'cover' }}/> : <Box sx={{ width:'100%', height:'100%', bgcolor:hex||'rgba(15,23,42,0.1)' }}/>}
-                          {sel&&<Box sx={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', bgcolor:'rgba(0,0,0,0.25)' }}>
-                            <CheckCircle sx={{ fontSize:20, color:'#fff' }}/>
-                          </Box>}
+                        <Box sx={{ position:'relative' }}>
+                          {i===0&&(
+                            <Box sx={{ position:'absolute', top:-9, left:-6, bgcolor:RED, color:'#fff', fontWeight:900,
+                              fontSize:9, px:0.7, py:0.15, borderRadius:'6px', letterSpacing:'0.3px', zIndex:1,
+                              boxShadow:'0 2px 6px rgba(239,68,68,0.4)' }}>HOT</Box>
+                          )}
+                          <Box onClick={()=>{ if(clr===c){setClr(null);setIdx(0);}else{setClr(c);setSz(null);setIdx(0);} }}
+                            sx={{ width:48, height:48, borderRadius:'10px', cursor:'pointer', overflow:'hidden', position:'relative',
+                              outline:`2.5px solid ${sel?OR:'transparent'}`, outlineOffset:3,
+                              transition:'all 0.2s cubic-bezier(0.34,1.56,0.64,1)', '&:hover':{ transform:'scale(1.1)' } }}>
+                            {img ? <Box component="img" src={img} alt={c} sx={{ width:'100%', height:'100%', objectFit:'cover' }}/> : <Box sx={{ width:'100%', height:'100%', bgcolor:hex||'rgba(15,23,42,0.1)' }}/>}
+                            {sel&&<Box sx={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', bgcolor:'rgba(0,0,0,0.25)' }}>
+                              <CheckCircle sx={{ fontSize:20, color:'#fff' }}/>
+                            </Box>}
+                          </Box>
                         </Box>
                       </Tooltip>
                     );
@@ -542,22 +617,29 @@ export default function ProductDetailPage() {
                 <Typography fontSize={12} fontWeight={600} color={SUB} textTransform="uppercase" letterSpacing="0.8px" mb={1.5}>
                   Taille <Typography component="span" fontWeight={700} color={TXT} textTransform="none" letterSpacing={0} fontSize={13}>— {sz||'—'}</Typography>
                 </Typography>
-                <Box sx={{ display:'flex', gap:1, flexWrap:'wrap' }}>
-                  {sizes.map((s:any)=>{
+                <Box sx={{ display:'flex', gap:1.4, flexWrap:'wrap' }}>
+                  {sizes.map((s:any,i:number)=>{
                     const sv  = variants.find((v:any)=>(!clr||v.color===clr)&&v.size===s);
                     const oos = sv&&sv.stock===0;
                     const sel = sz===s;
                     return (
-                      <Box key={s} onClick={()=>!oos&&setSz((x:any)=>x===s?null:s)}
-                        sx={{ px:2.2, py:0.9, borderRadius:'8px', cursor:oos?'not-allowed':'pointer',
-                          fontWeight:sel?800:500, fontSize:13.5,
-                          color:sel?'#fff':oos?SUB:TXT,
-                          bgcolor:sel?OR:'rgba(15,23,42,0.06)',
-                          border:`1.5px solid ${sel?OR:oos?BORD:'rgba(15,23,42,0.12)'}`,
-                          transition:'all 0.13s', position:'relative', overflow:'hidden',
-                          '&:hover':oos?{}:{ borderColor:OR } }}>
-                        {s}
-                        {oos&&<Box sx={{ position:'absolute', width:'150%', height:'1.5px', bgcolor:'rgba(15,23,42,0.14)', transform:'rotate(-12deg)', top:'50%', left:'-25%' }}/>}
+                      <Box key={s} sx={{ position:'relative' }}>
+                        {i===0&&!oos&&(
+                          <Box sx={{ position:'absolute', top:-9, left:-6, bgcolor:RED, color:'#fff', fontWeight:900,
+                            fontSize:9, px:0.7, py:0.15, borderRadius:'6px', letterSpacing:'0.3px', zIndex:1,
+                            boxShadow:'0 2px 6px rgba(239,68,68,0.4)' }}>HOT</Box>
+                        )}
+                        <Box onClick={()=>!oos&&setSz((x:any)=>x===s?null:s)}
+                          sx={{ px:2.4, py:1, borderRadius:'10px', cursor:oos?'not-allowed':'pointer',
+                            fontWeight:sel?800:600, fontSize:13.5,
+                            color:sel?'#fff':oos?SUB:TXT,
+                            bgcolor:sel?OR:'#fff',
+                            border:`1.5px solid ${sel?OR:oos?BORD:'rgba(15,23,42,0.16)'}`,
+                            transition:'all 0.13s', position:'relative', overflow:'hidden',
+                            '&:hover':oos?{}:{ borderColor:OR } }}>
+                          {s}
+                          {oos&&<Box sx={{ position:'absolute', width:'150%', height:'1.5px', bgcolor:'rgba(15,23,42,0.14)', transform:'rotate(-12deg)', top:'50%', left:'-25%' }}/>}
+                        </Box>
                       </Box>
                     );
                   })}
@@ -600,35 +682,26 @@ export default function ProductDetailPage() {
 
             {/* ── MAIN CTA — mobile only: desktop uses the sticky buy box on the right ── */}
             <Box sx={{ display:{ xs:'flex', lg:'none' }, flexDirection:'column', gap:1.5, mb:3.5 }}>
-              {!inCart ? (
-                /* State 1 — not yet in cart */
+              <Box sx={{ display:'flex', gap:1.2 }}>
                 <Button fullWidth onClick={addToCart} disabled={ctaDisabled}
-                  startIcon={loading ? <CircularProgress size={18} color="inherit"/> : <ShoppingCart sx={{ fontSize:20 }}/>}
-                  sx={{ py:2, borderRadius:'14px', fontWeight:900, fontSize:15.5, color:'#fff', letterSpacing:'0.3px',
-                    background: ctaDisabled ? undefined
-                      : needsColor ? 'linear-gradient(135deg,#4338CA,#6366F1)'
-                      : `linear-gradient(135deg,#C84D00,${OR},#FF8C38)`,
-                    boxShadow: ctaDisabled ? undefined
-                      : needsColor ? '0 6px 22px rgba(99,102,241,0.35)'
-                      : '0 6px 28px rgba(255,107,0,0.45)',
+                  startIcon={loading ? <CircularProgress size={16} color="inherit"/> : <ShoppingCart sx={{ fontSize:18 }}/>}
+                  sx={{ py:1.8, borderRadius:'14px', fontWeight:800, fontSize:13.5, color:OR, letterSpacing:'0.2px',
+                    bgcolor:'#fff', border:`2px solid ${ctaDisabled?BORD:OR}`,
+                    '&:hover:not(:disabled)':{ bgcolor:'rgba(255,107,0,0.06)' },
+                    '&:disabled':{ color:SUB, borderColor:BORD } }}>
+                  {loading ? '…' : stock===0 ? 'Épuisé' : needsColor ? 'Choisir' : 'Ajouter'}
+                </Button>
+                <Button fullWidth onClick={buyNow} disabled={ctaDisabled}
+                  endIcon={!loading&&<ArrowForward sx={{ fontSize:18 }}/>}
+                  sx={{ py:1.8, borderRadius:'14px', fontWeight:900, fontSize:14.5, color:'#fff', letterSpacing:'0.2px',
+                    background: ctaDisabled ? undefined : `linear-gradient(135deg,#C84D00,${RED},#FF8C38)`,
+                    boxShadow: ctaDisabled ? undefined : '0 6px 28px rgba(239,68,68,0.4)',
                     transition:'all 0.2s',
-                    '&:hover:not(:disabled)':{ transform:'translateY(-2px)',
-                      boxShadow: needsColor ? '0 10px 30px rgba(99,102,241,0.45)' : '0 10px 36px rgba(255,107,0,0.55)' },
-                    '&:active:not(:disabled)':{ transform:'none' },
+                    '&:hover:not(:disabled)':{ transform:'translateY(-2px)', boxShadow:'0 10px 36px rgba(239,68,68,0.5)' },
                     '&:disabled':{ bgcolor:'rgba(15,23,42,0.07)', color:SUB, boxShadow:'none' } }}>
-                  {loading ? 'Ajout…' : stock===0 ? 'Rupture de stock' : needsColor ? 'Choisissez une couleur' : 'Ajouter au panier'}
+                  {loading ? 'Ajout…' : needsColor ? 'Choisissez' : 'Acheter maintenant'}
                 </Button>
-              ) : (
-                /* State 2 — already in cart */
-                <Button fullWidth onClick={placeOrder}
-                  endIcon={<ArrowForward sx={{ fontSize:20 }}/>}
-                  sx={{ py:2, borderRadius:'14px', fontWeight:900, fontSize:15.5, color:'#fff',
-                    background:`linear-gradient(135deg,#C84D00,${OR},#FF8C38)`,
-                    boxShadow:'0 6px 28px rgba(255,107,0,0.45)',
-                    '&:hover':{ transform:'translateY(-2px)', boxShadow:'0 10px 36px rgba(255,107,0,0.55)' }, transition:'all 0.2s' }}>
-                  Passer la commande
-                </Button>
-              )}
+              </Box>
 
               <Button fullWidth variant="outlined"
                 onClick={contactSeller}
@@ -830,6 +903,7 @@ export default function ProductDetailPage() {
               '&::before':{ content:'""', position:'absolute', top:0, left:0, right:0, height:4,
                 background:`linear-gradient(90deg,${OR},#FF8C38)` } }}>
               <Typography fontSize={13} fontWeight={600} color={SUB} mb={0.5} noWrap sx={{ maxWidth:280 }}>{product.name}</Typography>
+              {sale&&<CountdownBanner slug={slug}/>}
               {exchangeRate&&(
                 <Box sx={{ display:'inline-flex', borderRadius:'8px', border:`1px solid ${BORD}`, overflow:'hidden', mb:1 }}>
                   {(['HTG','USD'] as const).map(c=>(
@@ -870,26 +944,24 @@ export default function ProductDetailPage() {
                 </Box>
               )}
 
-              {!inCart ? (
+              <Box sx={{ display:'flex', gap:1, mb:1.5 }}>
                 <Button fullWidth onClick={addToCart} disabled={ctaDisabled}
-                  startIcon={loading ? <CircularProgress size={16} color="inherit"/> : <ShoppingCart sx={{ fontSize:17 }}/>}
-                  sx={{ py:1.8, borderRadius:'12px', fontWeight:900, fontSize:14, color:'#fff', mb:1.5,
-                    background: ctaDisabled ? undefined : `linear-gradient(135deg,#C84D00,${OR})`,
-                    boxShadow: ctaDisabled ? undefined : '0 6px 22px rgba(255,107,0,0.38)',
+                  startIcon={loading ? <CircularProgress size={14} color="inherit"/> : <ShoppingCart sx={{ fontSize:15 }}/>}
+                  sx={{ py:1.6, borderRadius:'12px', fontWeight:800, fontSize:12.5, color:OR,
+                    bgcolor:'#fff', border:`2px solid ${ctaDisabled?BORD:OR}`,
+                    '&:hover:not(:disabled)':{ bgcolor:'rgba(255,107,0,0.06)' },
+                    '&:disabled':{ color:SUB, borderColor:BORD } }}>
+                  {loading ? '…' : stock===0 ? 'Épuisé' : 'Ajouter'}
+                </Button>
+                <Button fullWidth onClick={buyNow} disabled={ctaDisabled}
+                  sx={{ py:1.6, borderRadius:'12px', fontWeight:900, fontSize:13, color:'#fff',
+                    background: ctaDisabled ? undefined : `linear-gradient(135deg,#C84D00,${RED})`,
+                    boxShadow: ctaDisabled ? undefined : '0 6px 22px rgba(239,68,68,0.35)',
                     '&:disabled':{ bgcolor:'rgba(15,23,42,0.07)', color:SUB, boxShadow:'none' },
-                    '&:hover:not(:disabled)':{ boxShadow:'0 10px 28px rgba(255,107,0,0.5)', transform:'translateY(-1px)' }, transition:'all 0.18s' }}>
-                  {loading ? 'Ajout…' : stock===0 ? 'Rupture' : 'Ajouter au panier'}
+                    '&:hover:not(:disabled)':{ boxShadow:'0 10px 28px rgba(239,68,68,0.45)', transform:'translateY(-1px)' }, transition:'all 0.18s' }}>
+                  Acheter
                 </Button>
-              ) : (
-                <Button fullWidth onClick={placeOrder}
-                  endIcon={<ArrowForward sx={{ fontSize:17 }}/>}
-                  sx={{ py:1.8, borderRadius:'12px', fontWeight:900, fontSize:14, color:'#fff', mb:1.5,
-                    background:`linear-gradient(135deg,#C84D00,${OR})`,
-                    boxShadow:'0 6px 22px rgba(255,107,0,0.38)',
-                    '&:hover':{ boxShadow:'0 10px 28px rgba(255,107,0,0.5)', transform:'translateY(-1px)' }, transition:'all 0.18s' }}>
-                  Passer la commande
-                </Button>
-              )}
+              </Box>
 
               <Box onClick={toggleWL}
                 sx={{ display:'flex', alignItems:'center', justifyContent:'center', gap:1, py:1.4, borderRadius:'12px',
@@ -932,6 +1004,41 @@ export default function ProductDetailPage() {
           {hist.length>0&&<MRow title="Récemment consultés" products={hist}/>}
         </Box>
       </Box>
+
+      {/* floating cart panel — desktop only, mirrors the Temu-style persistent mini-cart */}
+      {miniCart?.items?.length > 0 && (
+        <Box sx={{ display:{ xs:'none', xl:'flex' }, flexDirection:'column', position:'fixed', top:100, right:24, width:220, zIndex:1100 }}>
+          <Box sx={{ bgcolor:CARD, borderRadius:'18px', border:`1px solid ${BORD}`, boxShadow:'0 12px 32px rgba(15,23,42,0.14)', overflow:'hidden' }}>
+            <Box sx={{ p:1.6, background:`linear-gradient(135deg,${OR},#FF8C38)`, display:'flex', alignItems:'center', gap:1 }}>
+              <ShoppingCart sx={{ fontSize:16, color:'#fff' }}/>
+              <Typography fontSize={12.5} fontWeight={800} color="#fff">Sous-total</Typography>
+            </Box>
+            <Box sx={{ p:1.8 }}>
+              <Typography fontWeight={900} fontSize={22} color={TXT} sx={{ letterSpacing:'-1px', mb:1.5 }}>{fmt(Number(miniCart.total||0))}</Typography>
+              <Box sx={{ display:'flex', gap:0.8, mb:1.5 }}>
+                {miniCart.items.slice(0,4).map((it:any,i:number)=>(
+                  <Box key={it.id||i} sx={{ width:40, height:40, borderRadius:'8px', overflow:'hidden', bgcolor:'rgba(15,23,42,0.04)', border:`1px solid ${BORD}`, flexShrink:0 }}>
+                    <Box component="img" src={it.product?.images?.[0]?.urlThumb||it.product?.images?.[0]?.urlMedium||'https://placehold.co/80x80/F1F5F9/94A3B8?text=+'}
+                      alt="" sx={{ width:'100%', height:'100%', objectFit:'cover' }}/>
+                  </Box>
+                ))}
+                {miniCart.items.length>4&&(
+                  <Box sx={{ width:40, height:40, borderRadius:'8px', bgcolor:'rgba(15,23,42,0.06)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                    <Typography fontSize={11} fontWeight={800} color={SUB2}>+{miniCart.items.length-4}</Typography>
+                  </Box>
+                )}
+              </Box>
+              <Button fullWidth onClick={()=>navigate('/cart')}
+                sx={{ py:1.2, borderRadius:'10px', fontWeight:800, fontSize:13, color:'#fff',
+                  background:`linear-gradient(135deg,#C84D00,${OR})`, boxShadow:'0 4px 14px rgba(255,107,0,0.35)',
+                  '&:hover':{ boxShadow:'0 6px 20px rgba(255,107,0,0.45)' } }}>
+                Aller au panier
+              </Button>
+              <Typography fontSize={10.5} color={SUB} textAlign="center" mt={1}>Livraison gratuite dès 3 000 HTG</Typography>
+            </Box>
+          </Box>
+        </Box>
+      )}
 
       {/* lightbox */}
       {lb&&(
