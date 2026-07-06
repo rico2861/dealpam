@@ -33,6 +33,7 @@ const SUB  = 'rgba(255,255,255,0.45)';
 const SUB2 = 'rgba(255,255,255,0.65)';
 
 const fmt = (v: number) => `${v.toLocaleString('fr-HT')} HTG`;
+const fmtUSD = (v: number) => `$${v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 const COND: Record<string, { label: string; color: string; bg: string }> = {
   new:         { label: 'Neuf',          color: GRN,       bg: 'rgba(16,185,129,0.12)' },
@@ -170,6 +171,16 @@ export default function ProductDetailPage() {
   const sale   = cur < orig;
   const disc   = sale ? Math.round((1-cur/orig)*100) : 0;
   const save   = sale ? orig-cur : 0;
+
+  // Devise d'affichage — les prix sont toujours stockés en HTG en base ;
+  // la conversion se fait uniquement à l'affichage, via le taux du vendeur.
+  const storeCurrency = product?.store?.currency || 'HTG';
+  const exchangeRate  = product?.store?.exchangeRate ? Number(product.store.exchangeRate) : null;
+  const [displayCurrency, setDisplayCurrency] = useState<'HTG'|'USD'>(storeCurrency === 'USD' ? 'USD' : 'HTG');
+  useEffect(() => { setDisplayCurrency(storeCurrency === 'USD' ? 'USD' : 'HTG'); }, [storeCurrency, product?.id]);
+  const fmtDisplay = (v: number) => displayCurrency === 'USD' && exchangeRate
+    ? fmtUSD(v / exchangeRate)
+    : fmt(v);
   const stock  = (av?.stock??null)!==null ? av!.stock : (product?.stock??0);
 
   const pImgs: any[] = product?.images??[];
@@ -471,16 +482,25 @@ export default function ProductDetailPage() {
 
             {/* price — mobile only: desktop shows it in the sticky buy box on the right */}
             <Box sx={{ display:{ xs:'block', lg:'none' } }}>
+              {exchangeRate&&(
+                <Box sx={{ display:'inline-flex', borderRadius:'8px', border:`1px solid ${BORD}`, overflow:'hidden', mb:1 }}>
+                  {(['HTG','USD'] as const).map(c=>(
+                    <Box key={c} onClick={()=>setDisplayCurrency(c)} sx={{ px:1.4, py:0.4, cursor:'pointer',
+                      bgcolor:displayCurrency===c?OR:'transparent', color:displayCurrency===c?'#fff':SUB,
+                      fontSize:11, fontWeight:800 }}>{c}</Box>
+                  ))}
+                </Box>
+              )}
               <Box sx={{ display:'flex', alignItems:'baseline', gap:2, mb:sale?0.5:3 }}>
                 <Typography fontWeight={900} color={TXT} sx={{ fontSize:{ xs:36, md:44 }, lineHeight:1, letterSpacing:'-2px' }}>
-                  {fmt(cur)}
+                  {fmtDisplay(cur)}
                 </Typography>
-                {sale&&<Typography color={SUB} sx={{ fontSize:{ xs:20, md:24 }, textDecoration:'line-through', fontWeight:400 }}>{fmt(orig)}</Typography>}
+                {sale&&<Typography color={SUB} sx={{ fontSize:{ xs:20, md:24 }, textDecoration:'line-through', fontWeight:400 }}>{fmtDisplay(orig)}</Typography>}
               </Box>
               {sale&&(
                 <Box sx={{ display:'inline-flex', alignItems:'center', gap:0.6, px:1.4, py:0.5, borderRadius:'8px',
                   bgcolor:'rgba(16,185,129,0.1)', border:'1px solid rgba(16,185,129,0.2)', mb:3 }}>
-                  <Typography fontSize={13} fontWeight={700} color={GRN}>Vous économisez {fmt(save)}</Typography>
+                  <Typography fontSize={13} fontWeight={700} color={GRN}>Vous économisez {fmtDisplay(save)}</Typography>
                 </Box>
               )}
             </Box>
@@ -804,13 +824,22 @@ export default function ProductDetailPage() {
             <Box sx={{ bgcolor:CARD, borderRadius:'20px', p:3, border:`1px solid ${BORD}`,
               boxShadow:'0 24px 64px rgba(0,0,0,0.5)' }}>
               <Typography fontSize={13} fontWeight={600} color={SUB} mb={0.5} noWrap sx={{ maxWidth:280 }}>{product.name}</Typography>
+              {exchangeRate&&(
+                <Box sx={{ display:'inline-flex', borderRadius:'8px', border:`1px solid ${BORD}`, overflow:'hidden', mb:1 }}>
+                  {(['HTG','USD'] as const).map(c=>(
+                    <Box key={c} onClick={()=>setDisplayCurrency(c)} sx={{ px:1.4, py:0.4, cursor:'pointer',
+                      bgcolor:displayCurrency===c?OR:'transparent', color:displayCurrency===c?'#fff':SUB,
+                      fontSize:11, fontWeight:800 }}>{c}</Box>
+                  ))}
+                </Box>
+              )}
               <Box sx={{ display:'flex', alignItems:'baseline', gap:1.5, mb:sale?0.5:2 }}>
-                <Typography fontWeight={900} color={TXT} sx={{ fontSize:32, letterSpacing:'-1.5px', lineHeight:1 }}>{fmt(cur)}</Typography>
-                {sale&&<Typography color={SUB} sx={{ fontSize:17, textDecoration:'line-through' }}>{fmt(orig)}</Typography>}
+                <Typography fontWeight={900} color={TXT} sx={{ fontSize:32, letterSpacing:'-1.5px', lineHeight:1 }}>{fmtDisplay(cur)}</Typography>
+                {sale&&<Typography color={SUB} sx={{ fontSize:17, textDecoration:'line-through' }}>{fmtDisplay(orig)}</Typography>}
               </Box>
               {sale&&(
                 <Box sx={{ display:'inline-flex', px:1.2, py:0.4, borderRadius:'8px', bgcolor:'rgba(16,185,129,0.1)', border:'1px solid rgba(16,185,129,0.2)', mb:2 }}>
-                  <Typography fontSize={12} fontWeight={700} color={GRN}>-{disc}% · Éco. {fmt(save)}</Typography>
+                  <Typography fontSize={12} fontWeight={700} color={GRN}>-{disc}% · Éco. {fmtDisplay(save)}</Typography>
                 </Box>
               )}
 
@@ -931,8 +960,8 @@ export default function ProductDetailPage() {
         borderTop:`1px solid ${BORD}`, boxShadow:'0 -8px 32px rgba(0,0,0,0.5)',
         p:1.5, gap:1.2, alignItems:'center' }}>
         <Box sx={{ flex:1, minWidth:0 }}>
-          <Typography fontWeight={900} sx={{ fontSize:20, color:TXT, lineHeight:1, letterSpacing:'-1px' }}>{fmt(cur)}</Typography>
-          {sale&&<Typography fontSize={11} color={SUB} sx={{ textDecoration:'line-through' }}>{fmt(orig)}</Typography>}
+          <Typography fontWeight={900} sx={{ fontSize:20, color:TXT, lineHeight:1, letterSpacing:'-1px' }}>{fmtDisplay(cur)}</Typography>
+          {sale&&<Typography fontSize={11} color={SUB} sx={{ textDecoration:'line-through' }}>{fmtDisplay(orig)}</Typography>}
         </Box>
         <IconButton size="small" onClick={toggleWL}
           sx={{ border:`1px solid ${liked?'rgba(239,68,68,0.4)':BORD}`, borderRadius:'8px', p:0.9,

@@ -165,6 +165,8 @@ model Store {
   deliveryZones String?   @map("delivery_zones")
   // Horaires : {mon:{open,close,closed},tue:…,wed:…,thu:…,fri:…,sat:…,sun:…}
   schedule      String?   @map("schedule")
+  currency     String    @default("HTG")
+  exchangeRate Decimal?  @map("exchange_rate")
   avgRating        Float     @default(0) @map("avg_rating")
   totalReviews     Int       @default(0) @map("total_reviews")
   totalSales       Int       @default(0) @map("total_sales")

@@ -263,6 +263,12 @@ model Store {
   pickupPoints String?  @map("pickup_points")
   // Zones de livraison : [{dept, priceHTG, estimatedDays}] — stocké en JSON.stringify()
   deliveryZones String? @map("delivery_zones")
+  // Devise d'affichage par défaut de la boutique : "HTG" ou "USD". Les prix
+  // produits restent toujours stockés en HTG ; ce champ ne pilote que l'affichage.
+  currency     String    @default("HTG")
+  // Taux de change défini par le vendeur : nombre de HTG pour 1 USD (ex: 132.5).
+  // Modifiable à tout moment — recalcule automatiquement les prix affichés.
+  exchangeRate Decimal?  @map("exchange_rate") @db.Decimal(10, 4)
   avgRating        Float     @default(0) @map("avg_rating")
   totalReviews     Int       @default(0) @map("total_reviews")
   totalSales       Int       @default(0) @map("total_sales")

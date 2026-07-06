@@ -281,12 +281,16 @@ function PaymentMethodsTab({ storeId, store }: { storeId: string; store: any }) 
   const [moncashPhone, setMoncashPhone] = useState(store?.moncashPhone || '');
   const [natcashPhone, setNatcashPhone] = useState(store?.natcashPhone || '');
   const [copied, setCopied] = useState(false);
+  const [currency, setCurrency] = useState<string>(store?.currency || 'HTG');
+  const [exchangeRate, setExchangeRate] = useState<string>(store?.exchangeRate != null ? String(store.exchangeRate) : '');
 
   const saveMutation = useMutation({
     mutationFn: () => api.patch('/stores/me', {
       acceptedPaymentMethods: JSON.stringify(accepted),
       moncashPhone,
       natcashPhone,
+      currency,
+      exchangeRate: exchangeRate ? Number(exchangeRate) : undefined,
     }),
     onSuccess: () => {
       enqueueSnackbar('Configuration paiement sauvegardee !', { variant: 'success' });
@@ -376,6 +380,36 @@ function PaymentMethodsTab({ storeId, store }: { storeId: string; store: any }) 
             )}
           </Box>
         </>
+      )}
+
+      <Divider sx={{ my: 2.5 }} />
+      <Typography fontWeight={700} fontSize={14} mb={0.5}>Devise de la boutique</Typography>
+      <Typography fontSize={12} color="#666" mb={2}>
+        Choisissez la devise par défaut de vos prix et votre propre taux de change. Les clients pourront basculer l'affichage entre HTG et USD sur la page produit.
+      </Typography>
+      <Grid container spacing={1.5}>
+        <Grid item xs={6}>
+          <FormControl fullWidth size="small">
+            <InputLabel>Devise par défaut</InputLabel>
+            <Select label="Devise par défaut" value={currency} onChange={e => setCurrency(e.target.value)}>
+              <MenuItem value="HTG">Gourdes (HTG)</MenuItem>
+              <MenuItem value="USD">Dollars US (USD)</MenuItem>
+            </Select>
+          </FormControl>
+        </Grid>
+        <Grid item xs={6}>
+          <TextField
+            fullWidth size="small" type="number" label="Taux de change (HTG pour 1 USD)"
+            placeholder="ex: 132.5" value={exchangeRate}
+            onChange={e => setExchangeRate(e.target.value)}
+            inputProps={{ min: 0, step: 0.01 }}
+          />
+        </Grid>
+      </Grid>
+      {!exchangeRate && (
+        <Alert severity="info" sx={{ mt: 1.5, fontSize: 12 }}>
+          Sans taux de change, les clients ne verront le prix que dans la devise par défaut — le basculement HTG/USD sera indisponible.
+        </Alert>
       )}
 
       <Button fullWidth variant="contained" disableElevation startIcon={<Save />}

@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards, Res } from '@nestjs/common';
 import { Response } from 'express';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
-import { IsOptional, IsString, IsEmail, MaxLength, IsArray, IsEnum, MinLength } from 'class-validator';
+import { IsOptional, IsString, IsEmail, MaxLength, IsArray, IsEnum, MinLength, IsIn, IsNumber, Min } from 'class-validator';
 import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
 import { RolesGuard } from '../../shared/guards/roles.guard';
 import { Roles } from '../../shared/decorators/roles.decorator';
@@ -31,6 +31,8 @@ class UpdateStoreDto {
   @IsOptional() @IsString() @MaxLength(100) department?: string;
   @IsOptional() @IsArray() acceptedPaymentMethods?: string[];
   @IsOptional() @IsString() @MaxLength(20) moncashPhone?: string;
+  @IsOptional() @IsIn(['HTG', 'USD']) currency?: string;
+  @IsOptional() @IsNumber() @Min(0.0001) exchangeRate?: number;
 }
 
 @ApiTags('Stores')

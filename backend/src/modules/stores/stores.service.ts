@@ -157,6 +157,8 @@ export class StoresService {
     pickupPoints?:           string;
     deliveryZones?:          string;
     schedule?:               string;
+    currency?:               string;
+    exchangeRate?:           number;
   }) {
     const store = await this.prisma.store.findUnique({
       where:   { id: storeId },
