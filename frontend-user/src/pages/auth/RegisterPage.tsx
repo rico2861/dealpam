@@ -387,10 +387,10 @@ export default function RegisterPage() {
       const { data } = await api.post('/auth/register', payload);
       setUser(data.user, data.accessToken, data.refreshToken);
       if (role === 'SELLER') {
-        enqueueSnackbar('🎁 Compte créé ! Profitez de vos 30 jours d\'essai gratuit.', { variant: 'success' });
+        enqueueSnackbar('Compte créé. Votre essai de 30 jours sur le plan Business a commencé.', { variant: 'success' });
         navigate('/seller');
       } else {
-        enqueueSnackbar('Compte créé ! Bienvenue sur DealPam 🎉', { variant: 'success' });
+        enqueueSnackbar('Compte créé. Bienvenue sur DealPam.', { variant: 'success' });
         navigate('/account');
       }
     } catch (err: any) {
@@ -443,9 +443,9 @@ export default function RegisterPage() {
             /* ── SELLER ── */
             <LeftPanel
               accent={PURPLE}
-              badge="🎁 30 jours d'essai GRATUIT pour tout nouveau vendeur"
+              badge="Essai gratuit de 30 jours sur le plan Business"
               headline={<>Transformez vos produits<br />en revenus stables,<br /><Box component="span" sx={{ color: PURPLE }}>dès aujourd'hui.</Box></>}
-              sub="Votre boutique en ligne, vos règles. Commandez, gérez, encaissez — depuis votre téléphone. Et pendant 30 jours, c'est gratuit."
+              sub="Votre boutique en ligne, vos règles. Commandes, gestion et encaissements — depuis votre téléphone. Plan Business inclus pendant 30 jours."
               features={[
                 { Icon: Inventory2Outlined,      title: 'Boutique complète en 5 min',      sub: 'Publiez vos produits avec photos, prix et stock.' },
                 { Icon: ChatBubbleOutlineRounded, title: 'Discutez directement avec vos clients', sub: 'Répondez, négociez et concluez en temps réel.' },
@@ -563,9 +563,11 @@ export default function RegisterPage() {
                   p: 1.8, borderRadius: '14px',
                   bgcolor: alpha(PURPLE, 0.1), border: `1.5px solid ${alpha(PURPLE, 0.3)}`,
                 }}>
-                  <Typography sx={{ fontSize: 22, lineHeight: 1 }}>🎁</Typography>
-                  <Typography sx={{ fontSize: 13, fontWeight: 700, color: '#D8B4FE', lineHeight: 1.4 }}>
-                    30 jours d'essai gratuit sur le plan Business, offerts automatiquement à la création de votre boutique.
+                  <Typography sx={{ fontSize: 12.5, fontWeight: 800, color: '#D8B4FE', letterSpacing: '0.3px', flexShrink: 0 }}>
+                    ESSAI GRATUIT
+                  </Typography>
+                  <Typography sx={{ fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.75)', lineHeight: 1.4 }}>
+                    30 jours sur le plan Business, activés automatiquement à la création de votre boutique.
                   </Typography>
                 </Box>
               )}
@@ -706,9 +708,11 @@ export default function RegisterPage() {
                     display: 'flex', alignItems: 'center', gap: 1.2, mt: 2, pt: 2,
                     borderTop: `1px solid ${alpha(PURPLE, 0.15)}`,
                   }}>
-                    <Typography sx={{ fontSize: 20, lineHeight: 1 }}>🎁</Typography>
-                    <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: '#D8B4FE', lineHeight: 1.4 }}>
-                      Dès la création, profitez de 30 jours d'essai gratuit sur le plan Business — sans engagement.
+                    <Typography sx={{ fontSize: 12, fontWeight: 800, color: '#D8B4FE', letterSpacing: '0.3px', flexShrink: 0 }}>
+                      ESSAI GRATUIT
+                    </Typography>
+                    <Typography sx={{ fontSize: 12.5, fontWeight: 500, color: 'rgba(255,255,255,0.7)', lineHeight: 1.4 }}>
+                      30 jours sur le plan Business, sans engagement, dès la création de votre compte.
                     </Typography>
                   </Box>
                 </Box>

@@ -74,24 +74,24 @@ export class SubscriptionCron {
         if (user?.email) {
           await this.mail.sendRaw(
             user.email,
-            '⛔ Votre boutique Dealpam a été désactivée',
+            'Votre abonnement DealPam a expiré',
             `
             <p>Bonjour <strong>${user.firstName}</strong>,</p>
-            <p>Votre abonnement <strong>${sub.plan.name}</strong>${sub.isTrial ? ' (essai gratuit)' : ''} a expiré le <strong>${sub.endDate.toLocaleDateString('fr-FR')}</strong>.</p>
-            <p>Conséquences immédiates :</p>
+            <p>Votre ${sub.isTrial ? "période d'essai" : `abonnement <strong>${sub.plan.name}</strong>`} a pris fin le <strong>${sub.endDate.toLocaleDateString('fr-FR')}</strong>.</p>
+            <p>Conséquences sur votre compte :</p>
             <ul>
-              <li>❌ Vous ne pouvez plus publier de nouveaux produits ou services</li>
-              <li>❌ Tous vos produits/services déjà publiés ne sont plus visibles par les clients sur la plateforme</li>
+              <li>Vous ne pouvez plus publier de nouveaux produits ou services</li>
+              <li>Vos produits et services publiés ne sont plus visibles sur la plateforme</li>
             </ul>
-            <p>✅ <strong>Bonne nouvelle :</strong> rien n'est supprimé. Vos produits restent enregistrés et repasseront automatiquement en ligne, tels quels, dès que vous payez un plan — aucune republication nécessaire.</p>
-            <p><a href="${process.env.FRONTEND_URL}/seller/subscription" style="background:#2563EB;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">Choisir un plan et réactiver ma boutique</a></p>
+            <p>Aucune donnée n'est supprimée. Vos produits restent enregistrés et seront republiés automatiquement, tels quels, dès l'activation d'un plan — aucune republication manuelle n'est nécessaire.</p>
+            <p><a href="${process.env.FRONTEND_URL}/seller/subscription" style="background:#2563EB;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">Sélectionner un plan</a></p>
             `,
             'seller',
           ).catch(() => null);
           await this.notifications.create(
             user.id,
-            'Boutique désactivée',
-            `Votre ${sub.isTrial ? "essai gratuit" : "abonnement " + sub.plan.name} a expiré. Vos produits ne sont plus visibles. Payez un plan pour tout réactiver.`,
+            'Abonnement expiré',
+            `Votre ${sub.isTrial ? "période d'essai" : "abonnement " + sub.plan.name} a expiré. Vos produits ne sont plus visibles sur la plateforme. Sélectionnez un plan pour les réactiver.`,
             'SUBSCRIPTION_EXPIRED',
           ).catch(() => null);
         }
@@ -119,25 +119,25 @@ export class SubscriptionCron {
         await this.mail.sendRaw(
           user.email,
           sub.isTrial
-            ? `⏰ Votre essai gratuit se termine dans ${daysLeft} jour(s)`
-            : `⏰ Votre abonnement expire dans ${daysLeft} jour(s)`,
+            ? `Votre période d'essai se termine dans ${daysLeft} jour(s)`
+            : `Votre abonnement expire dans ${daysLeft} jour(s)`,
           `
           <p>Bonjour <strong>${user.firstName}</strong>,</p>
-          <p>${sub.isTrial ? 'Votre période d\'essai gratuit de 30 jours' : `Votre abonnement <strong>${sub.plan.name}</strong>`} se termine dans <strong>${daysLeft} jour(s)</strong>.</p>
-          <p>⚠️ Si vous ne choisissez pas de plan avant cette date :</p>
+          <p>${sub.isTrial ? "Votre période d'essai de 30 jours sur le plan Business" : `Votre abonnement <strong>${sub.plan.name}</strong>`} se termine dans <strong>${daysLeft} jour(s)</strong>.</p>
+          <p>Sans sélection de plan avant cette date :</p>
           <ul>
             <li>Vous ne pourrez plus publier de nouveaux produits ou services</li>
-            <li>Tous vos produits/services actuellement publiés deviendront invisibles pour les clients</li>
+            <li>Vos produits et services publiés deviendront invisibles pour les clients</li>
           </ul>
-          <p>Vos données restent enregistrées — dès qu'un plan est payé, tout redevient visible automatiquement.</p>
-          <p><a href="${process.env.FRONTEND_URL}/seller/subscription" style="background:#2563EB;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">Choisir un plan maintenant</a></p>
+          <p>Vos données restent enregistrées. Dès l'activation d'un plan, tout redevient visible automatiquement.</p>
+          <p><a href="${process.env.FRONTEND_URL}/seller/subscription" style="background:#2563EB;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">Sélectionner un plan</a></p>
           `,
           'seller',
         ).catch(() => null);
         await this.notifications.create(
           user.id,
-          sub.isTrial ? `Essai gratuit : ${daysLeft}j restants` : `Abonnement : ${daysLeft}j restants`,
-          `${sub.isTrial ? "Votre essai gratuit" : `Votre abonnement ${sub.plan.name}`} se termine dans ${daysLeft} jour(s). Pensez à choisir un plan pour ne pas perdre la visibilité de vos produits.`,
+          sub.isTrial ? `Période d'essai : ${daysLeft} jour(s) restant(s)` : `Abonnement : ${daysLeft} jour(s) restant(s)`,
+          `${sub.isTrial ? "Votre période d'essai" : `Votre abonnement ${sub.plan.name}`} se termine dans ${daysLeft} jour(s). Sélectionnez un plan pour conserver la visibilité de vos produits.`,
           'SUBSCRIPTION_EXPIRING',
         ).catch(() => null);
       }

@@ -208,32 +208,32 @@ export class MailService {
   async sendSellerWelcomeTrial(to: string, firstName: string, storeName: string, trialEndDate: Date | null): Promise<void> {
     const end = trialEndDate?.toLocaleDateString('fr-FR', { timeZone: 'America/Port-au-Prince', dateStyle: 'long' });
     const body = `
-      ${this.hero('🚀', '#FFF8EC', `Bienvenue ${this.esc(firstName)}, votre boutique est prête !`, `${this.esc(storeName)} est en ligne`)}
+      ${this.hero('DP', '#F1F5F9', `Compte vendeur activé`, `${this.esc(storeName)} est en ligne`)}
       ${this.greeting(firstName)}
-      ${this.para(`Votre boutique <strong>${this.esc(storeName)}</strong> vient d'être créée sur DealPam.${trialEndDate ? ' Et on vous fait un cadeau de bienvenue :' : ''}`)}
+      ${this.para(`Votre boutique <strong>${this.esc(storeName)}</strong> a été créée avec succès sur DealPam.${trialEndDate ? ' Elle bénéficie automatiquement d\'une période d\'essai sur le plan Business.' : ''}`)}
       ${trialEndDate ? `
-      <div style="background:linear-gradient(135deg,#FFF8EC 0%,#FFEEDA 100%);border:2px solid ${BRAND.orange};border-radius:16px;padding:24px;text-align:center;margin:0 0 24px;">
-        <p style="margin:0 0 4px;color:${BRAND.orange};font-size:13px;text-transform:uppercase;letter-spacing:1.5px;font-weight:800;">Offre de bienvenue</p>
-        <p style="margin:0 0 8px;font-size:32px;font-weight:900;color:${BRAND.dark};">30 jours GRATUITS</p>
-        <p style="margin:0;color:${BRAND.text};font-size:14px;">Profitez de toutes les fonctionnalités du plan <strong>Business</strong> — badge vérifié, statistiques avancées, sans débourser un gourde.</p>
+      <div style="background:${BRAND.light};border:1px solid ${BRAND.border};border-radius:12px;padding:24px;margin:0 0 24px;">
+        <p style="margin:0 0 4px;color:${BRAND.muted};font-size:12px;text-transform:uppercase;letter-spacing:1px;font-weight:700;">Période d'essai</p>
+        <p style="margin:0 0 8px;font-size:26px;font-weight:800;color:${BRAND.dark};">30 jours — Plan Business</p>
+        <p style="margin:0;color:${BRAND.text};font-size:14px;line-height:1.6;">Accès complet aux fonctionnalités du plan Business : badge vendeur vérifié, statistiques de vente et visibilité prioritaire dans les résultats de recherche.</p>
       </div>` : ''}
       <ul style="color:${BRAND.text};font-size:14.5px;line-height:2;padding-left:20px;margin:0 0 24px;">
-        <li>📦 Publiez vos produits et services dès maintenant</li>
-        <li>✅ Badge vendeur vérifié inclus</li>
-        <li>📊 Statistiques de vente avancées</li>
-        <li>🎯 Visibilité prioritaire dans les recherches</li>
+        <li>Publication de produits et services</li>
+        <li>Badge vendeur vérifié</li>
+        <li>Statistiques de vente</li>
+        <li>Visibilité prioritaire dans les recherches</li>
       </ul>
       ${trialEndDate
-        ? this.alert(`⏳ Votre essai gratuit se termine le <strong>${end}</strong>. Choisissez un plan avant cette date pour garder votre boutique active sans interruption.`, 'warning')
-        : this.alert('Choisissez un plan d\'abonnement pour commencer à publier vos produits et services.', 'info')}
-      ${this.btn('Publier mon premier produit', `${BRAND.url}/seller/products`)}
+        ? this.alert(`Votre période d'essai se termine le <strong>${end}</strong>. Sélectionnez un plan d'abonnement avant cette date pour conserver l'accès sans interruption.`, 'info')
+        : this.alert('Sélectionnez un plan d\'abonnement pour commencer à publier vos produits et services.', 'info')}
+      ${this.btn('Accéder à mon espace vendeur', `${BRAND.url}/seller/products`)}
       ${this.divider()}
-      <p style="margin:0;color:${BRAND.muted};font-size:12.5px;text-align:center;">Des questions ? Contactez-nous à <a href="mailto:${BRAND.support}">sellers@dealpam.com</a></p>
+      <p style="margin:0;color:${BRAND.muted};font-size:12.5px;text-align:center;">Une question ? Contactez notre équipe à <a href="mailto:${BRAND.support}">sellers@dealpam.com</a></p>
     `;
     await this.send(
       to,
-      trialEndDate ? `🚀 ${firstName}, profitez de 30 jours gratuits sur DealPam !` : `🎉 Bienvenue sur DealPam, ${firstName} !`,
-      this.layout('Bienvenue vendeur', `Bienvenue ${firstName} ! Votre boutique DealPam est prête.`, body),
+      trialEndDate ? `Votre essai de 30 jours sur le plan Business a commencé` : `Bienvenue sur DealPam, ${firstName}`,
+      this.layout('Compte vendeur activé', `Votre boutique DealPam ${storeName} est prête.`, body),
       'seller',
     );
   }

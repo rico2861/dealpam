@@ -159,20 +159,20 @@ export default function SellerDashboard() {
           border: expiring ? '1px solid rgba(245,158,11,0.3)' : sub.isTrial ? `1px solid rgba(255,107,0,0.35)` : `1px solid rgba(37,99,235,0.3)` }}>
           <Box sx={{ display:'flex', justifyContent:'space-between', alignItems:'center', mb:1.5, flexWrap:'wrap', gap:1 }}>
             <Box sx={{ display:'flex', alignItems:'center', gap:1.5 }}>
-              {expiring ? <WarningAmber sx={{ color:GLD, fontSize:22 }}/> : sub.isTrial ? <Typography fontSize={22}>🎁</Typography> : <CheckCircle sx={{ color:'rgba(255,255,255,0.7)', fontSize:22 }}/>}
+              {expiring ? <WarningAmber sx={{ color:GLD, fontSize:22 }}/> : sub.isTrial ? <Typography fontSize={13} fontWeight={800} color={OR}>ESSAI</Typography> : <CheckCircle sx={{ color:'rgba(255,255,255,0.7)', fontSize:22 }}/>}
               <Box>
                 <Typography fontWeight={800} fontSize={15} color={expiring?GLD:sub.isTrial?OR:TXT}>
-                  {sub.isTrial ? 'Essai gratuit 30 jours' : (sub.plan?.name ?? 'Plan actif')}
+                  {sub.isTrial ? 'Période d\'essai — Plan Business' : (sub.plan?.name ?? 'Plan actif')}
                 </Typography>
                 <Typography fontSize={12} color={SUB}>
                   {sub.isTrial
-                    ? `Profitez de toutes les fonctionnalités ${sub.plan?.name ?? ''} sans payer`
+                    ? `Accès complet aux fonctionnalités ${sub.plan?.name ?? 'Business'}`
                     : (sub.plan?.maxProducts ? `${sub.plan.maxProducts} produits max` : 'Produits illimités')}
                   {!sub.isTrial && sub.plan?.maxStores>1 ? ` · ${sub.plan.maxStores} boutiques` : ''}
                 </Typography>
               </Box>
             </Box>
-            <Chip label={expiring?`⚠ ${daysLeft}j restants !`:`${daysLeft}j restants`}
+            <Chip label={expiring?`${daysLeft} jour(s) restant(s)`:`${daysLeft} jour(s) restant(s)`}
               sx={{ bgcolor: expiring ? 'rgba(245,158,11,0.15)' : sub.isTrial ? 'rgba(255,107,0,0.15)' : 'rgba(255,255,255,0.1)',
                 color: expiring ? GLD : sub.isTrial ? OR : TXT, fontWeight:700, fontSize:12 }}/>
           </Box>
@@ -184,8 +184,8 @@ export default function SellerDashboard() {
             <Box sx={{ display:'flex', justifyContent:'space-between', alignItems:'center', mt:1.5 }}>
               <Typography fontSize={12} color={SUB}>
                 {expiring
-                  ? '⏳ Passez à un plan payant pour ne rien perdre — vos produits resteront en ligne sans interruption.'
-                  : 'Aucune carte requise. Choisissez un plan à tout moment pour continuer après l\'essai.'}
+                  ? 'Sélectionnez un plan pour éviter toute interruption de visibilité de vos produits.'
+                  : 'Aucun moyen de paiement requis pendant la période d\'essai. Choisissez un plan à tout moment.'}
               </Typography>
               <Button component={Link} to="/seller/subscription" size="small" endIcon={<ArrowForward sx={{ fontSize:14 }}/>}
                 sx={{ borderRadius:'8px', bgcolor:OR, color:'#fff', fontWeight:700, fontSize:12, px:1.5, flexShrink:0,
