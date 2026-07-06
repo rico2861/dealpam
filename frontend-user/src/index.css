@@ -19,3 +19,16 @@ a { text-decoration: none; }
 ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
 
 ::selection { background: rgba(37,99,235,0.15); }
+
+/* Neutralise le fond blanc/jaune imposé par le navigateur sur l'autofill,
+   quel que soit le thème (clair ou sombre) : on retarde indéfiniment la
+   transition de background-color et on force le texte à hériter de sa
+   couleur d'origine, au lieu de coder une couleur de fond en dur. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  transition: background-color 600000s 0s, color 600000s 0s;
+  -webkit-text-fill-color: inherit !important;
+  caret-color: inherit;
+}
