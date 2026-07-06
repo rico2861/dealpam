@@ -1,6 +1,10 @@
+import { useCallback } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 import { useAdminStore } from './store/admin.store';
+import { useInactivityLogout } from './hooks/useInactivityLogout';
+
+const INACTIVITY_TIMEOUT_MS = 15 * 60 * 1000; // 15 min — panel admin (KYC, paiements)
 import AdminLayout from './components/layout/AdminLayout';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/dashboard/DashboardPage';
@@ -97,7 +101,13 @@ function canAccess(role: string, path: string): boolean {
 
 /** Redirects to /login if not authenticated. */
 function AuthGuard({ children }: { children: React.ReactNode }) {
-  const { admin } = useAdminStore();
+  const { admin, logout } = useAdminStore();
+  const onInactive = useCallback(() => {
+    sessionStorage.setItem('logout_reason', 'Déconnecté pour inactivité');
+    logout();
+  }, [logout]);
+  useInactivityLogout(INACTIVITY_TIMEOUT_MS, onInactive, !!admin);
+
   if (!admin) return <Navigate to="/login" replace />;
   return <>{children}</>;
 }

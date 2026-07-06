@@ -1,11 +1,14 @@
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useAuthStore } from './store/auth.store';
+import { useInactivityLogout } from './hooks/useInactivityLogout';
+
+const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000; // 30 min — client/vendeur (wallet, paiements)
 
 // Listens for token-expiry events from axios and redirects without page reload
 function SessionWatcher() {
-  const { logout } = useAuthStore();
+  const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   useEffect(() => {
     const handler = async (e: Event) => {
@@ -18,6 +21,12 @@ function SessionWatcher() {
     window.addEventListener('auth:session-expired', handler);
     return () => window.removeEventListener('auth:session-expired', handler);
   }, []); // eslint-disable-line
+
+  const onInactive = useCallback(() => {
+    window.dispatchEvent(new CustomEvent('auth:session-expired', { detail: { reason: 'Déconnecté pour inactivité' } }));
+  }, []);
+  useInactivityLogout(INACTIVITY_TIMEOUT_MS, onInactive, !!user);
+
   return null;
 }
 
