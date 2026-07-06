@@ -73,7 +73,12 @@
       "Bash(curl -s -m 30 \"https://backenddealpam.onrender.com/v1/products?sort=popular&limit=5\" -w \"\\\\nHTTP:%{http_code}\\\\n\")",
       "Bash(curl -s -m 20 -D - -o /dev/null \"https://backenddealpam.onrender.com/v1/products?featured=true&limit=5\")",
       "Bash(curl -s -m 20 -D - -o /dev/null \"https://backenddealpam.onrender.com/v1/products?sort=popular&limit=5\")",
-      "Bash(curl -s -m 20 -D - -o /dev/null \"https://backenddealpam.onrender.com/v1/products?limit=5\")"
+      "Bash(curl -s -m 20 -D - -o /dev/null \"https://backenddealpam.onrender.com/v1/products?limit=5\")",
+      "Bash(wait)",
+      "Bash(curl -s -m 20 \"https://backenddealpam.onrender.com/v1/products?featured=true&limit=3\" -w \"\\\\nHTTP:%{http_code}\\\\n\")",
+      "Bash(curl -s -m 20 \"https://backenddealpam.onrender.com/v1/products?sort=popular&limit=3\")",
+      "Bash(curl -s -m 20 \"https://backenddealpam.onrender.com/v1/products?sponsored=true&limit=3\")",
+      "Bash(curl -s -m 20 \"https://backenddealpam.onrender.com/v1/products?hasSale=true&limit=3\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\rb620099\\AppData\\Local\\Temp\\claude",

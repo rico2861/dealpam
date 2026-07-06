@@ -2357,7 +2357,8 @@ export default function HomePage() {
     staleTime: 180_000,
   });
   // Tendances régionales (fallback si pas d'historique)
-  const { data: regionalTrending = [] } = useQuery({
+  const MIN_TRENDING_VIEWS = 10;
+  const { data: regionalTrendingRaw = [] } = useQuery({
     queryKey: ['hp-regional', location?.department],
     queryFn: () => {
       const params = new URLSearchParams({ sort: 'views', limit: '16' });
@@ -2366,6 +2367,7 @@ export default function HomePage() {
     },
     staleTime: 180_000,
   });
+  const regionalTrending = (regionalTrendingRaw as any[]).filter((p: any) => (p.viewCount || 0) >= MIN_TRENDING_VIEWS);
 
   const { data: nearRaw = null } = useQuery({
     queryKey: ['hp-near', location?.department, location?.city],
