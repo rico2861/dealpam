@@ -557,6 +557,18 @@ export default function RegisterPage() {
                   );
                 })}
               </Box>
+              {role === 'SELLER' && (
+                <Box sx={{
+                  display: 'flex', alignItems: 'center', gap: 1.5, mb: 3,
+                  p: 1.8, borderRadius: '14px',
+                  bgcolor: alpha(PURPLE, 0.1), border: `1.5px solid ${alpha(PURPLE, 0.3)}`,
+                }}>
+                  <Typography sx={{ fontSize: 22, lineHeight: 1 }}>🎁</Typography>
+                  <Typography sx={{ fontSize: 13, fontWeight: 700, color: '#D8B4FE', lineHeight: 1.4 }}>
+                    30 jours d'essai gratuit sur le plan Business, offerts automatiquement à la création de votre boutique.
+                  </Typography>
+                </Box>
+              )}
               <Button fullWidth variant="contained" onClick={() => setStep(1)} endIcon={<ArrowForward />}
                 sx={submitSx(accent)}>
                 Continuer
@@ -689,6 +701,15 @@ export default function RegisterPage() {
                       placeholder="Ce que vous vendez…" accentColor={PURPLE} multiline rows={2} />
                     <Field label="NIF (optionnel)" value={form.nif} onChange={f('nif')}
                       placeholder="Numéro d'identification fiscale" accentColor={PURPLE} />
+                  </Box>
+                  <Box sx={{
+                    display: 'flex', alignItems: 'center', gap: 1.2, mt: 2, pt: 2,
+                    borderTop: `1px solid ${alpha(PURPLE, 0.15)}`,
+                  }}>
+                    <Typography sx={{ fontSize: 20, lineHeight: 1 }}>🎁</Typography>
+                    <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: '#D8B4FE', lineHeight: 1.4 }}>
+                      Dès la création, profitez de 30 jours d'essai gratuit sur le plan Business — sans engagement.
+                    </Typography>
                   </Box>
                 </Box>
               ) : (
