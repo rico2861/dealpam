@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Container, Typography, Card, Box, Chip, Button, Avatar, TextField,
   Tab, Tabs, Dialog, DialogTitle, DialogContent, DialogActions,
@@ -118,6 +119,7 @@ function PendingCard({ row, onApprove, onReject, onDetail }: { row: any; onAppro
 // ── Main ───────────────────────────────────────────────────────────────────
 
 export default function SellersPage() {
+  const navigate = useNavigate();
   const qc = useQueryClient();
   const { enqueueSnackbar } = useSnackbar();
   const [tab, setTab]         = useState('PENDING');
@@ -345,7 +347,14 @@ export default function SellersPage() {
 
       {/* Seller Detail Dialog */}
       <Dialog open={!!detailId} onClose={() => setDetailId(null)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
-        <DialogTitle>Détail vendeur</DialogTitle>
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          Détail vendeur
+          {detailId && (
+            <Button size="small" onClick={() => navigate(`/sellers/${detailId}`)} sx={{ borderRadius: 2 }}>
+              Voir le profil complet →
+            </Button>
+          )}
+        </DialogTitle>
         <DialogContent>
           {detailLoading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress /></Box>

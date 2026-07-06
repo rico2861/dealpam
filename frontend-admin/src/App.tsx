@@ -10,6 +10,7 @@ import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/dashboard/DashboardPage';
 import UsersPage from './pages/users/UsersPage';
 import SellersPage from './pages/sellers/SellersPage';
+import SellerDetailPage from './pages/sellers/SellerDetailPage';
 import ProductsPage from './pages/products/ProductsPage';
 import OrdersPage from './pages/orders/OrdersPage';
 import PaymentsPage from './pages/payments/PaymentsPage';
@@ -161,6 +162,7 @@ export default function App() {
             <Route path="users"         element={<RoleGuard path="/users">        <UsersPage /></RoleGuard>} />
             <Route path="staff"         element={<RoleGuard path="/staff">        <StaffPage /></RoleGuard>} />
             <Route path="sellers"       element={<RoleGuard path="/sellers">      <SellersPage /></RoleGuard>} />
+            <Route path="sellers/:id"   element={<RoleGuard path="/sellers">      <SellerDetailPage /></RoleGuard>} />
             <Route path="products"      element={<RoleGuard path="/products">     <ProductsPage /></RoleGuard>} />
             <Route path="orders"        element={<RoleGuard path="/orders">       <OrdersPage /></RoleGuard>} />
             <Route path="payments"      element={<RoleGuard path="/payments">     <PaymentsPage /></RoleGuard>} />

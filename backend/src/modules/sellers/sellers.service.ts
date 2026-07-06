@@ -164,7 +164,49 @@ export class SellersService {
       },
     });
     if (!seller) throw new NotFoundException('Vendeur introuvable');
-    return seller;
+
+    // ── Vue d'ensemble admin (Étape 6) : produits, dépenses, fiabilité ──────
+    const [products, disputesCount, subsSpent, adsSpent, verificationsSpent] = await Promise.all([
+      this.prisma.product.findMany({
+        where: { store: { sellerId: id } },
+        select: {
+          id: true, name: true, slug: true, price: true, salePrice: true,
+          status: true, productType: true, stock: true, avgRating: true,
+          createdAt: true, images: { take: 1, orderBy: { sortOrder: 'asc' }, select: { urlThumb: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 100,
+      }),
+      this.prisma.complaint.count({ where: { sellerId: id } }),
+      this.prisma.payment.aggregate({
+        where: { status: 'COMPLETED', subscription: { sellerId: id } },
+        _sum: { amountHTG: true },
+      }),
+      this.prisma.payment.aggregate({
+        where: { status: 'COMPLETED', adCampaign: { sellerId: id } },
+        _sum: { amountHTG: true },
+      }),
+      // Vérification de boutique payante (Étape 7) — champ pas encore modélisé,
+      // compté à 0 pour l'instant ; à brancher une fois ce paiement implémenté.
+      Promise.resolve({ _sum: { amountHTG: null as any } }),
+    ]);
+
+    const totalSpentHTG =
+      Number(subsSpent._sum.amountHTG ?? 0) +
+      Number(adsSpent._sum.amountHTG ?? 0) +
+      Number(verificationsSpent._sum.amountHTG ?? 0);
+
+    return {
+      ...seller,
+      products,
+      reliability: {
+        disputesCount,
+        avgRating: seller.stores[0]?.avgRating ?? 0,
+        totalReviews: seller.stores[0]?.totalReviews ?? 0,
+        memberSince: seller.createdAt,
+      },
+      totalSpentHTG,
+    };
   }
 
   // ── Admin: approve / reject / suspend ────────────────────────────────────
