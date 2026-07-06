@@ -46,6 +46,18 @@ export default defineConfig({
             },
           },
           {
+            // Plans d'abonnement / abonnement du vendeur — toujours vérifier le
+            // serveur en premier (tarifs, quotas, statut d'annulation ne doivent
+            // jamais rester figés sur une vieille valeur mise en cache).
+            urlPattern: /^https?:\/\/.*\/v1\/subscriptions/,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'api-subscriptions',
+              expiration: { maxEntries: 20, maxAgeSeconds: 60 },
+              networkTimeoutSeconds: 5,
+            },
+          },
+          {
             // Product images — cache first, 7 days
             urlPattern: /^https?:\/\/.*\.(png|jpg|jpeg|webp|gif|svg)$/,
             handler: 'CacheFirst',
