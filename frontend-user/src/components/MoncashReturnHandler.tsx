@@ -89,10 +89,15 @@ export default function MoncashReturnHandler() {
           showToast(`Pèman echwe: ${data.message ?? 'Erè enkoni'}`, 'error');
           return;
         }
-        if (data.type === 'subscription') {
+        if (data.type === 'subscription' || data.type === 'subscription_scheduled') {
           navigate('/order-received/thank-you', {
             replace: true,
-            state: { type: 'subscription', tier: data.tier, amount_htg: data.amount_htg },
+            state: {
+              type: data.type,
+              tier: data.tier,
+              amount_htg: data.amount_htg,
+              effective_date: data.effective_date,
+            },
           });
           return;
         }

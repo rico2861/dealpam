@@ -49,15 +49,17 @@ export default function ThankYouPage() {
 
   if (!state) return null;
 
-  return type === 'subscription'
+  return type === 'subscription' || type === 'subscription_scheduled'
     ? <SubscriptionThankYou state={state} firstName={firstName} />
     : <ProductThankYou state={state} firstName={firstName} />;
 }
 
 /* ─── Abonnement vendeur ──────────────────────────────────────────────────── */
 function SubscriptionThankYou({ state, firstName }: { state: any; firstName: string }) {
-  const tier   = state.tier as string | undefined;
-  const amount = state.amount_htg as number | undefined;
+  const tier          = state.tier as string | undefined;
+  const amount        = state.amount_htg as number | undefined;
+  const isScheduled   = state.type === 'subscription_scheduled';
+  const effectiveDate = state.effective_date ? new Date(state.effective_date).toLocaleDateString('fr-FR') : null;
 
   const TIER_LABELS: Record<string, string> = {
     STARTER: 'Starter', BUSINESS: 'Business', PREMIUM: 'Premium', ELITE: 'Elite',
@@ -90,7 +92,9 @@ function SubscriptionThankYou({ state, firstName }: { state: any; firstName: str
             {firstName ? `Merci ${firstName} !` : 'Merci pour votre paiement !'}
           </Typography>
           <Typography fontSize={14} color="rgba(255,255,255,0.45)" lineHeight={1.7}>
-            Votre abonnement <Box component="span" fontWeight={800} color={OR}>{TIER_LABELS[tier || ''] || tier}</Box> est maintenant actif.
+            {isScheduled
+              ? <>Votre passage au plan <Box component="span" fontWeight={800} color={OR}>{TIER_LABELS[tier || ''] || tier}</Box> est programmé{effectiveDate ? <> pour le <Box component="span" fontWeight={800} color="white">{effectiveDate}</Box></> : ''}.</>
+              : <>Votre abonnement <Box component="span" fontWeight={800} color={OR}>{TIER_LABELS[tier || ''] || tier}</Box> est maintenant actif.</>}
           </Typography>
         </Box>
 
@@ -110,7 +114,9 @@ function SubscriptionThankYou({ state, firstName }: { state: any; firstName: str
             </Box>
           )}
           <Typography fontSize={12} color="rgba(255,255,255,0.3)" mt={1.5}>
-            Toutes les fonctionnalités de votre plan sont disponibles immédiatement dans votre espace vendeur.
+            {isScheduled
+              ? `Votre plan actuel reste inchangé jusqu'au ${effectiveDate ?? 'terme de la période en cours'} — aucune interruption, aucun remboursement au prorata.`
+              : 'Toutes les fonctionnalités de votre plan sont disponibles immédiatement dans votre espace vendeur.'}
           </Typography>
         </Box>
 
