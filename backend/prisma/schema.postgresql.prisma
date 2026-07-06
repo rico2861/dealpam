@@ -334,6 +334,8 @@ model SellerSubscription {
   autoRenew Boolean          @default(true) @map("auto_renew")
   billingCycle String        @default("MONTHLY") @map("billing_cycle") // MONTHLY | ANNUAL
   isTrial   Boolean          @default(false) @map("is_trial")
+  // Le vendeur a demandé l'annulation : reste actif jusqu'à endDate, puis n'est pas renouvelé.
+  cancelAtPeriodEnd Boolean  @default(false) @map("cancel_at_period_end")
   payment   Payment?
   createdAt DateTime         @default(now()) @map("created_at")
   updatedAt DateTime         @updatedAt @map("updated_at")

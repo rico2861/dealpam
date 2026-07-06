@@ -127,12 +127,71 @@ export class SubscriptionsService {
     return subscription;
   }
 
-  // Abonnement actif du vendeur
+  // Abonnement actif du vendeur — inclut le changement de plan programmé
+  // (payé mais pas encore démarré) s'il y en a un, pour affichage côté vendeur.
   async getMySubscription(userId: string) {
     const seller = await this.prisma.seller.findUnique({ where: { userId } });
     if (!seller) return null;
-    return this.prisma.sellerSubscription.findFirst({
+    const current = await this.prisma.sellerSubscription.findFirst({
       where:   { sellerId: seller.id, isActive: true, endDate: { gt: new Date() } },
+      include: { plan: true },
+    });
+    if (!current) return null;
+
+    const scheduled = await this.prisma.sellerSubscription.findFirst({
+      where:   { sellerId: seller.id, isActive: false, startDate: { gte: current.endDate } },
+      include: { plan: true },
+      orderBy: { startDate: 'asc' },
+    });
+
+    return { ...current, scheduledPlan: scheduled ? scheduled.plan : null, scheduledStartDate: scheduled ? scheduled.startDate : null };
+  }
+
+  // ── Annulation : reste actif jusqu'à endDate, puis n'est pas renouvelé ────
+  // Pas de remboursement ni d'annulation rétroactive : le mois déjà payé est conservé.
+  async cancelSubscription(userId: string) {
+    const seller = await this.prisma.seller.findUnique({ where: { userId } });
+    if (!seller) throw new NotFoundException('Vendeur introuvable');
+
+    const current = await this.prisma.sellerSubscription.findFirst({
+      where: { sellerId: seller.id, isActive: true, endDate: { gt: new Date() } },
+    });
+    if (!current) throw new NotFoundException('Aucun abonnement actif à annuler.');
+
+    const paidChange = await this.prisma.sellerSubscription.findFirst({
+      where: { sellerId: seller.id, isActive: false, startDate: { gte: current.endDate } },
+      include: { payment: true },
+    });
+    if (paidChange?.payment?.status === 'COMPLETED') {
+      throw new ConflictException(
+        "Un changement de plan est déjà programmé et payé pour la prochaine période. Contactez le support pour l'annuler."
+      );
+    }
+    // Changement programmé mais jamais payé (abandonné) : on le retire, l'annulation prime.
+    if (paidChange) {
+      await this.prisma.sellerSubscription.delete({ where: { id: paidChange.id } });
+    }
+
+    return this.prisma.sellerSubscription.update({
+      where: { id: current.id },
+      data:  { cancelAtPeriodEnd: true },
+      include: { plan: true },
+    });
+  }
+
+  // ── Revenir sur une annulation avant la fin de la période payée ──────────
+  async undoCancelSubscription(userId: string) {
+    const seller = await this.prisma.seller.findUnique({ where: { userId } });
+    if (!seller) throw new NotFoundException('Vendeur introuvable');
+
+    const current = await this.prisma.sellerSubscription.findFirst({
+      where: { sellerId: seller.id, isActive: true, endDate: { gt: new Date() }, cancelAtPeriodEnd: true },
+    });
+    if (!current) throw new NotFoundException("Aucune annulation en cours à annuler.");
+
+    return this.prisma.sellerSubscription.update({
+      where: { id: current.id },
+      data:  { cancelAtPeriodEnd: false },
       include: { plan: true },
     });
   }

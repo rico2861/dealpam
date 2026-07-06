@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService }   from '../../prisma/prisma.service';
 import { MoncashService }  from '../moncash/moncash.service';
+import { CouponsService }  from '../coupons/coupons.service';
 import { Decimal }         from '@prisma/client/runtime/library';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -21,6 +22,7 @@ export class PaymentsService {
   constructor(
     private prisma:  PrismaService,
     private moncash: MoncashService,
+    private coupons: CouponsService,
   ) {}
 
   // ── Admin : tous les paiements ────────────────────────────────────────────
@@ -48,41 +50,183 @@ export class PaymentsService {
   //  ABONNEMENTS
   // ══════════════════════════════════════════════════════════════════════════
 
-  async initiateSubscriptionPayment(userId: string, planId: string, billingCycle: 'MONTHLY' | 'ANNUAL' = 'MONTHLY') {
+  async initiateSubscriptionPayment(
+    userId: string, planId: string,
+    billingCycle: 'MONTHLY' | 'ANNUAL' = 'MONTHLY',
+    couponCode?: string,
+  ) {
     const plan = await this.prisma.subscriptionPlan.findFirst({ where: { id: planId, isActive: true } });
     if (!plan) throw new NotFoundException('Plan introuvable ou inactif');
 
     const seller = await this.prisma.seller.findUnique({ where: { userId } });
     if (!seller) throw new NotFoundException('Profil vendeur introuvable');
 
-    // Plan gratuit → activer directement sans MonCash
+    // Abonnement en cours (payé) : le changement ne peut pas être immédiat,
+    // il prend effet à la fin de la période déjà payée — jamais de rétroactif.
+    const current = await this.prisma.sellerSubscription.findFirst({
+      where: { sellerId: seller.id, isActive: true, endDate: { gt: new Date() } },
+    });
+
+    if (current) {
+      if (current.planId === planId) {
+        throw new ConflictException('Vous êtes déjà sur ce plan pour la période en cours.');
+      }
+
+      const existingScheduled = await this.prisma.sellerSubscription.findFirst({
+        where: { sellerId: seller.id, isActive: false, startDate: { gte: current.endDate } },
+        include: { payment: true },
+      });
+      if (existingScheduled?.payment?.status === 'COMPLETED') {
+        throw new ConflictException(
+          "Un changement de plan est déjà programmé et payé pour la prochaine période. Contactez le support pour le modifier."
+        );
+      }
+      // Changement précédemment programmé mais jamais payé (abandonné) : on le remplace.
+      if (existingScheduled) {
+        await this.prisma.sellerSubscription.delete({ where: { id: existingScheduled.id } });
+      }
+
+      return this._scheduleplanChange(seller.id, current, plan, billingCycle, userId, couponCode);
+    }
+
+    // Aucun abonnement actif → activation immédiate (premier abonnement, ou après expiration)
     if (Number(plan.priceHTG) === 0) {
       return this._activateFreeSubscription(seller.id, planId);
     }
+    return this._payAndActivateNow(seller.id, plan, billingCycle, userId, couponCode);
+  }
 
+  // ── Choisir un plan différent alors qu'un abonnement payé est en cours ────
+  // Ne modifie PAS la période active : crée le prochain cycle (payé maintenant,
+  // démarre à la fin du cycle courant) et laisse le cron l'activer à endDate.
+  private async _scheduleplanChange(
+    sellerId: string, current: { id: string; endDate: Date },
+    plan: { id: string; priceHTG: any; annualDiscountPercent: number | null; name: string },
+    billingCycle: 'MONTHLY' | 'ANNUAL', userId: string, couponCode?: string,
+  ) {
+    const startDate = new Date(current.endDate);
+    const endDate    = new Date(startDate);
+    const isAnnual   = billingCycle === 'ANNUAL';
+    if (isAnnual) endDate.setFullYear(endDate.getFullYear() + 1);
+    else          endDate.setMonth(endDate.getMonth() + 1);
+
+    // Un changement de plan programmé annule une éventuelle annulation en cours —
+    // le vendeur a choisi de continuer, juste sur un autre plan.
+    await this.prisma.sellerSubscription.update({
+      where: { id: current.id },
+      data:  { cancelAtPeriodEnd: false },
+    });
+
+    if (Number(plan.priceHTG) === 0) {
+      const scheduled = await this.prisma.sellerSubscription.create({
+        data: { sellerId, planId: plan.id, startDate, endDate, isActive: false, billingCycle },
+        include: { plan: true },
+      });
+      return { type: 'subscription_scheduled', subscription: scheduled, amount_htg: 0, effective_date: startDate };
+    }
+
+    const monthlyPrice = Number(plan.priceHTG);
+    const discountPct  = plan.annualDiscountPercent ?? 25;
+    let amountHTG = isAnnual
+      ? Math.round(monthlyPrice * 12 * (1 - discountPct / 100))
+      : monthlyPrice;
+
+    let couponId: string | null = null;
+    let couponDiscount = 0;
+    if (couponCode) {
+      const { coupon, discount } = await this.coupons.validate(couponCode, 'SUBSCRIPTION', userId, amountHTG);
+      couponId = coupon.id;
+      couponDiscount = discount;
+      amountHTG = Math.max(0, amountHTG - discount);
+    }
+
+    const fullyCovered = amountHTG === 0 && couponId;
+    const scheduled = await this.prisma.sellerSubscription.create({
+      data: { sellerId, planId: plan.id, startDate, endDate, isActive: false, billingCycle },
+      include: { plan: true },
+    });
+
+    if (fullyCovered) {
+      await this.prisma.payment.create({
+        data: {
+          subscriptionId: scheduled.id, method: 'MONCASH', status: 'COMPLETED',
+          amountHTG: new Decimal(0), transactionId: `coupon-${scheduled.id}`,
+          moncashOrderId: `coupon-${scheduled.id}`, paidAt: new Date(),
+          couponId, couponDiscountHTG: new Decimal(couponDiscount),
+        },
+      });
+      await this.coupons.redeem(couponId!, userId, 'SUBSCRIPTION', scheduled.id, couponDiscount);
+      return { type: 'subscription_scheduled', subscription: scheduled, amount_htg: 0, effective_date: startDate };
+    }
+
+    const moncashRef = `sub-${scheduled.id}`;
+    const { redirectUrl } = await this.moncash.createPayment(amountHTG, moncashRef);
+
+    await this.prisma.payment.create({
+      data: {
+        subscriptionId:    scheduled.id,
+        method:            'MONCASH',
+        status:            'PENDING',
+        amountHTG:         new Decimal(amountHTG),
+        transactionId:     moncashRef,
+        moncashOrderId:    moncashRef,
+        couponId:          couponId ?? undefined,
+        couponDiscountHTG: couponId ? new Decimal(couponDiscount) : undefined,
+      },
+    });
+
+    return {
+      redirect_url:    redirectUrl,
+      subscription_id: scheduled.id,
+      amount_htg:      amountHTG,
+      plan:            plan.name,
+      effective_date:  startDate,
+    };
+  }
+
+  // ── Premier abonnement (ou reprise après expiration totale) — immédiat ───
+  private async _payAndActivateNow(
+    sellerId: string,
+    plan: { id: string; priceHTG: any; annualDiscountPercent: number | null; name: string },
+    billingCycle: 'MONTHLY' | 'ANNUAL', userId: string, couponCode?: string,
+  ) {
     const monthlyPrice = Number(plan.priceHTG);
     const isAnnual      = billingCycle === 'ANNUAL';
     const discountPct   = plan.annualDiscountPercent ?? 25;
-    // 12 mois au prix mensuel, moins la réduction annuelle configurée par l'admin
-    const amountHTG = isAnnual
+    let amountHTG = isAnnual
       ? Math.round(monthlyPrice * 12 * (1 - discountPct / 100))
       : monthlyPrice;
+
+    let couponId: string | null = null;
+    let couponDiscount = 0;
+    if (couponCode) {
+      const { coupon, discount } = await this.coupons.validate(couponCode, 'SUBSCRIPTION', userId, amountHTG);
+      couponId = coupon.id;
+      couponDiscount = discount;
+      amountHTG = Math.max(0, amountHTG - discount);
+    }
 
     const startDate = new Date();
     const endDate   = new Date();
     if (isAnnual) endDate.setFullYear(endDate.getFullYear() + 1);
     else          endDate.setMonth(endDate.getMonth() + 1);
 
-    // Créer abonnement inactif en attente de paiement
+    const fullyCovered = amountHTG === 0 && couponId;
     const sub = await this.prisma.$transaction(async (tx) => {
       await tx.sellerSubscription.updateMany({
-        where: { sellerId: seller.id, isActive: true },
+        where: { sellerId, isActive: true },
         data:  { isActive: false },
       });
       return tx.sellerSubscription.create({
-        data: { sellerId: seller.id, planId, startDate, endDate, isActive: false, billingCycle },
+        data: { sellerId, planId: plan.id, startDate, endDate, isActive: !!fullyCovered, billingCycle },
+        include: { plan: true },
       });
     });
+
+    if (fullyCovered) {
+      await this.coupons.redeem(couponId!, userId, 'SUBSCRIPTION', sub.id, couponDiscount);
+      return { type: 'subscription', subscription: sub, amount_htg: 0, coupon_discount_htg: couponDiscount };
+    }
 
     // orderId envoyé à MonCash = référence interne que MonCash nous renverra dans "reference"
     const moncashRef = `sub-${sub.id}`;
@@ -90,12 +234,14 @@ export class PaymentsService {
 
     await this.prisma.payment.create({
       data: {
-        subscriptionId: sub.id,
-        method:         'MONCASH',
-        status:         'PENDING',
-        amountHTG:      new Decimal(amountHTG),
-        transactionId:  moncashRef,
-        moncashOrderId: moncashRef,
+        subscriptionId:    sub.id,
+        method:            'MONCASH',
+        status:            'PENDING',
+        amountHTG:         new Decimal(amountHTG),
+        transactionId:     moncashRef,
+        moncashOrderId:    moncashRef,
+        couponId:          couponId ?? undefined,
+        couponDiscountHTG: couponId ? new Decimal(couponDiscount) : undefined,
       },
     });
 
@@ -194,15 +340,18 @@ export class PaymentsService {
         },
       });
 
-      // Activer l'abonnement
+      // Activer l'abonnement — sauf s'il s'agit d'un changement de plan programmé
+      // (startDate future) : le paiement est capturé maintenant, l'activation
+      // effective se fera au cron à la fin de la période en cours.
       if (payment.subscriptionId) {
+        const isImmediate = payment.subscription!.startDate <= new Date();
         const sub = await tx.sellerSubscription.update({
           where:   { id: payment.subscriptionId },
-          data:    { isActive: true },
+          data:    isImmediate ? { isActive: true } : {},
           include: { seller: { include: { stores: { where: { isPrimary: true }, take: 1 } } }, plan: true },
         });
         // Badge tier : le plan payant déclenche isVerified si le vendeur est APPROVED
-        if (sub.seller.status === 'APPROVED' && sub.seller.stores[0]) {
+        if (isImmediate && sub.seller.status === 'APPROVED' && sub.seller.stores[0]) {
           const hasDocs = await this.prisma.businessDocument.count({
             where: { sellerId: sub.sellerId, isValid: true },
           });
@@ -213,12 +362,25 @@ export class PaymentsService {
             });
           }
         }
+
+        // Enregistrer l'utilisation du coupon (si un coupon avait été appliqué à l'initiation)
+        if (payment.couponId) {
+          await tx.coupon.update({ where: { id: payment.couponId }, data: { usedCount: { increment: 1 } } });
+          await tx.couponRedemption.create({
+            data: {
+              couponId: payment.couponId, userId, context: 'SUBSCRIPTION',
+              referenceId: sub.id, amountDiscounted: payment.couponDiscountHTG ?? 0,
+            },
+          });
+        }
+
         return {
-          type:           'subscription',
+          type:           isImmediate ? 'subscription' : 'subscription_scheduled',
           tier:           sub.plan.tier,
           amount_htg:     Number(confirmedAmount),
           transaction_id: moncashTransactionId,
           payer:          mc.payer,
+          effective_date: isImmediate ? undefined : sub.startDate,
         };
       }
 

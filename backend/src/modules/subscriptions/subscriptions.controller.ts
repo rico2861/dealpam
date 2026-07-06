@@ -27,6 +27,15 @@ export class SubscriptionsController {
   @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('SELLER')
   startTrial(@CurrentUser() u: any) { return this.ss.startTrial(u.id); }
 
+  // ── Annulation : effective à la fin de la période déjà payée ─────────────
+  @Post('cancel')
+  @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('SELLER')
+  cancelSubscription(@CurrentUser() u: any) { return this.ss.cancelSubscription(u.id); }
+
+  @Post('cancel/undo')
+  @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('SELLER')
+  undoCancelSubscription(@CurrentUser() u: any) { return this.ss.undoCancelSubscription(u.id); }
+
   @Get()
   @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('ADMIN', 'SUPER_ADMIN')
   getAll(@Query('page') p: number) { return this.ss.getAll(p); }

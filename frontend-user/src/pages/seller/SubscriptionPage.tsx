@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Box, Typography, CircularProgress, TextField, InputAdornment } from '@mui/material';
 import { CheckCircle, Store, Star, WorkspacePremium, Diamond, CreditCard } from '@mui/icons-material';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
@@ -70,6 +70,8 @@ export default function SellerSubscriptionPage() {
   const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
   const [couponCode, setCouponCode] = useState('');
 
+  const qc = useQueryClient();
+
   const subscribeMut = useMutation({
     mutationFn: (planId: string) => api.post('/payments/subscription/initiate', { planId, couponCode: couponCode || undefined }).then(r => r.data),
     onSettled: () => setLoadingPlanId(null),
@@ -77,10 +79,33 @@ export default function SellerSubscriptionPage() {
       if (data?.redirect_url) {
         enqueueSnackbar(`Redirection MonCash pour ${data.plan}…`, { variant: 'info' });
         window.location.href = data.redirect_url;
+      } else if (data?.type === 'subscription_scheduled') {
+        const date = data.effective_date ? new Date(data.effective_date).toLocaleDateString('fr-FR') : '';
+        enqueueSnackbar(`Changement de plan programmé — effectif le ${date}`, { variant: 'success' });
+        qc.invalidateQueries({ queryKey: ['sellerSub'] });
       } else {
         enqueueSnackbar('Abonnement activé !', { variant: 'success' });
         navigate('/seller');
       }
+    },
+    onError: (e: any) => enqueueSnackbar(e.response?.data?.message || 'Erreur', { variant: 'error' }),
+  });
+
+  const cancelMut = useMutation({
+    mutationFn: () => api.post('/subscriptions/cancel').then(r => r.data),
+    onSuccess: (data: any) => {
+      const date = data.endDate ? new Date(data.endDate).toLocaleDateString('fr-FR') : '';
+      enqueueSnackbar(`Abonnement annulé — actif jusqu'au ${date}`, { variant: 'info' });
+      qc.invalidateQueries({ queryKey: ['sellerSub'] });
+    },
+    onError: (e: any) => enqueueSnackbar(e.response?.data?.message || 'Erreur', { variant: 'error' }),
+  });
+
+  const undoCancelMut = useMutation({
+    mutationFn: () => api.post('/subscriptions/cancel/undo').then(r => r.data),
+    onSuccess: () => {
+      enqueueSnackbar('Annulation annulée — votre abonnement continue normalement.', { variant: 'success' });
+      qc.invalidateQueries({ queryKey: ['sellerSub'] });
     },
     onError: (e: any) => enqueueSnackbar(e.response?.data?.message || 'Erreur', { variant: 'error' }),
   });
@@ -100,15 +125,45 @@ export default function SellerSubscriptionPage() {
 
       {/* Current plan banner */}
       {currentSub && (
-        <Box sx={{ mb: 3, p: 2, borderRadius: '14px', display: 'flex', alignItems: 'center', gap: 1.5,
-          bgcolor: daysLeft < 7 ? 'rgba(245,158,11,0.1)' : 'rgba(16,185,129,0.08)',
-          border: `1px solid ${daysLeft < 7 ? 'rgba(245,158,11,0.3)' : 'rgba(16,185,129,0.25)'}` }}>
-          <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: daysLeft < 7 ? YLW : GRN, flexShrink: 0 }} />
-          <Typography fontSize={13} color={SUB2}>
-            <strong style={{ color: TXT }}>Plan actuel : {currentSub.plan?.name}</strong>
-            {' — '}{daysLeft < 7 ? <span style={{ color: YLW }}>⚠ {daysLeft} jour{daysLeft !== 1 ? 's' : ''} restant{daysLeft !== 1 ? 's' : ''} — Pensez à renouveler !</span>
-              : <span style={{ color: GRN }}>{daysLeft} jours restants</span>}
-          </Typography>
+        <Box sx={{ mb: 3, p: 2, borderRadius: '14px',
+          bgcolor: currentSub.cancelAtPeriodEnd ? 'rgba(239,68,68,0.08)' : daysLeft < 7 ? 'rgba(245,158,11,0.1)' : 'rgba(16,185,129,0.08)',
+          border: `1px solid ${currentSub.cancelAtPeriodEnd ? 'rgba(239,68,68,0.3)' : daysLeft < 7 ? 'rgba(245,158,11,0.3)' : 'rgba(16,185,129,0.25)'}` }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+            <Box sx={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
+              bgcolor: currentSub.cancelAtPeriodEnd ? '#EF4444' : daysLeft < 7 ? YLW : GRN }} />
+            <Typography fontSize={13} color={SUB2} sx={{ flex: 1, minWidth: 200 }}>
+              <strong style={{ color: TXT }}>Plan actuel : {currentSub.plan?.name}</strong>
+              {' — '}{daysLeft < 7 ? <span style={{ color: YLW }}>⚠ {daysLeft} jour{daysLeft !== 1 ? 's' : ''} restant{daysLeft !== 1 ? 's' : ''}</span>
+                : <span style={{ color: GRN }}>{daysLeft} jours restants</span>}
+            </Typography>
+            {!currentSub.cancelAtPeriodEnd && !currentSub.scheduledPlan && (
+              <Typography component="span" onClick={() => { if (!cancelMut.isPending) cancelMut.mutate(); }}
+                sx={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.35)', cursor: 'pointer', textDecoration: 'underline', '&:hover': { color: '#EF4444' } }}>
+                {cancelMut.isPending ? 'Annulation…' : "Annuler l'abonnement"}
+              </Typography>
+            )}
+          </Box>
+
+          {/* Changement de plan programmé */}
+          {currentSub.scheduledPlan && (
+            <Typography fontSize={12.5} sx={{ mt: 1, color: '#93C5FD' }}>
+              Passage au plan <strong>{currentSub.scheduledPlan.name}</strong> programmé pour le{' '}
+              <strong>{new Date(currentSub.scheduledStartDate).toLocaleDateString('fr-FR')}</strong> (fin de la période en cours).
+            </Typography>
+          )}
+
+          {/* Annulation en cours */}
+          {currentSub.cancelAtPeriodEnd && (
+            <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+              <Typography fontSize={12.5} color="#FCA5A5">
+                Abonnement annulé — reste actif jusqu'au <strong>{new Date(currentSub.endDate).toLocaleDateString('fr-FR')}</strong>, puis ne sera pas renouvelé. Aucun remboursement sur la période déjà payée.
+              </Typography>
+              <Typography component="span" onClick={() => { if (!undoCancelMut.isPending) undoCancelMut.mutate(); }}
+                sx={{ fontSize: 12, fontWeight: 700, color: '#34D399', cursor: 'pointer', textDecoration: 'underline', whiteSpace: 'nowrap' }}>
+                {undoCancelMut.isPending ? '…' : "Annuler la résiliation"}
+              </Typography>
+            </Box>
+          )}
         </Box>
       )}
 
@@ -130,9 +185,10 @@ export default function SellerSubscriptionPage() {
         {(plans || []).map((plan: any) => {
           const color   = PLAN_COLORS[plan.tier] ?? OR;
           const PlanIcon = PLAN_ICONS[plan.tier] ?? Store;
-          const isCurrent = currentSub?.plan?.tier === plan.tier;
-          const isPopular = !!plan.isPopular;
-          const features  = buildPlanFeatures(plan);
+          const isCurrent   = currentSub?.plan?.tier === plan.tier;
+          const isScheduled = currentSub?.scheduledPlan?.tier === plan.tier;
+          const isPopular   = !!plan.isPopular;
+          const features    = buildPlanFeatures(plan);
 
           return (
             <Box key={plan.id} sx={{
@@ -157,6 +213,12 @@ export default function SellerSubscriptionPage() {
                 <Box sx={{ position: 'absolute', top: 16, right: 12, px: 0.9, py: 0.2, borderRadius: '6px',
                   bgcolor: `${color}22`, border: `1px solid ${color}55` }}>
                   <Typography fontSize={9} fontWeight={800} color={color}>✓ ACTUEL</Typography>
+                </Box>
+              )}
+              {isScheduled && !isCurrent && (
+                <Box sx={{ position: 'absolute', top: 16, right: 12, px: 0.9, py: 0.2, borderRadius: '6px',
+                  bgcolor: 'rgba(147,197,253,0.15)', border: '1px solid rgba(147,197,253,0.4)' }}>
+                  <Typography fontSize={9} fontWeight={800} color="#93C5FD">PROGRAMMÉ</Typography>
                 </Box>
               )}
 
@@ -197,21 +259,21 @@ export default function SellerSubscriptionPage() {
 
                 {/* CTA */}
                 <Box onClick={() => {
-                    if (isCurrent || subscribeMut.isPending) return;
+                    if (isCurrent || isScheduled || subscribeMut.isPending) return;
                     setLoadingPlanId(plan.id);
                     subscribeMut.mutate(plan.id);
                   }}
                   sx={{
-                    textAlign: 'center', py: 1.2, borderRadius: '11px', cursor: isCurrent ? 'default' : 'pointer',
-                    bgcolor: isCurrent ? 'rgba(255,255,255,0.04)' : color,
-                    border: `1px solid ${isCurrent ? BORD : 'transparent'}`,
+                    textAlign: 'center', py: 1.2, borderRadius: '11px', cursor: (isCurrent || isScheduled) ? 'default' : 'pointer',
+                    bgcolor: (isCurrent || isScheduled) ? 'rgba(255,255,255,0.04)' : color,
+                    border: `1px solid ${(isCurrent || isScheduled) ? BORD : 'transparent'}`,
                     transition: 'all 0.15s',
-                    '&:hover': { bgcolor: isCurrent ? 'rgba(255,255,255,0.04)' : `${color}dd`, filter: isCurrent ? 'none' : 'brightness(0.95)' },
+                    '&:hover': { bgcolor: (isCurrent || isScheduled) ? 'rgba(255,255,255,0.04)' : `${color}dd`, filter: (isCurrent || isScheduled) ? 'none' : 'brightness(0.95)' },
                   }}>
                   {loadingPlanId === plan.id
-                    ? <CircularProgress size={16} sx={{ color: isCurrent ? SUB : '#fff' }} />
-                    : <Typography fontSize={13} fontWeight={800} color={isCurrent ? SUB : '#fff'}>
-                        {isCurrent ? 'Plan actuel' : `Choisir ${plan.name}`}
+                    ? <CircularProgress size={16} sx={{ color: (isCurrent || isScheduled) ? SUB : '#fff' }} />
+                    : <Typography fontSize={13} fontWeight={800} color={(isCurrent || isScheduled) ? SUB : '#fff'}>
+                        {isCurrent ? 'Plan actuel' : isScheduled ? 'Déjà programmé' : currentSub ? `Passer à ${plan.name}` : `Choisir ${plan.name}`}
                       </Typography>}
                 </Box>
               </Box>
@@ -229,6 +291,11 @@ export default function SellerSubscriptionPage() {
         <Box>
           <Typography fontSize={13} fontWeight={700} color={TXT}>Méthodes de paiement acceptées</Typography>
           <Typography fontSize={12} color={SUB}>MonCash · NatCash · Visa/Mastercard · PayPal — L'abonnement est valable 30 jours</Typography>
+          {currentSub && (
+            <Typography fontSize={12} color={SUB} sx={{ mt: 0.3 }}>
+              Un changement de plan ne prend effet qu'à la fin de la période déjà payée — jamais immédiatement, jamais de remboursement rétroactif.
+            </Typography>
+          )}
         </Box>
       </Box>
     </Box>

@@ -54,7 +54,43 @@ export class SubscriptionCron {
           data: { isActive: false },
         });
 
-        // Suspend all published products of this store
+        // Un changement de plan a été programmé et payé pour cette période ?
+        // On l'active à la place de suspendre — c'est la continuité normale.
+        const scheduled = await this.prisma.sellerSubscription.findFirst({
+          where: { sellerId: sub.sellerId, isActive: false, startDate: { lte: now } },
+          include: { payment: true, plan: true },
+          orderBy: { startDate: 'desc' },
+        });
+
+        if (scheduled && (scheduled.payment?.status === 'COMPLETED' || Number(scheduled.plan.priceHTG) === 0)) {
+          await this.prisma.sellerSubscription.update({
+            where: { id: scheduled.id },
+            data:  { isActive: true },
+          });
+          const user = sub.seller.user;
+          if (user?.email) {
+            await this.mail.sendRaw(
+              user.email,
+              `Votre plan est passé à ${scheduled.plan.name}`,
+              `
+              <p>Bonjour <strong>${user.firstName}</strong>,</p>
+              <p>Comme demandé, votre abonnement <strong>${sub.plan.name}</strong> a pris fin le <strong>${sub.endDate.toLocaleDateString('fr-FR')}</strong> et votre nouveau plan <strong>${scheduled.plan.name}</strong> est maintenant actif.</p>
+              <p><a href="${process.env.FRONTEND_URL}/seller/subscription" style="background:#2563EB;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">Voir mon abonnement</a></p>
+              `,
+              'seller',
+            ).catch(() => null);
+            await this.notifications.create(
+              user.id,
+              'Changement de plan effectif',
+              `Votre plan est passé de ${sub.plan.name} à ${scheduled.plan.name}.`,
+              'SUBSCRIPTION_EXPIRED',
+            ).catch(() => null);
+          }
+          this.logger.log(`Seller ${sub.seller.id} switched ${sub.plan.tier} → ${scheduled.plan.tier}`);
+          continue;
+        }
+
+        // Pas de changement programmé (expiration naturelle ou annulation demandée) → suspendre
         const primaryStore = (sub.seller as any).stores?.[0];
         if (primaryStore) {
           await this.prisma.product.updateMany({
@@ -115,32 +151,71 @@ export class SubscriptionCron {
     for (const sub of expiringSoon) {
       const user = sub.seller.user;
       const daysLeft = Math.ceil((sub.endDate.getTime() - now.getTime()) / 86400000);
-      if (user?.email) {
+      if (!user?.email) continue;
+
+      // Un changement de plan est déjà programmé et payé → pas besoin de relancer,
+      // on confirme juste la date du changement à venir.
+      const scheduled = await this.prisma.sellerSubscription.findFirst({
+        where: { sellerId: sub.sellerId, isActive: false, startDate: { gte: sub.endDate } },
+        include: { payment: true, plan: true },
+      });
+      const hasPaidChange = scheduled && (scheduled.payment?.status === 'COMPLETED' || Number(scheduled.plan.priceHTG) === 0);
+
+      if (hasPaidChange) {
+        await this.notifications.create(
+          user.id,
+          `Changement de plan prévu dans ${daysLeft} jour(s)`,
+          `Votre plan passera de ${sub.plan.name} à ${scheduled!.plan.name} le ${sub.endDate.toLocaleDateString('fr-FR')}.`,
+          'SUBSCRIPTION_EXPIRING',
+        ).catch(() => null);
+        continue;
+      }
+
+      if (sub.cancelAtPeriodEnd) {
         await this.mail.sendRaw(
           user.email,
-          sub.isTrial
-            ? `Votre période d'essai se termine dans ${daysLeft} jour(s)`
-            : `Votre abonnement expire dans ${daysLeft} jour(s)`,
+          `Votre abonnement se termine dans ${daysLeft} jour(s), comme demandé`,
           `
           <p>Bonjour <strong>${user.firstName}</strong>,</p>
-          <p>${sub.isTrial ? "Votre période d'essai de 30 jours sur le plan Business" : `Votre abonnement <strong>${sub.plan.name}</strong>`} se termine dans <strong>${daysLeft} jour(s)</strong>.</p>
-          <p>Sans sélection de plan avant cette date :</p>
-          <ul>
-            <li>Vous ne pourrez plus publier de nouveaux produits ou services</li>
-            <li>Vos produits et services publiés deviendront invisibles pour les clients</li>
-          </ul>
-          <p>Vos données restent enregistrées. Dès l'activation d'un plan, tout redevient visible automatiquement.</p>
-          <p><a href="${process.env.FRONTEND_URL}/seller/subscription" style="background:#2563EB;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">Sélectionner un plan</a></p>
+          <p>Conformément à votre demande d'annulation, votre abonnement <strong>${sub.plan.name}</strong> restera actif jusqu'au <strong>${sub.endDate.toLocaleDateString('fr-FR')}</strong>, puis ne sera pas renouvelé.</p>
+          <p>Vous pouvez encore annuler cette annulation avant cette date depuis votre espace vendeur.</p>
+          <p><a href="${process.env.FRONTEND_URL}/seller/subscription" style="background:#2563EB;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">Gérer mon abonnement</a></p>
           `,
           'seller',
         ).catch(() => null);
         await this.notifications.create(
           user.id,
-          sub.isTrial ? `Période d'essai : ${daysLeft} jour(s) restant(s)` : `Abonnement : ${daysLeft} jour(s) restant(s)`,
-          `${sub.isTrial ? "Votre période d'essai" : `Votre abonnement ${sub.plan.name}`} se termine dans ${daysLeft} jour(s). Sélectionnez un plan pour conserver la visibilité de vos produits.`,
+          `Annulation effective dans ${daysLeft} jour(s)`,
+          `Votre abonnement ${sub.plan.name} se termine le ${sub.endDate.toLocaleDateString('fr-FR')} comme demandé.`,
           'SUBSCRIPTION_EXPIRING',
         ).catch(() => null);
+        continue;
       }
+
+      await this.mail.sendRaw(
+        user.email,
+        sub.isTrial
+          ? `Votre période d'essai se termine dans ${daysLeft} jour(s)`
+          : `Votre abonnement expire dans ${daysLeft} jour(s)`,
+        `
+        <p>Bonjour <strong>${user.firstName}</strong>,</p>
+        <p>${sub.isTrial ? "Votre période d'essai de 30 jours sur le plan Business" : `Votre abonnement <strong>${sub.plan.name}</strong>`} se termine dans <strong>${daysLeft} jour(s)</strong>.</p>
+        <p>Sans sélection de plan avant cette date :</p>
+        <ul>
+          <li>Vous ne pourrez plus publier de nouveaux produits ou services</li>
+          <li>Vos produits et services publiés deviendront invisibles pour les clients</li>
+        </ul>
+        <p>Vos données restent enregistrées. Dès l'activation d'un plan, tout redevient visible automatiquement.</p>
+        <p><a href="${process.env.FRONTEND_URL}/seller/subscription" style="background:#2563EB;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">Sélectionner un plan</a></p>
+        `,
+        'seller',
+      ).catch(() => null);
+      await this.notifications.create(
+        user.id,
+        sub.isTrial ? `Période d'essai : ${daysLeft} jour(s) restant(s)` : `Abonnement : ${daysLeft} jour(s) restant(s)`,
+        `${sub.isTrial ? "Votre période d'essai" : `Votre abonnement ${sub.plan.name}`} se termine dans ${daysLeft} jour(s). Sélectionnez un plan pour conserver la visibilité de vos produits.`,
+        'SUBSCRIPTION_EXPIRING',
+      ).catch(() => null);
     }
 
     this.logger.log(`Done: ${expired.length} expired, ${expiringSoon.length} warned`);
