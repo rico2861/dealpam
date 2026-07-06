@@ -78,7 +78,8 @@
       "Bash(curl -s -m 20 \"https://backenddealpam.onrender.com/v1/products?featured=true&limit=3\" -w \"\\\\nHTTP:%{http_code}\\\\n\")",
       "Bash(curl -s -m 20 \"https://backenddealpam.onrender.com/v1/products?sort=popular&limit=3\")",
       "Bash(curl -s -m 20 \"https://backenddealpam.onrender.com/v1/products?sponsored=true&limit=3\")",
-      "Bash(curl -s -m 20 \"https://backenddealpam.onrender.com/v1/products?hasSale=true&limit=3\")"
+      "Bash(curl -s -m 20 \"https://backenddealpam.onrender.com/v1/products?hasSale=true&limit=3\")",
+      "Bash(python3 -)"
     ],
     "additionalDirectories": [
       "C:\\Users\\rb620099\\AppData\\Local\\Temp\\claude",
