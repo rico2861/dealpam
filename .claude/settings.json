@@ -66,7 +66,14 @@
       "Bash(grep -n \"/\\\\* price \\\\*/\\\\|/\\\\* MAIN CTA \\\\*/\\\\|/\\\\* trust badges \\\\*/\\\\|/\\\\* stock \\\\*/\" \"c:/Users/rb620099/Downloads/github/dealpam/frontend-user/src/pages/public/ProductDetailPage.tsx\")",
       "Bash(grep -n \"/\\\\* trust badges \\\\*/\" \"c:/Users/rb620099/Downloads/github/dealpam/frontend-user/src/pages/public/ProductDetailPage.tsx\")",
       "Bash(grep -n \"width:{ xs:'100%', lg:'46%' }\" \"c:/Users/rb620099/Downloads/github/dealpam/frontend-user/src/pages/public/ProductDetailPage.tsx\")",
-      "Bash(grep -n \"height:{ xs:'72vw', sm:'55vw', md:440, lg:460 }\" \"c:/Users/rb620099/Downloads/github/dealpam/frontend-user/src/pages/public/ProductDetailPage.tsx\")"
+      "Bash(grep -n \"height:{ xs:'72vw', sm:'55vw', md:440, lg:460 }\" \"c:/Users/rb620099/Downloads/github/dealpam/frontend-user/src/pages/public/ProductDetailPage.tsx\")",
+      "Bash(curl -i https://backenddealpam.onrender.com/health)",
+      "Bash(git subtree *)",
+      "Bash(curl -s -m 30 \"https://backenddealpam.onrender.com/v1/products?featured=true&limit=5\" -w \"\\\\nHTTP:%{http_code}\\\\n\")",
+      "Bash(curl -s -m 30 \"https://backenddealpam.onrender.com/v1/products?sort=popular&limit=5\" -w \"\\\\nHTTP:%{http_code}\\\\n\")",
+      "Bash(curl -s -m 20 -D - -o /dev/null \"https://backenddealpam.onrender.com/v1/products?featured=true&limit=5\")",
+      "Bash(curl -s -m 20 -D - -o /dev/null \"https://backenddealpam.onrender.com/v1/products?sort=popular&limit=5\")",
+      "Bash(curl -s -m 20 -D - -o /dev/null \"https://backenddealpam.onrender.com/v1/products?limit=5\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\rb620099\\AppData\\Local\\Temp\\claude",

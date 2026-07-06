@@ -2302,7 +2302,8 @@ export default function HomePage() {
   const { data: onSaleFb = [] }       = useQuery({ queryKey: ['hp-sale-fb'],           queryFn: () => q(`/products?hasSale=true&sort=discount&limit=40`),            staleTime: 180_000, enabled: dept ? (onSaleRaw as any[]).length === 0 : false });
   const onSale = (onSaleRaw as any[]).length > 0 ? onSaleRaw : onSaleFb;
 
-  const { data: topSellers = [] }  = useQuery({ queryKey: ['hp-top', dept],        queryFn: () => q(`/products?sort=popular&limit=24${deptParam}`),               staleTime: 180_000 });
+  const { data: topSellersRaw = [] }  = useQuery({ queryKey: ['hp-top', dept],     queryFn: () => q(`/products?sort=popular&limit=24${deptParam}`),               staleTime: 180_000 });
+  const topSellers = (topSellersRaw as any[]).filter((p: any) => (p.totalSold || 0) > 0);
   const { data: featured = [] }    = useQuery({ queryKey: ['hp-featured', dept],   queryFn: () => q(`/products?featured=true&limit=24${deptParam}`),              staleTime: 300_000 });
 
   // Categories — queryKey inclut dept pour invalider quand la localisation change

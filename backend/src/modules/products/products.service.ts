@@ -543,8 +543,6 @@ export class ProductsService {
     const where: { status?: any } = {};
     if (status) where.status = status;
 
-    this.logger.log(`findAllAdmin: raw status param = ${JSON.stringify(status)} (type ${typeof status}), where = ${JSON.stringify(where)}`);
-
     const [data, total] = await Promise.all([
       this.prisma.product.findMany({
         where,
@@ -558,8 +556,6 @@ export class ProductsService {
       }),
       this.prisma.product.count({ where }),
     ]);
-
-    this.logger.log(`findAllAdmin: returned ${data.length} row(s), statuses = ${JSON.stringify(data.map((d: any) => d.status))}`);
 
     return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
