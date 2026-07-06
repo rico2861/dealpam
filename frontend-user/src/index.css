@@ -2,11 +2,12 @@
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-html { scroll-behavior: smooth; scrollbar-gutter: stable; overflow-y: scroll; }
+html { scroll-behavior: smooth; scrollbar-gutter: stable; overflow-y: scroll; color-scheme: light only; }
 
 body {
   font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
   background: #F1F5F9;
+  color-scheme: light only;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
