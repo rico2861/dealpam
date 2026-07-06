@@ -152,8 +152,10 @@ export default function StoreDetailPage() {
   };
 
   let paymentMethods: string[] = [];
-  try { paymentMethods = JSON.parse(store?.acceptedPaymentMethods || '[]'); } catch {}
-  if (!paymentMethods.length && store?.acceptedPaymentMethods) paymentMethods = [store.acceptedPaymentMethods];
+  try {
+    const parsed = JSON.parse(store?.acceptedPaymentMethods || '[]');
+    if (Array.isArray(parsed)) paymentMethods = parsed;
+  } catch { /* ignore malformed data */ }
 
   const memberSince = seller?.createdAt
     ? new Date(seller.createdAt).toLocaleDateString('fr-FR', { year: 'numeric', month: 'long' })

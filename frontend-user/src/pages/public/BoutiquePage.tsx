@@ -662,20 +662,33 @@ export default function BoutiquePage() {
                         <Typography fontSize={13} color="#475569">{label}</Typography>
                       </Box>
                     ))}
-                    {store.acceptedPaymentMethods && (
-                      <Box sx={{ mt: 1.5, pt: 1.5, borderTop: '1px solid #F1F5F9' }}>
-                        <Typography fontSize={12} fontWeight={700} color="#64748B" mb={0.8}>Paiements acceptés</Typography>
-                        <Box sx={{ display: 'flex', gap: 0.6, flexWrap: 'wrap' }}>
-                          {(Array.isArray(store.acceptedPaymentMethods)
-                            ? store.acceptedPaymentMethods
-                            : JSON.parse(store.acceptedPaymentMethods || '[]')
-                          ).map((m: string) => (
-                            <Chip key={m} label={m} size="small"
-                              sx={{ height: 20, fontSize: 11, bgcolor: '#F8FAFC' }} />
-                          ))}
+                    {(() => {
+                      // acceptedPaymentMethods peut être un tableau, une chaîne JSON
+                      // valide, ou (données historiques corrompues) "{}" — jamais
+                      // supposer que c'est un tableau sans vérifier, sinon .map()
+                      // plante toute la page.
+                      let methods: string[] = [];
+                      if (Array.isArray(store.acceptedPaymentMethods)) {
+                        methods = store.acceptedPaymentMethods;
+                      } else if (typeof store.acceptedPaymentMethods === 'string') {
+                        try {
+                          const parsed = JSON.parse(store.acceptedPaymentMethods || '[]');
+                          if (Array.isArray(parsed)) methods = parsed;
+                        } catch { /* ignore malformed data */ }
+                      }
+                      if (methods.length === 0) return null;
+                      return (
+                        <Box sx={{ mt: 1.5, pt: 1.5, borderTop: '1px solid #F1F5F9' }}>
+                          <Typography fontSize={12} fontWeight={700} color="#64748B" mb={0.8}>Paiements acceptés</Typography>
+                          <Box sx={{ display: 'flex', gap: 0.6, flexWrap: 'wrap' }}>
+                            {methods.map((m: string) => (
+                              <Chip key={m} label={m} size="small"
+                                sx={{ height: 20, fontSize: 11, bgcolor: '#F8FAFC' }} />
+                            ))}
+                          </Box>
                         </Box>
-                      </Box>
-                    )}
+                      );
+                    })()}
                   </Box>
                 )}
 

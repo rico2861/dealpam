@@ -274,7 +274,7 @@ function PaymentMethodsTab({ storeId, store }: { storeId: string; store: any }) 
   const parseArr = (val: any): string[] => {
     if (!val) return [];
     if (Array.isArray(val)) return val;
-    try { return JSON.parse(val); } catch { return []; }
+    try { const parsed = JSON.parse(val); return Array.isArray(parsed) ? parsed : []; } catch { return []; }
   };
 
   const [accepted, setAccepted] = useState<string[]>(parseArr(store?.acceptedPaymentMethods) || ['MONCASH', 'CASH']);
