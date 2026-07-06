@@ -25,12 +25,12 @@ const OR   = '#FF6B00';
 const RED  = '#EF4444';
 const GRN  = '#10B981';
 const GLD  = '#F59E0B';
-const BG   = '#060B14';
-const CARD = '#0D1424';
-const BORD = 'rgba(255,255,255,0.08)';
-const TXT  = 'rgba(255,255,255,0.92)';
-const SUB  = 'rgba(255,255,255,0.45)';
-const SUB2 = 'rgba(255,255,255,0.65)';
+const BG   = '#F7F8FA';
+const CARD = '#FFFFFF';
+const BORD = 'rgba(15,23,42,0.09)';
+const TXT  = '#0F172A';
+const SUB  = '#94A3B8';
+const SUB2 = '#475569';
 
 const fmt = (v: number) => `${v.toLocaleString('fr-HT')} HTG`;
 const fmtUSD = (v: number) => `$${v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -66,10 +66,10 @@ function MCard({ p }: { p: any }) {
     <Box component={Link} to={`/products/${p.slug}`}
       sx={{ textDecoration:'none', flexShrink:0, width:{ xs:148, sm:168, md:184 }, scrollSnapAlign:'start' }}>
       <Box sx={{ borderRadius:'16px', overflow:'hidden', bgcolor:CARD, border:`1px solid ${BORD}`,
-        transition:'all 0.22s', '&:hover':{ transform:'translateY(-4px)', borderColor:'rgba(255,107,0,0.3)', boxShadow:'0 16px 40px rgba(0,0,0,0.4)' } }}>
-        <Box sx={{ height:152, bgcolor:'rgba(255,255,255,0.03)', position:'relative', overflow:'hidden' }}>
+        transition:'all 0.22s', '&:hover':{ transform:'translateY(-4px)', borderColor:'rgba(255,107,0,0.3)', boxShadow:'0 16px 32px rgba(15,23,42,0.12)' } }}>
+        <Box sx={{ height:152, bgcolor:'rgba(15,23,42,0.04)', position:'relative', overflow:'hidden' }}>
           <Box component="img"
-            src={p.img||p.images?.[0]?.urlThumb||p.images?.[0]?.urlMedium||'https://placehold.co/300x300/0D1424/374151?text=+'}
+            src={p.img||p.images?.[0]?.urlThumb||p.images?.[0]?.urlMedium||'https://placehold.co/300x300/F1F5F9/94A3B8?text=+'}
             alt={p.name} loading="lazy" decoding="async"
             sx={{ width:'100%', height:'100%', objectFit:'cover', transition:'transform 0.4s', '&:hover':{ transform:'scale(1.07)' } }}/>
           {dc>0&&<Box sx={{ position:'absolute', top:8, left:8, bgcolor:RED, color:'#fff', fontWeight:800, fontSize:10, px:0.8, py:0.25, borderRadius:'6px' }}>-{dc}%</Box>}
@@ -187,7 +187,7 @@ export default function ProductDetailPage() {
   const vImg  = clr&&av?.imageUrl ? { urlFull:av.imageUrl, urlMedium:av.imageUrl, urlThumb:av.imageUrl } : null;
   const allI  = vImg ? [vImg,...pImgs] : pImgs;
   const ci    = allI[idx];
-  const src   = ci?.urlFull||ci?.urlMedium||ci?.urlThumb||'https://placehold.co/900x900/0D1424/374151?text=Photo';
+  const src   = ci?.urlFull||ci?.urlMedium||ci?.urlThumb||'https://placehold.co/900x900/F1F5F9/94A3B8?text=Photo';
 
   const sim  = (simR ??[]).filter((p:any)=>p.slug!==slug).slice(0,10);
   const spon = (sponR??[]).filter((p:any)=>p.slug!==slug).slice(0,10);
@@ -276,7 +276,7 @@ export default function ProductDetailPage() {
           </Button>
           <Button component={Link} to="/home" variant="outlined"
             sx={{ borderRadius:'12px', px:4, py:1.4, fontWeight:600, borderColor:BORD, color:SUB2,
-              '&:hover':{ borderColor:'rgba(255,255,255,0.2)' } }}>
+              '&:hover':{ borderColor:'rgba(15,23,42,0.16)' } }}>
             Accueil
           </Button>
         </Box>
@@ -310,7 +310,7 @@ export default function ProductDetailPage() {
                   {allI.map((im:any,i:number)=>(
                     <Box key={i} onClick={()=>setIdx(i)}
                       sx={{ flexShrink:0, width:64, height:64, borderRadius:'10px', overflow:'hidden', cursor:'pointer',
-                        bgcolor:'rgba(255,255,255,0.04)',
+                        bgcolor:'rgba(15,23,42,0.05)',
                         outline:`2px solid ${i===idx?OR:'transparent'}`, outlineOffset:2,
                         opacity:i===idx?1:0.6,
                         transition:'all 0.15s', '&:hover':{ outlineColor:'rgba(255,107,0,0.5)', opacity:1 } }}>
@@ -352,7 +352,7 @@ export default function ProductDetailPage() {
                     { icon: copied ? <CheckCircle sx={{ fontSize:18, color:GRN }}/> : <ContentCopy sx={{ fontSize:18, color:TXT }}/>, action: copyLink },
                   ].map((b,i)=>(
                     <IconButton key={i} onClick={b.action}
-                      sx={{ width:38, height:38, bgcolor:'rgba(6,11,20,0.75)', backdropFilter:'blur(12px)',
+                      sx={{ width:38, height:38, bgcolor:'rgba(255,255,255,0.9)', backdropFilter:'blur(12px)',
                         border:`1px solid ${BORD}`, transition:'all 0.16s',
                         '&:hover':{ bgcolor:'rgba(255,107,0,0.15)', borderColor:'rgba(255,107,0,0.4)' } }}>
                       {b.icon}
@@ -362,14 +362,14 @@ export default function ProductDetailPage() {
 
                 {allI.length>1&&idx>0&&(
                   <IconButton onClick={prev} sx={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)',
-                    bgcolor:'rgba(6,11,20,0.7)', backdropFilter:'blur(12px)', border:`1px solid ${BORD}`,
+                    bgcolor:'rgba(255,255,255,0.9)', backdropFilter:'blur(12px)', border:`1px solid ${BORD}`,
                     color:TXT, width:38, height:38, '&:hover':{ bgcolor:'rgba(255,107,0,0.15)' }, transition:'all 0.15s' }}>
                     <ChevronLeft/>
                   </IconButton>
                 )}
                 {allI.length>1&&idx<allI.length-1&&(
                   <IconButton onClick={next} sx={{ position:'absolute', right:10, top:'50%', transform:'translateY(-50%)',
-                    bgcolor:'rgba(6,11,20,0.7)', backdropFilter:'blur(12px)', border:`1px solid ${BORD}`,
+                    bgcolor:'rgba(255,255,255,0.9)', backdropFilter:'blur(12px)', border:`1px solid ${BORD}`,
                     color:TXT, width:38, height:38, '&:hover':{ bgcolor:'rgba(255,107,0,0.15)' }, transition:'all 0.15s' }}>
                     <ChevronRight/>
                   </IconButton>
@@ -380,7 +380,7 @@ export default function ProductDetailPage() {
                     {allI.map((_:any,i:number)=>(
                       <Box key={i} onClick={e=>{ e.stopPropagation(); setIdx(i); }}
                         sx={{ width:i===idx?20:6, height:6, borderRadius:4,
-                          bgcolor:i===idx?OR:'rgba(255,255,255,0.25)', transition:'all 0.22s', cursor:'pointer' }}/>
+                          bgcolor:i===idx?OR:'rgba(15,23,42,0.2)', transition:'all 0.22s', cursor:'pointer' }}/>
                     ))}
                   </Box>
                 )}
@@ -394,7 +394,7 @@ export default function ProductDetailPage() {
                 {allI.map((im:any,i:number)=>(
                   <Box key={i} onClick={()=>setIdx(i)}
                     sx={{ flexShrink:0, width:56, height:56, borderRadius:'10px', overflow:'hidden', cursor:'pointer',
-                      bgcolor:'rgba(255,255,255,0.04)',
+                      bgcolor:'rgba(15,23,42,0.05)',
                       outline:`2px solid ${i===idx?OR:'transparent'}`, outlineOffset:2,
                       transition:'all 0.15s', '&:hover':{ outlineColor:'rgba(255,107,0,0.5)' } }}>
                     <img src={im.urlThumb||im.urlMedium||im.urlFull} alt="" loading="lazy" decoding="async"
@@ -425,7 +425,7 @@ export default function ProductDetailPage() {
                 <Typography fontSize={11} fontWeight={700} color={cond.color} letterSpacing="0.5px" textTransform="uppercase">{cond.label}</Typography>
               </Box>
               {product.brand&&(
-                <Box sx={{ px:1.4, py:0.4, borderRadius:'20px', bgcolor:'rgba(255,255,255,0.05)', border:`1px solid ${BORD}` }}>
+                <Box sx={{ px:1.4, py:0.4, borderRadius:'20px', bgcolor:'rgba(15,23,42,0.06)', border:`1px solid ${BORD}` }}>
                   <Typography fontSize={11} fontWeight={700} color={SUB2} letterSpacing="0.5px" textTransform="uppercase">{product.brand.name}</Typography>
                 </Box>
               )}
@@ -522,7 +522,7 @@ export default function ProductDetailPage() {
                           sx={{ width:48, height:48, borderRadius:'10px', cursor:'pointer', overflow:'hidden', position:'relative',
                             outline:`2.5px solid ${sel?OR:'transparent'}`, outlineOffset:3,
                             transition:'all 0.2s cubic-bezier(0.34,1.56,0.64,1)', '&:hover':{ transform:'scale(1.1)' } }}>
-                          {img ? <Box component="img" src={img} alt={c} sx={{ width:'100%', height:'100%', objectFit:'cover' }}/> : <Box sx={{ width:'100%', height:'100%', bgcolor:hex||'rgba(255,255,255,0.1)' }}/>}
+                          {img ? <Box component="img" src={img} alt={c} sx={{ width:'100%', height:'100%', objectFit:'cover' }}/> : <Box sx={{ width:'100%', height:'100%', bgcolor:hex||'rgba(15,23,42,0.1)' }}/>}
                           {sel&&<Box sx={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', bgcolor:'rgba(0,0,0,0.25)' }}>
                             <CheckCircle sx={{ fontSize:20, color:'#fff' }}/>
                           </Box>}
@@ -550,12 +550,12 @@ export default function ProductDetailPage() {
                         sx={{ px:2.2, py:0.9, borderRadius:'8px', cursor:oos?'not-allowed':'pointer',
                           fontWeight:sel?800:500, fontSize:13.5,
                           color:sel?'#fff':oos?SUB:TXT,
-                          bgcolor:sel?OR:'rgba(255,255,255,0.05)',
-                          border:`1.5px solid ${sel?OR:oos?BORD:'rgba(255,255,255,0.12)'}`,
+                          bgcolor:sel?OR:'rgba(15,23,42,0.06)',
+                          border:`1.5px solid ${sel?OR:oos?BORD:'rgba(15,23,42,0.12)'}`,
                           transition:'all 0.13s', position:'relative', overflow:'hidden',
                           '&:hover':oos?{}:{ borderColor:OR } }}>
                         {s}
-                        {oos&&<Box sx={{ position:'absolute', width:'150%', height:'1.5px', bgcolor:'rgba(255,255,255,0.15)', transform:'rotate(-12deg)', top:'50%', left:'-25%' }}/>}
+                        {oos&&<Box sx={{ position:'absolute', width:'150%', height:'1.5px', bgcolor:'rgba(15,23,42,0.14)', transform:'rotate(-12deg)', top:'50%', left:'-25%' }}/>}
                       </Box>
                     );
                   })}
@@ -583,7 +583,7 @@ export default function ProductDetailPage() {
             {/* qty — mobile only: desktop has its own compact stepper inside the sticky buy box */}
             <Box sx={{ display:{ xs:'flex', lg:'none' }, alignItems:'center', gap:3, mb:3 }}>
               <Typography fontSize={12} fontWeight={600} color={SUB} textTransform="uppercase" letterSpacing="0.8px">Quantité</Typography>
-              <Box sx={{ display:'flex', alignItems:'center', bgcolor:'rgba(255,255,255,0.05)', border:`1.5px solid ${BORD}`, borderRadius:'10px', overflow:'hidden', height:44 }}>
+              <Box sx={{ display:'flex', alignItems:'center', bgcolor:'rgba(15,23,42,0.06)', border:`1.5px solid ${BORD}`, borderRadius:'10px', overflow:'hidden', height:44 }}>
                 <IconButton size="small" onClick={()=>setQty(q=>Math.max(1,q-1))}
                   sx={{ borderRadius:0, px:2, height:'100%', color:TXT, '&:hover':{ bgcolor:'rgba(255,107,0,0.1)' } }}>
                   <Typography fontWeight={600} fontSize={20} lineHeight={1}>−</Typography>
@@ -613,7 +613,7 @@ export default function ProductDetailPage() {
                     '&:hover:not(:disabled)':{ transform:'translateY(-2px)',
                       boxShadow: needsColor ? '0 10px 30px rgba(99,102,241,0.45)' : '0 10px 36px rgba(255,107,0,0.55)' },
                     '&:active:not(:disabled)':{ transform:'none' },
-                    '&:disabled':{ bgcolor:'rgba(255,255,255,0.06)', color:SUB, boxShadow:'none' } }}>
+                    '&:disabled':{ bgcolor:'rgba(15,23,42,0.07)', color:SUB, boxShadow:'none' } }}>
                   {loading ? 'Ajout…' : stock===0 ? 'Rupture de stock' : needsColor ? 'Choisissez une couleur' : 'Ajouter au panier'}
                 </Button>
               ) : (
@@ -634,7 +634,7 @@ export default function ProductDetailPage() {
                 startIcon={chatLoading ? <CircularProgress size={18} color="inherit"/> : <Chat sx={{ fontSize:20 }}/>}
                 sx={{ py:1.7, borderRadius:'14px', fontWeight:700, fontSize:14.5,
                   borderWidth:1.5, borderColor:BORD, color:SUB2,
-                  '&:hover':{ bgcolor:'rgba(255,255,255,0.05)', borderColor:'rgba(255,255,255,0.2)', color:TXT }, transition:'all 0.18s' }}>
+                  '&:hover':{ bgcolor:'rgba(15,23,42,0.06)', borderColor:'rgba(15,23,42,0.16)', color:TXT }, transition:'all 0.18s' }}>
                 Contacter le vendeur
               </Button>
             </Box>
@@ -647,7 +647,7 @@ export default function ProductDetailPage() {
                 { Icon:Verified,      label:product.store?.isVerified?'Boutique vérifiée':'Vendeur DealPam', c:OR },
                 { Icon:FlashOn,       label:'Messages chiffrés E2E', c:'#F472B6' },
               ].map(({ Icon, label, c },i)=>(
-                <Box key={i} sx={{ display:'flex', alignItems:'center', gap:1, p:1.2, borderRadius:'10px', bgcolor:'rgba(255,255,255,0.03)', border:`1px solid ${BORD}` }}>
+                <Box key={i} sx={{ display:'flex', alignItems:'center', gap:1, p:1.2, borderRadius:'10px', bgcolor:'rgba(15,23,42,0.04)', border:`1px solid ${BORD}` }}>
                   <Icon sx={{ fontSize:14, color:c, flexShrink:0 }}/>
                   <Typography fontSize={11.5} fontWeight={600} color={SUB2}>{label}</Typography>
                 </Box>
@@ -687,13 +687,13 @@ export default function ProductDetailPage() {
                     sx={{ borderRadius:'8px', border:`1px solid ${BORD}`, color:SUB2, fontWeight:600, fontSize:12,
                       px:{ xs:1, sm:1.5 }, py:0.6, minWidth:0,
                       '& .MuiButton-startIcon':{ mr:{ xs:0, sm:0.7 } },
-                      '&:hover':{ borderColor:'rgba(255,255,255,0.2)', color:TXT } }}>
+                      '&:hover':{ borderColor:'rgba(15,23,42,0.16)', color:TXT } }}>
                     <Box component="span" sx={{ display:{ xs:'none', sm:'inline' } }}>Boutique</Box>
                   </Button>
                   {product.store.phone&&(
                     <IconButton component="a" href={`tel:${product.store.phone}`} size="small"
                       sx={{ border:`1px solid ${BORD}`, borderRadius:'8px', color:SUB2, flexShrink:0,
-                        '&:hover':{ borderColor:'rgba(255,255,255,0.2)', color:TXT } }}>
+                        '&:hover':{ borderColor:'rgba(15,23,42,0.16)', color:TXT } }}>
                       <Phone sx={{ fontSize:14 }}/>
                     </IconButton>
                   )}
@@ -716,7 +716,7 @@ export default function ProductDetailPage() {
                   <Box key={l} sx={{
                     display:'grid', gridTemplateColumns:{ xs:'120px 1fr', sm:'160px 1fr' },
                     columnGap:3, px:2, py:1.5,
-                    bgcolor:i%2===0?'rgba(255,255,255,0.02)':'transparent',
+                    bgcolor:i%2===0?'rgba(15,23,42,0.03)':'transparent',
                     borderTop:i>0?`1px solid ${BORD}`:'none',
                   }}>
                     <Typography fontSize={13} color={SUB} fontWeight={600}>{l}</Typography>
@@ -788,7 +788,7 @@ export default function ProductDetailPage() {
                       {[5,4,3,2,1].map(s=>{ const pct=[65,20,10,3,2][5-s]; return (
                         <Box key={s} sx={{ display:'flex', alignItems:'center', gap:1.5, mb:1 }}>
                           <Typography fontSize={13} color={SUB} width={36}>{s} ★</Typography>
-                          <Box sx={{ flex:1, height:6, bgcolor:'rgba(255,255,255,0.06)', borderRadius:4, overflow:'hidden' }}>
+                          <Box sx={{ flex:1, height:6, bgcolor:'rgba(15,23,42,0.07)', borderRadius:4, overflow:'hidden' }}>
                             <Box sx={{ width:`${pct}%`, height:'100%', bgcolor:GLD, borderRadius:4 }}/>
                           </Box>
                           <Typography fontSize={12} color={SUB} width={32}>{pct}%</Typography>
@@ -822,7 +822,7 @@ export default function ProductDetailPage() {
           {/* ── RIGHT sticky buy box ───────────────────────────────────────── */}
           <Box sx={{ display:{ xs:'none', lg:'block' }, width:320, flexShrink:0, position:'sticky', top:80, alignSelf:'flex-start', pt:3 }}>
             <Box sx={{ bgcolor:CARD, borderRadius:'20px', p:3, border:`1px solid ${BORD}`,
-              boxShadow:'0 24px 64px rgba(0,0,0,0.5)' }}>
+              boxShadow:'0 8px 32px rgba(15,23,42,0.08)' }}>
               <Typography fontSize={13} fontWeight={600} color={SUB} mb={0.5} noWrap sx={{ maxWidth:280 }}>{product.name}</Typography>
               {exchangeRate&&(
                 <Box sx={{ display:'inline-flex', borderRadius:'8px', border:`1px solid ${BORD}`, overflow:'hidden', mb:1 }}>
@@ -850,7 +850,7 @@ export default function ProductDetailPage() {
               {!inCart && stock>0 && (
                 <Box sx={{ display:'flex', alignItems:'center', justifyContent:'space-between', mb:2 }}>
                   <Typography fontSize={11.5} fontWeight={600} color={SUB} textTransform="uppercase" letterSpacing="0.6px">Quantité</Typography>
-                  <Box sx={{ display:'flex', alignItems:'center', bgcolor:'rgba(255,255,255,0.05)', border:`1.5px solid ${BORD}`, borderRadius:'10px', overflow:'hidden', height:36 }}>
+                  <Box sx={{ display:'flex', alignItems:'center', bgcolor:'rgba(15,23,42,0.06)', border:`1.5px solid ${BORD}`, borderRadius:'10px', overflow:'hidden', height:36 }}>
                     <IconButton size="small" onClick={()=>setQty(q=>Math.max(1,q-1))}
                       sx={{ borderRadius:0, px:1.4, height:'100%', color:TXT, '&:hover':{ bgcolor:'rgba(255,107,0,0.1)' } }}>
                       <Typography fontWeight={600} fontSize={16} lineHeight={1}>−</Typography>
@@ -870,7 +870,7 @@ export default function ProductDetailPage() {
                   sx={{ py:1.8, borderRadius:'12px', fontWeight:900, fontSize:14, color:'#fff', mb:1.5,
                     background: ctaDisabled ? undefined : `linear-gradient(135deg,#C84D00,${OR})`,
                     boxShadow: ctaDisabled ? undefined : '0 6px 22px rgba(255,107,0,0.38)',
-                    '&:disabled':{ bgcolor:'rgba(255,255,255,0.06)', color:SUB, boxShadow:'none' },
+                    '&:disabled':{ bgcolor:'rgba(15,23,42,0.07)', color:SUB, boxShadow:'none' },
                     '&:hover:not(:disabled)':{ boxShadow:'0 10px 28px rgba(255,107,0,0.5)', transform:'translateY(-1px)' }, transition:'all 0.18s' }}>
                   {loading ? 'Ajout…' : stock===0 ? 'Rupture' : 'Ajouter au panier'}
                 </Button>
@@ -898,7 +898,7 @@ export default function ProductDetailPage() {
                 startIcon={chatLoading ? <CircularProgress size={15} color="inherit"/> : <Chat sx={{ fontSize:16 }}/>}
                 sx={{ py:1.4, borderRadius:'12px', fontWeight:700, fontSize:13.5, mb:2.5,
                   borderWidth:1, borderColor:BORD, color:SUB2,
-                  '&:hover':{ bgcolor:'rgba(255,255,255,0.04)', borderColor:'rgba(255,255,255,0.2)', color:TXT } }}>
+                  '&:hover':{ bgcolor:'rgba(15,23,42,0.05)', borderColor:'rgba(15,23,42,0.16)', color:TXT } }}>
                 Contacter le vendeur
               </Button>
 
@@ -935,19 +935,19 @@ export default function ProductDetailPage() {
             sx={{ maxWidth:'92vw', maxHeight:'90vh', objectFit:'contain', borderRadius:3 }}
             onClick={e=>e.stopPropagation()}/>
           <IconButton onClick={()=>setLb(false)} sx={{ position:'absolute', top:16, right:16,
-            bgcolor:'rgba(255,255,255,0.07)', border:`1px solid ${BORD}`, color:TXT,
-            '&:hover':{ bgcolor:'rgba(255,255,255,0.12)' } }}>
+            bgcolor:'rgba(15,23,42,0.08)', border:`1px solid ${BORD}`, color:TXT,
+            '&:hover':{ bgcolor:'rgba(15,23,42,0.12)' } }}>
             <Close/>
           </IconButton>
           {allI.length>1&&<>
             <IconButton onClick={prev} sx={{ position:'absolute', left:16, top:'50%', transform:'translateY(-50%)',
-              bgcolor:'rgba(255,255,255,0.07)', border:`1px solid ${BORD}`, color:TXT,
-              '&:hover':{ bgcolor:'rgba(255,255,255,0.12)' } }}>
+              bgcolor:'rgba(15,23,42,0.08)', border:`1px solid ${BORD}`, color:TXT,
+              '&:hover':{ bgcolor:'rgba(15,23,42,0.12)' } }}>
               <ChevronLeft sx={{ fontSize:36 }}/>
             </IconButton>
             <IconButton onClick={next} sx={{ position:'absolute', right:16, top:'50%', transform:'translateY(-50%)',
-              bgcolor:'rgba(255,255,255,0.07)', border:`1px solid ${BORD}`, color:TXT,
-              '&:hover':{ bgcolor:'rgba(255,255,255,0.12)' } }}>
+              bgcolor:'rgba(15,23,42,0.08)', border:`1px solid ${BORD}`, color:TXT,
+              '&:hover':{ bgcolor:'rgba(15,23,42,0.12)' } }}>
               <ChevronRight sx={{ fontSize:36 }}/>
             </IconButton>
           </>}
@@ -956,8 +956,8 @@ export default function ProductDetailPage() {
 
       {/* mobile sticky bottom */}
       <Box sx={{ display:{ xs:'flex', lg:'none' }, position:'fixed', bottom:56, left:0, right:0, zIndex:1200,
-        bgcolor:'rgba(6,11,20,0.95)', backdropFilter:'blur(20px)',
-        borderTop:`1px solid ${BORD}`, boxShadow:'0 -8px 32px rgba(0,0,0,0.5)',
+        bgcolor:'rgba(255,255,255,0.96)', backdropFilter:'blur(20px)',
+        borderTop:`1px solid ${BORD}`, boxShadow:'0 -4px 20px rgba(15,23,42,0.08)',
         p:1.5, gap:1.2, alignItems:'center' }}>
         <Box sx={{ flex:1, minWidth:0 }}>
           <Typography fontWeight={900} sx={{ fontSize:20, color:TXT, lineHeight:1, letterSpacing:'-1px' }}>{fmtDisplay(cur)}</Typography>
@@ -971,7 +971,7 @@ export default function ProductDetailPage() {
         <Button size="small" onClick={contactSeller} disabled={chatLoading}
           startIcon={chatLoading ? <CircularProgress size={12} color="inherit"/> : <Chat sx={{ fontSize:16 }}/>}
           sx={{ borderRadius:'8px', borderWidth:1, borderColor:BORD, color:SUB2,
-            fontWeight:700, py:1.1, flexShrink:0, '&:hover':{ borderColor:'rgba(255,255,255,0.2)', color:TXT } }}
+            fontWeight:700, py:1.1, flexShrink:0, '&:hover':{ borderColor:'rgba(15,23,42,0.16)', color:TXT } }}
           variant="outlined">
           Vendeur
         </Button>
@@ -983,7 +983,7 @@ export default function ProductDetailPage() {
             sx={{ py:1.2, borderRadius:'10px', fontWeight:900, fontSize:13, px:2.2, color:'#fff', flexShrink:0,
               background: stock===0 ? undefined : `linear-gradient(135deg,#C84D00,${OR})`,
               boxShadow: stock>0 ? '0 3px 14px rgba(255,107,0,0.4)' : undefined,
-              '&:disabled':{ bgcolor:'rgba(255,255,255,0.06)', color:SUB, boxShadow:'none' } }}>
+              '&:disabled':{ bgcolor:'rgba(15,23,42,0.07)', color:SUB, boxShadow:'none' } }}>
             {loading?'…':stock===0?'Épuisé':needsColor?'Couleur':'Ajouter'}
           </Button>
         ) : (
@@ -1041,7 +1041,7 @@ function BookAppointmentDialog({ product, isLoggedIn, onClose }: { product: any;
   };
 
   return (
-    <Dialog open onClose={onClose} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: '18px', bgcolor: '#0D1424', color: '#fff' } }}>
+    <Dialog open onClose={onClose} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: '16px', bgcolor: '#fff', color: TXT } }}>
       <DialogTitle fontWeight={800}>Prendre rendez-vous</DialogTitle>
       <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: '12px !important' }}>
         {done ? (
@@ -1050,33 +1050,28 @@ function BookAppointmentDialog({ product, isLoggedIn, onClose }: { product: any;
           </Alert>
         ) : (
           <>
-            <Typography fontSize={13} color="rgba(255,255,255,0.6)">
-              Pour : <strong style={{ color: '#fff' }}>{product.name}</strong>
+            <Typography fontSize={13} color={SUB2}>
+              Pour : <strong style={{ color: TXT }}>{product.name}</strong>
             </Typography>
             <TextField
               type="datetime-local" label="Date et heure souhaitées" fullWidth size="small"
               value={scheduledAt} onChange={e => setScheduledAt(e.target.value)}
               InputLabelProps={{ shrink: true }}
               inputProps={{ min: new Date().toISOString().slice(0, 16) }}
-              sx={{ '& .MuiInputBase-input': { color: '#fff' }, '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.5)' } }}
             />
             {!isLoggedIn && (
               <>
-                <TextField label="Votre nom *" fullWidth size="small" value={clientName} onChange={e => setClientName(e.target.value)}
-                  sx={{ '& .MuiInputBase-input': { color: '#fff' }, '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.5)' } }} />
-                <TextField label="Votre téléphone *" fullWidth size="small" value={clientPhone} onChange={e => setClientPhone(e.target.value)}
-                  sx={{ '& .MuiInputBase-input': { color: '#fff' }, '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.5)' } }} />
-                <TextField label="Votre email (optionnel)" fullWidth size="small" value={clientEmail} onChange={e => setClientEmail(e.target.value)}
-                  sx={{ '& .MuiInputBase-input': { color: '#fff' }, '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.5)' } }} />
+                <TextField label="Votre nom *" fullWidth size="small" value={clientName} onChange={e => setClientName(e.target.value)} />
+                <TextField label="Votre téléphone *" fullWidth size="small" value={clientPhone} onChange={e => setClientPhone(e.target.value)} />
+                <TextField label="Votre email (optionnel)" fullWidth size="small" value={clientEmail} onChange={e => setClientEmail(e.target.value)} />
               </>
             )}
-            <TextField label="Note (optionnel)" fullWidth size="small" multiline rows={2} value={note} onChange={e => setNote(e.target.value)}
-              sx={{ '& .MuiInputBase-input': { color: '#fff' }, '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.5)' } }} />
+            <TextField label="Note (optionnel)" fullWidth size="small" multiline rows={2} value={note} onChange={e => setNote(e.target.value)} />
           </>
         )}
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button onClick={onClose} sx={{ color: 'rgba(255,255,255,0.6)' }}>{done ? 'Fermer' : 'Annuler'}</Button>
+        <Button onClick={onClose} sx={{ color: SUB2 }}>{done ? 'Fermer' : 'Annuler'}</Button>
         {!done && (
           <Button onClick={submit} disabled={!canSubmit || submitting} variant="contained"
             startIcon={submitting ? <CircularProgress size={14} color="inherit" /> : null}
