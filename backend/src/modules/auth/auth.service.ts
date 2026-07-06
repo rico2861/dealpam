@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Logger,
   UnauthorizedException,
   ConflictException,
   BadRequestException,
@@ -28,6 +29,8 @@ const PLAN_STORE_LIMITS: Record<string, number> = {
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
@@ -102,15 +105,22 @@ export class AuthService {
 
       // Essai gratuit 30 jours offert à tous les nouveaux vendeurs — soumis aux
       // mêmes règles anti-abus (téléphone/email/NIF) que l'essai manuel.
+      // L'email de bienvenue vendeur part dans TOUS les cas (trial accordé ou non) —
+      // avant, un échec d'octroi d'essai (ex: NIF déjà utilisé) supprimait aussi l'email.
+      let trialEndDate: Date | null = null;
       try {
         const trial = await this.subscriptionsService.startTrial(user.id);
-        this.mailService
-          .sendSellerWelcomeTrial(user.email, user.firstName, storeNameTrimmed, trial.endDate)
-          .catch(() => null);
+        trialEndDate = trial.endDate;
       } catch (err) {
-        // Ex: téléphone/email/NIF déjà utilisé pour un essai précédent — le compte
-        // est quand même créé, simplement sans essai gratuit automatique.
+        this.logger.warn(`Essai gratuit non accordé pour ${user.email} (${(err as Error).message}) — email de bienvenue envoyé quand même`);
       }
+      this.mailService
+        .sendSellerWelcomeTrial(user.email, user.firstName, storeNameTrimmed, trialEndDate)
+        .catch((err) => this.logger.error(`Échec envoi email bienvenue vendeur à ${user.email}: ${err.message}`));
+    } else {
+      this.mailService
+        .sendWelcome(user.email, user.firstName)
+        .catch((err) => this.logger.error(`Échec envoi email bienvenue client à ${user.email}: ${err.message}`));
     }
 
     const tokens = await this.generateTokens(user.id, user.email, user.role);
