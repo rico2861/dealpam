@@ -475,6 +475,12 @@ model Product {
   @@index([hasDelivery])
   @@index([productType])
   @@index([isFeatured])
+  // Combinaisons réellement filtrées ensemble dans products.service.ts —
+  // un index composite évite un scan supplémentaire par rapport à deux index
+  // simples croisés.
+  @@index([storeId, status])
+  @@index([storeId, productType, status])
+  @@index([categoryId, status])
   @@map("products")
 }
 
@@ -602,6 +608,8 @@ model Order {
   @@index([storeId])
   @@index([status])
   @@index([paymentTxStatus])
+  @@index([storeId, status])
+  @@index([userId, status])
   @@map("orders")
 }
 

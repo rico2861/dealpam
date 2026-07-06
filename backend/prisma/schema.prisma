@@ -365,6 +365,9 @@ model Product {
   @@index([hasDelivery])
   @@index([productType])
   @@index([isFeatured])
+  @@index([storeId, status])
+  @@index([storeId, productType, status])
+  @@index([categoryId, status])
   @@map("products")
 }
 
@@ -492,6 +495,8 @@ model Order {
   @@index([storeId])
   @@index([status])
   @@index([paymentTxStatus])
+  @@index([storeId, status])
+  @@index([userId, status])
   @@map("orders")
 }
 

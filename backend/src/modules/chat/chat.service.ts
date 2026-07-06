@@ -124,15 +124,16 @@ export class ChatService {
     });
     if (!agents.length) return null;
 
-    // Find agent with fewest open support convs
-    const loads = await Promise.all(
-      agents.map(async a => ({
-        agent: a,
-        load: await this.prisma.conversation.count({
-          where: { isSupport: true, status: 'OPEN' },
-        }),
-      })),
-    );
+    // Une seule requête groupée au lieu d'un count() par agent — l'ancienne
+    // version ne filtrait en plus jamais par agent (même total pour tous),
+    // ce qui rendait la répartition de charge inopérante.
+    const loadRows = await this.prisma.conversation.groupBy({
+      by: ['assignedAgentId'],
+      where: { isSupport: true, status: 'OPEN', assignedAgentId: { in: agents.map(a => a.id) } },
+      _count: { _all: true },
+    });
+    const loadMap = new Map(loadRows.map(r => [r.assignedAgentId as string, r._count._all]));
+    const loads = agents.map(a => ({ agent: a, load: loadMap.get(a.id) ?? 0 }));
     loads.sort((a, b) => a.load - b.load);
     return loads[0].agent;
   }
