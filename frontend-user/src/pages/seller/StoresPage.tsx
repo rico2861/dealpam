@@ -187,7 +187,7 @@ function StoreForm({ initial, onSave, loading, _onDataChange }: {
       <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5, mb: 2.5 }}>
         {/* Département MUI Select */}
         <FormControl fullWidth sx={fieldSx}>
-          <InputLabel>Département</InputLabel>
+          <InputLabel shrink>Département</InputLabel>
           <Select value={form.department} label="Département"
             onChange={e => setForm(p => ({ ...p, department: e.target.value as string, city: '' }))}
             MenuProps={darkMenu}>
@@ -197,7 +197,7 @@ function StoreForm({ initial, onSave, loading, _onDataChange }: {
         </FormControl>
         {/* Ville MUI Select (dynamique) */}
         <FormControl fullWidth sx={fieldSx} disabled={!form.department}>
-          <InputLabel>Ville</InputLabel>
+          <InputLabel shrink>Ville</InputLabel>
           <Select value={form.city} label="Ville" onChange={e => setForm(p => ({ ...p, city: e.target.value as string }))} MenuProps={darkMenu}>
             <MenuItem value=""><em style={{ color: SUB, fontStyle: 'normal' }}>-- Choisir --</em></MenuItem>
             {cities.map(c => <MenuItem key={c} value={c}>{c}</MenuItem>)}
@@ -276,7 +276,7 @@ function StoreForm({ initial, onSave, loading, _onDataChange }: {
         {form.deliveryZones.map((z, i) => (
           <Box key={i} sx={{ display: 'grid', gridTemplateColumns: '1fr 110px 90px 32px', gap: 1, alignItems: 'center' }}>
             <FormControl fullWidth size="small" sx={fieldSx}>
-              <InputLabel>Département</InputLabel>
+              <InputLabel shrink>Département</InputLabel>
               <Select value={z.dept} label="Département" onChange={e => setZone(i, 'dept', e.target.value)} MenuProps={darkMenu}>
                 <MenuItem value=""><em style={{ color: SUB, fontStyle: 'normal' }}>--</em></MenuItem>
                 {DEPTS.map(d => <MenuItem key={d} value={d}>{d}</MenuItem>)}
@@ -315,7 +315,7 @@ function StoreForm({ initial, onSave, loading, _onDataChange }: {
               <TextField size="small" label="Téléphone" value={pt.phone} onChange={e => setPickup(i, 'phone', e.target.value)} sx={fieldSx} />
               <TextField size="small" label="Adresse" value={pt.address} onChange={e => setPickup(i, 'address', e.target.value)} sx={{ ...fieldSx, gridColumn: '1/-1' }} />
               <FormControl size="small" sx={fieldSx} disabled={!form.department}>
-                <InputLabel>Ville</InputLabel>
+                <InputLabel shrink>Ville</InputLabel>
                 <Select value={pt.city} label="Ville" onChange={e => setPickup(i, 'city', e.target.value as string)} MenuProps={darkMenu}>
                   <MenuItem value="">--</MenuItem>
                   {(CITIES[form.department] ?? []).map(c => <MenuItem key={c} value={c}>{c}</MenuItem>)}

@@ -77,13 +77,13 @@ export default function EditProductPage() {
             <Card sx={{ mb: 2 }}>
               <CardContent>
                 <FormControl fullWidth margin="dense">
-                  <InputLabel>Catégorie</InputLabel>
+                  <InputLabel shrink>Catégorie</InputLabel>
                   <Select value={form.categoryId} label="Catégorie" onChange={f('categoryId')}>
                     {(categories || []).map((c: any) => <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>)}
                   </Select>
                 </FormControl>
                 <FormControl fullWidth margin="dense">
-                  <InputLabel>Marque</InputLabel>
+                  <InputLabel shrink>Marque</InputLabel>
                   <Select value={form.brandId} label="Marque" onChange={f('brandId')}>
                     <MenuItem value="">Aucune</MenuItem>
                     {(brands || []).map((b: any) => <MenuItem key={b.id} value={b.id}>{b.name}</MenuItem>)}

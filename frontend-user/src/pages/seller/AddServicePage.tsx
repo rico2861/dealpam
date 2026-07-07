@@ -115,7 +115,7 @@ function ServiceForm({ data, onChange }: { data: any; onChange: (d: any) => void
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       <FormControl fullWidth sx={fieldSx}>
-        <InputLabel>Catégorie de service</InputLabel>
+        <InputLabel shrink>Catégorie de service</InputLabel>
         <Select value={data.serviceCategory || ''} label="Catégorie de service" MenuProps={darkMenu} onChange={e => set('serviceCategory', e.target.value)}>
           {SERVICE_CATEGORIES.map(c => <MenuItem key={c} value={c}>{c}</MenuItem>)}
         </Select>
@@ -141,13 +141,13 @@ function RealEstateForm({ data, onChange }: { data: any; onChange: (d: any) => v
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       <Box sx={{ display: 'flex', gap: 2 }}>
         <FormControl fullWidth sx={fieldSx}>
-          <InputLabel>Type de bien</InputLabel>
+          <InputLabel shrink>Type de bien</InputLabel>
           <Select value={data.reType || ''} label="Type de bien" MenuProps={darkMenu} onChange={e => set('reType', e.target.value)}>
             {RE_TYPES.map(t => <MenuItem key={t} value={t}>{t}</MenuItem>)}
           </Select>
         </FormControl>
         <FormControl fullWidth sx={fieldSx}>
-          <InputLabel>Transaction</InputLabel>
+          <InputLabel shrink>Transaction</InputLabel>
           <Select value={data.reTransaction || ''} label="Transaction" MenuProps={darkMenu} onChange={e => set('reTransaction', e.target.value)}>
             {RE_TRANSACTIONS.map(t => <MenuItem key={t} value={t}>{t}</MenuItem>)}
           </Select>
@@ -161,7 +161,7 @@ function RealEstateForm({ data, onChange }: { data: any; onChange: (d: any) => v
       <Box sx={{ display: 'flex', gap: 2 }}>
         <TextField fullWidth label="Prix (HTG)" type="number" sx={fieldSx} value={data.price || ''} onChange={e => set('price', Number(e.target.value))} />
         <FormControl fullWidth sx={fieldSx}>
-          <InputLabel>Unité de prix</InputLabel>
+          <InputLabel shrink>Unité de prix</InputLabel>
           <Select value={data.priceUnit || 'HTG'} label="Unité de prix" MenuProps={darkMenu} onChange={e => set('priceUnit', e.target.value)}>
             <MenuItem value="HTG">HTG (total)</MenuItem>
             <MenuItem value="HTG/mois">HTG / mois</MenuItem>
@@ -184,7 +184,7 @@ function FreelanceForm({ data, onChange }: { data: any; onChange: (d: any) => vo
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       <FormControl fullWidth sx={fieldSx}>
-        <InputLabel>Catégorie</InputLabel>
+        <InputLabel shrink>Catégorie</InputLabel>
         <Select value={data.freelanceCat || ''} label="Catégorie" MenuProps={darkMenu} onChange={e => set('freelanceCat', e.target.value)}>
           {FREELANCE_CATS.map(c => <MenuItem key={c} value={c}>{c}</MenuItem>)}
         </Select>
@@ -346,7 +346,7 @@ export default function AddServicePage() {
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
 
             <FormControl fullWidth sx={fieldSx}>
-              <InputLabel>Boutique</InputLabel>
+              <InputLabel shrink>Boutique</InputLabel>
               <Select value={storeId} label="Boutique" MenuProps={darkMenu} onChange={e => setStoreId(e.target.value)}>
                 {stores.map((s: any) => <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>)}
               </Select>
@@ -361,7 +361,7 @@ export default function AddServicePage() {
               placeholder="Décrivez votre service, ce qui est inclus, vos qualifications…" />
 
             <FormControl fullWidth sx={fieldSx}>
-              <InputLabel>Catégorie</InputLabel>
+              <InputLabel shrink>Catégorie</InputLabel>
               <Select value={categoryId} label="Catégorie" MenuProps={darkMenu} onChange={e => setCategoryId(e.target.value)}>
                 {(cats ?? []).map((c: any) => <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>)}
               </Select>
@@ -381,7 +381,7 @@ export default function AddServicePage() {
 
             <Box sx={{ display: 'flex', gap: 2 }}>
               <FormControl fullWidth sx={fieldSx}>
-                <InputLabel>Département</InputLabel>
+                <InputLabel shrink>Département</InputLabel>
                 <Select value={base.department} label="Département" MenuProps={darkMenu} onChange={e => setBase(b => ({ ...b, department: e.target.value }))}>
                   {DEPTS.map(d => <MenuItem key={d} value={d}>{d}</MenuItem>)}
                 </Select>

@@ -285,16 +285,16 @@ export default function SellerProfilePage() {
           <SectionHead icon={Business} label="Informations professionnelles" color={BLU} />
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
             <TextField select label="Type d'activité" value={profile.businessType} onChange={pf('businessType')}
-              SelectProps={{ native: true }} fullWidth sx={fieldSx}>
+              SelectProps={{ native: true }} InputLabelProps={{ shrink: true }} fullWidth sx={fieldSx}>
               <option value="">-- Choisir --</option>
               {BUSINESS_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
             </TextField>
-            <TextField label="Ville principale" value={profile.businessCity} onChange={pf('businessCity')} fullWidth sx={fieldSx} />
-            <TextField select label="Département" value={profile.businessDept} onChange={pf('businessDept')} SelectProps={{ native: true }} fullWidth sx={fieldSx}>
+            <TextField label="Ville principale" value={profile.businessCity} onChange={pf('businessCity')} InputLabelProps={{ shrink: true }} fullWidth sx={fieldSx} />
+            <TextField select label="Département" value={profile.businessDept} onChange={pf('businessDept')} SelectProps={{ native: true }} InputLabelProps={{ shrink: true }} fullWidth sx={fieldSx}>
               <option value="">-- Choisir --</option>
               {DEPTS.map(d => <option key={d} value={d}>{d}</option>)}
             </TextField>
-            <TextField label="Adresse professionnelle" value={profile.businessAddress} onChange={pf('businessAddress')} multiline rows={2} fullWidth sx={fieldSx} />
+            <TextField label="Adresse professionnelle" value={profile.businessAddress} onChange={pf('businessAddress')} multiline rows={2} InputLabelProps={{ shrink: true }} fullWidth sx={fieldSx} />
           </Box>
           {profileTouched && (
             <Button fullWidth onClick={() => profileMut.mutate(profile)} disabled={profileMut.isPending}
@@ -317,9 +317,9 @@ export default function SellerProfilePage() {
               { label: 'Username',  value: (user as any)?.username ? `@${(user as any).username}` : '—' },
               { label: 'Téléphone', value: (user as any)?.phone ?? '—' },
             ].map(({ label, value }) => (
-              <Box key={label} sx={{ display: 'flex', gap: 1.5, px: 1.5, py: 1, borderRadius: '9px', bgcolor: 'rgba(15,23,42,0.09)' }}>
-                <Typography fontSize={12} color={SUB} sx={{ minWidth: 80 }}>{label}</Typography>
-                <Typography fontSize={12.5} fontWeight={600} color={TXT}>{value || '—'}</Typography>
+              <Box key={label} sx={{ display: 'flex', gap: 1.5, px: 1.5, py: 1, borderRadius: '9px', bgcolor: 'rgba(15,23,42,0.09)', flexWrap: 'wrap' }}>
+                <Typography fontSize={12} color={SUB} sx={{ minWidth: 80, flexShrink: 0 }}>{label}</Typography>
+                <Typography fontSize={12.5} fontWeight={600} color={TXT} sx={{ wordBreak: 'break-word', minWidth: 0 }}>{value || '—'}</Typography>
               </Box>
             ))}
           </Box>
@@ -344,7 +344,7 @@ export default function SellerProfilePage() {
           </Typography>
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr auto' }, gap: 1.5, alignItems: 'center' }}>
             <TextField size="small" select label="Type de document" value={uploadType} onChange={e => setUploadType(e.target.value)}
-              SelectProps={{ native: true }} sx={fieldSx}>
+              SelectProps={{ native: true }} InputLabelProps={{ shrink: true }} sx={fieldSx}>
               {DOC_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}{t.required ? ' *' : ''}</option>)}
             </TextField>
             <Box>

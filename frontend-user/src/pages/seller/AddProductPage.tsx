@@ -144,7 +144,7 @@ function DarkToggle({ checked, onChange, label, sub }: { checked: boolean; onCha
 function DarkSelect({ label, value, onChange, options }: { label: string; value: string; onChange: (v: string) => void; options: string[] }) {
   return (
     <FormControl fullWidth sx={fieldSx}>
-      <InputLabel>{label}</InputLabel>
+      <InputLabel shrink>{label}</InputLabel>
       <Select value={value} label={label} MenuProps={darkMenu} onChange={e => onChange(e.target.value)}>
         <MenuItem value=""><em style={{ color: SUB, fontStyle: 'normal' }}>Choisir…</em></MenuItem>
         {options.map(o => <MenuItem key={o} value={o}>{o}</MenuItem>)}
@@ -431,7 +431,7 @@ export default function AddProductPage() {
               </Box>
 
               <FormControl fullWidth sx={fieldSx}>
-                <InputLabel>Catégorie *</InputLabel>
+                <InputLabel shrink>Catégorie *</InputLabel>
                 <Select value={form.categoryId} label="Catégorie *" MenuProps={darkMenu}
                   onChange={e => setForm(p => ({ ...p, categoryId: e.target.value }))}>
                   <MenuItem value=""><em style={{ color: SUB, fontStyle: 'normal' }}>Choisir une catégorie</em></MenuItem>
@@ -441,7 +441,7 @@ export default function AddProductPage() {
 
               {(catType === 'phone' || catType === 'electronics' || catType === 'vehicle') && (
                 <FormControl fullWidth sx={fieldSx}>
-                  <InputLabel>Marque</InputLabel>
+                  <InputLabel shrink>Marque</InputLabel>
                   <Select value={form.brandId} label="Marque" MenuProps={darkMenu}
                     onChange={e => setForm(p => ({ ...p, brandId: e.target.value }))}>
                     <MenuItem value="">Sans marque spécifique</MenuItem>
@@ -451,7 +451,7 @@ export default function AddProductPage() {
               )}
 
               <FormControl fullWidth sx={fieldSx}>
-                <InputLabel>État *</InputLabel>
+                <InputLabel shrink>État *</InputLabel>
                 <Select value={form.condition} label="État *" MenuProps={darkMenu}
                   onChange={e => setForm(p => ({ ...p, condition: e.target.value }))}>
                   {condOpts.map(o => <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>)}
@@ -495,7 +495,7 @@ export default function AddProductPage() {
           <SectionCard title="Localisation" icon={<LocationOn sx={{ fontSize: 17 }} />}>
             <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
               <FormControl fullWidth sx={fieldSx}>
-                <InputLabel>Département</InputLabel>
+                <InputLabel shrink>Département</InputLabel>
                 <Select value={form.department} label="Département" MenuProps={darkMenu}
                   onChange={e => setForm(p => ({ ...p, department: e.target.value }))}>
                   {DEPTS_HT.map(d => <MenuItem key={d} value={d}>{d}</MenuItem>)}
@@ -529,7 +529,7 @@ export default function AddProductPage() {
                         onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addZone(); } }}
                         sx={{ ...fieldSx, flex: '1 1 160px' }} size="small" />
                       <FormControl sx={{ ...fieldSx, flex: '1 1 130px' }} size="small">
-                        <InputLabel>Département</InputLabel>
+                        <InputLabel shrink>Département</InputLabel>
                         <Select value={zoneInput.dept} label="Département" MenuProps={darkMenu}
                           onChange={e => setZoneInput(z => ({ ...z, dept: e.target.value }))}>
                           {DEPTS_HT.map(d => <MenuItem key={d} value={d}>{d}</MenuItem>)}

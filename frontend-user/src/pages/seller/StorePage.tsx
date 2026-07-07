@@ -390,7 +390,7 @@ function PaymentMethodsTab({ storeId, store }: { storeId: string; store: any }) 
       <Grid container spacing={1.5}>
         <Grid item xs={6}>
           <FormControl fullWidth size="small">
-            <InputLabel>Devise par défaut</InputLabel>
+            <InputLabel shrink>Devise par défaut</InputLabel>
             <Select label="Devise par défaut" value={currency} onChange={e => setCurrency(e.target.value)}>
               <MenuItem value="HTG">Gourdes (HTG)</MenuItem>
               <MenuItem value="USD">Dollars US (USD)</MenuItem>
@@ -543,7 +543,7 @@ export default function SellerStorePage() {
                 <Grid container spacing={2}>
                   <Grid item xs={12} sm={6}>
                     <FormControl fullWidth size="small">
-                      <InputLabel>Departement</InputLabel>
+                      <InputLabel shrink>Departement</InputLabel>
                       <Select value={form.department} onChange={e => setForm(p => ({ ...p, department: e.target.value }))} label="Departement">
                         {DEPARTMENTS.map(d => <MenuItem key={d} value={d} sx={{ fontSize: 13.5 }}>{d}</MenuItem>)}
                       </Select>
