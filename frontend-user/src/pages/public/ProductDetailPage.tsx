@@ -255,6 +255,9 @@ export default function ProductDetailPage() {
   const { data: simR  } = useQuery({ queryKey:['sim',catSl,slug],  queryFn:()=>api.get(`/products?category=${catSl}&limit=12`).then(r=>r.data?.data??[]), enabled:!!catSl });
   const { data: sponR } = useQuery({ queryKey:['spon',dept],        queryFn:()=>api.get(`/products?sponsored=true&department=${dept}&limit=10`).then(r=>r.data?.data??[]), enabled:true });
   const { data: stR   } = useQuery({ queryKey:['stprod',stId],      queryFn:()=>api.get(`/products?storeId=${stId}&limit=8`).then(r=>r.data?.data??[]), enabled:!!stId });
+  // Cross-sell "autres services du même vendeur" — filtré côté serveur par productType pour
+  // ne jamais mélanger un produit physique parmi des services (spec anti-bug §6).
+  const { data: stSvcR } = useQuery({ queryKey:['stsvc',stId,product?.productType], queryFn:()=>api.get(`/products?storeId=${stId}&productType=${product?.productType}&limit=6`).then(r=>r.data?.data??[]), enabled:!!stId&&!!product?.requiresAppointment });
   useQuery({ queryKey:['wl',product?.id], queryFn:()=>api.get('/wishlist').then(r=>{ setLiked(r.data.some((w:any)=>w.productId===product?.id)); return r.data; }), enabled:!!product?.id&&!!user&&!!localStorage.getItem('accessToken') });
   const { data: miniCart } = useQuery({ queryKey:['cart-check',product?.id], queryFn:()=>api.get('/cart').then(r=>{ setInCart(r.data.items?.some((i:any)=>i.productId===product?.id)); return r.data; }), enabled:!!product?.id&&!!user&&!!localStorage.getItem('accessToken') });
 
@@ -296,6 +299,7 @@ export default function ProductDetailPage() {
   const sim  = (simR ??[]).filter((p:any)=>p.slug!==slug).slice(0,10);
   const spon = (sponR??[]).filter((p:any)=>p.slug!==slug).slice(0,10);
   const stP  = (stR  ??[]).filter((p:any)=>p.slug!==slug).slice(0,8);
+  const stSvc = (stSvcR??[]).filter((p:any)=>p.slug!==slug).slice(0,6);
   const attrs: Record<string,string> = typeof product?.attributes==='object'&&product.attributes ? product.attributes : {};
   const hasA  = Object.keys(attrs).length>0;
   const serviceConfig: Record<string,any> = (() => {
@@ -558,6 +562,14 @@ export default function ProductDetailPage() {
               <Typography fontSize={12} color={SUB} noWrap sx={{ maxWidth:180 }}>{product.name}</Typography>
             </Box>
 
+            {product.requiresAppointment ? (
+              <ServiceInfoPanel
+                product={product} serviceConfig={serviceConfig}
+                chatLoading={chatLoading} contactSeller={contactSeller}
+                selectedSubServices={selectedSubServices} setSelectedSubServices={setSelectedSubServices}
+                onBook={()=>setApptOpen(true)} otherServices={stSvc}
+              />
+            ) : (<>
             {/* tags */}
             <Box sx={{ display:'flex', gap:1, mb:2.5, flexWrap:'wrap' }}>
               {isPhysical&&(
@@ -611,70 +623,11 @@ export default function ProductDetailPage() {
               </Typography>
             )}
 
-            {/* adresse complète — essentiel pour un service/RDV sur place */}
+            {/* adresse complète — essentiel pour un produit physique livré/retiré sur place */}
             {product.address&&(
               <Box sx={{ display:'flex', alignItems:'flex-start', gap:0.7, mb:2 }}>
                 <LocationOn sx={{ fontSize:15, color:SUB, mt:0.2, flexShrink:0 }}/>
                 <Typography fontSize={13.5} color={SUB2}>{product.address}{(product.city||product.department)?`, ${[product.city,product.department].filter(Boolean).join(', ')}`:''}</Typography>
-              </Box>
-            )}
-
-            {/* Rendez-vous — pour les services/prestations qui en nécessitent un */}
-            {product.requiresAppointment && (
-              <Box sx={{ mb:3, p:2, borderRadius:'14px', bgcolor:'rgba(99,102,241,0.08)', border:'1px solid rgba(99,102,241,0.25)' }}>
-                <Typography fontSize={13.5} fontWeight={700} color="#818CF8" mb={1}>
-                  📅 Ce service nécessite une prise de rendez-vous
-                </Typography>
-
-                {(serviceConfig.subServices?.length>0)&&(
-                  <Box sx={{ mb:2 }}>
-                    <Typography fontSize={13} fontWeight={800} color={TXT} mb={1.5}>
-                      Découvrir nos solutions de service
-                    </Typography>
-                    <Box sx={{ display:'grid', gridTemplateColumns:{ xs:'1fr', sm:'repeat(2, 1fr)' }, gap:1.2 }}>
-                      {serviceConfig.subServices.map((s:any,i:number)=>{
-                        const sel = selectedSubServices.includes(i);
-                        return (
-                          <Box key={i} onClick={()=>setSelectedSubServices(p=>sel?p.filter(x=>x!==i):[...p,i])}
-                            sx={{ display:'flex', flexDirection:'column', gap:0.8, p:1.6, borderRadius:'14px', cursor:'pointer', position:'relative',
-                              bgcolor:sel?'rgba(99,102,241,0.08)':'#fff', border:`1.5px solid ${sel?'#6366F1':BORD}`, transition:'all 0.15s',
-                              '&:hover':{ borderColor:'#6366F1', boxShadow:'0 4px 14px rgba(99,102,241,0.12)' } }}>
-                            {sel&&(
-                              <Box sx={{ position:'absolute', top:10, right:10, width:20, height:20, borderRadius:'50%', bgcolor:'#6366F1',
-                                display:'flex', alignItems:'center', justifyContent:'center' }}>
-                                <CheckCircle sx={{ fontSize:14, color:'#fff' }}/>
-                              </Box>
-                            )}
-                            <Box sx={{ display:'flex', alignItems:'center', gap:1 }}>
-                              <Box sx={{ width:36, height:36, borderRadius:'10px', flexShrink:0, bgcolor:'rgba(99,102,241,0.12)',
-                                display:'flex', alignItems:'center', justifyContent:'center' }}>
-                                <MedicalServices sx={{ fontSize:18, color:'#6366F1' }}/>
-                              </Box>
-                              <Typography fontSize={13.5} fontWeight={800} color={TXT} sx={{ pr:sel?3:0 }}>{s.name||'Prestation'}</Typography>
-                            </Box>
-                            {s.description&&<Typography fontSize={12} color={SUB} lineHeight={1.5} sx={{ display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>{s.description}</Typography>}
-                            <Typography fontSize={14} fontWeight={900} color="#6366F1">{fmt(Number(s.price||0))}</Typography>
-                          </Box>
-                        );
-                      })}
-                    </Box>
-                    {selectedSubServices.length>0&&(
-                      <Box sx={{ display:'flex', justifyContent:'space-between', mt:1.5, px:0.5 }}>
-                        <Typography fontSize={13} fontWeight={700} color={TXT}>Total sélectionné</Typography>
-                        <Typography fontSize={14} fontWeight={900} color="#6366F1">
-                          {fmt(selectedSubServices.reduce((sum,i)=>sum+Number(serviceConfig.subServices[i]?.price||0),0))}
-                        </Typography>
-                      </Box>
-                    )}
-                  </Box>
-                )}
-
-                <Button fullWidth onClick={()=>setApptOpen(true)}
-                  sx={{ py:1.3, borderRadius:'12px', fontWeight:800, fontSize:14, color:'#fff',
-                    background:'linear-gradient(135deg,#4338CA,#6366F1)',
-                    '&:hover':{ background:'linear-gradient(135deg,#3730A3,#4F46E5)' } }}>
-                  Prendre rendez-vous
-                </Button>
               </Box>
             )}
 
@@ -951,6 +904,7 @@ export default function ProductDetailPage() {
                 <Typography fontSize={13.5} color={SUB2} lineHeight={1.7}>{product.conditionNote}</Typography>
               </Box>
             )}
+            </>)}
 
             {/* tabs */}
             <Box sx={{ display:'flex', gap:0.5, mb:3, p:0.5, borderRadius:'14px', bgcolor:'rgba(15,23,42,0.05)', width:'fit-content', maxWidth:'100%', overflowX:'auto' }}>
@@ -1127,7 +1081,8 @@ export default function ProductDetailPage() {
         </Box>
       )}
 
-      {/* mobile sticky bottom */}
+      {/* mobile sticky bottom — les services ont leur propre résumé sticky dans ServiceInfoPanel */}
+      {!product.requiresAppointment && (
       <Box sx={{ display:{ xs:'flex', lg:'none' }, position:'fixed', bottom:56, left:0, right:0, zIndex:1200,
         bgcolor:'rgba(255,255,255,0.97)', backdropFilter:'blur(20px)',
         borderTop:`1px solid ${BORD}`, boxShadow:'0 -6px 24px rgba(15,23,42,0.10)',
@@ -1148,13 +1103,7 @@ export default function ProductDetailPage() {
           variant="outlined">
           Vendeur
         </Button>
-        {product.requiresAppointment ? (
-          <Button size="small" onClick={()=>setApptOpen(true)}
-            sx={{ py:1.2, borderRadius:'10px', fontWeight:900, fontSize:13, px:2.2, color:'#fff', flexShrink:0,
-              background:'linear-gradient(135deg,#4338CA,#6366F1)' }}>
-            RDV
-          </Button>
-        ) : !inCart ? (
+        {!inCart ? (
           <Button size="small"
             onClick={needsColor ? ()=>document.getElementById('color-picker')?.scrollIntoView({behavior:'smooth',block:'center'}) : addToCart}
             disabled={loading||stock===0}
@@ -1175,6 +1124,7 @@ export default function ProductDetailPage() {
           </Button>
         )}
       </Box>
+      )}
 
       {apptOpen && product && (
         <BookAppointmentDialog
@@ -1185,6 +1135,251 @@ export default function ProductDetailPage() {
           onClose={() => setApptOpen(false)}
         />
       )}
+    </Box>
+  );
+}
+
+/* ─── Carte "autre service du même vendeur" ─────────────────────────────── */
+function ServiceCard({ p }: { p:any }) {
+  const price = Number(p.salePrice||p.price||0);
+  return (
+    <Box component={Link} to={`/products/${p.slug}`}
+      sx={{ textDecoration:'none', display:'flex', flexDirection:'column', gap:1, p:2, borderRadius:'14px',
+        bgcolor:'#EEEDFE', border:`0.5px solid ${BORD}`, transition:'transform 0.15s ease, border-color 0.15s ease',
+        '&:hover':{ borderColor:'rgba(15,27,46,0.18)', transform:'translateY(-2px)' } }}>
+      <Box sx={{ width:36, height:36, borderRadius:'10px', bgcolor:'rgba(60,52,137,0.12)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+        <MedicalServices sx={{ fontSize:18, color:'#3C3489' }}/>
+      </Box>
+      <Typography fontSize={13.5} fontWeight={500} color={TXT} sx={{ display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>{p.name}</Typography>
+      <Typography fontSize={13} fontWeight={500} color={OR}>dès {fmt(price)}</Typography>
+    </Box>
+  );
+}
+
+/* ─── "Autres services du même vendeur" — grille 3/2/1, jamais de produit physique ── */
+function OtherServicesGrid({ products, storeSlug }: { products:any[]; storeSlug?:string }) {
+  if (!products.length) return null;
+  const few = products.length < 3;
+  return (
+    <Box sx={{ mt:2 }}>
+      <Typography fontWeight={500} fontSize={15} color={TXT} mb={1.5}>autres services du même vendeur</Typography>
+      <Box sx={{
+        display:'grid',
+        gridTemplateColumns:{ xs:'1fr', sm:'repeat(2, 1fr)', md:'repeat(3, 1fr)' },
+        gap:1.5,
+        ...(few ? { maxWidth:{ md: products.length===1?260:520 }, mx:{ md:'auto' } } : {}),
+      }}>
+        {products.map(p=><ServiceCard key={p.slug||p.id} p={p}/>)}
+        {storeSlug&&(
+          <Box component={Link} to={`/store/${storeSlug}`}
+            sx={{ textDecoration:'none', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:0.5,
+              p:2, borderRadius:'14px', border:`0.5px dashed ${BORD}`, minHeight:112,
+              transition:'background 0.15s ease', '&:hover':{ bgcolor:BG_MUTED } }}>
+            <ArrowForward sx={{ fontSize:18, color:OR }}/>
+            <Typography fontSize={13} fontWeight={500} color={OR}>voir tous les services</Typography>
+          </Box>
+        )}
+      </Box>
+    </Box>
+  );
+}
+
+/* ─── Sélecteur de soins multi-sélection ─────────────────────────────────── */
+function SubServicesSelector({ subServices, selected, onToggle, onRemoveIndices }: {
+  subServices:{ name:string; price:number; description?:string }[];
+  selected:number[]; onToggle:(i:number)=>void; onRemoveIndices:(idxs:number[])=>void;
+}) {
+  const [showMore, setShowMore] = useState(false);
+  const MAIN_COUNT = 4;
+  const main = subServices.slice(0, MAIN_COUNT);
+  const more = subServices.slice(MAIN_COUNT);
+
+  const toggleMore = () => {
+    if (showMore) onRemoveIndices(more.map((_,i)=>MAIN_COUNT+i));
+    setShowMore(s=>!s);
+  };
+
+  const total = selected.reduce((sum,i)=>sum+Number(subServices[i]?.price||0), 0);
+  const count = selected.length;
+
+  const Row = ({ s, i }: { s:any; i:number }) => {
+    const sel = selected.includes(i);
+    return (
+      <Box onClick={()=>onToggle(i)}
+        sx={{ display:'flex', alignItems:'center', gap:1.2, px:{ xs:1.75, sm:1.5 }, py:{ xs:1.5, sm:1.25 }, minHeight:{ xs:48, sm:'auto' },
+          borderRadius:'10px', cursor:'pointer',
+          border:`0.5px solid ${sel?OR:BORD}`, borderColor:sel?OR:BORD,
+          bgcolor:sel?OR_BG:'transparent',
+          transition:'background 0.15s ease, border-color 0.15s ease',
+          '&:hover':sel?{}:{ borderColor:'rgba(15,27,46,0.18)', bgcolor:BG_MUTED } }}>
+        <Box sx={{ width:18, height:18, borderRadius:'5px', flexShrink:0, border:`1.5px solid ${sel?OR:BORD}`,
+          bgcolor:sel?OR:'transparent', display:'flex', alignItems:'center', justifyContent:'center', transition:'background 0.15s ease' }}>
+          {sel&&<CheckCircle sx={{ fontSize:13, color:'#fff' }}/>}
+        </Box>
+        <Typography fontSize={13.5} fontWeight={400} color={sel?OR_TXT:TXT} sx={{ flex:1 }}>{s.name||'Prestation'}</Typography>
+        <Typography fontSize={13.5} fontWeight={500} color={sel?OR_TXT:SUB2}>{Number(s.price||0).toLocaleString('fr-FR')} gds</Typography>
+      </Box>
+    );
+  };
+
+  return (
+    <Box sx={{ maxWidth:{ xs:'100%', md:520 } }}>
+      <Typography fontSize={12} fontWeight={500} color={SUB} mb={1.5}>
+        sélectionnez un ou plusieurs actes — le total se met à jour automatiquement
+      </Typography>
+      <Box sx={{ display:'flex', flexDirection:'column', gap:1 }}>
+        {main.map((s,i)=><Row key={i} s={s} i={i}/>)}
+      </Box>
+      {more.length>0&&(
+        <>
+          <Box onClick={toggleMore}
+            sx={{ display:'flex', alignItems:'center', gap:0.6, mt:1.2, py:1, borderRadius:'8px', cursor:'pointer',
+              justifyContent:'center', transition:'background 0.15s ease', '&:hover':{ bgcolor:BG_MUTED } }}>
+            <Typography fontSize={13} fontWeight={500} color={OR}>
+              {showMore ? 'masquer les autres services' : `voir d'autres services (${more.length})`}
+            </Typography>
+            <ExpandMore sx={{ fontSize:18, color:OR, transition:'transform 0.2s ease', transform:showMore?'rotate(180deg)':'none' }}/>
+          </Box>
+          {showMore&&(
+            <Box sx={{ display:'flex', flexDirection:'column', gap:1, mt:1 }}>
+              {more.map((s,i)=><Row key={MAIN_COUNT+i} s={s} i={MAIN_COUNT+i}/>)}
+            </Box>
+          )}
+        </>
+      )}
+    </Box>
+  );
+}
+
+/* ─── Page info panel — services / RDV (immobilier, véhicules en visite) ──
+   Volontairement un composant distinct de la page produit physique : les
+   notions d'état/stock/livraison n'ont pas de sens ici et ne doivent jamais
+   pouvoir fuiter dans ce template (spec §5). ───────────────────────────── */
+function ServiceInfoPanel({ product, serviceConfig, chatLoading, contactSeller, selectedSubServices, setSelectedSubServices, onBook, otherServices }: {
+  product:any; serviceConfig:Record<string,any>; chatLoading:boolean; contactSeller:()=>void;
+  selectedSubServices:number[]; setSelectedSubServices:React.Dispatch<React.SetStateAction<number[]>>;
+  onBook:()=>void; otherServices:any[];
+}) {
+  const subServices = serviceConfig.subServices || [];
+  const total = selectedSubServices.reduce((sum,i)=>sum+Number(subServices[i]?.price||0), 0);
+  const count = selectedSubServices.length;
+
+  const toggle = (i:number) => setSelectedSubServices(p=>p.includes(i)?p.filter(x=>x!==i):[...p,i]);
+  const removeIndices = (idxs:number[]) => setSelectedSubServices(p=>p.filter(x=>!idxs.includes(x)));
+
+  return (
+    <Box>
+      {/* badges */}
+      <Box sx={{ display:'flex', gap:1, mb:2, flexWrap:'wrap' }}>
+        <Box sx={{ px:1.4, py:0.4, borderRadius:'20px', bgcolor:'#EEEDFE' }}>
+          <Typography fontSize={11} fontWeight={500} color="#3C3489">service</Typography>
+        </Box>
+        {serviceConfig.availability?.days?.length>0&&(
+          <Box sx={{ px:1.4, py:0.4, borderRadius:'20px', bgcolor:TEAL_BG }}>
+            <Typography fontSize={11} fontWeight={500} color={TEAL_TXT}>disponible cette semaine</Typography>
+          </Box>
+        )}
+      </Box>
+
+      {/* titre + catégorie */}
+      <Typography component="h1" fontWeight={500} color={TXT} sx={{ fontSize:{ xs:22, sm:26, md:28 }, lineHeight:1.25, mb:0.5 }}>
+        {product.name}
+      </Typography>
+      <Typography fontSize={13} color={SUB} mb={1.5}>
+        {product.category?.name||'Service'}
+        {product.avgRating>0
+          ? <> · {product.avgRating.toFixed(1)} ★ ({product.totalReviews} avis)</>
+          : <> — <Box component="span" sx={{ color:OR, cursor:'pointer', '&:hover':{ textDecoration:'underline' } }}>Aucun avis — soyez le premier</Box></>}
+      </Typography>
+
+      {/* localisation */}
+      {(product.address||product.city)&&(
+        <Box sx={{ display:'flex', alignItems:'flex-start', gap:0.7, mb:2 }}>
+          <LocationOn sx={{ fontSize:15, color:SUB, mt:0.2, flexShrink:0 }}/>
+          <Typography fontSize={13.5} color={SUB2}>
+            {[product.address, product.city, product.department].filter(Boolean).join(', ')}
+          </Typography>
+        </Box>
+      )}
+
+      {/* description — jamais vide */}
+      <Typography fontSize={14} color={SUB2} lineHeight={1.6} sx={{ mb:3 }}>
+        {product.description?.trim() || `${product.name} — prise de rendez-vous en ligne chez ${product.store?.name||'ce prestataire'}.`}
+      </Typography>
+
+      {/* bloc vendeur — Contacter uniquement */}
+      {product.store&&(
+        <Box sx={{ display:'flex', alignItems:'center', gap:1.5, p:2, borderRadius:'12px', bgcolor:BG_MUTED, border:`1px solid ${BORD}`, mb:3, flexWrap:'wrap' }}>
+          {product.store.logoUrl
+            ? <Avatar src={product.store.logoUrl} sx={{ width:44, height:44, borderRadius:'10px' }}/>
+            : <Avatar sx={{ width:44, height:44, borderRadius:'10px', bgcolor:NAVY, color:'#fff', fontWeight:500, fontSize:17 }}>{product.store.name?.[0]?.toUpperCase()}</Avatar>}
+          <Box sx={{ flex:1, minWidth:120 }}>
+            <Box sx={{ display:'flex', alignItems:'center', gap:0.6 }}>
+              <Typography fontWeight={500} fontSize={14} color={TXT} noWrap>{product.store.name}</Typography>
+              {product.store.isVerified&&<Verified sx={{ fontSize:14, color:OR, flexShrink:0 }}/>}
+            </Box>
+            <Typography fontSize={12.5} color={SUB}>{product.store.totalSales||0} vente{(product.store.totalSales||0)>1?'s':''}</Typography>
+          </Box>
+          <Button onClick={contactSeller} disabled={chatLoading} size="small"
+            sx={{ borderRadius:'8px', border:`1px solid ${NAVY}`, color:NAVY, fontWeight:500, fontSize:12.5, px:1.6, py:0.7, ml:'auto',
+              width:{ xs:'100%', sm:'auto' },
+              transition:'background 0.15s ease, transform 0.1s ease',
+              '&:hover':{ bgcolor:'rgba(15,27,46,0.05)' }, '&:active':{ transform:'scale(0.98)' } }}>
+            contacter
+          </Button>
+        </Box>
+      )}
+
+      {/* sélecteur de soins */}
+      {subServices.length>0&&(
+        <Box sx={{ mb:3 }}>
+          <SubServicesSelector subServices={subServices} selected={selectedSubServices} onToggle={toggle} onRemoveIndices={removeIndices}/>
+        </Box>
+      )}
+
+      {/* résumé + CTA — sticky en bas sur mobile dès qu'une sélection existe */}
+      <Box sx={{
+        ...(count>0 ? { position:{ xs:'sticky', md:'static' }, bottom:0, bgcolor:CARD,
+          boxShadow:{ xs:'0 -2px 8px rgba(0,0,0,0.06)', md:'none' }, zIndex:10 } : {}),
+        pt: count>0?1.5:0, pb: count>0?1.5:0, px:{ xs:count>0?2:0, md:0 }, mx:{ xs:count>0?-2:0, md:0 },
+      }}>
+        {count>0&&(
+          <Box sx={{ display:'flex', justifyContent:'space-between', mb:1.2 }}>
+            <Typography fontSize={13} fontWeight={500} color={TXT}>total ({count} soin{count>1?'s':''} sélectionné{count>1?'s':''})</Typography>
+            <Typography fontSize={14} fontWeight={500} color={OR}>{total.toLocaleString('fr-FR')} gds</Typography>
+          </Box>
+        )}
+        <Button fullWidth disabled={count===0} onClick={onBook}
+          sx={{ py:1.4, borderRadius:'8px', fontWeight:500, fontSize:14.5, color:'#fff',
+            bgcolor: count>0 ? OR : 'rgba(15,27,46,0.07)',
+            transition:'background 0.15s ease, color 0.15s ease, transform 0.1s ease',
+            '&:hover:not(:disabled)':{ bgcolor:OR_HOVER },
+            '&:active:not(:disabled)':{ transform:'scale(0.98)' },
+            '&:focus-visible':{ outline:`2px solid ${OR}`, outlineOffset:2 },
+            '&.Mui-disabled':{ bgcolor:'rgba(15,27,46,0.07)', color:SUB } }}>
+          {count>0 ? `prendre rendez-vous — ${total.toLocaleString('fr-FR')} gds` : 'sélectionnez au moins un soin'}
+        </Button>
+      </Box>
+
+      {/* garanties 2x2 */}
+      <Box sx={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:1, mt:3 }}>
+        {[
+          { Icon:Security, label:'paiement sécurisé', bg:TEAL_BG, c:TEAL_TXT },
+          { Icon:Verified,  label:'prestataire vérifié', bg:OR_BG, c:OR_TXT },
+          { Icon:Chat,      label:'messages chiffrés', bg:TEAL_BG, c:TEAL_TXT },
+          { Icon:Close,     label:'annulation gratuite 24h', bg:OR_BG, c:OR_TXT },
+        ].map(({Icon,label,bg,c},i)=>(
+          <Box key={i} sx={{ display:'flex', alignItems:'center', gap:1, p:1.2, borderRadius:'10px', bgcolor:BG_MUTED, border:`1px solid ${BORD}` }}>
+            <Box sx={{ width:24, height:24, borderRadius:'7px', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', bgcolor:bg }}>
+              <Icon sx={{ fontSize:13, color:c }}/>
+            </Box>
+            <Typography fontSize={11.5} fontWeight={500} color={TXT} noWrap>{label}</Typography>
+          </Box>
+        ))}
+      </Box>
+
+      <Box sx={{ height:'1px', bgcolor:BORD, my:3 }}/>
+      <OtherServicesGrid products={otherServices} storeSlug={product.store?.slug}/>
     </Box>
   );
 }
