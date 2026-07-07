@@ -549,8 +549,8 @@ export default function ProductDetailPage() {
               </Box>
             )}
 
-            {/* price — mobile only: desktop shows it in the sticky buy box on the right */}
-            <Box sx={{ display:{ xs:'block', lg:'none' } }}>
+            {/* price */}
+            <Box>
               {inFlashSale&&sale&&<CountdownBanner endAt={flashSale?.endAt} title={flashSale?.title}/>}
               {exchangeRate&&(
                 <Box sx={{ display:'inline-flex', borderRadius:'8px', border:`1px solid ${BORD}`, overflow:'hidden', mb:1 }}>
@@ -647,9 +647,9 @@ export default function ProductDetailPage() {
               </Box>
             )}
 
-            {/* stock — badge hidden on desktop (already shown in the sticky buy box); location always visible */}
+            {/* stock + location */}
             <Box sx={{ display:'flex', alignItems:'center', gap:1.5, mb:3, flexWrap:'wrap' }}>
-              <Box sx={{ display:{ xs:'flex', lg:'none' } }}>
+              <Box sx={{ display:'flex' }}>
                 {stock>10
                   ? <Box sx={{ display:'flex', alignItems:'center', gap:0.6, px:1.4, py:0.5, borderRadius:'20px', bgcolor:'rgba(16,185,129,0.1)', border:'1px solid rgba(16,185,129,0.2)' }}><CheckCircle sx={{ fontSize:13, color:GRN }}/><Typography fontSize={12.5} color={GRN} fontWeight={700}>En stock · {stock} dispo.</Typography></Box>
                   : stock>0
@@ -664,8 +664,8 @@ export default function ProductDetailPage() {
               )}
             </Box>
 
-            {/* qty — mobile only: desktop has its own compact stepper inside the sticky buy box */}
-            <Box sx={{ display:{ xs:'flex', lg:'none' }, alignItems:'center', gap:3, mb:3 }}>
+            {/* qty */}
+            <Box sx={{ display:'flex', alignItems:'center', gap:3, mb:3 }}>
               <Typography fontSize={12} fontWeight={600} color={SUB} textTransform="uppercase" letterSpacing="0.8px">Quantité</Typography>
               <Box sx={{ display:'flex', alignItems:'center', bgcolor:'rgba(15,23,42,0.06)', border:`1.5px solid ${BORD}`, borderRadius:'10px', overflow:'hidden', height:44 }}>
                 <IconButton size="small" onClick={()=>setQty(q=>Math.max(1,q-1))}
@@ -680,8 +680,8 @@ export default function ProductDetailPage() {
               </Box>
             </Box>
 
-            {/* ── MAIN CTA — mobile only: desktop uses the sticky buy box on the right ── */}
-            <Box sx={{ display:{ xs:'flex', lg:'none' }, flexDirection:'column', gap:1.5, mb:3.5 }}>
+            {/* ── MAIN CTA ── */}
+            <Box sx={{ display:'flex', flexDirection:'column', gap:1.5, mb:3.5, maxWidth:{ lg:480 } }}>
               <Box sx={{ display:'flex', gap:1.2 }}>
                 <Button fullWidth onClick={addToCart} disabled={ctaDisabled}
                   startIcon={loading ? <CircularProgress size={16} color="inherit"/> : <ShoppingCart sx={{ fontSize:18 }}/>}
@@ -714,8 +714,8 @@ export default function ProductDetailPage() {
               </Button>
             </Box>
 
-            {/* trust badges — mobile only: same info shown in the desktop sticky buy box */}
-            <Box sx={{ display:{ xs:'grid', lg:'none' }, gridTemplateColumns:'1fr 1fr', gap:1, mb:3.5 }}>
+            {/* trust badges */}
+            <Box sx={{ display:'grid', gridTemplateColumns:{ xs:'1fr 1fr', lg:'repeat(4, 1fr)' }, gap:1, mb:3.5, maxWidth:{ lg:640 } }}>
               {[
                 { Icon:Security,      label:'Paiement sécurisé',   c:'#6366F1' },
                 { Icon:LocalShipping, label:product.hasDelivery?'Livraison dispo.':'Retrait vendeur', c:GRN },
@@ -898,111 +898,6 @@ export default function ProductDetailPage() {
             )}
           </Box>
 
-          {/* ── RIGHT sticky buy box ───────────────────────────────────────── */}
-          <Box sx={{ display:{ xs:'none', lg:'block' }, width:320, flexShrink:0, position:'sticky', top:80, alignSelf:'flex-start', pt:3 }}>
-            <Box sx={{ bgcolor:CARD, borderRadius:'22px', p:3, border:`1px solid ${BORD}`,
-              boxShadow:'0 12px 40px rgba(15,23,42,0.10)', position:'relative', overflow:'hidden',
-              '&::before':{ content:'""', position:'absolute', top:0, left:0, right:0, height:4,
-                background:`linear-gradient(90deg,${OR},#FF8C38)` } }}>
-              <Typography fontSize={13} fontWeight={600} color={SUB} mb={0.5} noWrap sx={{ maxWidth:280 }}>{product.name}</Typography>
-              {inFlashSale&&sale&&<CountdownBanner endAt={flashSale?.endAt} title={flashSale?.title}/>}
-              {exchangeRate&&(
-                <Box sx={{ display:'inline-flex', borderRadius:'8px', border:`1px solid ${BORD}`, overflow:'hidden', mb:1 }}>
-                  {(['HTG','USD'] as const).map(c=>(
-                    <Box key={c} onClick={()=>setDisplayCurrency(c)} sx={{ px:1.4, py:0.4, cursor:'pointer',
-                      bgcolor:displayCurrency===c?OR:'transparent', color:displayCurrency===c?'#fff':SUB,
-                      fontSize:11, fontWeight:800 }}>{c}</Box>
-                  ))}
-                </Box>
-              )}
-              <Box sx={{ display:'flex', alignItems:'baseline', gap:1.5, mb:sale?0.5:2 }}>
-                <Typography fontWeight={900} color={TXT} sx={{ fontSize:32, letterSpacing:'-1.5px', lineHeight:1 }}>{fmtDisplay(cur)}</Typography>
-                {sale&&<Typography color={SUB} sx={{ fontSize:17, textDecoration:'line-through' }}>{fmtDisplay(orig)}</Typography>}
-              </Box>
-              {sale&&(
-                <Box sx={{ display:'inline-flex', px:1.2, py:0.4, borderRadius:'8px', bgcolor:'rgba(16,185,129,0.1)', border:'1px solid rgba(16,185,129,0.2)', mb:2 }}>
-                  <Typography fontSize={12} fontWeight={700} color={GRN}>-{disc}% · Éco. {fmtDisplay(save)}</Typography>
-                </Box>
-              )}
-
-              {stock>0
-                ? <Box sx={{ display:'flex', alignItems:'center', gap:0.6, mb:2.5 }}><CheckCircle sx={{ fontSize:13, color:GRN }}/><Typography fontSize={12.5} color={GRN} fontWeight={700}>En stock ({stock} dispo.)</Typography></Box>
-                : <Box sx={{ display:'flex', alignItems:'center', gap:0.6, mb:2.5 }}><Inventory sx={{ fontSize:13, color:RED }}/><Typography fontSize={12.5} color={RED} fontWeight={700}>Rupture de stock</Typography></Box>}
-
-              {!inCart && stock>0 && (
-                <Box sx={{ display:'flex', alignItems:'center', justifyContent:'space-between', mb:2 }}>
-                  <Typography fontSize={11.5} fontWeight={600} color={SUB} textTransform="uppercase" letterSpacing="0.6px">Quantité</Typography>
-                  <Box sx={{ display:'flex', alignItems:'center', bgcolor:'rgba(15,23,42,0.06)', border:`1.5px solid ${BORD}`, borderRadius:'10px', overflow:'hidden', height:36 }}>
-                    <IconButton size="small" onClick={()=>setQty(q=>Math.max(1,q-1))}
-                      sx={{ borderRadius:0, px:1.4, height:'100%', color:TXT, '&:hover':{ bgcolor:'rgba(255,107,0,0.1)' } }}>
-                      <Typography fontWeight={600} fontSize={16} lineHeight={1}>−</Typography>
-                    </IconButton>
-                    <Typography sx={{ px:1.8, fontWeight:900, fontSize:13.5, minWidth:30, textAlign:'center', color:TXT }}>{qty}</Typography>
-                    <IconButton size="small" onClick={()=>setQty(q=>Math.min(stock||99,q+1))}
-                      sx={{ borderRadius:0, px:1.4, height:'100%', color:TXT, '&:hover':{ bgcolor:'rgba(255,107,0,0.1)' } }}>
-                      <Typography fontWeight={600} fontSize={16} lineHeight={1}>+</Typography>
-                    </IconButton>
-                  </Box>
-                </Box>
-              )}
-
-              <Box sx={{ display:'flex', gap:1, mb:1.5 }}>
-                <Button fullWidth onClick={addToCart} disabled={ctaDisabled}
-                  startIcon={loading ? <CircularProgress size={14} color="inherit"/> : <ShoppingCart sx={{ fontSize:15 }}/>}
-                  sx={{ py:1.6, borderRadius:'12px', fontWeight:800, fontSize:12.5, color:OR,
-                    bgcolor:'#fff', border:`2px solid ${ctaDisabled?BORD:OR}`,
-                    '&:hover:not(:disabled)':{ bgcolor:'rgba(255,107,0,0.06)' },
-                    '&:disabled':{ color:SUB, borderColor:BORD } }}>
-                  {loading ? '…' : stock===0 ? 'Épuisé' : 'Ajouter'}
-                </Button>
-                <Button fullWidth onClick={buyNow} disabled={ctaDisabled}
-                  sx={{ py:1.6, borderRadius:'12px', fontWeight:900, fontSize:13, color:'#fff',
-                    background: ctaDisabled ? undefined : `linear-gradient(135deg,#C84D00,${RED})`,
-                    boxShadow: ctaDisabled ? undefined : '0 6px 22px rgba(239,68,68,0.35)',
-                    '&:disabled':{ bgcolor:'rgba(15,23,42,0.07)', color:SUB, boxShadow:'none' },
-                    '&:hover:not(:disabled)':{ boxShadow:'0 10px 28px rgba(239,68,68,0.45)', transform:'translateY(-1px)' }, transition:'all 0.18s' }}>
-                  Acheter
-                </Button>
-              </Box>
-
-              <Box onClick={toggleWL}
-                sx={{ display:'flex', alignItems:'center', justifyContent:'center', gap:1, py:1.4, borderRadius:'12px',
-                  border:`1px solid ${liked?'rgba(239,68,68,0.4)':BORD}`, color:liked?RED:SUB2, cursor:'pointer', mb:1.5,
-                  '&:hover':{ borderColor:'rgba(239,68,68,0.4)', color:RED, bgcolor:'rgba(239,68,68,0.05)' }, transition:'all 0.15s' }}>
-                {liked?<Favorite sx={{ fontSize:16 }}/>:<FavoriteBorder sx={{ fontSize:16 }}/>}
-                <Typography fontSize={13} fontWeight={600}>{liked?'Dans vos favoris':'Ajouter aux favoris'}</Typography>
-              </Box>
-
-              <Button fullWidth variant="outlined" onClick={contactSeller}
-                disabled={chatLoading}
-                startIcon={chatLoading ? <CircularProgress size={15} color="inherit"/> : <Chat sx={{ fontSize:16 }}/>}
-                sx={{ py:1.4, borderRadius:'12px', fontWeight:700, fontSize:13.5, mb:2.5,
-                  borderWidth:1, borderColor:BORD, color:SUB2,
-                  '&:hover':{ bgcolor:'rgba(15,23,42,0.05)', borderColor:'rgba(15,23,42,0.16)', color:TXT } }}>
-                Contacter le vendeur
-              </Button>
-
-              <Box sx={{ display:'flex', flexDirection:'column', gap:1 }}>
-                {[
-                  { Icon:Security,      label:'Paiement sécurisé', sub:'via MonCash', c:'#6366F1' },
-                  { Icon:LocalShipping, label:product.hasDelivery?'Livraison disponible':'Retrait sur place', sub:product.hasDelivery?'Suivi de commande':'Chez le vendeur', c:GRN },
-                  { Icon:Verified,      label:product.store?.isVerified?'Boutique vérifiée':'Vendeur DealPam', sub:'Identité contrôlée', c:OR },
-                ].map(({ Icon, label, sub, c },i)=>(
-                  <Box key={i} sx={{ display:'flex', alignItems:'center', gap:1.2, p:1, borderRadius:'10px',
-                    bgcolor:'rgba(15,23,42,0.02)', border:`1px solid ${BORD}` }}>
-                    <Box sx={{ width:28, height:28, borderRadius:'8px', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center',
-                      bgcolor:`${c}1A` }}>
-                      <Icon sx={{ fontSize:15, color:c }}/>
-                    </Box>
-                    <Box sx={{ minWidth:0 }}>
-                      <Typography fontSize={12} color={TXT} fontWeight={700} lineHeight={1.3} noWrap>{label}</Typography>
-                      <Typography fontSize={10.5} color={SUB2} lineHeight={1.3} noWrap>{sub}</Typography>
-                    </Box>
-                  </Box>
-                ))}
-              </Box>
-            </Box>
-          </Box>
         </Box>
 
         {/* recommendations */}
