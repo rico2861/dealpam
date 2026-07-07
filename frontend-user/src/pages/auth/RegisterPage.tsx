@@ -75,7 +75,7 @@ function Field({
     <Box>
       {label && (
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.75 }}>
-          <Typography sx={{ fontSize: 11.5, fontWeight: 700, color: focused ? alpha(accentColor, 0.85) : '#94A3B8', letterSpacing: '0.5px', transition: 'color 0.2s', userSelect: 'none' }}>
+          <Typography sx={{ fontSize: 11.5, fontWeight: 700, color: focused ? alpha(accentColor, 0.85) : '#64748B', letterSpacing: '0.5px', transition: 'color 0.2s', userSelect: 'none' }}>
             {label}{required && <Box component="span" sx={{ color: accentColor, ml: 0.3 }}>*</Box>}
           </Typography>
           {badge}
@@ -95,7 +95,7 @@ function Field({
         cursor: 'text',
       }}>
         {startIcon && (
-          <Box sx={{ color: focused ? alpha(accentColor, 0.7) : '#94A3B8', flexShrink: 0, display: 'flex', mt: multiline ? 0.3 : 0, transition: 'color 0.2s' }}>
+          <Box sx={{ color: focused ? alpha(accentColor, 0.7) : '#64748B', flexShrink: 0, display: 'flex', mt: multiline ? 0.3 : 0, transition: 'color 0.2s' }}>
             {startIcon}
           </Box>
         )}
@@ -114,7 +114,7 @@ function Field({
             '& input, & textarea': {
               color: '#0F172A !important', WebkitTextFillColor: '#0F172A', fontSize: 14, fontWeight: 500,
               p: 0, lineHeight: '24px', caretColor: '#0F172A',
-              '&::placeholder': { color: '#94A3B8', opacity: 1 },
+              '&::placeholder': { color: '#64748B', opacity: 1 },
               '&:-webkit-autofill, &:-webkit-autofill:hover, &:-webkit-autofill:focus': {
                 WebkitBoxShadow: '0 0 0 100px #FFFFFF inset',
                 WebkitTextFillColor: '#0F172A',
@@ -127,7 +127,7 @@ function Field({
         {endIcon && <Box sx={{ flexShrink: 0, display: 'flex', alignItems: 'center' }}>{endIcon}</Box>}
       </Box>
       {hint && (
-        <Typography sx={{ fontSize: 11.5, mt: 0.6, px: 0.5, lineHeight: 1.5, color: '#94A3B8' }}>
+        <Typography sx={{ fontSize: 11.5, mt: 0.6, px: 0.5, lineHeight: 1.5, color: '#64748B' }}>
           {hint}
         </Typography>
       )}
@@ -137,7 +137,7 @@ function Field({
 
 /* ── Status adornment ── */
 function StatusIcon({ status }: { status: 'idle'|'checking'|'ok'|'taken' }) {
-  if (status === 'checking') return <CircularProgress size={14} sx={{ color: '#94A3B8' }} />;
+  if (status === 'checking') return <CircularProgress size={14} sx={{ color: '#64748B' }} />;
   if (status === 'ok')       return <CheckCircle sx={{ fontSize: 17, color: '#34D399' }} />;
   if (status === 'taken')    return <ErrorOutline sx={{ fontSize: 17, color: '#F87171' }} />;
   return null;
@@ -164,12 +164,12 @@ function StepBar({ step, accent }: { step: number; accent: string }) {
               }}>
                 {done
                   ? <CheckCircle sx={{ fontSize: 15, color: 'white' }} />
-                  : <Typography sx={{ fontSize: current ? 13 : 11, fontWeight: 900, color: current ? 'white' : '#94A3B8', lineHeight: 1 }}>{i + 1}</Typography>
+                  : <Typography sx={{ fontSize: current ? 13 : 11, fontWeight: 900, color: current ? 'white' : '#64748B', lineHeight: 1 }}>{i + 1}</Typography>
                 }
               </Box>
               <Typography sx={{
                 fontSize: 10.5, fontWeight: current ? 800 : 500, lineHeight: 1,
-                color: current ? '#0F172A' : done ? '#10B981' : '#94A3B8',
+                color: current ? '#0F172A' : done ? '#10B981' : '#64748B',
                 transition: 'color 0.3s', whiteSpace: 'nowrap',
               }}>
                 {label}
@@ -215,7 +215,7 @@ function PasswordStrength({ password }: { password: string }) {
               sx={{
                 height: 20, fontSize: 10, fontWeight: ok ? 700 : 400,
                 bgcolor: ok ? alpha('#10B981', 0.15) : 'rgba(15,23,42,0.05)',
-                color: ok ? '#059669' : '#94A3B8',
+                color: ok ? '#059669' : '#64748B',
                 border: `1px solid ${ok ? alpha('#10B981', 0.3) : 'transparent'}`,
                 transition: 'all 0.2s',
               }} />
@@ -277,7 +277,7 @@ function LeftPanel({ accent, badge, headline, sub, features, quote, stats }: {
             </Box>
             <Box sx={{ pt: 0.2 }}>
               <Typography sx={{ color: '#0F172A', fontSize: 13.5, fontWeight: 700, lineHeight: 1.35 }}>{title}</Typography>
-              <Typography sx={{ color: '#94A3B8', fontSize: 12.5, lineHeight: 1.65, mt: 0.25 }}>{fs}</Typography>
+              <Typography sx={{ color: '#64748B', fontSize: 12.5, lineHeight: 1.65, mt: 0.25 }}>{fs}</Typography>
             </Box>
           </Box>
         ))}
@@ -292,7 +292,7 @@ function LeftPanel({ accent, badge, headline, sub, features, quote, stats }: {
           </Typography>
           <Box>
             <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: '#334155' }}>{quote.name}</Typography>
-            <Typography sx={{ fontSize: 11.5, color: '#94A3B8', mt: 0.2 }}>{quote.store}</Typography>
+            <Typography sx={{ fontSize: 11.5, color: '#64748B', mt: 0.2 }}>{quote.store}</Typography>
           </Box>
         </Box>
       )}
@@ -305,7 +305,7 @@ function LeftPanel({ accent, badge, headline, sub, features, quote, stats }: {
               bgcolor: i % 2 === 0 ? '#FFFFFF' : '#F7F8FA',
               borderRight: i < stats.length - 1 ? '1px solid rgba(15,23,42,0.09)' : 'none' }}>
               <Typography sx={{ fontWeight: 900, fontSize: 18, color: accent, letterSpacing: '-0.5px', lineHeight: 1 }}>{value}</Typography>
-              <Typography sx={{ fontSize: 11, color: '#94A3B8', mt: 0.5, fontWeight: 500 }}>{label}</Typography>
+              <Typography sx={{ fontSize: 11, color: '#64748B', mt: 0.5, fontWeight: 500 }}>{label}</Typography>
             </Box>
           ))}
         </Box>
@@ -497,7 +497,7 @@ export default function RegisterPage() {
           <Typography sx={{ fontWeight: 900, fontSize: { xs: 22, sm: 26 }, color: '#0F172A', letterSpacing: '-0.6px', mb: 0.5 }}>
             Créer un compte
           </Typography>
-          <Typography sx={{ fontSize: 13, color: '#94A3B8', mb: 3.5 }}>
+          <Typography sx={{ fontSize: 13, color: '#64748B', mb: 3.5 }}>
             Déjà membre ?{' '}
             <Link to="/login" style={{ color: ORANGE, fontWeight: 700, textDecoration: 'none' }}>Se connecter →</Link>
           </Typography>
@@ -516,7 +516,7 @@ export default function RegisterPage() {
           {/* ══ Step 0: Role ══ */}
           {step === 0 && (
             <Box>
-              <Typography sx={{ fontSize: 11.5, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '1px', mb: 2 }}>
+              <Typography sx={{ fontSize: 11.5, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '1px', mb: 2 }}>
                 Je souhaite…
               </Typography>
               <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mb: 4 }}>
@@ -549,12 +549,12 @@ export default function RegisterPage() {
                         transition: 'all 0.25s',
                         boxShadow: active ? `0 4px 16px ${alpha(color, 0.2)}` : 'none',
                       }}>
-                        <Icon sx={{ color: active ? color : '#94A3B8', fontSize: 26, transition: 'color 0.25s' }} />
+                        <Icon sx={{ color: active ? color : '#64748B', fontSize: 26, transition: 'color 0.25s' }} />
                       </Box>
                       <Typography sx={{ fontWeight: 800, fontSize: 15, color: active ? color : '#475569', transition: 'color 0.25s' }}>
                         {label}
                       </Typography>
-                      <Typography sx={{ fontSize: 12, color: '#94A3B8', mt: 0.4 }}>{sub}</Typography>
+                      <Typography sx={{ fontSize: 12, color: '#64748B', mt: 0.4 }}>{sub}</Typography>
                     </Box>
                   );
                 })}
@@ -663,7 +663,7 @@ export default function RegisterPage() {
                   startIcon={<LockOutlined sx={{ fontSize: 18 }} />}
                   endIcon={
                     <IconButton onClick={() => setShowPwd(!showPwd)} size="small" tabIndex={-1}
-                      sx={{ color: '#94A3B8', p: 0.5, '&:hover': { color: accent, bgcolor: 'transparent' } }}>
+                      sx={{ color: '#64748B', p: 0.5, '&:hover': { color: accent, bgcolor: 'transparent' } }}>
                       {showPwd ? <VisibilityOff sx={{ fontSize: 18 }} /> : <Visibility sx={{ fontSize: 18 }} />}
                     </IconButton>
                   }
@@ -695,7 +695,7 @@ export default function RegisterPage() {
                     </Box>
                     <Box>
                       <Typography sx={{ fontWeight: 700, color: '#7C3AED', fontSize: 14 }}>Votre première boutique</Typography>
-                      <Typography sx={{ fontSize: 11.5, color: '#94A3B8' }}>Visible après inscription</Typography>
+                      <Typography sx={{ fontSize: 11.5, color: '#64748B' }}>Visible après inscription</Typography>
                     </Box>
                   </Box>
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.8 }}>
@@ -732,7 +732,7 @@ export default function RegisterPage() {
                     <CheckCircle sx={{ fontSize: 30, color: '#10B981' }} />
                   </Box>
                   <Typography sx={{ fontWeight: 800, fontSize: 15.5, color: '#0F172A', mb: 0.5 }}>Tout est prêt !</Typography>
-                  <Typography sx={{ fontSize: 13, color: '#94A3B8' }}>
+                  <Typography sx={{ fontSize: 13, color: '#64748B' }}>
                     Cliquez ci-dessous pour rejoindre DealPam.
                   </Typography>
                 </Box>
@@ -750,10 +750,10 @@ export default function RegisterPage() {
             </Box>
           )}
 
-          <Typography sx={{ mt: 4, fontSize: 11, color: '#94A3B8', textAlign: 'center', lineHeight: 1.8 }}>
+          <Typography sx={{ mt: 4, fontSize: 11, color: '#64748B', textAlign: 'center', lineHeight: 1.8 }}>
             En créant un compte, vous acceptez nos{' '}
-            <Link to="/terms" style={{ color: '#94A3B8', textDecoration: 'none' }}>CGU</Link> et notre{' '}
-            <Link to="/privacy" style={{ color: '#94A3B8', textDecoration: 'none' }}>Politique de confidentialité</Link>.
+            <Link to="/terms" style={{ color: '#64748B', textDecoration: 'none' }}>CGU</Link> et notre{' '}
+            <Link to="/privacy" style={{ color: '#64748B', textDecoration: 'none' }}>Politique de confidentialité</Link>.
           </Typography>
         </Box>
       </Box>

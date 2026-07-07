@@ -144,7 +144,7 @@ export default function MessagesPage() {
               <Typography fontWeight={800} fontSize={14.5} color="#0F172A" noWrap>
                 {otherParticipant.firstName} {otherParticipant.lastName}
               </Typography>
-              <Typography fontSize={11.5} color="#94A3B8">Vendeur</Typography>
+              <Typography fontSize={11.5} color="#64748B">Vendeur</Typography>
             </Box>
           </>
         ) : (
@@ -172,7 +172,7 @@ export default function MessagesPage() {
             }}>
               <Send sx={{ fontSize: 24, color: alpha(OR, 0.5) }} />
             </Box>
-            <Typography fontSize={13.5} color="#94A3B8">
+            <Typography fontSize={13.5} color="#64748B">
               Envoyez un message pour démarrer la conversation.
             </Typography>
           </Box>
@@ -221,7 +221,7 @@ export default function MessagesPage() {
                       </Typography>
                     )}
                   </Box>
-                  <Typography fontSize={10.5} color="#94A3B8" sx={{ mt: 0.4, textAlign: isMine ? 'right' : 'left', px: 0.5 }}>
+                  <Typography fontSize={10.5} color="#64748B" sx={{ mt: 0.4, textAlign: isMine ? 'right' : 'left', px: 0.5 }}>
                     {new Date(msg.createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                   </Typography>
                 </Box>
@@ -253,7 +253,7 @@ export default function MessagesPage() {
               disabled={uploading || !convId}
               sx={{
                 width: 44, height: 44, borderRadius: '12px', flexShrink: 0,
-                color: '#94A3B8', bgcolor: '#F7F8FA', border: `1px solid ${BORD}`,
+                color: '#64748B', bgcolor: '#F7F8FA', border: `1px solid ${BORD}`,
                 '&:hover': { color: OR, borderColor: alpha(OR, 0.4), bgcolor: alpha(OR, 0.08) },
               }}>
               <AttachFile sx={{ fontSize: 19 }} />
@@ -274,7 +274,7 @@ export default function MessagesPage() {
             },
             '& .MuiInputBase-input': {
               color: '#0F172A', fontSize: 14,
-              '&::placeholder': { color: '#94A3B8', opacity: 1 },
+              '&::placeholder': { color: '#64748B', opacity: 1 },
             },
           }}
         />
@@ -287,7 +287,7 @@ export default function MessagesPage() {
             '&:hover': { bgcolor: text.trim() ? '#E05A00' : '#F1F5F9' },
             '&.Mui-disabled': { bgcolor: '#F1F5F9', color: '#CBD5E1' },
           }}>
-          {sending ? <CircularProgress size={18} sx={{ color: '#94A3B8' }} /> : <Send sx={{ fontSize: 18 }} />}
+          {sending ? <CircularProgress size={18} sx={{ color: '#64748B' }} /> : <Send sx={{ fontSize: 18 }} />}
         </IconButton>
       </Box>
       </Box>

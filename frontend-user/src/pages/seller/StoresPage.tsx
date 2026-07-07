@@ -20,8 +20,8 @@ const BG   = '#F7F8FA';
 const CARD = '#FFFFFF';
 const BORD = 'rgba(15,23,42,0.06)';
 const TXT  = '#0F172A';
-const SUB  = '#94A3B8';
-const SUB2 = '#94A3B8';
+const SUB  = '#64748B';
+const SUB2 = '#64748B';
 const GRN  = '#10B981';
 const RED  = '#EF4444';
 const BLU  = '#3B82F6';
@@ -105,7 +105,7 @@ function TimeInput({ label, value, onChange, disabled }: { label: string; value:
           style={{
             width: '100%', padding: '8px 10px', background: disabled ? '#FFFFFF' : '#FFFFFF',
             border: `1px solid ${disabled ? 'rgba(15,23,42,0.09)' : BORD}`, borderRadius: '10px',
-            color: disabled ? '#94A3B8' : TXT, fontSize: '13px', outline: 'none',
+            color: disabled ? '#64748B' : TXT, fontSize: '13px', outline: 'none',
             colorScheme: 'dark', fontFamily: 'inherit',
           }} />
       </Box>
@@ -439,7 +439,7 @@ function StoreCard({ store, onEdit, onDelete, onCopy }: any) {
           {/* Actions */}
           <Box sx={{ display: 'flex', gap: 0.5, flexShrink: 0 }}>
             {[
-              { icon: <ContentCopy sx={{ fontSize: 13 }} />, action: () => onCopy(store.slug), col: SUB2, hov: 'rgba(15,23,42,0.06)', bc: '#94A3B8' },
+              { icon: <ContentCopy sx={{ fontSize: 13 }} />, action: () => onCopy(store.slug), col: SUB2, hov: 'rgba(15,23,42,0.06)', bc: '#64748B' },
               { icon: <Edit sx={{ fontSize: 13 }} />, action: () => onEdit(store), col: OR, hov: 'rgba(255,107,0,0.08)', bc: 'rgba(255,107,0,0.38)' },
               ...(!store.isPrimary ? [{ icon: <Delete sx={{ fontSize: 13 }} />, action: () => onDelete(store), col: RED, hov: 'rgba(239,68,68,0.08)', bc: 'rgba(239,68,68,0.38)' }] : []),
             ].map(({ icon, action, col, hov, bc }, i) => (

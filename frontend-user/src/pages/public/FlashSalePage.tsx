@@ -156,13 +156,13 @@ function FlashCard({ p }: { p: any }) {
             {fmtP(Number(hasSale ? p.salePrice : p.price))}
           </Typography>
           {hasSale && (
-            <Typography fontSize={10.5} color="#9CA3AF" noWrap sx={{ textDecoration: 'line-through', flexShrink: 1 }}>
+            <Typography fontSize={10.5} color="#64748B" noWrap sx={{ textDecoration: 'line-through', flexShrink: 1 }}>
               {fmtP(Number(p.price))}
             </Typography>
           )}
         </Box>
 
-        <Typography fontSize={10.5} color="#9CA3AF" noWrap>{p.store?.name || ''}</Typography>
+        <Typography fontSize={10.5} color="#64748B" noWrap>{p.store?.name || ''}</Typography>
       </Box>
     </Box>
   );
@@ -322,7 +322,7 @@ export default function FlashSalePage() {
           <Box sx={{ textAlign: 'center', py: 10 }}>
             <FlashOn sx={{ fontSize: 56, color: '#E2E8F0', mb: 1.5 }} />
             <Typography color={BG} fontWeight={700} fontSize={18} mb={1}>Aucune vente flash pour le moment</Typography>
-            <Typography color="#94A3B8" fontSize={14} mb={3}>Revenez bientôt pour profiter des offres flash !</Typography>
+            <Typography color="#64748B" fontSize={14} mb={3}>Revenez bientôt pour profiter des offres flash !</Typography>
             <Button component={Link} to="/home" variant="contained"
               sx={{ bgcolor: '#EF4444', color: 'white', fontWeight: 700, borderRadius: 2.5,
                 px: 4, py: 1.2, textTransform: 'none', '&:hover': { bgcolor: '#DC2626' } }}>

@@ -56,14 +56,14 @@ export default function OrdersPage() {
           <Typography sx={{ fontWeight: 900, fontSize: { xs: 22, sm: 26 }, color: '#0F172A', letterSpacing: '-0.6px', mb: 0.5 }}>
             Mes commandes
           </Typography>
-          <Typography sx={{ fontSize: 13.5, color: '#94A3B8' }}>
+          <Typography sx={{ fontSize: 13.5, color: '#64748B' }}>
             {isLoading ? '…' : `${orders?.length ?? 0} commande${(orders?.length ?? 0) !== 1 ? 's' : ''} au total`}
           </Typography>
         </Box>
 
         {/* ── Filters ── */}
         <Box sx={{ display: 'flex', gap: 1, mb: 3, flexWrap: 'wrap' }}>
-          <FilterListOutlined sx={{ fontSize: 17, color: '#94A3B8', alignSelf: 'center', mr: 0.5 }} />
+          <FilterListOutlined sx={{ fontSize: 17, color: '#64748B', alignSelf: 'center', mr: 0.5 }} />
           {FILTERS.map(f => {
             const active = filter === f.key;
             return (
@@ -111,7 +111,7 @@ export default function OrdersPage() {
             <Typography sx={{ fontWeight: 800, fontSize: 18, color: '#0F172A', mb: 1 }}>
               {filter === 'all' ? 'Aucune commande' : 'Aucune commande dans ce filtre'}
             </Typography>
-            <Typography sx={{ fontSize: 13.5, color: '#94A3B8', mb: 3.5, lineHeight: 1.75 }}>
+            <Typography sx={{ fontSize: 13.5, color: '#64748B', mb: 3.5, lineHeight: 1.75 }}>
               {filter === 'all'
                 ? 'Vous n\'avez pas encore passé de commande.\nDécouvrez nos produits et faites votre premier achat.'
                 : 'Essayez un autre filtre ou revenez plus tard.'}
@@ -189,19 +189,19 @@ export default function OrdersPage() {
                     <Typography noWrap sx={{ fontSize: { xs: 13, sm: 14 }, fontWeight: 700, color: '#0F172A', mb: 0.4 }}>
                       {firstItem?.product?.name ?? firstItem?.productName ?? 'Commande'}
                       {extraCount > 0 && (
-                        <Box component="span" sx={{ fontSize: 12, color: '#94A3B8', fontWeight: 500, ml: 0.8 }}>
+                        <Box component="span" sx={{ fontSize: 12, color: '#64748B', fontWeight: 500, ml: 0.8 }}>
                           +{extraCount} article{extraCount > 1 ? 's' : ''}
                         </Box>
                       )}
                     </Typography>
 
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
-                      <StorefrontOutlined sx={{ fontSize: 12, color: '#94A3B8' }} />
-                      <Typography sx={{ fontSize: 12, color: '#94A3B8' }}>
+                      <StorefrontOutlined sx={{ fontSize: 12, color: '#64748B' }} />
+                      <Typography sx={{ fontSize: 12, color: '#64748B' }}>
                         {order.store?.name ?? 'Boutique'}
                       </Typography>
                       <Box component="span" sx={{ color: '#CBD5E1', mx: 0.5 }}>·</Box>
-                      <Typography sx={{ fontSize: 12, color: '#94A3B8' }}>
+                      <Typography sx={{ fontSize: 12, color: '#64748B' }}>
                         {new Date(order.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
                       </Typography>
                     </Box>
@@ -211,7 +211,7 @@ export default function OrdersPage() {
                   <Box sx={{ textAlign: 'right', flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0.8 }}>
                     <Typography sx={{ fontWeight: 900, fontSize: { xs: 14, sm: 16 }, color: '#0F172A', letterSpacing: '-0.3px' }}>
                       {Number(order.totalHTG ?? order.totalAmount ?? 0).toLocaleString('fr-FR')}
-                      <Box component="span" sx={{ fontSize: 11, fontWeight: 600, color: '#94A3B8', ml: 0.5 }}>HTG</Box>
+                      <Box component="span" sx={{ fontSize: 11, fontWeight: 600, color: '#64748B', ml: 0.5 }}>HTG</Box>
                     </Typography>
                     <ArrowForward sx={{ fontSize: 15, color: '#CBD5E1' }} />
                   </Box>

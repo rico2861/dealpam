@@ -29,7 +29,7 @@ const BG   = '#F7F8FA';
 const CARD = '#FFFFFF';
 const BORD = 'rgba(15,23,42,0.09)';
 const TXT  = '#0F172A';
-const SUB  = '#94A3B8';
+const SUB  = '#64748B';
 const SUB2 = '#475569';
 
 const fmt = (v: number) => `${v.toLocaleString('fr-HT')} HTG`;

@@ -127,7 +127,7 @@ export default function LoginPage() {
             {STATS.map(({ value, label }, i) => (
               <Box key={label} sx={{ flex: 1, pl: i > 0 ? 3 : 0, borderLeft: i > 0 ? '1px solid rgba(15,23,42,0.09)' : 'none', ml: i > 0 ? 3 : 0 }}>
                 <Typography sx={{ fontWeight: 900, fontSize: 22, color: '#0F172A', letterSpacing: '-0.5px' }}>{value}</Typography>
-                <Typography sx={{ color: '#94A3B8', fontSize: 12, mt: 0.3 }}>{label}</Typography>
+                <Typography sx={{ color: '#64748B', fontSize: 12, mt: 0.3 }}>{label}</Typography>
               </Box>
             ))}
           </Box>
@@ -152,7 +152,7 @@ export default function LoginPage() {
           <Typography sx={{ fontWeight: 900, fontSize: { xs: 26, sm: 30 }, color: '#0F172A', letterSpacing: '-0.8px', mb: 0.8 }}>
             Connexion
           </Typography>
-          <Typography sx={{ fontSize: 14, color: '#94A3B8', mb: 4 }}>
+          <Typography sx={{ fontSize: 14, color: '#64748B', mb: 4 }}>
             Pas encore de compte ?{' '}
             <Link to="/register" style={{ color: ORANGE, fontWeight: 700, textDecoration: 'none' }}>Créer un compte →</Link>
           </Typography>
@@ -194,7 +194,7 @@ export default function LoginPage() {
             {/* Identifier */}
             <Box>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                <Typography sx={{ fontSize: 11.5, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.8px' }}>
+                <Typography sx={{ fontSize: 11.5, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.8px' }}>
                   Email ou nom d'utilisateur
                 </Typography>
                 {idType && (
@@ -208,8 +208,8 @@ export default function LoginPage() {
                 InputProps={{ startAdornment: (
                   <InputAdornment position="start">
                     {idType === 'username'
-                      ? <Person sx={{ color: '#94A3B8', fontSize: 18 }} />
-                      : <AlternateEmail sx={{ color: '#94A3B8', fontSize: 18 }} />}
+                      ? <Person sx={{ color: '#64748B', fontSize: 18 }} />
+                      : <AlternateEmail sx={{ color: '#64748B', fontSize: 18 }} />}
                   </InputAdornment>
                 ) }}
               />
@@ -218,7 +218,7 @@ export default function LoginPage() {
             {/* Password */}
             <Box>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                <Typography sx={{ fontSize: 11.5, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.8px' }}>
+                <Typography sx={{ fontSize: 11.5, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.8px' }}>
                   Mot de passe
                 </Typography>
                 <Link to="/forgot-password" style={{ color: ORANGE, fontSize: 12.5, fontWeight: 600, textDecoration: 'none' }}>
@@ -229,11 +229,11 @@ export default function LoginPage() {
                 placeholder="••••••••••••" autoComplete="current-password"
                 onChange={e => setPassword(e.target.value)} sx={fieldSx}
                 InputProps={{
-                  startAdornment: <InputAdornment position="start"><LockOutlined sx={{ color: '#94A3B8', fontSize: 18 }} /></InputAdornment>,
+                  startAdornment: <InputAdornment position="start"><LockOutlined sx={{ color: '#64748B', fontSize: 18 }} /></InputAdornment>,
                   endAdornment: (
                     <InputAdornment position="end">
                       <IconButton onClick={() => setShowPwd(!showPwd)} edge="end" size="small" tabIndex={-1}
-                        sx={{ color: '#94A3B8', '&:hover': { color: ORANGE, bgcolor: 'transparent' } }}>
+                        sx={{ color: '#64748B', '&:hover': { color: ORANGE, bgcolor: 'transparent' } }}>
                         {showPwd ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
                       </IconButton>
                     </InputAdornment>
@@ -245,7 +245,7 @@ export default function LoginPage() {
             <FormControlLabel
               control={<Checkbox checked={remember} onChange={e => setRemember(e.target.checked)} size="small"
                 sx={{ color: 'rgba(15,23,42,0.25)', '&.Mui-checked': { color: ORANGE } }} />}
-              label={<Typography sx={{ fontSize: 13, color: '#94A3B8' }}>Se souvenir de moi</Typography>}
+              label={<Typography sx={{ fontSize: 13, color: '#64748B' }}>Se souvenir de moi</Typography>}
               sx={{ mt: -0.5 }}
             />
 
@@ -268,7 +268,7 @@ export default function LoginPage() {
           {/* Divider */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, my: 3.5 }}>
             <Box sx={{ flex: 1, height: '1px', bgcolor: 'rgba(15,23,42,0.09)' }} />
-            <Typography sx={{ fontSize: 12, color: '#94A3B8', fontWeight: 500 }}>Nouveau sur DealPam ?</Typography>
+            <Typography sx={{ fontSize: 12, color: '#64748B', fontWeight: 500 }}>Nouveau sur DealPam ?</Typography>
             <Box sx={{ flex: 1, height: '1px', bgcolor: 'rgba(15,23,42,0.09)' }} />
           </Box>
 
@@ -282,10 +282,10 @@ export default function LoginPage() {
             Créer un compte gratuitement
           </Button>
 
-          <Typography sx={{ mt: 3, fontSize: 11, color: '#94A3B8', textAlign: 'center', lineHeight: 1.7 }}>
+          <Typography sx={{ mt: 3, fontSize: 11, color: '#64748B', textAlign: 'center', lineHeight: 1.7 }}>
             En vous connectant, vous acceptez nos{' '}
-            <Link to="/terms" style={{ color: '#94A3B8', textDecoration: 'none' }}>CGU</Link> et notre{' '}
-            <Link to="/privacy" style={{ color: '#94A3B8', textDecoration: 'none' }}>Politique de confidentialité</Link>.
+            <Link to="/terms" style={{ color: '#64748B', textDecoration: 'none' }}>CGU</Link> et notre{' '}
+            <Link to="/privacy" style={{ color: '#64748B', textDecoration: 'none' }}>Politique de confidentialité</Link>.
           </Typography>
         </Box>
       </Box>
@@ -302,7 +302,7 @@ const fieldSx = {
   },
   '& .MuiInputBase-input': {
     color: '#0F172A !important', WebkitTextFillColor: '#0F172A', fontSize: 14.5, caretColor: '#0F172A',
-    '&::placeholder': { color: '#94A3B8', opacity: 1 },
+    '&::placeholder': { color: '#64748B', opacity: 1 },
     '&:-webkit-autofill, &:-webkit-autofill:hover, &:-webkit-autofill:focus': {
       WebkitBoxShadow: '0 0 0 100px #FFFFFF inset',
       WebkitTextFillColor: '#0F172A',

@@ -11,8 +11,8 @@ const BG   = '#F7F8FA';
 const CARD = '#FFFFFF';
 const BORD = 'rgba(15,23,42,0.06)';
 const TXT  = '#0F172A';
-const SUB  = '#94A3B8';
-const SUB2 = '#94A3B8';
+const SUB  = '#64748B';
+const SUB2 = '#64748B';
 const GRN  = '#10B981';
 const YLW  = '#F59E0B';
 
@@ -138,7 +138,7 @@ export default function SellerSubscriptionPage() {
             </Typography>
             {!currentSub.cancelAtPeriodEnd && !currentSub.scheduledPlan && (
               <Typography component="span" onClick={() => { if (!cancelMut.isPending) cancelMut.mutate(); }}
-                sx={{ fontSize: 12, fontWeight: 700, color: '#94A3B8', cursor: 'pointer', textDecoration: 'underline', '&:hover': { color: '#EF4444' } }}>
+                sx={{ fontSize: 12, fontWeight: 700, color: '#64748B', cursor: 'pointer', textDecoration: 'underline', '&:hover': { color: '#EF4444' } }}>
                 {cancelMut.isPending ? 'Annulation…' : "Annuler l'abonnement"}
               </Typography>
             )}

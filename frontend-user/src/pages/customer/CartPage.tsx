@@ -78,7 +78,7 @@ function RecoCard({ p }: { p: any }) {
             sx={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s', '&:hover': { transform: 'scale(1.06)' } }} />
         </Box>
         <Box sx={{ p: 1.2 }}>
-          <Typography fontSize={10.5} color="#94A3B8" noWrap>{p.store?.name}</Typography>
+          <Typography fontSize={10.5} color="#64748B" noWrap>{p.store?.name}</Typography>
           <Typography fontSize={12} fontWeight={600} color="#0F172A" sx={{ overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', lineHeight: 1.35, minHeight: 30, mb: 0.4 }}>{p.name}</Typography>
           <Typography fontWeight={900} fontSize={13} color={OR}>{price.toLocaleString()} HTG</Typography>
         </Box>
@@ -105,7 +105,7 @@ function RecoCarousel({ recos }: { recos: any[] }) {
         {(['left', 'right'] as const).map(d => (
           <IconButton key={d} size="small" onClick={() => scroll(d)}
             sx={{ bgcolor: CARD, border: `1px solid ${BORD}`, boxShadow: SHADOW, width: 28, height: 28, '&:hover': { borderColor: OR } }}>
-            {d === 'left' ? <ChevronLeft sx={{ fontSize: 16, color: '#94A3B8' }} /> : <ChevronRight sx={{ fontSize: 16, color: '#94A3B8' }} />}
+            {d === 'left' ? <ChevronLeft sx={{ fontSize: 16, color: '#64748B' }} /> : <ChevronRight sx={{ fontSize: 16, color: '#64748B' }} />}
           </IconButton>
         ))}
       </Box>
@@ -131,7 +131,7 @@ function SellerModal({ open, onClose, opts, navigate }: any) {
             </Box>
             <Typography fontWeight={800} fontSize={15} color="#0F172A">{opts.storeName}</Typography>
           </Box>
-          <IconButton size="small" onClick={onClose} sx={{ color: '#94A3B8', '&:hover': { color: '#0F172A' } }}>
+          <IconButton size="small" onClick={onClose} sx={{ color: '#64748B', '&:hover': { color: '#0F172A' } }}>
             <Close sx={{ fontSize: 18 }} />
           </IconButton>
         </Box>
@@ -188,12 +188,12 @@ function StoreGroup({ group, opts, onRemove, onUpdate, navigate }: any) {
           </Box>
           <Typography fontWeight={700} fontSize={14} color="#475569" flex={1} noWrap>{group.store?.name}</Typography>
           <Button size="small" startIcon={<Phone sx={{ fontSize: 12 }} />} onClick={() => setContactOpen(true)}
-            sx={{ fontSize: 11, fontWeight: 600, color: '#94A3B8', textTransform: 'none', borderRadius: '8px', px: 1.1, py: 0.4,
+            sx={{ fontSize: 11, fontWeight: 600, color: '#64748B', textTransform: 'none', borderRadius: '8px', px: 1.1, py: 0.4,
               border: `1px solid ${BORD}`, '&:hover': { color: OR, borderColor: alpha(OR, 0.3), bgcolor: alpha(OR, 0.05) }, flexShrink: 0 }}>
             Contacter
           </Button>
           <IconButton size="small" onClick={() => setExpanded(e => !e)}
-            sx={{ color: '#94A3B8', width: 28, height: 28, ml: 0.5, '&:hover': { color: '#0F172A' } }}>
+            sx={{ color: '#64748B', width: 28, height: 28, ml: 0.5, '&:hover': { color: '#0F172A' } }}>
             {expanded ? <KeyboardArrowUp sx={{ fontSize: 17 }} /> : <KeyboardArrowDown sx={{ fontSize: 17 }} />}
           </IconButton>
         </Box>
@@ -233,19 +233,19 @@ function StoreGroup({ group, opts, onRemove, onUpdate, navigate }: any) {
                     </Typography>
                     <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.6 }}>
                       <Typography fontWeight={900} fontSize={14} color={OR}>{price.toLocaleString()} HTG</Typography>
-                      {isOnSale && <Typography fontSize={11} color="#94A3B8" sx={{ textDecoration: 'line-through' }}>{orig.toLocaleString()}</Typography>}
+                      {isOnSale && <Typography fontSize={11} color="#64748B" sx={{ textDecoration: 'line-through' }}>{orig.toLocaleString()}</Typography>}
                     </Box>
                   </Box>
                   <Box sx={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0.8 }}>
                     <Typography fontWeight={800} fontSize={13.5} color="#0F172A">{(price * item.quantity).toLocaleString()} HTG</Typography>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.2, bgcolor: '#F1F5F9', borderRadius: '10px', px: 0.3 }}>
                       <IconButton size="small" onClick={() => onUpdate(item.id, item.quantity - 1)} disabled={item.quantity <= 1}
-                        sx={{ width: 26, height: 26, color: '#94A3B8', '&:hover': { color: OR } }}>
+                        sx={{ width: 26, height: 26, color: '#64748B', '&:hover': { color: OR } }}>
                         <Remove sx={{ fontSize: 13 }} />
                       </IconButton>
                       <Typography fontWeight={700} fontSize={13} color="#0F172A" sx={{ minWidth: 20, textAlign: 'center' }}>{item.quantity}</Typography>
                       <IconButton size="small" onClick={() => onUpdate(item.id, item.quantity + 1)} disabled={atMax}
-                        sx={{ width: 26, height: 26, color: '#94A3B8', '&:hover': { color: OR } }}>
+                        sx={{ width: 26, height: 26, color: '#64748B', '&:hover': { color: OR } }}>
                         <Add sx={{ fontSize: 13 }} />
                       </IconButton>
                     </Box>
@@ -342,7 +342,7 @@ export default function CartPage() {
           <ShoppingBag sx={{ fontSize: 36, color: OR }} />
         </Box>
         <Typography fontWeight={900} fontSize={22} color="#0F172A" mb={1}>Votre panier est vide</Typography>
-        <Typography color="#94A3B8" fontSize={14} mb={4} lineHeight={1.7}>Découvrez nos produits et profitez des meilleures offres.</Typography>
+        <Typography color="#64748B" fontSize={14} mb={4} lineHeight={1.7}>Découvrez nos produits et profitez des meilleures offres.</Typography>
         <Button component={Link} to="/products" variant="contained" endIcon={<ArrowForward />}
           sx={{ bgcolor: OR, color: 'white', fontWeight: 800, borderRadius: '14px', px: 3.5, py: 1.4, textTransform: 'none', fontSize: 15, '&:hover': { bgcolor: ORD }, boxShadow: `0 4px 20px ${alpha(OR, 0.4)}` }}>
           Voir les produits
@@ -397,7 +397,7 @@ export default function CartPage() {
                 const price = Number(item.product?.salePrice || item.product?.price);
                 return (
                   <Box key={item.id} sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.7, gap: 1 }}>
-                    <Typography fontSize={12} color="#94A3B8" sx={{ flex: 1, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical' }}>
+                    <Typography fontSize={12} color="#64748B" sx={{ flex: 1, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical' }}>
                       {item.product?.name} × {item.quantity}
                     </Typography>
                     <Typography fontSize={12} fontWeight={600} color="#475569" flexShrink={0}>
@@ -409,7 +409,7 @@ export default function CartPage() {
 
               <Box sx={{ borderTop: `1px solid ${BORD}`, mt: 1.5, pt: 1.5, display: 'flex', flexDirection: 'column', gap: 0.8 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography fontSize={13} color="#94A3B8">Sous-total</Typography>
+                  <Typography fontSize={13} color="#64748B">Sous-total</Typography>
                   <Typography fontSize={13} fontWeight={600} color="#475569">{fmt(subtotal)}</Typography>
                 </Box>
                 {savings > 0 && (
@@ -419,8 +419,8 @@ export default function CartPage() {
                   </Box>
                 )}
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography fontSize={12} color="#94A3B8">Livraison</Typography>
-                  <Typography fontSize={12} color="#94A3B8">Calculée à l'étape suivante</Typography>
+                  <Typography fontSize={12} color="#64748B">Livraison</Typography>
+                  <Typography fontSize={12} color="#64748B">Calculée à l'étape suivante</Typography>
                 </Box>
               </Box>
 
@@ -445,13 +445,13 @@ export default function CartPage() {
                 ].map(({ Icon, text }) => (
                   <Box key={text} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Icon sx={{ fontSize: 13, color: '#CBD5E1' }} />
-                    <Typography fontSize={12} color="#94A3B8">{text}</Typography>
+                    <Typography fontSize={12} color="#64748B">{text}</Typography>
                   </Box>
                 ))}
               </Box>
 
               <Button fullWidth variant="text" component={Link} to="/products"
-                sx={{ mt: 1.5, color: '#94A3B8', fontWeight: 600, fontSize: 12.5, textTransform: 'none', borderRadius: '10px', '&:hover': { color: OR } }}>
+                sx={{ mt: 1.5, color: '#64748B', fontWeight: 600, fontSize: 12.5, textTransform: 'none', borderRadius: '10px', '&:hover': { color: OR } }}>
                 ← Continuer mes achats
               </Button>
             </Box>

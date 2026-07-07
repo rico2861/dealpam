@@ -84,7 +84,7 @@ function ProductCardGrid({ p }: { p: any }) {
       <IconButton onClick={() => toggleWish.mutate()} size="small"
         sx={{ position: 'absolute', top: 6, right: 6, zIndex: 1, bgcolor: 'rgba(255,255,255,0.9)',
           width: 28, height: 28, '&:hover': { bgcolor: 'white' } }}>
-        {wished ? <Favorite sx={{ fontSize: 15, color: '#CC0C39' }} /> : <FavoriteBorder sx={{ fontSize: 15, color: '#888' }} />}
+        {wished ? <Favorite sx={{ fontSize: 15, color: '#CC0C39' }} /> : <FavoriteBorder sx={{ fontSize: 15, color: '#64748B' }} />}
       </IconButton>
 
       <Box component={Link} to={`/products/${p.slug}`} sx={{ textDecoration: 'none', display: 'block' }}>
@@ -113,7 +113,7 @@ function ProductCardGrid({ p }: { p: any }) {
               {displayPrice.toLocaleString('fr-HT')} HTG
             </Typography>
             {hasDiscount && (
-              <Typography fontSize={11} color="#888" noWrap sx={{ textDecoration: 'line-through', flexShrink: 1, minWidth: 0 }}>
+              <Typography fontSize={11} color="#64748B" noWrap sx={{ textDecoration: 'line-through', flexShrink: 1, minWidth: 0 }}>
                 {Number(p.price).toLocaleString('fr-HT')} HTG
               </Typography>
             )}
@@ -159,7 +159,7 @@ function ProductCardRow({ p }: { p: any }) {
           sx={{ width: '100%', height: '100%', objectFit: 'cover', minHeight: { xs: 100, md: 140 } }} />
       </Box>
       <Box sx={{ flex: 1, p: { xs: 1.2, md: 2 }, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-        <Typography fontSize={11} color="#888">{p.store?.name}</Typography>
+        <Typography fontSize={11} color="#64748B">{p.store?.name}</Typography>
         <Typography component={Link} to={`/products/${p.slug}`} fontSize={{ xs: 13, md: 15 }} fontWeight={600}
           color="#0F1111" sx={{ textDecoration: 'none', '&:hover': { color: ORANGE },
           display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
@@ -177,7 +177,7 @@ function ProductCardRow({ p }: { p: any }) {
             {displayPrice.toLocaleString('fr-HT')} HTG
           </Typography>
           {hasDiscount && (
-            <Typography fontSize={12} color="#888" noWrap sx={{ textDecoration: 'line-through', flexShrink: 1, minWidth: 0 }}>
+            <Typography fontSize={12} color="#64748B" noWrap sx={{ textDecoration: 'line-through', flexShrink: 1, minWidth: 0 }}>
               {Number(p.price).toLocaleString('fr-HT')} HTG
             </Typography>
           )}
@@ -305,7 +305,7 @@ function FilterPanel({ filters, setFilters, onClose, userDept = '' }: { filters:
       {/* Reset */}
       <Button fullWidth variant="outlined" size="small"
         onClick={() => setFilters({ category: '', minPrice: 0, maxPrice: 50000, minRating: undefined, department: userDept, inStock: false })}
-        sx={{ borderColor: '#888', color: '#333', fontSize: 12, borderRadius: 1 }}>
+        sx={{ borderColor: '#64748B', color: '#333', fontSize: 12, borderRadius: 1 }}>
         Réinitialiser les filtres
       </Button>
     </Box>

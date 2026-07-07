@@ -131,7 +131,7 @@ export default function ConversationsListPage() {
                 <Typography sx={{ fontWeight: 900, fontSize: 19, color: '#0F172A', letterSpacing: '-0.5px', lineHeight: 1.15 }}>
                   Messages
                 </Typography>
-                <Typography sx={{ fontSize: 11.5, color: '#94A3B8', mt: 0.2 }}>
+                <Typography sx={{ fontSize: 11.5, color: '#64748B', mt: 0.2 }}>
                   {conversations.length} conversation{conversations.length !== 1 ? 's' : ''}
                 </Typography>
               </Box>
@@ -155,12 +155,12 @@ export default function ConversationsListPage() {
             '&:focus-within': { borderColor: 'rgba(255,107,0,0.5)', bgcolor: 'rgba(255,107,0,0.04)', boxShadow: `0 0 0 3px rgba(255,107,0,0.08)` },
             transition: 'all 0.2s',
           }}>
-            <Search sx={{ fontSize: 17, color: '#94A3B8', flexShrink: 0 }} />
+            <Search sx={{ fontSize: 17, color: '#64748B', flexShrink: 0 }} />
             <InputBase
               placeholder="Rechercher une conversation…"
               value={search}
               onChange={e => setSearch(e.target.value)}
-              sx={{ flex: 1, '& input': { color: '#0F172A', fontSize: 13.5, padding: 0, '&::placeholder': { color: '#94A3B8', opacity: 1 } } }}
+              sx={{ flex: 1, '& input': { color: '#0F172A', fontSize: 13.5, padding: 0, '&::placeholder': { color: '#64748B', opacity: 1 } } }}
             />
           </Box>
         </Box>
@@ -190,7 +190,7 @@ export default function ConversationsListPage() {
               <Typography sx={{ color: '#475569', fontSize: 14.5, fontWeight: 700, mb: 0.6 }}>
                 {search ? 'Aucun résultat' : 'Aucune conversation'}
               </Typography>
-              <Typography sx={{ color: '#94A3B8', fontSize: 12.5 }}>
+              <Typography sx={{ color: '#64748B', fontSize: 12.5 }}>
                 {search ? 'Essayez un autre nom.' : 'Contactez un vendeur depuis une fiche produit pour démarrer.'}
               </Typography>
             </Box>
@@ -280,7 +280,7 @@ export default function ConversationsListPage() {
                     {conv.lastMessageAt && (
                       <Typography sx={{
                         fontSize: 10.5, flexShrink: 0, ml: 1,
-                        color: unread > 0 ? OR : '#94A3B8',
+                        color: unread > 0 ? OR : '#64748B',
                         fontWeight: unread > 0 ? 700 : 400,
                       }}>
                         {fmtTime(conv.lastMessageAt)}
@@ -289,7 +289,7 @@ export default function ConversationsListPage() {
                   </Box>
                   <Typography sx={{
                     fontSize: 12.5, lineHeight: 1.4,
-                    color: unread > 0 ? '#475569' : '#94A3B8',
+                    color: unread > 0 ? '#475569' : '#64748B',
                     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                   }}>
                     {conv.lastMessage ?? 'Démarrez la conversation'}

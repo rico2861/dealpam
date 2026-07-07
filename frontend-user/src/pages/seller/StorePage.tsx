@@ -95,7 +95,7 @@ function DeliveryZonesTab({ storeId, initialZones }: { storeId: string; initialZ
       {zones.length === 0 && (
         <Box sx={{ textAlign: 'center', py: 5, bgcolor: '#F8F8F8', borderRadius: 2, border: '2px dashed #DDD' }}>
           <LocalShipping sx={{ fontSize: 40, color: '#CCC', mb: 1 }} />
-          <Typography color="#888" fontSize={14}>Aucune zone de livraison configuree</Typography>
+          <Typography color="#64748B" fontSize={14}>Aucune zone de livraison configuree</Typography>
           <Button startIcon={<Add />} onClick={addZone} sx={{ mt: 1.5, color: ORANGE }} size="small">
             Ajouter votre premiere zone
           </Button>
@@ -205,7 +205,7 @@ function PickupPointsTab({ storeId, initialPoints }: { storeId: string; initialP
       {points.length === 0 && (
         <Box sx={{ textAlign: 'center', py: 5, bgcolor: '#F8F8F8', borderRadius: 2, border: '2px dashed #DDD' }}>
           <LocationOn sx={{ fontSize: 40, color: '#CCC', mb: 1 }} />
-          <Typography color="#888" fontSize={14}>Aucun point de retrait configure</Typography>
+          <Typography color="#64748B" fontSize={14}>Aucun point de retrait configure</Typography>
           <Button startIcon={<Add />} onClick={addPoint} sx={{ mt: 1.5, color: ORANGE }} size="small">
             Ajouter un point de retrait
           </Button>
@@ -364,7 +364,7 @@ function PaymentMethodsTab({ storeId, store }: { storeId: string; store: any }) 
                   endAdornment: moncashPhone ? (
                     <Tooltip title={copied ? 'Copié !' : 'Copier'}>
                       <IconButton size="small" onClick={() => copyPhone(moncashPhone)}>
-                        {copied ? <CheckCircle sx={{ fontSize: 15, color: '#007600' }} /> : <ContentCopy sx={{ fontSize: 15, color: '#888' }} />}
+                        {copied ? <CheckCircle sx={{ fontSize: 15, color: '#007600' }} /> : <ContentCopy sx={{ fontSize: 15, color: '#64748B' }} />}
                       </IconButton>
                     </Tooltip>
                   ) : null,
@@ -583,7 +583,7 @@ export default function SellerStorePage() {
                     </Typography>
                     <Tooltip title="Copier le lien">
                       <IconButton size="small" onClick={() => navigator.clipboard.writeText(`https://dealpam.com/store/${store?.slug}`)}>
-                        <ContentCopy sx={{ fontSize: 15, color: '#888' }} />
+                        <ContentCopy sx={{ fontSize: 15, color: '#64748B' }} />
                       </IconButton>
                     </Tooltip>
                   </Box>

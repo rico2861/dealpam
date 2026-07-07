@@ -18,8 +18,8 @@ const BG   = '#F7F8FA';
 const CARD = '#FFFFFF';
 const BORD = 'rgba(15,23,42,0.06)';
 const TXT  = '#0F172A';
-const SUB  = '#94A3B8';
-const SUB2 = '#94A3B8';
+const SUB  = '#64748B';
+const SUB2 = '#64748B';
 const GRN  = '#10B981';
 const RED  = '#EF4444';
 const YLW  = '#F59E0B';
@@ -28,8 +28,8 @@ const STATUS: Record<string, { label: string; color: string; icon: any }> = {
   PUBLISHED:      { label: 'Publié',       color: GRN,              icon: CheckCircle },
   PENDING_REVIEW: { label: 'En révision',  color: YLW,              icon: Warning },
   REJECTED:       { label: 'Rejeté',       color: RED,              icon: Block },
-  DRAFT:          { label: 'Brouillon',    color: '#94A3B8', icon: RadioButtonUnchecked },
-  ARCHIVED:       { label: 'Archivé',      color: '#94A3B8', icon: Archive },
+  DRAFT:          { label: 'Brouillon',    color: '#64748B', icon: RadioButtonUnchecked },
+  ARCHIVED:       { label: 'Archivé',      color: '#64748B', icon: Archive },
 };
 
 function fmt(v: number) { return `${Number(v).toLocaleString('fr-HT')} HTG`; }

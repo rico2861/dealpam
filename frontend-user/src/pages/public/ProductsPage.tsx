@@ -84,7 +84,7 @@ function ProductCard({ p }: { p: any }) {
         <Box sx={{ p: 1.5, flex: 1, display: 'flex', flexDirection: 'column' }}>
           {/* Store */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4, mb: 0.4 }}>
-            <Typography fontSize={10.5} color="#888" fontWeight={500} noWrap sx={{ flex: 1 }}>
+            <Typography fontSize={10.5} color="#64748B" fontWeight={500} noWrap sx={{ flex: 1 }}>
               {p.store?.name}
             </Typography>
             {p.store?.isVerified && (
@@ -119,7 +119,7 @@ function ProductCard({ p }: { p: any }) {
                   <Star key={s} sx={{ fontSize: 11, color: s <= Math.round(p.avgRating) ? '#F59E0B' : '#E0E0E0' }} />
                 ))}
               </Box>
-              <Typography fontSize={10.5} color="#888">
+              <Typography fontSize={10.5} color="#64748B">
                 {p.avgRating?.toFixed(1)} ({(p.totalReviews || 0).toLocaleString()})
               </Typography>
             </Box>
@@ -295,7 +295,7 @@ function FilterPanel({ fs, setFs, onClose }: { fs: FilterState; setFs: (v: Filte
                 <Typography fontSize={12.5} fontWeight={700} color={fs.proximity ? '#059669' : '#333'}>
                   À proximité de moi
                 </Typography>
-                <Typography fontSize={10.5} color="#888">{userCity || userDept}</Typography>
+                <Typography fontSize={10.5} color="#64748B">{userCity || userDept}</Typography>
               </Box>
               {fs.proximity && <Check sx={{ fontSize: 14, color: '#059669' }} />}
             </Box>
@@ -506,11 +506,11 @@ export default function ProductsPage() {
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
             <Typography
               component={Link} to="/"
-              sx={{ fontSize: 12, color: '#9CA3AF', textDecoration: 'none', '&:hover': { color: ORANGE } }}>
+              sx={{ fontSize: 12, color: '#64748B', textDecoration: 'none', '&:hover': { color: ORANGE } }}>
               Accueil
             </Typography>
             <Typography fontSize={12} color="#D1D5DB">›</Typography>
-            <Typography fontSize={12} color="#9CA3AF">Produits</Typography>
+            <Typography fontSize={12} color="#64748B">Produits</Typography>
             {fs.category && (
               <>
                 <Typography fontSize={12} color="#D1D5DB">›</Typography>
@@ -640,7 +640,7 @@ export default function ProductsPage() {
                   sx={{
                     fontSize: 12, fontWeight: 600, borderRadius: '20px',
                     bgcolor: '#F3F4F6', color: '#374151',
-                    '& .MuiChip-deleteIcon': { color: '#9CA3AF', '&:hover': { color: '#EF4444' } },
+                    '& .MuiChip-deleteIcon': { color: '#64748B', '&:hover': { color: '#EF4444' } },
                   }}
                 />
               ))}

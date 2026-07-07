@@ -112,7 +112,7 @@ export default function CookiesPage() {
                   </Box>
                 ))}
               </Box>
-              <Typography fontSize={11.5} color="#94A3B8">Durée : {ct.duration}</Typography>
+              <Typography fontSize={11.5} color="#64748B">Durée : {ct.duration}</Typography>
             </Box>
           ))}
         </Box>

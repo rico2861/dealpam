@@ -96,7 +96,7 @@ export default function ShareMenu({ url, title, size = 'small' }: Props) {
         onClick={e => { e.preventDefault(); e.stopPropagation(); }}
       >
         <Box sx={{ py: 0.8, minWidth: 180 }}>
-          <Typography fontSize={11} fontWeight={700} color="#94A3B8" px={2} py={0.5} textTransform="uppercase" letterSpacing={0.5}>
+          <Typography fontSize={11} fontWeight={700} color="#64748B" px={2} py={0.5} textTransform="uppercase" letterSpacing={0.5}>
             Partager
           </Typography>
           {options.map(({ label, icon, onClick }) => (

@@ -18,8 +18,8 @@ const BG   = '#F7F8FA';
 const CARD = '#FFFFFF';
 const BORD = 'rgba(15,23,42,0.06)';
 const TXT  = '#0F172A';
-const SUB  = '#94A3B8';
-const SUB2 = '#94A3B8';
+const SUB  = '#64748B';
+const SUB2 = '#64748B';
 const GRN  = '#10B981';
 const RED  = '#EF4444';
 const GLD  = '#F59E0B';
@@ -327,9 +327,9 @@ export default function SellerDashboard() {
                 </Typography>
                 <Box>
                   <Box sx={{ display:'inline-flex', px:1, py:0.3, borderRadius:'6px',
-                    bgcolor:`${STATUS_COLOR[o.status]||'#888'}18`,
-                    border:`1px solid ${STATUS_COLOR[o.status]||'#888'}33` }}>
-                    <Typography fontSize={10.5} fontWeight={700} color={STATUS_COLOR[o.status]||'#888'}>
+                    bgcolor:`${STATUS_COLOR[o.status]||'#64748B'}18`,
+                    border:`1px solid ${STATUS_COLOR[o.status]||'#64748B'}33` }}>
+                    <Typography fontSize={10.5} fontWeight={700} color={STATUS_COLOR[o.status]||'#64748B'}>
                       {STATUS_LABEL[o.status]||o.status}
                     </Typography>
                   </Box>

@@ -813,7 +813,7 @@ function FeaturedSellersSection({ sellers }: { sellers: any[] }) {
               <Typography fontSize={{ xs: 15, md: 17 }} fontWeight={900} color={BG} letterSpacing="-0.4px" lineHeight={1.2}>
                 Boutiques vedettes
               </Typography>
-              <Typography fontSize={11} color="#9CA3AF" fontWeight={400}>
+              <Typography fontSize={11} color="#64748B" fontWeight={400}>
                 Vendeurs certifiés, service de qualité
               </Typography>
             </Box>
@@ -1098,7 +1098,7 @@ function ProductCard({ p, flash = false, compact = false }: { p: any; flash?: bo
           </Box>
 
           {/* Vendeur */}
-          <Typography fontSize={compact ? 9 : 10} color="#9CA3AF" fontWeight={500} noWrap letterSpacing={0.1}>
+          <Typography fontSize={compact ? 9 : 10} color="#64748B" fontWeight={500} noWrap letterSpacing={0.1}>
             {p.store?.name || p.storeName || ''}
           </Typography>
         </Box>
@@ -1122,7 +1122,7 @@ function ProductCard({ p, flash = false, compact = false }: { p: any; flash?: bo
           ? <Favorite sx={{ fontSize: compact ? 13 : 15, color: '#EF4444', pointerEvents: 'none',
               transform: anim ? 'scale(1.5)' : 'scale(1)',
               transition: 'transform 0.35s cubic-bezier(0.175,0.885,0.32,1.275)' }} />
-          : <FavoriteBorder sx={{ fontSize: compact ? 13 : 15, color: '#9CA3AF', pointerEvents: 'none' }} />}
+          : <FavoriteBorder sx={{ fontSize: compact ? 13 : 15, color: '#64748B', pointerEvents: 'none' }} />}
       </Box>
 
       {/* Toast favoris */}
@@ -1379,12 +1379,12 @@ function DealCard({ p, flash = false }: { p: any; flash?: boolean }) {
               {fmtP(Number(hasSale ? p.salePrice : p.price))}
             </Typography>
             {hasSale && (
-              <Typography fontSize={10} color="#9CA3AF" noWrap sx={{ textDecoration: 'line-through', flexShrink: 1 }}>
+              <Typography fontSize={10} color="#64748B" noWrap sx={{ textDecoration: 'line-through', flexShrink: 1 }}>
                 {fmtP(Number(p.price))}
               </Typography>
             )}
           </Box>
-          <Typography fontSize={10.5} color="#9CA3AF" noWrap>{p.store?.name || ''}</Typography>
+          <Typography fontSize={10.5} color="#64748B" noWrap>{p.store?.name || ''}</Typography>
         </Box>
       </Box>
 
@@ -1407,7 +1407,7 @@ function DealCard({ p, flash = false }: { p: any; flash?: boolean }) {
         }}>
         {liked
           ? <Favorite sx={{ fontSize: 17, color: '#EF4444', pointerEvents: 'none' }} />
-          : <FavoriteBorder sx={{ fontSize: 17, color: '#9CA3AF', pointerEvents: 'none' }} />}
+          : <FavoriteBorder sx={{ fontSize: 17, color: '#64748B', pointerEvents: 'none' }} />}
       </Box>
     </Box>
   );
@@ -1836,7 +1836,7 @@ function NearYouSection({ products, location, onModal, label, level }: {
           <Box sx={{ textAlign: 'center', py: 3 }}>
             <LocationOn sx={{ fontSize: 44, color: '#E2E8F0', mb: 1 }} />
             <Typography color={BG} fontWeight={700} fontSize={16} mb={0.8}>Personnalisez votre expérience</Typography>
-            <Typography color="#94A3B8" fontSize={13.5} mb={2.5}>
+            <Typography color="#64748B" fontSize={13.5} mb={2.5}>
               Choisissez votre zone pour voir les produits disponibles près de vous
             </Typography>
             <Button variant="contained" onClick={onModal}
@@ -1934,7 +1934,7 @@ function NearYouSection({ products, location, onModal, label, level }: {
                     <Typography fontSize={{ xs: 15, md: 18 }} fontWeight={800} color="#111827">
                       Suggestions pour vous — Toute Haïti
                     </Typography>
-                    <Typography fontSize={11.5} color="#9CA3AF" mt={0.2}>
+                    <Typography fontSize={11.5} color="#64748B" mt={0.2}>
                       Les produits les plus populaires de la plateforme
                     </Typography>
                   </Box>
@@ -2113,7 +2113,7 @@ function SponsoredDealCard({ ad, dark }: { ad: any; dark?: boolean }) {
 
       {/* Info */}
       <Box sx={{ p: { xs: '9px 10px 11px', md: '11px 13px 13px' }, flex: 1, display: 'flex', flexDirection: 'column' }}>
-        <Typography fontSize={{ xs: 9.5, md: 10.5 }} color={dark ? 'rgba(255,255,255,0.4)' : '#94A3B8'} fontWeight={600} noWrap mb={0.3}>
+        <Typography fontSize={{ xs: 9.5, md: 10.5 }} color={dark ? 'rgba(255,255,255,0.4)' : '#64748B'} fontWeight={600} noWrap mb={0.3}>
           {ad.store?.name}
         </Typography>
         <Typography fontSize={{ xs: 12, md: 13 }} color={dark ? 'rgba(255,255,255,0.92)' : '#111827'} fontWeight={700} lineHeight={1.35}
@@ -2137,7 +2137,7 @@ function SponsoredDealCard({ ad, dark }: { ad: any; dark?: boolean }) {
                 <Box key={s} component="span" sx={{ fontSize: 10, color: s <= Math.round(ad.avgRating) ? '#F59E0B' : (dark ? 'rgba(255,255,255,0.15)' : '#E5E7EB') }}>★</Box>
               ))}
             </Box>
-            <Typography fontSize={9.5} color={dark ? 'rgba(255,255,255,0.35)' : '#9CA3AF'}>{ad.avgRating?.toFixed(1)}</Typography>
+            <Typography fontSize={9.5} color={dark ? 'rgba(255,255,255,0.35)' : '#64748B'}>{ad.avgRating?.toFixed(1)}</Typography>
           </Box>
         )}
       </Box>

@@ -81,7 +81,7 @@ export default function WishlistPage() {
             </Box>
             {items.length > 0 && (
               <Button onClick={clearAll} size="small"
-                sx={{ ml: 'auto', color: '#94A3B8', fontSize: 12,
+                sx={{ ml: 'auto', color: '#64748B', fontSize: 12,
                   '&:hover': { color: RED, bgcolor: alpha(RED, 0.06) } }}>
                 Tout supprimer
               </Button>
@@ -105,7 +105,7 @@ export default function WishlistPage() {
             <Typography fontWeight={800} fontSize={22} color="#0F1111" mb={1}>
               Aucun favori pour l'instant
             </Typography>
-            <Typography color="#94A3B8" fontSize={15} mb={3}>
+            <Typography color="#64748B" fontSize={15} mb={3}>
               Cliquez sur ❤️ sur un produit pour l'ajouter a vos favoris
             </Typography>
             <Button component={Link} to="/products" variant="contained"
@@ -176,7 +176,7 @@ export default function WishlistPage() {
                           {fmtHTG(price)}
                         </Typography>
                         {sale && (
-                          <Typography fontSize={11} color="#94A3B8" sx={{ textDecoration: 'line-through', mb: 0.5 }}>
+                          <Typography fontSize={11} color="#64748B" sx={{ textDecoration: 'line-through', mb: 0.5 }}>
                             {fmtHTG(Number(p.price))}
                           </Typography>
                         )}
@@ -189,7 +189,7 @@ export default function WishlistPage() {
                         )}
 
                         {p.store?.name && (
-                          <Typography fontSize={11} color="#94A3B8" mb={0.8} noWrap>
+                          <Typography fontSize={11} color="#64748B" mb={0.8} noWrap>
                             par {p.store.name}
                           </Typography>
                         )}
@@ -211,7 +211,7 @@ export default function WishlistPage() {
                           onClick={() => addToCart(item)}
                           startIcon={<ShoppingCart sx={{ fontSize: 14 }} />}
                           sx={{ bgcolor: p.stock === 0 ? '#E5E7EB' : BLUE, fontWeight: 700, fontSize: 12,
-                            borderRadius: 2, py: 0.8, color: p.stock === 0 ? '#9CA3AF' : 'white',
+                            borderRadius: 2, py: 0.8, color: p.stock === 0 ? '#64748B' : 'white',
                             '&:hover': { bgcolor: p.stock === 0 ? '#E5E7EB' : '#1D4ED8' } }}>
                           {isAdding ? 'Ajout...' : p.stock === 0 ? 'Indisponible' : 'Ajouter'}
                         </Button>

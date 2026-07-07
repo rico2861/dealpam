@@ -71,13 +71,13 @@ function ReviewForm({ storeId, orderId, onDone }: { storeId: string; orderId: st
         <Star sx={{ color: GOLD, fontSize: 18 }} />
         <Typography fontWeight={800} fontSize={14.5} color="#0F172A">Évaluer cette commande</Typography>
       </Box>
-      <Typography fontSize={13} color="#94A3B8" mb={1.5}>
+      <Typography fontSize={13} color="#64748B" mb={1.5}>
         Votre commande a été livrée. Comment s'est passée l'expérience ?
       </Typography>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
         <Typography fontSize={13} fontWeight={600} color="#0F172A">Note :</Typography>
         <Rating value={rating} onChange={(_, v) => setRating(v)} precision={1}
-          sx={{ '& .MuiRating-iconFilled': { color: GOLD }, '& .MuiRating-iconEmpty': { color: '#94A3B8' } }} />
+          sx={{ '& .MuiRating-iconFilled': { color: GOLD }, '& .MuiRating-iconEmpty': { color: '#64748B' } }} />
         <Typography fontSize={13} color={GOLD}>{rating}/5</Typography>
       </Box>
       <TextField fullWidth multiline rows={2}
@@ -86,18 +86,18 @@ function ReviewForm({ storeId, orderId, onDone }: { storeId: string; orderId: st
         sx={{ mb: 2, '& .MuiOutlinedInput-root': { borderRadius: '12px', bgcolor: '#FFFFFF', color: '#0F172A',
           '& fieldset': { borderColor: BORD }, '&:hover fieldset': { borderColor: alpha(GOLD, 0.4) },
           '&.Mui-focused fieldset': { borderColor: GOLD } },
-          '& .MuiInputLabel-root': { color: '#94A3B8' },
-          '& .MuiInputBase-input': { color: '#0F172A', '&::placeholder': { color: '#94A3B8' } },
+          '& .MuiInputLabel-root': { color: '#64748B' },
+          '& .MuiInputBase-input': { color: '#0F172A', '&::placeholder': { color: '#64748B' } },
         }} />
       <Box sx={{ display: 'flex', gap: 1 }}>
         <Button fullWidth variant="contained" disabled={!rating || submitting} onClick={handleSubmit}
           startIcon={submitting ? <CircularProgress size={14} color="inherit" /> : <Star sx={{ fontSize: 15 }} />}
           sx={{ bgcolor: GOLD, color: '#111', fontWeight: 800, borderRadius: '12px', textTransform: 'none',
-            '&:hover': { bgcolor: '#d97706' }, '&.Mui-disabled': { bgcolor: '#FFFFFF', color: '#94A3B8' } }}>
+            '&:hover': { bgcolor: '#d97706' }, '&.Mui-disabled': { bgcolor: '#FFFFFF', color: '#64748B' } }}>
           {submitting ? 'Publication...' : 'Publier mon avis'}
         </Button>
         <Button variant="outlined" onClick={onDone}
-          sx={{ borderRadius: '12px', borderColor: BORD, color: '#94A3B8', textTransform: 'none', px: 2,
+          sx={{ borderRadius: '12px', borderColor: BORD, color: '#64748B', textTransform: 'none', px: 2,
             '&:hover': { borderColor: 'rgba(15,23,42,0.09)', color: '#0F172A' } }}>
           Plus tard
         </Button>
@@ -176,7 +176,7 @@ export default function OrderDetailPage() {
             <Typography fontWeight={900} fontSize={{ xs: 17, sm: 20 }} color="#0F172A" letterSpacing="-0.4px">
               Commande #{order.id.slice(-8).toUpperCase()}
             </Typography>
-            <Typography fontSize={12.5} color="#94A3B8">
+            <Typography fontSize={12.5} color="#64748B">
               Passée le {new Date(order.createdAt).toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}
             </Typography>
           </Box>
@@ -204,7 +204,7 @@ export default function OrderDetailPage() {
               </Typography>
               <Stepper activeStep={Math.max(0, stepIdx)} alternativeLabel
                 sx={{
-                  '& .MuiStepLabel-label': { fontSize: 11.5, mt: 0.5, color: '#94A3B8 !important' },
+                  '& .MuiStepLabel-label': { fontSize: 11.5, mt: 0.5, color: '#64748B !important' },
                   '& .MuiStepLabel-label.Mui-active': { color: '#0F172A !important', fontWeight: 700 },
                   '& .MuiStepLabel-label.Mui-completed': { color: `${GRN} !important` },
                   '& .MuiStepConnector-line': { borderColor: BORD },
@@ -213,7 +213,7 @@ export default function OrderDetailPage() {
                 {['Reçue', 'Confirmée', 'Préparation', 'Expédiée', 'Livrée'].map((label, i) => (
                   <Step key={label} completed={i < stepIdx}>
                     <StepLabel StepIconProps={{ sx: {
-                      color: '#94A3B8 !important',
+                      color: '#64748B !important',
                       '&.Mui-completed': { color: `${GRN} !important` },
                       '&.Mui-active': { color: `${OR} !important` },
                     }}}>
@@ -230,7 +230,7 @@ export default function OrderDetailPage() {
               <Cancel sx={{ color: RED, fontSize: 20, flexShrink: 0, mt: 0.2 }} />
               <Box>
                 <Typography fontWeight={700} fontSize={14} color={RED} mb={0.3}>Commande annulée</Typography>
-                <Typography fontSize={13} color="#94A3B8">
+                <Typography fontSize={13} color="#64748B">
                   Si vous avez déjà effectué un paiement, contactez directement le vendeur ou le support DealPam.
                 </Typography>
               </Box>
@@ -244,7 +244,7 @@ export default function OrderDetailPage() {
                 <InfoOutlined sx={{ fontSize: 16, color: OR }} />
                 <Typography fontWeight={700} fontSize={13.5} color={OR}>Paiement direct au vendeur</Typography>
               </Box>
-              <Typography fontSize={13} color="#94A3B8" lineHeight={1.7} mb={1.5}>
+              <Typography fontSize={13} color="#64748B" lineHeight={1.7} mb={1.5}>
                 DealPam ne collecte pas les paiements pour les commandes de vendeurs tiers.
                 Vous devez payer directement le vendeur via le mode choisi.
               </Typography>
@@ -255,7 +255,7 @@ export default function OrderDetailPage() {
                   bgcolor: '#FFFFFF', borderRadius: '12px', border: `1px solid ${BORD}`, mb: 1.5 }}>
                   <Smartphone sx={{ fontSize: 18, color: OR, flexShrink: 0 }} />
                   <Box sx={{ flex: 1 }}>
-                    <Typography fontSize={11} color="#94A3B8" textTransform="uppercase" letterSpacing="0.6px">
+                    <Typography fontSize={11} color="#64748B" textTransform="uppercase" letterSpacing="0.6px">
                       {order.chosenPaymentMethod === 'MONCASH' ? 'MonCash' : 'NatCash'} du vendeur
                     </Typography>
                     <Typography fontWeight={900} fontSize={18} color="#0F172A" letterSpacing={1}>
@@ -263,7 +263,7 @@ export default function OrderDetailPage() {
                     </Typography>
                   </Box>
                   <IconButton size="small" onClick={() => { navigator.clipboard.writeText(order.store.moncashPhone); enqueueSnackbar('Numéro copié !', { variant: 'info' }); }}
-                    sx={{ color: '#94A3B8', '&:hover': { color: OR } }}>
+                    sx={{ color: '#64748B', '&:hover': { color: OR } }}>
                     <ContentCopy sx={{ fontSize: 15 }} />
                   </IconButton>
                 </Box>
@@ -272,7 +272,7 @@ export default function OrderDetailPage() {
               {/* Submit TX ref */}
               {needsTx && (
                 <Box>
-                  <Typography fontSize={12.5} color="#94A3B8" mb={1}>
+                  <Typography fontSize={12.5} color="#64748B" mb={1}>
                     Après avoir payé, entrez votre référence de transaction pour confirmation :
                   </Typography>
                   <Box sx={{ display: 'flex', gap: 1 }}>
@@ -280,10 +280,10 @@ export default function OrderDetailPage() {
                       placeholder="Ex: MCX-1234567890"
                       sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px', bgcolor: '#FFFFFF', color: '#0F172A',
                         '& fieldset': { borderColor: BORD }, '&.Mui-focused fieldset': { borderColor: OR } },
-                        '& .MuiInputBase-input': { color: '#0F172A', fontSize: 13, '&::placeholder': { color: '#94A3B8' } } }} />
+                        '& .MuiInputBase-input': { color: '#0F172A', fontSize: 13, '&::placeholder': { color: '#64748B' } } }} />
                     <Button variant="contained" disabled={!txRef.trim() || submittingTx} onClick={submitTx}
                       sx={{ bgcolor: OR, borderRadius: '10px', fontWeight: 700, px: 2.5, flexShrink: 0, textTransform: 'none',
-                        '&:hover': { bgcolor: ORD }, '&.Mui-disabled': { bgcolor: '#FFFFFF', color: '#94A3B8' } }}>
+                        '&:hover': { bgcolor: ORD }, '&.Mui-disabled': { bgcolor: '#FFFFFF', color: '#64748B' } }}>
                       {submittingTx ? <CircularProgress size={16} color="inherit" /> : 'Envoyer'}
                     </Button>
                   </Box>
@@ -299,7 +299,7 @@ export default function OrderDetailPage() {
                     <Typography fontSize={12} color={order.paymentTxStatus === 'APPROVED' ? GRN : order.paymentTxStatus === 'REJECTED' ? RED : GOLD}>
                       {order.paymentTxStatus === 'APPROVED' ? 'Validé par DealPam' : order.paymentTxStatus === 'REJECTED' ? 'Rejeté — contactez le support' : 'En attente de validation'}
                     </Typography>
-                    {order.paymentTxNote && <Typography fontSize={11.5} color="#94A3B8" mt={0.3}>Note : {order.paymentTxNote}</Typography>}
+                    {order.paymentTxNote && <Typography fontSize={11.5} color="#64748B" mt={0.3}>Note : {order.paymentTxNote}</Typography>}
                   </Box>
                 </Box>
               )}
@@ -319,14 +319,14 @@ export default function OrderDetailPage() {
                     display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     {item.imageUrl
                       ? <Box component="img" src={item.imageUrl} alt="" sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      : <ShoppingBag sx={{ fontSize: 22, color: '#94A3B8' }} />}
+                      : <ShoppingBag sx={{ fontSize: 22, color: '#64748B' }} />}
                   </Box>
                   <Box sx={{ flex: 1, minWidth: 0 }}>
                     <Typography fontWeight={600} fontSize={13.5} noWrap color="#0F172A">{item.productName}</Typography>
                     {(item.color || item.size) && (
-                      <Typography fontSize={12} color="#94A3B8">{[item.color, item.size].filter(Boolean).join(' · ')}</Typography>
+                      <Typography fontSize={12} color="#64748B">{[item.color, item.size].filter(Boolean).join(' · ')}</Typography>
                     )}
-                    <Typography fontSize={12} color="#94A3B8">{fmt(Number(item.unitPrice))} × {item.quantity}</Typography>
+                    <Typography fontSize={12} color="#64748B">{fmt(Number(item.unitPrice))} × {item.quantity}</Typography>
                   </Box>
                   <Typography fontWeight={700} fontSize={14} color="#0F172A" flexShrink={0}>
                     {fmt(Number(item.subtotal ?? Number(item.unitPrice) * item.quantity))}
@@ -356,7 +356,7 @@ export default function OrderDetailPage() {
           {/* Seller */}
           {order.store && (
             <Box sx={{ bgcolor: CARD, border: `1px solid ${BORD}`, boxShadow: SHADOW, borderRadius: '18px', p: 2.5, mb: 2 }}>
-              <Typography fontSize={11} fontWeight={700} color="#94A3B8" textTransform="uppercase" letterSpacing="0.8px" mb={1.5}>
+              <Typography fontSize={11} fontWeight={700} color="#64748B" textTransform="uppercase" letterSpacing="0.8px" mb={1.5}>
                 Vendeur
               </Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, mb: 2 }}>
@@ -374,7 +374,7 @@ export default function OrderDetailPage() {
                     bgcolor: '#FFFFFF', borderRadius: '10px', border: `1px solid ${BORD}`,
                     transition: 'all 0.15s', '&:hover': { borderColor: 'rgba(15,23,42,0.18)', bgcolor: '#F7F8FA' },
                   }}>
-                    <Phone sx={{ fontSize: 15, color: '#94A3B8' }} />
+                    <Phone sx={{ fontSize: 15, color: '#64748B' }} />
                     <Typography fontSize={13} color="#0F172A">{order.store.phone}</Typography>
                   </Box>
                 )}
@@ -386,7 +386,7 @@ export default function OrderDetailPage() {
                     bgcolor: '#FFFFFF', borderRadius: '10px', border: `1px solid ${BORD}`,
                     transition: 'all 0.15s', '&:hover': { borderColor: 'rgba(15,23,42,0.18)', bgcolor: '#F7F8FA' },
                   }}>
-                    <EmailOutlined sx={{ fontSize: 15, color: '#94A3B8' }} />
+                    <EmailOutlined sx={{ fontSize: 15, color: '#64748B' }} />
                     <Typography fontSize={13} color="#0F172A" noWrap>{order.store.email}</Typography>
                   </Box>
                 )}
@@ -397,7 +397,7 @@ export default function OrderDetailPage() {
                     display: 'flex', alignItems: 'flex-start', gap: 1.2, p: 1.2,
                     bgcolor: '#FFFFFF', borderRadius: '10px', border: `1px solid ${BORD}`,
                   }}>
-                    <LocationOn sx={{ fontSize: 15, color: '#94A3B8', mt: 0.2, flexShrink: 0 }} />
+                    <LocationOn sx={{ fontSize: 15, color: '#64748B', mt: 0.2, flexShrink: 0 }} />
                     <Typography fontSize={13} color="#0F172A" lineHeight={1.5}>
                       {[order.store.address, order.store.city, order.store.department].filter(Boolean).join(', ')}
                     </Typography>
@@ -428,7 +428,7 @@ export default function OrderDetailPage() {
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                 {order.deliveryType && (
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Typography fontSize={12} color="#94A3B8">Livraison</Typography>
+                    <Typography fontSize={12} color="#64748B">Livraison</Typography>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                       {order.deliveryType === 'DELIVERY' ? <Home sx={{ fontSize: 12, color: '#0F172A' }} /> :
                        order.deliveryType === 'PICKUP'   ? <Storefront sx={{ fontSize: 12, color: '#0F172A' }} /> :
@@ -441,20 +441,20 @@ export default function OrderDetailPage() {
                 )}
                 {order.chosenPaymentMethod && (
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Typography fontSize={12} color="#94A3B8">Paiement</Typography>
+                    <Typography fontSize={12} color="#64748B">Paiement</Typography>
                     <Typography fontSize={12} fontWeight={600} color="#0F172A">{order.chosenPaymentMethod}</Typography>
                   </Box>
                 )}
                 {order.shippingHTG > 0 && (
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Typography fontSize={12} color="#94A3B8">Livraison</Typography>
+                    <Typography fontSize={12} color="#64748B">Livraison</Typography>
                     <Typography fontSize={12} fontWeight={600} color="#0F172A">{fmt(Number(order.shippingHTG))}</Typography>
                   </Box>
                 )}
               </Box>
 
               <Button component={Link} to={`/store/${order.store.slug}`} fullWidth variant="outlined"
-                sx={{ mt: 2, borderRadius: '12px', borderColor: BORD, color: '#94A3B8', fontSize: 13,
+                sx={{ mt: 2, borderRadius: '12px', borderColor: BORD, color: '#64748B', fontSize: 13,
                   textTransform: 'none', '&:hover': { borderColor: 'rgba(15,23,42,0.18)', color: '#0F172A', bgcolor: '#F7F8FA' } }}>
                 Voir la boutique
               </Button>
@@ -463,7 +463,7 @@ export default function OrderDetailPage() {
 
           <Button component={Link} to="/account/orders" fullWidth variant="text"
             startIcon={<ArrowBack sx={{ fontSize: 15 }} />}
-            sx={{ borderRadius: '12px', color: '#94A3B8', fontSize: 13, textTransform: 'none',
+            sx={{ borderRadius: '12px', color: '#64748B', fontSize: 13, textTransform: 'none',
               '&:hover': { color: '#0F172A', bgcolor: CARD } }}>
             Mes commandes
           </Button>

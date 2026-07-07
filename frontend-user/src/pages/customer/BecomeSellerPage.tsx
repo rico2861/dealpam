@@ -22,7 +22,7 @@ function Field({
   return (
     <Box>
       <Typography sx={{ fontSize: 11.5, fontWeight: 700, mb: 0.75, letterSpacing: '0.4px',
-        color: focused ? alpha(ORANGE, 0.85) : '#94A3B8', transition: 'color 0.2s' }}>
+        color: focused ? alpha(ORANGE, 0.85) : '#64748B', transition: 'color 0.2s' }}>
         {label}{required && <Box component="span" sx={{ color: ORANGE, ml: 0.3 }}>*</Box>}
       </Typography>
       <Box sx={{
@@ -48,7 +48,7 @@ function Field({
             flex: 1,
             '& input, & textarea': {
               color: '#0F172A', fontSize: 14, fontWeight: 500, p: 0, lineHeight: '24px',
-              '&::placeholder': { color: '#94A3B8', opacity: 1 },
+              '&::placeholder': { color: '#64748B', opacity: 1 },
             },
           }}
         />
@@ -121,7 +121,7 @@ export default function BecomeSellerPage() {
     return (
       <Box sx={{ minHeight: '100vh', bgcolor: '#F7F8FA', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 2 }}>
         <CircularProgress sx={{ color: ORANGE }} />
-        <Typography sx={{ color: '#94A3B8', fontSize: 14 }}>Synchronisation du compte…</Typography>
+        <Typography sx={{ color: '#64748B', fontSize: 14 }}>Synchronisation du compte…</Typography>
       </Box>
     );
   }
@@ -166,7 +166,7 @@ export default function BecomeSellerPage() {
                 </Box>
                 <Box sx={{ pt: 0.2 }}>
                   <Typography sx={{ color: '#0F172A', fontSize: 13.5, fontWeight: 700, lineHeight: 1.35 }}>{title}</Typography>
-                  <Typography sx={{ color: '#94A3B8', fontSize: 12.5, lineHeight: 1.65, mt: 0.25 }}>{sub}</Typography>
+                  <Typography sx={{ color: '#64748B', fontSize: 12.5, lineHeight: 1.65, mt: 0.25 }}>{sub}</Typography>
                 </Box>
               </Box>
             ))}
@@ -179,7 +179,7 @@ export default function BecomeSellerPage() {
               "J'ai mis mes premiers produits un vendredi soir. Le samedi matin j'avais déjà deux commandes."
             </Typography>
             <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: '#0F172A' }}>Marie-Claire J.</Typography>
-            <Typography sx={{ fontSize: 11.5, color: '#94A3B8', mt: 0.2 }}>Boutique Mode — Port-au-Prince</Typography>
+            <Typography sx={{ fontSize: 11.5, color: '#64748B', mt: 0.2 }}>Boutique Mode — Port-au-Prince</Typography>
           </Box>
         </Box>
       </Box>
@@ -210,7 +210,7 @@ export default function BecomeSellerPage() {
           <Typography sx={{ fontWeight: 900, fontSize: { xs: 22, sm: 26 }, color: '#0F172A', letterSpacing: '-0.6px', mb: 0.6 }}>
             Ouvrir ma boutique
           </Typography>
-          <Typography sx={{ fontSize: 13.5, color: '#94A3B8', mb: 3.5, lineHeight: 1.7 }}>
+          <Typography sx={{ fontSize: 13.5, color: '#64748B', mb: 3.5, lineHeight: 1.7 }}>
             Votre compte acheteur sera converti en compte vendeur. Vos commandes et favoris sont conservés.
           </Typography>
 
@@ -240,7 +240,7 @@ export default function BecomeSellerPage() {
                 <Typography sx={{ fontSize: 12.5, color: '#F87171', px: 0.5, mb: suggestions.length ? 1.2 : 0 }}>{error}</Typography>
                 {suggestions.length > 0 && (
                   <Box>
-                    <Typography sx={{ fontSize: 11.5, color: '#94A3B8', mb: 0.8, px: 0.5 }}>
+                    <Typography sx={{ fontSize: 11.5, color: '#64748B', mb: 0.8, px: 0.5 }}>
                       Noms disponibles — cliquez pour utiliser :
                     </Typography>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.7 }}>

@@ -60,7 +60,7 @@ export default function NotFoundPage() {
         <Typography sx={{ fontWeight: 900, fontSize: { xs: 22, sm: 28 }, color: '#0F172A', letterSpacing: '-0.5px', mb: 1.2 }}>
           Cette page n'existe pas
         </Typography>
-        <Typography sx={{ fontSize: { xs: 14, sm: 15 }, color: '#94A3B8', lineHeight: 1.8, mb: 4.5, maxWidth: 380, mx: 'auto' }}>
+        <Typography sx={{ fontSize: { xs: 14, sm: 15 }, color: '#64748B', lineHeight: 1.8, mb: 4.5, maxWidth: 380, mx: 'auto' }}>
           L'adresse que vous avez saisie est introuvable. Elle a peut-être été déplacée ou supprimée.
         </Typography>
 
@@ -96,7 +96,7 @@ export default function NotFoundPage() {
         </Box>
 
         {/* Bottom hint */}
-        <Typography sx={{ mt: 5, fontSize: 12, color: '#94A3B8' }}>
+        <Typography sx={{ mt: 5, fontSize: 12, color: '#64748B' }}>
           Vous cherchez quelque chose ?{' '}
           <Box component={Link} to="/products" sx={{ color: alpha(ORANGE, 0.7), textDecoration: 'none', fontWeight: 600,
             '&:hover': { color: ORANGE } }}>

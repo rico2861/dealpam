@@ -63,8 +63,8 @@ function StoreCard({ s }: { s: any }) {
 
         {(s.city || s.department) && (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.4 }}>
-            <LocationOnRounded sx={{ fontSize: 11, color: '#94A3B8' }} />
-            <Typography fontSize={11} color="#94A3B8" noWrap>
+            <LocationOnRounded sx={{ fontSize: 11, color: '#64748B' }} />
+            <Typography fontSize={11} color="#64748B" noWrap>
               {[s.city, s.department].filter(Boolean).join(', ')}
             </Typography>
           </Box>
@@ -74,7 +74,7 @@ function StoreCard({ s }: { s: any }) {
           <StarRounded sx={{ fontSize: 13, color: '#F59E0B' }} />
           <Typography fontSize={12} fontWeight={700} color="#1E293B">{Number(rating).toFixed(1)}</Typography>
           {reviews > 0 && (
-            <Typography fontSize={11} color="#94A3B8">({reviews})</Typography>
+            <Typography fontSize={11} color="#64748B">({reviews})</Typography>
           )}
         </Box>
 
@@ -137,7 +137,7 @@ export default function StoresPage() {
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <SearchRounded sx={{ color: '#94A3B8', fontSize: 18 }} />
+                  <SearchRounded sx={{ color: '#64748B', fontSize: 18 }} />
                 </InputAdornment>
               ),
             }}

@@ -42,7 +42,7 @@ const CAT_META: Record<string, CatMeta> = {
 };
 
 const DEFAULT_META: CatMeta = {
-  icon: LocalOffer, color: '#94A3B8', darkBg: '#1E293B', lightBg: '#F8FAFC',
+  icon: LocalOffer, color: '#64748B', darkBg: '#1E293B', lightBg: '#F8FAFC',
 };
 
 interface CategoryItem { id?: string; slug: string; name: string; productCount?: number }
@@ -132,7 +132,7 @@ function CategoryCard({ cat }: { cat: CategoryItem }) {
           {cat.name}
         </Typography>
         {cat.productCount != null && cat.productCount > 0 && (
-          <Typography fontSize={{ xs: 10, sm: 11 }} color="#94A3B8" mt={0.4}>
+          <Typography fontSize={{ xs: 10, sm: 11 }} color="#64748B" mt={0.4}>
             {cat.productCount.toLocaleString()} produits
           </Typography>
         )}
@@ -248,7 +248,7 @@ export default function CategoriesPage() {
           <Typography fontWeight={800} fontSize={{ xs: 15, md: 17 }} color="#0F172A">
             Parcourir par catégorie
           </Typography>
-          <Typography fontSize={13} color="#94A3B8">
+          <Typography fontSize={13} color="#64748B">
             {categories.length} catégories
           </Typography>
         </Box>

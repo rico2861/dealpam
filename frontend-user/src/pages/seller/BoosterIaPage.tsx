@@ -17,8 +17,8 @@ const BG   = '#F7F8FA';
 const CARD = '#FFFFFF';
 const BORD = 'rgba(15,23,42,0.06)';
 const TXT  = '#0F172A';
-const SUB  = '#94A3B8';
-const SUB2 = '#94A3B8';
+const SUB  = '#64748B';
+const SUB2 = '#64748B';
 const GLD  = '#F59E0B';
 
 const KW_COLORS = ['#FF6B00','#F59E0B','#10B981','#3B82F6','#8B5CF6','#EC4899','#EF4444','#06B6D4'];

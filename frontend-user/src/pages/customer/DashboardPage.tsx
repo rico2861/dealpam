@@ -55,7 +55,7 @@ function StatCard({ icon: Icon, label, value, color, to }: any) {
       <Typography sx={{ fontWeight: 900, fontSize: { xs: 24, sm: 28 }, color: '#0F172A', letterSpacing: '-1px', lineHeight: 1 }}>
         {value ?? <CircularProgress size={18} sx={{ color }} />}
       </Typography>
-      <Typography sx={{ fontSize: 12.5, color: '#94A3B8', mt: 0.5, fontWeight: 500 }}>{label}</Typography>
+      <Typography sx={{ fontSize: 12.5, color: '#64748B', mt: 0.5, fontWeight: 500 }}>{label}</Typography>
     </Box>
   );
 }
@@ -81,7 +81,7 @@ function QuickAction({ icon: Icon, label, sub, color, to }: any) {
       </Box>
       <Box sx={{ flex: 1, minWidth: 0 }}>
         <Typography sx={{ fontSize: 13.5, fontWeight: 700, color: '#0F172A', lineHeight: 1.3 }}>{label}</Typography>
-        <Typography sx={{ fontSize: 12, color: '#94A3B8', mt: 0.2 }}>{sub}</Typography>
+        <Typography sx={{ fontSize: 12, color: '#64748B', mt: 0.2 }}>{sub}</Typography>
       </Box>
       <ArrowForward className="qa-arrow" sx={{ fontSize: 16, color: '#CBD5E1', transition: 'all 0.18s' }} />
     </Box>
@@ -135,7 +135,7 @@ export default function DashboardPage() {
               <Typography sx={{ fontWeight: 900, fontSize: { xs: 22, sm: 28 }, color: '#0F172A', letterSpacing: '-0.8px', lineHeight: 1.15 }}>
                 {greeting}, <Box component="span" sx={{ color: ORANGE }}>{user?.firstName}</Box>
               </Typography>
-              <Typography sx={{ fontSize: 13.5, color: '#94A3B8', mt: 0.6 }}>
+              <Typography sx={{ fontSize: 13.5, color: '#64748B', mt: 0.6 }}>
                 Bienvenue sur votre espace personnel DealPam.
               </Typography>
             </Box>
@@ -151,7 +151,7 @@ export default function DashboardPage() {
                 <StorefrontOutlined sx={{ fontSize: 18, color: ORANGE }} />
                 <Box>
                   <Typography sx={{ fontSize: 12.5, fontWeight: 800, color: '#0F172A', lineHeight: 1.2 }}>Devenir vendeur</Typography>
-                  <Typography sx={{ fontSize: 10.5, color: '#94A3B8' }}>Ouvrez votre boutique</Typography>
+                  <Typography sx={{ fontSize: 10.5, color: '#64748B' }}>Ouvrez votre boutique</Typography>
                 </Box>
                 <ArrowForward sx={{ fontSize: 14, color: ORANGE, ml: 0.5 }} />
               </Box>
@@ -194,7 +194,7 @@ export default function DashboardPage() {
                   display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <ShoppingBagOutlined sx={{ fontSize: 26, color: '#CBD5E1' }} />
                 </Box>
-                <Typography sx={{ color: '#94A3B8', fontSize: 14, mb: 2 }}>Aucune commande pour l'instant</Typography>
+                <Typography sx={{ color: '#64748B', fontSize: 14, mb: 2 }}>Aucune commande pour l'instant</Typography>
                 <Box component={Link} to="/products" sx={{
                   display: 'inline-flex', alignItems: 'center', gap: 0.8, textDecoration: 'none',
                   px: 2.5, py: 1, borderRadius: '12px',
@@ -234,7 +234,7 @@ export default function DashboardPage() {
                           {firstItem?.product?.name ?? `Commande #${order.id.slice(-6).toUpperCase()}`}
                           {order.items?.length > 1 ? ` +${order.items.length - 1} article${order.items.length > 2 ? 's' : ''}` : ''}
                         </Typography>
-                        <Typography sx={{ fontSize: 11.5, color: '#94A3B8', mt: 0.3 }}>
+                        <Typography sx={{ fontSize: 11.5, color: '#64748B', mt: 0.3 }}>
                           {new Date(order.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
                         </Typography>
                       </Box>
@@ -282,7 +282,7 @@ export default function DashboardPage() {
                   <Typography sx={{ fontSize: 14, fontWeight: 800, color: '#0F172A', lineHeight: 1.3 }}>
                     {user?.firstName} {user?.lastName}
                   </Typography>
-                  <Typography sx={{ fontSize: 11.5, color: '#94A3B8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <Typography sx={{ fontSize: 11.5, color: '#64748B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {user?.email}
                   </Typography>
                 </Box>

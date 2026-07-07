@@ -70,7 +70,7 @@ export default function LikeButton({
 
   const iconSx = {
     fontSize: size === 'small' ? 18 : 22,
-    color: liked ? RED : '#94A3B8',
+    color: liked ? RED : '#64748B',
     transform: anim ? 'scale(1.5)' : 'scale(1)',
     transition: 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), color 0.2s',
   };

@@ -68,7 +68,7 @@ function ProductCard({ p }: { p: any }) {
               {fmtHTG(Number(p.salePrice || p.price))}
             </Typography>
             {sale && (
-              <Typography fontSize={10.5} color="#94A3B8" noWrap sx={{ textDecoration: 'line-through', flexShrink: 1, minWidth: 0 }}>
+              <Typography fontSize={10.5} color="#64748B" noWrap sx={{ textDecoration: 'line-through', flexShrink: 1, minWidth: 0 }}>
                 {fmtHTG(Number(p.price))}
               </Typography>
             )}
@@ -272,7 +272,7 @@ function ChatWidget({ store, sellerUserId, open, onClose }: {
           <Box sx={{
             position: 'absolute', bottom: 1, right: 1,
             width: 10, height: 10, borderRadius: '50%',
-            bgcolor: sellerOnline ? '#4caf50' : '#9CA3AF',
+            bgcolor: sellerOnline ? '#4caf50' : '#64748B',
             border: '2px solid #0a101e',
           }} />
         </Box>
@@ -588,12 +588,12 @@ export default function BoutiquePage() {
                 )}
                 {store.department && (
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4 }}>
-                    <LocationOn sx={{ fontSize: 14, color: '#94A3B8' }} />
+                    <LocationOn sx={{ fontSize: 14, color: '#64748B' }} />
                     <Typography fontSize={12.5} color="#64748B">{[store.city, store.department].filter(Boolean).join(', ')}</Typography>
                   </Box>
                 )}
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4 }}>
-                  <AccessTime sx={{ fontSize: 13, color: '#94A3B8' }} />
+                  <AccessTime sx={{ fontSize: 13, color: '#64748B' }} />
                   <Typography fontSize={12.5} color="#64748B">Depuis {fmtDate(store.createdAt)}</Typography>
                 </Box>
                 <Chip label={`${store._count?.products ?? 0} produits`} size="small"
@@ -658,7 +658,7 @@ export default function BoutiquePage() {
                       { icon: Email,      label: store.email },
                     ].filter(r => r.label).map(({ icon: Icon, label }, i) => (
                       <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                        <Icon sx={{ fontSize: 16, color: '#94A3B8', flexShrink: 0 }} />
+                        <Icon sx={{ fontSize: 16, color: '#64748B', flexShrink: 0 }} />
                         <Typography fontSize={13} color="#475569">{label}</Typography>
                       </Box>
                     ))}
@@ -710,14 +710,14 @@ export default function BoutiquePage() {
                           <Box sx={{ width: 32, height: 32, borderRadius: 1.5, flexShrink: 0,
                             bgcolor: doc.isValid ? alpha(GREEN, 0.12) : '#F1F5F9',
                             display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <Icon sx={{ fontSize: 16, color: doc.isValid ? GREEN : '#94A3B8' }} />
+                            <Icon sx={{ fontSize: 16, color: doc.isValid ? GREEN : '#64748B' }} />
                           </Box>
                           <Box sx={{ flex: 1, minWidth: 0 }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                               <Typography fontSize={12.5} fontWeight={600} noWrap>{DOC_LABELS[doc.type] ?? doc.type}</Typography>
                               {doc.isValid && <Verified sx={{ fontSize: 13, color: GREEN }} />}
                             </Box>
-                            <Typography fontSize={11} color="#94A3B8" noWrap>{doc.fileName}</Typography>
+                            <Typography fontSize={11} color="#64748B" noWrap>{doc.fileName}</Typography>
                           </Box>
                           <IconButton size="small" component="a" href={doc.url} target="_blank" rel="noopener noreferrer"
                             sx={{ width: 26, height: 26, color: '#64748B', '&:hover': { color: ORANGE } }}>
@@ -819,7 +819,7 @@ export default function BoutiquePage() {
             <Box ref={sentinelRef} sx={{ py: 3, display: 'flex', justifyContent: 'center' }}>
               {isFetchingNextPage && <CircularProgress size={28} sx={{ color: ORANGE }} />}
               {!hasNextPage && products.length > 0 && (
-                <Typography fontSize={12.5} color="#94A3B8">Tous les produits sont affichés</Typography>
+                <Typography fontSize={12.5} color="#64748B">Tous les produits sont affichés</Typography>
               )}
             </Box>
           </Grid>

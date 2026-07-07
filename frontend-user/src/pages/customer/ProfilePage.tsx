@@ -36,7 +36,7 @@ function Field({ label, value, onChange, Icon, placeholder, disabled }: {
   return (
     <Box>
       <Typography sx={{ fontSize: 10.5, fontWeight: 700, mb: 0.6, letterSpacing: '0.5px', textTransform: 'uppercase',
-        color: focused ? alpha(ORANGE, 0.9) : '#94A3B8', transition: 'color 0.2s' }}>
+        color: focused ? alpha(ORANGE, 0.9) : '#64748B', transition: 'color 0.2s' }}>
         {label}
       </Typography>
       <Box sx={{
@@ -47,7 +47,7 @@ function Field({ label, value, onChange, Icon, placeholder, disabled }: {
         boxShadow: focused ? `0 0 0 3px ${alpha(ORANGE, 0.1)}` : 'none',
         transition: 'all 0.2s',
       }}>
-        <Icon sx={{ fontSize: 17, color: focused ? ORANGE : '#94A3B8', flexShrink: 0, transition: 'color 0.2s' }} />
+        <Icon sx={{ fontSize: 17, color: focused ? ORANGE : '#64748B', flexShrink: 0, transition: 'color 0.2s' }} />
         <InputBase
           value={value}
           onChange={e => onChange?.(e.target.value)}
@@ -56,9 +56,9 @@ function Field({ label, value, onChange, Icon, placeholder, disabled }: {
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           sx={{ flex: 1, '& input': {
-            color: disabled ? '#94A3B8' : '#0F172A',
+            color: disabled ? '#64748B' : '#0F172A',
             fontSize: 14, fontWeight: 500, p: 0,
-            '&::placeholder': { color: '#94A3B8', opacity: 1 },
+            '&::placeholder': { color: '#64748B', opacity: 1 },
           }}}
         />
       </Box>
@@ -206,7 +206,7 @@ export default function ProfilePage() {
                     </Typography>
                   </Box>
                 </Box>
-                <Typography noWrap sx={{ fontSize: 13, color: '#94A3B8', mb: 1.5 }}>{user.email}</Typography>
+                <Typography noWrap sx={{ fontSize: 13, color: '#64748B', mb: 1.5 }}>{user.email}</Typography>
 
                 {/* Stats row */}
                 <Box sx={{ display: 'flex', gap: 1 }}>
@@ -304,10 +304,10 @@ export default function ProfilePage() {
                     <Box sx={{ width: 34, height: 34, borderRadius: '10px', flexShrink: 0,
                       bgcolor: '#F7F8FA', border: '1px solid rgba(15,23,42,0.09)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Icon sx={{ fontSize: 16, color: '#94A3B8' }} />
+                      <Icon sx={{ fontSize: 16, color: '#64748B' }} />
                     </Box>
                     <Box sx={{ minWidth: 0 }}>
-                      <Typography sx={{ fontSize: 10.5, color: '#94A3B8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                      <Typography sx={{ fontSize: 10.5, color: '#64748B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
                         {label}
                       </Typography>
                       <Typography noWrap sx={{ fontSize: 13.5, fontWeight: 600, color: '#475569', mt: 0.1 }}>
@@ -356,7 +356,7 @@ export default function ProfilePage() {
                 </Box>
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                   <Typography sx={{ fontSize: 13.5, fontWeight: 700, color: '#0F172A', lineHeight: 1.3 }}>{label}</Typography>
-                  <Typography sx={{ fontSize: 11.5, color: '#94A3B8', mt: 0.15 }}>{sub}</Typography>
+                  <Typography sx={{ fontSize: 11.5, color: '#64748B', mt: 0.15 }}>{sub}</Typography>
                 </Box>
                 <ArrowForward className="ql-arrow" sx={{ fontSize: 15, color: '#CBD5E1', transition: 'all 0.18s', flexShrink: 0 }} />
               </Box>

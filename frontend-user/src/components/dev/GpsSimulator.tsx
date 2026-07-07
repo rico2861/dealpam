@@ -73,7 +73,7 @@ export default function GpsSimulator() {
             borderRadius: '4px', px: '5px', py: '1px' }}>DEV</Box>
         </Box>
         <IconButton size="small" onClick={() => setOpen(false)}
-          sx={{ color: '#94A3B8', p: 0.4, '&:hover': { color: 'white' } }}>
+          sx={{ color: '#64748B', p: 0.4, '&:hover': { color: 'white' } }}>
           <Close sx={{ fontSize: 14 }} />
         </IconButton>
       </Box>
@@ -87,7 +87,7 @@ export default function GpsSimulator() {
         sx={{
           bgcolor: '#0F172A', color: 'white', fontSize: 12, mb: 1.5,
           '& .MuiOutlinedInput-notchedOutline': { borderColor: '#334155' },
-          '& .MuiSvgIcon-root': { color: '#94A3B8' },
+          '& .MuiSvgIcon-root': { color: '#64748B' },
         }}
       >
         {SIM_CITIES.map((c) => (
@@ -117,9 +117,9 @@ export default function GpsSimulator() {
           size="small"
           onClick={handleReset}
           sx={{
-            flex: 1, color: '#94A3B8', borderColor: '#334155', fontSize: 11,
+            flex: 1, color: '#64748B', borderColor: '#334155', fontSize: 11,
             fontWeight: 700, textTransform: 'none', borderRadius: '8px',
-            '&:hover': { borderColor: '#94A3B8', color: 'white' },
+            '&:hover': { borderColor: '#64748B', color: 'white' },
           }}
         >
           Reset

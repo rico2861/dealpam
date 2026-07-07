@@ -27,7 +27,7 @@ const CARD  = '#F7F8FA';
 const CARD2 = '#FFFFFF';
 const BORD  = 'rgba(15,23,42,0.09)';
 const TXT   = '#0F172A';
-const TXT2  = '#94A3B8';
+const TXT2  = '#64748B';
 
 const fmtHTG = (v: number) => `${v.toLocaleString('fr-HT')} HTG`;
 
@@ -354,7 +354,7 @@ function DeliveryStep({
         }
         sx={{ mt: 1, py: 1.4, borderRadius: '14px', fontWeight: 800, textTransform: 'none', fontSize: 14.5,
           bgcolor: OR, boxShadow: `0 8px 24px ${alpha(OR, 0.3)}`, '&:hover': { bgcolor: ORD },
-          '&.Mui-disabled': { bgcolor: '#F1F5F9', color: '#94A3B8' } }}>
+          '&.Mui-disabled': { bgcolor: '#F1F5F9', color: '#64748B' } }}>
         Continuer vers le paiement
       </Button>
 
@@ -419,7 +419,7 @@ function PaymentStep({ paymentMethods, selectedPayment, setSelectedPayment, note
               <ContentCopy sx={{ fontSize: 14, color: TXT2 }} />
             </IconButton>
           </Box>
-          <Typography fontSize={12} color="#94A3B8" mt={0.5}>
+          <Typography fontSize={12} color="#64748B" mt={0.5}>
             Après paiement, soumettez votre référence de transaction à l'étape suivante.
           </Typography>
         </Box>
@@ -456,7 +456,7 @@ function PaymentStep({ paymentMethods, selectedPayment, setSelectedPayment, note
         <Button onClick={onNext} variant="contained" disabled={(paymentMethods.length > 0 && !selectedPayment) || placing}
           sx={{ flex: 2, py: 1.4, borderRadius: '14px', fontWeight: 800, textTransform: 'none', fontSize: 14.5,
             bgcolor: OR, boxShadow: `0 8px 24px ${alpha(OR, 0.3)}`, '&:hover': { bgcolor: ORD },
-            '&.Mui-disabled': { bgcolor: '#F1F5F9', color: '#94A3B8' } }}>
+            '&.Mui-disabled': { bgcolor: '#F1F5F9', color: '#64748B' } }}>
           {placing ? <CircularProgress size={18} sx={{ color: 'white' }} /> : 'Confirmer la commande'}
         </Button>
       </Box>
@@ -611,7 +611,7 @@ export default function CheckoutPage() {
             <Box key={label} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flex: i === 0 ? 1 : 'unset' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Box sx={{ width: 26, height: 26, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  bgcolor: step >= i ? OR : '#F1F5F9', color: step >= i ? 'white' : '#94A3B8',
+                  bgcolor: step >= i ? OR : '#F1F5F9', color: step >= i ? 'white' : '#64748B',
                   fontWeight: 800, fontSize: 12.5, transition: 'all 0.2s' }}>
                   {i + 1}
                 </Box>
@@ -689,11 +689,11 @@ export default function CheckoutPage() {
               <Divider sx={{ mb: 1.5, borderColor: BORD }} />
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography fontSize={13} color="#94A3B8">Sous-total</Typography>
+                  <Typography fontSize={13} color="#64748B">Sous-total</Typography>
                   <Typography fontSize={13} fontWeight={600} color="#0F172A">{fmtHTG(subtotal)}</Typography>
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography fontSize={13} color="#94A3B8">Livraison</Typography>
+                  <Typography fontSize={13} color="#64748B">Livraison</Typography>
                   <Typography fontSize={13} fontWeight={600} color={shippingCost === 0 ? GRN : '#0F172A'}>
                     {shippingCost === 0 ? 'Gratuite' : fmtHTG(shippingCost)}
                   </Typography>

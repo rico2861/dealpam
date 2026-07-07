@@ -19,7 +19,7 @@ const BG   = '#F7F8FA';
 const SIDE = '#FFFFFF';
 const BORD = 'rgba(15,23,42,0.06)';
 const TXT  = '#0F172A';
-const SUB  = '#94A3B8';
+const SUB  = '#64748B';
 const W    = 240;
 
 const GROUPS = [
@@ -141,7 +141,7 @@ function SidebarContent({ badges, onClose, stats }: {
       <Box sx={{ flex: 1, overflowY: 'auto', px: 1.5, py: 1, scrollbarWidth: 'thin', scrollbarColor: 'rgba(15,23,42,0.09) transparent', '&::-webkit-scrollbar': { width: 6 }, '&::-webkit-scrollbar-track': { bgcolor: 'transparent' }, '&::-webkit-scrollbar-thumb': { bgcolor: 'rgba(15,23,42,0.09)', borderRadius: 3, '&:hover': { bgcolor: 'rgba(15,23,42,0.09)' } } }}>
         {GROUPS.map((g, gi) => (
           <Box key={gi} sx={{ mb: 2 }}>
-            <Typography sx={{ px: 1.5, mb: 0.8, fontSize: 9.5, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '1px' }}>
+            <Typography sx={{ px: 1.5, mb: 0.8, fontSize: 9.5, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '1px' }}>
               {g.label}
             </Typography>
             {g.items.map(({ path, label, icon, badge }) => (

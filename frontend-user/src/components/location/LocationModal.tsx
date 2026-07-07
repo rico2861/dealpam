@@ -97,7 +97,7 @@ function AccordionSelect({
         }}>
         <LocationOn sx={{ fontSize:16, color:value ? OR : '#CBD5E1', flexShrink:0 }} />
         <Typography flex={1} fontSize={14.5} fontWeight={value ? 600 : 400} textAlign="left"
-          color={disabled ? '#CBD5E1' : value ? BG : '#9CA3AF'}
+          color={disabled ? '#CBD5E1' : value ? BG : '#64748B'}
           sx={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
           {value || placeholder}
         </Typography>
@@ -124,7 +124,7 @@ function AccordionSelect({
                 display:'flex', alignItems:'center', gap:1,
                 bgcolor:'#F8FAFC', borderRadius:'10px', px:1.4, py:0.7,
               }}>
-                <MyLocation sx={{ fontSize:14, color:'#9CA3AF', flexShrink:0 }} />
+                <MyLocation sx={{ fontSize:14, color:'#64748B', flexShrink:0 }} />
                 <input
                   ref={inputRef}
                   value={search}
@@ -137,7 +137,7 @@ function AccordionSelect({
                 />
                 {search && (
                   <Box onClick={() => { setSearch(''); inputRef.current?.focus(); }}
-                    sx={{ cursor:'pointer', color:'#9CA3AF', display:'flex', '&:hover':{ color:'#64748B' } }}>
+                    sx={{ cursor:'pointer', color:'#64748B', display:'flex', '&:hover':{ color:'#64748B' } }}>
                     <Close sx={{ fontSize:13 }} />
                   </Box>
                 )}
@@ -155,7 +155,7 @@ function AccordionSelect({
             }}>
             {filtered.length === 0
               ? <Box sx={{ py:2.5, textAlign:'center' }}>
-                  <Typography fontSize={13} color="#9CA3AF">Aucun résultat</Typography>
+                  <Typography fontSize={13} color="#64748B">Aucun résultat</Typography>
                 </Box>
               : filtered.map((opt, idx) => (
                 <Box
@@ -382,7 +382,7 @@ export default function LocationModal({ open, onClose }: { open: boolean; onClos
                 <Typography color="white" fontWeight={800} fontSize={{ xs:16, sm:17.5 }} lineHeight={1.2}>
                   Zone de livraison
                 </Typography>
-                <Typography color="#94A3B8" fontSize={12.5} mt={0.3}>
+                <Typography color="#64748B" fontSize={12.5} mt={0.3}>
                   Produits et offres près de vous
                 </Typography>
               </Box>
@@ -487,7 +487,7 @@ export default function LocationModal({ open, onClose }: { open: boolean; onClos
           {/* Séparateur */}
           <Box sx={{ flexShrink:0, display:'flex', alignItems:'center', gap:1.5 }}>
             <Box sx={{ flex:1, height:'1px', bgcolor:'#E2E8F0' }} />
-            <Typography fontSize={10} fontWeight={800} color="#94A3B8" letterSpacing={1.2}
+            <Typography fontSize={10} fontWeight={800} color="#64748B" letterSpacing={1.2}
               sx={{ textTransform:'uppercase', whiteSpace:'nowrap' }}>
               OU CHOISIR MANUELLEMENT
             </Typography>
@@ -569,7 +569,7 @@ export default function LocationModal({ open, onClose }: { open: boolean; onClos
                 '&:active':{ transform:'scale(.98)' },
               } : {
                 bgcolor:'#E2E8F0',
-                color:'#94A3B8',
+                color:'#64748B',
               }),
             }}>
             <LocationOn sx={{ fontSize:18 }} />

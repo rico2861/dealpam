@@ -48,7 +48,7 @@ export default function DevGpsSimulator() {
         <Typography fontSize={11.5} fontWeight={700} color="#FFA500" sx={{ flex: 1 }}>
           Dev GPS {active ? `· ${active}` : ''}
         </Typography>
-        <IconButton size="small" onClick={() => setOpen(p => !p)} sx={{ p: 0.3, color: '#94A3B8' }}>
+        <IconButton size="small" onClick={() => setOpen(p => !p)} sx={{ p: 0.3, color: '#64748B' }}>
           {open ? <ExpandLess sx={{ fontSize: 14 }} /> : <ExpandMore sx={{ fontSize: 14 }} />}
         </IconButton>
       </Box>
@@ -70,14 +70,14 @@ export default function DevGpsSimulator() {
           {/* Custom coords */}
           <Box sx={{ display: 'flex', gap: 0.8, mb: 1 }}>
             <TextField size="small" label="Lat" value={lat} onChange={e => setLat(e.target.value)}
-              sx={{ flex: 1, input: { color: 'white', fontSize: 12 }, label: { color: '#94A3B8', fontSize: 12 },
+              sx={{ flex: 1, input: { color: 'white', fontSize: 12 }, label: { color: '#64748B', fontSize: 12 },
                 '& .MuiOutlinedInput-root': { '& fieldset': { borderColor: 'rgba(255,255,255,0.12)' } } }} />
             <TextField size="small" label="Lng" value={lng} onChange={e => setLng(e.target.value)}
-              sx={{ flex: 1, input: { color: 'white', fontSize: 12 }, label: { color: '#94A3B8', fontSize: 12 },
+              sx={{ flex: 1, input: { color: 'white', fontSize: 12 }, label: { color: '#64748B', fontSize: 12 },
                 '& .MuiOutlinedInput-root': { '& fieldset': { borderColor: 'rgba(255,255,255,0.12)' } } }} />
           </Box>
           <TextField fullWidth size="small" label="Ville" value={city} onChange={e => setCity(e.target.value)}
-            sx={{ mb: 1, input: { color: 'white', fontSize: 12 }, label: { color: '#94A3B8', fontSize: 12 },
+            sx={{ mb: 1, input: { color: 'white', fontSize: 12 }, label: { color: '#64748B', fontSize: 12 },
               '& .MuiOutlinedInput-root': { '& fieldset': { borderColor: 'rgba(255,255,255,0.12)' } } }} />
 
           <Box sx={{ display: 'flex', gap: 0.8 }}>
@@ -88,7 +88,7 @@ export default function DevGpsSimulator() {
               Appliquer
             </Button>
             <Button size="small" onClick={reset}
-              sx={{ color: '#94A3B8', fontSize: 11, borderRadius: 1.5, minWidth: 60,
+              sx={{ color: '#64748B', fontSize: 11, borderRadius: 1.5, minWidth: 60,
                 border: '1px solid rgba(255,255,255,0.12)', '&:hover': { bgcolor: 'rgba(255,255,255,0.06)' } }}>
               Reset
             </Button>

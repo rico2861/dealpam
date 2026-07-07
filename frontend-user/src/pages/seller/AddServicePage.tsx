@@ -16,8 +16,8 @@ const BG   = '#F7F8FA';
 const CARD = '#FFFFFF';
 const BORD = 'rgba(15,23,42,0.06)';
 const TXT  = '#0F172A';
-const SUB  = '#94A3B8';
-const SUB2 = '#94A3B8';
+const SUB  = '#64748B';
+const SUB2 = '#64748B';
 const GRN  = '#10B981';
 const BLU  = '#3B82F6';
 const PUR  = '#8B5CF6';
@@ -423,7 +423,7 @@ export default function AddServicePage() {
 
         {/* Submit */}
         <Button fullWidth onClick={handleSubmit} disabled={mutation.isPending}
-          sx={{ py: 1.6, borderRadius: '12px', fontWeight: 800, fontSize: 14, bgcolor: OR, color: '#fff', textTransform: 'none', '&:hover': { bgcolor: '#E05A00' }, '&.Mui-disabled': { bgcolor: 'rgba(255,107,0,0.3)', color: '#94A3B8' } }}>
+          sx={{ py: 1.6, borderRadius: '12px', fontWeight: 800, fontSize: 14, bgcolor: OR, color: '#fff', textTransform: 'none', '&:hover': { bgcolor: '#E05A00' }, '&.Mui-disabled': { bgcolor: 'rgba(255,107,0,0.3)', color: '#64748B' } }}>
           {mutation.isPending ? <CircularProgress size={20} sx={{ color: '#fff' }} /> : 'Publier l\'annonce'}
         </Button>
 

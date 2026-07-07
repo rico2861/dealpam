@@ -20,8 +20,8 @@ const BG   = '#F7F8FA';
 const CARD = '#FFFFFF';
 const BORD = 'rgba(15,23,42,0.06)';
 const TXT  = '#0F172A';
-const SUB  = '#94A3B8';
-const SUB2 = '#94A3B8';
+const SUB  = '#64748B';
+const SUB2 = '#64748B';
 const GRN  = '#10B981';
 const RED  = '#EF4444';
 
@@ -354,7 +354,7 @@ export default function AddProductPage() {
           <Typography fontWeight={800} fontSize={16} color={TXT}>Nouveau produit</Typography>
         </Box>
         <Button type="submit" form="listing-form" disabled={loading}
-          sx={{ bgcolor: OR, color: '#fff', borderRadius: '10px', fontWeight: 700, fontSize: 13.5, px: 3, py: 1, textTransform: 'none', '&:hover': { bgcolor: '#E05A00' }, '&.Mui-disabled': { bgcolor: 'rgba(255,107,0,0.3)', color: '#94A3B8' } }}>
+          sx={{ bgcolor: OR, color: '#fff', borderRadius: '10px', fontWeight: 700, fontSize: 13.5, px: 3, py: 1, textTransform: 'none', '&:hover': { bgcolor: '#E05A00' }, '&.Mui-disabled': { bgcolor: 'rgba(255,107,0,0.3)', color: '#64748B' } }}>
           {loading ? <CircularProgress size={16} sx={{ color: '#fff' }} /> : 'Publier'}
         </Button>
       </Box>
@@ -667,7 +667,7 @@ export default function AddProductPage() {
 
           {/* Bottom submit */}
           <Button fullWidth type="submit" disabled={loading}
-            sx={{ py: 1.6, borderRadius: '14px', fontWeight: 800, fontSize: 15, bgcolor: OR, color: '#fff', textTransform: 'none', '&:hover': { bgcolor: '#E05A00' }, '&.Mui-disabled': { bgcolor: 'rgba(255,107,0,0.3)', color: '#94A3B8' }, mb: 2 }}>
+            sx={{ py: 1.6, borderRadius: '14px', fontWeight: 800, fontSize: 15, bgcolor: OR, color: '#fff', textTransform: 'none', '&:hover': { bgcolor: '#E05A00' }, '&.Mui-disabled': { bgcolor: 'rgba(255,107,0,0.3)', color: '#64748B' }, mb: 2 }}>
             {loading ? <CircularProgress size={20} sx={{ color: '#fff' }} /> : 'Publier le produit'}
           </Button>
 

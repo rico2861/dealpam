@@ -64,7 +64,7 @@ function ProductCard({ p }: { p: any }) {
           bgcolor: 'rgba(255,255,255,0.9)', width: 28, height: 28, '&:hover': { bgcolor: 'white' } }}>
         {liked
           ? <Favorite sx={{ fontSize: 14, color: RED }} />
-          : <FavoriteBorder sx={{ fontSize: 14, color: '#94A3B8' }} />}
+          : <FavoriteBorder sx={{ fontSize: 14, color: '#64748B' }} />}
       </IconButton>
 
       <Card sx={{ height: '100%', borderRadius: 2.5, border: '1px solid #E5E7EB', boxShadow: 'none',
@@ -89,7 +89,7 @@ function ProductCard({ p }: { p: any }) {
             </Typography>
             <Typography fontWeight={800} fontSize={15} color={RED}>{fmtHTG(price)}</Typography>
             {sale && (
-              <Typography fontSize={11} color="#94A3B8" sx={{ textDecoration: 'line-through' }}>
+              <Typography fontSize={11} color="#64748B" sx={{ textDecoration: 'line-through' }}>
                 {fmtHTG(Number(p.price))}
               </Typography>
             )}
@@ -268,12 +268,12 @@ export default function StoreDetailPage() {
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                   <Rating value={store.avgRating} readOnly precision={0.5} size="small" sx={{ color: GOLD }} />
                   <Typography fontSize={13} fontWeight={700} color="#64748B">{store.avgRating.toFixed(1)}</Typography>
-                  <Typography fontSize={12.5} color="#94A3B8">({store._count?.reviews ?? 0} avis)</Typography>
+                  <Typography fontSize={12.5} color="#64748B">({store._count?.reviews ?? 0} avis)</Typography>
                 </Box>
               )}
               {(store.city || store.department) && (
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4 }}>
-                  <LocationOn sx={{ fontSize: 14, color: '#94A3B8' }} />
+                  <LocationOn sx={{ fontSize: 14, color: '#64748B' }} />
                   <Typography fontSize={12.5} color="#64748B">
                     {[store.city, store.department].filter(Boolean).join(', ')}
                   </Typography>
@@ -281,7 +281,7 @@ export default function StoreDetailPage() {
               )}
               {memberSince && (
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4 }}>
-                  <AccessTime sx={{ fontSize: 14, color: '#94A3B8' }} />
+                  <AccessTime sx={{ fontSize: 14, color: '#64748B' }} />
                   <Typography fontSize={12.5} color="#64748B">Membre depuis {memberSince}</Typography>
                 </Box>
               )}
@@ -378,7 +378,7 @@ export default function StoreDetailPage() {
                             sx={{ height: 16, fontSize: 9.5, bgcolor: alpha(BLUE, 0.1), color: BLUE }} />
                         )}
                       </Box>
-                      <Typography fontSize={11.5} color="#94A3B8">{s._count?.products ?? 0} produits</Typography>
+                      <Typography fontSize={11.5} color="#64748B">{s._count?.products ?? 0} produits</Typography>
                     </Box>
                   </Box>
                 ))}
@@ -399,8 +399,8 @@ export default function StoreDetailPage() {
                   </Typography>
                   {seller?.businessCity && (
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4 }}>
-                      <LocationOn sx={{ fontSize: 12, color: '#94A3B8' }} />
-                      <Typography fontSize={12} color="#94A3B8">{seller.businessCity}</Typography>
+                      <LocationOn sx={{ fontSize: 12, color: '#64748B' }} />
+                      <Typography fontSize={12} color="#64748B">{seller.businessCity}</Typography>
                     </Box>
                   )}
                 </Box>
@@ -424,7 +424,7 @@ export default function StoreDetailPage() {
               )}
               {(store as any).storeCode && (
                 <Box sx={{ mt: 1.5, pt: 1.5, borderTop: '1px solid #F1F5F9', display: 'flex', alignItems: 'center', gap: 0.8 }}>
-                  <Typography fontSize={11.5} color="#94A3B8">ID boutique :</Typography>
+                  <Typography fontSize={11.5} color="#64748B">ID boutique :</Typography>
                   <Typography fontSize={11.5} fontWeight={700} color="#475569" sx={{ fontFamily: 'monospace' }}>
                     {(store as any).storeCode}
                   </Typography>
@@ -440,7 +440,7 @@ export default function StoreDetailPage() {
                   <CheckCircle sx={{ fontSize: 16, color: GREEN }} />
                   <Typography fontWeight={700} fontSize={14} color="#0F1111">Documents officiels</Typography>
                 </Box>
-                <Typography fontSize={11.5} color="#94A3B8" mb={1.5} lineHeight={1.5}>
+                <Typography fontSize={11.5} color="#64748B" mb={1.5} lineHeight={1.5}>
                   Ces documents ont été soumis par le vendeur pour attester de son identité et son activité commerciale.
                 </Typography>
                 {(seller.documents as any[]).map((doc: any) => {
@@ -458,14 +458,14 @@ export default function StoreDetailPage() {
                         bgcolor: doc.isValid ? alpha(GREEN, 0.12) : '#F1F5F9',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                       }}>
-                        <Icon sx={{ fontSize: 16, color: doc.isValid ? GREEN : '#94A3B8' }} />
+                        <Icon sx={{ fontSize: 16, color: doc.isValid ? GREEN : '#64748B' }} />
                       </Box>
                       <Box sx={{ flex: 1, minWidth: 0 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                           <Typography fontSize={12.5} fontWeight={600} color="#334155" noWrap>{label}</Typography>
                           {doc.isValid && <Verified sx={{ fontSize: 13, color: GREEN }} />}
                         </Box>
-                        <Typography fontSize={11} color="#94A3B8" noWrap>{doc.fileName}</Typography>
+                        <Typography fontSize={11} color="#64748B" noWrap>{doc.fileName}</Typography>
                       </Box>
                       <IconButton size="small" component="a" href={doc.url} target="_blank" rel="noopener noreferrer"
                         sx={{ width: 26, height: 26, color: '#64748B', '&:hover': { color: ORANGE } }}>
@@ -529,7 +529,7 @@ export default function StoreDetailPage() {
                   ) : products.length === 0 ? (
                     <Box sx={{ py: 6, textAlign: 'center' }}>
                       <Inventory sx={{ fontSize: 52, color: '#CBD5E1', mb: 1.5 }} />
-                      <Typography color="#94A3B8" fontSize={14}>
+                      <Typography color="#64748B" fontSize={14}>
                         Aucun produit{catFilter ? ' dans cette catégorie' : ''}
                       </Typography>
                     </Box>
@@ -551,7 +551,7 @@ export default function StoreDetailPage() {
                   {reviews.length === 0 ? (
                     <Box sx={{ py: 5, textAlign: 'center' }}>
                       <Star sx={{ fontSize: 48, color: '#E2E8F0', mb: 1 }} />
-                      <Typography color="#94A3B8">Aucun avis pour cette boutique</Typography>
+                      <Typography color="#64748B">Aucun avis pour cette boutique</Typography>
                     </Box>
                   ) : (
                     <>
@@ -590,7 +590,7 @@ export default function StoreDetailPage() {
                               </Typography>
                               <Rating value={r.rating} readOnly size="small" sx={{ color: GOLD }} />
                             </Box>
-                            <Typography fontSize={11.5} color="#94A3B8">
+                            <Typography fontSize={11.5} color="#64748B">
                               {new Date(r.createdAt).toLocaleDateString('fr-FR')}
                             </Typography>
                           </Box>

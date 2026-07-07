@@ -364,7 +364,7 @@ export default function SellerChatPage() {
               <Typography sx={{ fontWeight: 900, fontSize: 18, color: '#0F172A', letterSpacing: '-0.5px', lineHeight: 1 }}>
                 Messages
               </Typography>
-              <Typography sx={{ fontSize: 11, color: '#94A3B8', mt: 0.4 }}>
+              <Typography sx={{ fontSize: 11, color: '#64748B', mt: 0.4 }}>
                 {conversations.length} conversation{conversations.length !== 1 ? 's' : ''}
               </Typography>
             </Box>
@@ -389,9 +389,9 @@ export default function SellerChatPage() {
             '&:focus-within': { borderColor: 'rgba(255,107,0,0.5)', bgcolor: 'rgba(255,107,0,0.04)', boxShadow: '0 0 0 3px rgba(255,107,0,0.08)' },
             transition: 'all 0.2s',
           }}>
-            <Search sx={{ fontSize: 15, color: '#94A3B8', flexShrink: 0 }} />
+            <Search sx={{ fontSize: 15, color: '#64748B', flexShrink: 0 }} />
             <InputBase placeholder="Rechercher une conversation…" value={search} onChange={e => setSearch(e.target.value)}
-              sx={{ flex: 1, '& input': { color: '#0F172A', fontSize: 12.5, padding: 0, '&::placeholder': { color: '#94A3B8', opacity: 1 } } }}
+              sx={{ flex: 1, '& input': { color: '#0F172A', fontSize: 12.5, padding: 0, '&::placeholder': { color: '#64748B', opacity: 1 } } }}
             />
           </Box>
         </Box>
@@ -399,7 +399,7 @@ export default function SellerChatPage() {
         {/* Section label */}
         {filtered.length > 0 && (
           <Box sx={{ px: 2.5, mb: 1 }}>
-            <Typography sx={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '1px' }}>
+            <Typography sx={{ fontSize: 10, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '1px' }}>
               Récentes
             </Typography>
           </Box>
@@ -410,7 +410,7 @@ export default function SellerChatPage() {
           '&::-webkit-scrollbar': { width: 0 } }}>
           {filtered.length === 0 && (
             <Box sx={{ py: 8, textAlign: 'center' }}>
-              <Typography sx={{ color: '#94A3B8', fontSize: 13 }}>Aucune conversation</Typography>
+              <Typography sx={{ color: '#64748B', fontSize: 13 }}>Aucune conversation</Typography>
             </Box>
           )}
           {filtered.map((conv) => {
@@ -500,14 +500,14 @@ export default function SellerChatPage() {
                     </Typography>
                     {conv.lastMessageAt && (
                       <Typography sx={{ fontSize: 10.5, flexShrink: 0, ml: 1,
-                        color: unread > 0 ? ORANGE : '#94A3B8',
+                        color: unread > 0 ? ORANGE : '#64748B',
                         fontWeight: unread > 0 ? 700 : 400 }}>
                         {fmtTime(conv.lastMessageAt)}
                       </Typography>
                     )}
                   </Box>
                   <Typography sx={{ fontSize: 12, lineHeight: 1.3,
-                    color: unread > 0 ? '#475569' : '#94A3B8',
+                    color: unread > 0 ? '#475569' : '#64748B',
                     fontWeight: unread > 0 ? 500 : 400,
                     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {conv.lastMessage ?? 'Démarrez la conversation'}
@@ -540,10 +540,10 @@ export default function SellerChatPage() {
                 </Box>
               </Box>
             </Box>
-            <Typography sx={{ fontSize: 15, fontWeight: 700, color: '#94A3B8', mb: 0.8, letterSpacing: '-0.2px' }}>
+            <Typography sx={{ fontSize: 15, fontWeight: 700, color: '#64748B', mb: 0.8, letterSpacing: '-0.2px' }}>
               Aucune conversation sélectionnée
             </Typography>
-            <Typography sx={{ fontSize: 13, color: '#94A3B8', textAlign: 'center', maxWidth: 260, lineHeight: 1.6 }}>
+            <Typography sx={{ fontSize: 13, color: '#64748B', textAlign: 'center', maxWidth: 260, lineHeight: 1.6 }}>
               Choisissez une conversation à gauche pour commencer à échanger avec vos clients
             </Typography>
             {/* Mini stats */}
@@ -558,7 +558,7 @@ export default function SellerChatPage() {
                     <Typography sx={{ fontWeight: 800, fontSize: 18, color: value > 0 ? ORANGE : '#475569', lineHeight: 1 }}>
                       {value}
                     </Typography>
-                    <Typography sx={{ fontSize: 11, color: '#94A3B8', mt: 0.3 }}>{label}</Typography>
+                    <Typography sx={{ fontSize: 11, color: '#64748B', mt: 0.3 }}>{label}</Typography>
                   </Box>
                 ))}
               </Box>
@@ -612,8 +612,8 @@ export default function SellerChatPage() {
                     <Typography sx={{ fontSize: 11.5, color: '#10B981', fontWeight: 600 }}>Support · répond rapidement</Typography>
                   ) : (
                     <>
-                      <FiberManualRecord sx={{ fontSize: 8, color: onlineIds.has(otherParticipant?.userId ?? '') ? '#10B981' : '#94A3B8' }} />
-                      <Typography sx={{ fontSize: 11.5, color: '#94A3B8' }}>
+                      <FiberManualRecord sx={{ fontSize: 8, color: onlineIds.has(otherParticipant?.userId ?? '') ? '#10B981' : '#64748B' }} />
+                      <Typography sx={{ fontSize: 11.5, color: '#64748B' }}>
                         {onlineIds.has(otherParticipant?.userId ?? '') ? 'En ligne' : 'Hors ligne'}
                       </Typography>
                     </>
@@ -637,7 +637,7 @@ export default function SellerChatPage() {
                 <Box sx={{ px: 1, py: 0.35, borderRadius: '20px', flexShrink: 0,
                   bgcolor: activeConv.status === 'OPEN' ? alpha('#10B981', 0.12) : '#FFFFFF',
                   border: `1px solid ${activeConv.status === 'OPEN' ? alpha('#10B981', 0.25) : 'rgba(15,23,42,0.09)'}` }}>
-                  <Typography sx={{ fontSize: 10.5, fontWeight: 700, color: activeConv.status === 'OPEN' ? '#10B981' : '#94A3B8' }}>
+                  <Typography sx={{ fontSize: 10.5, fontWeight: 700, color: activeConv.status === 'OPEN' ? '#10B981' : '#64748B' }}>
                     {activeConv.status === 'OPEN' ? 'Ouvert' : activeConv.status === 'RESOLVED' ? 'Résolu' : 'Fermé'}
                   </Typography>
                 </Box>
@@ -665,7 +665,7 @@ export default function SellerChatPage() {
 
               {!loadingMsgs && messages.length === 0 && (
                 <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', py: 8 }}>
-                  <Typography sx={{ color: '#94A3B8', fontSize: 13 }}>Aucun message — envoyez le premier !</Typography>
+                  <Typography sx={{ color: '#64748B', fontSize: 13 }}>Aucun message — envoyez le premier !</Typography>
                 </Box>
               )}
 
@@ -674,7 +674,7 @@ export default function SellerChatPage() {
                   {/* Date separator */}
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, my: 2 }}>
                     <Box sx={{ flex: 1, height: '1px', bgcolor: '#FFFFFF' }} />
-                    <Typography sx={{ fontSize: 10.5, color: '#94A3B8', fontWeight: 600, px: 1 }}>{date}</Typography>
+                    <Typography sx={{ fontSize: 10.5, color: '#64748B', fontWeight: 600, px: 1 }}>{date}</Typography>
                     <Box sx={{ flex: 1, height: '1px', bgcolor: '#FFFFFF' }} />
                   </Box>
 
@@ -717,7 +717,7 @@ export default function SellerChatPage() {
                         <Box sx={{ maxWidth: { xs: '80%', sm: '65%' }, display: 'flex', flexDirection: 'column', alignItems: mine ? 'flex-end' : 'flex-start' }}>
                           {!mine && showAvatar && (
                             <Typography sx={{ fontSize: 10, mb: 0.4, ml: 0.5, fontWeight: 700,
-                              color: bot ? alpha(PURPLE, 0.7) : admin ? alpha(ORANGE, 0.7) : '#94A3B8' }}>
+                              color: bot ? alpha(PURPLE, 0.7) : admin ? alpha(ORANGE, 0.7) : '#64748B' }}>
                               {bot ? '🤖 DealPam IA' : admin ? 'Support DealPam' : `${msg.sender?.firstName ?? ''} ${msg.sender?.lastName ?? ''}`}
                             </Typography>
                           )}
@@ -738,12 +738,12 @@ export default function SellerChatPage() {
                           </Box>
 
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4, mt: 0.3, px: 0.5 }}>
-                            <Typography sx={{ fontSize: 9.5, color: '#94A3B8' }}>{fmtTime(msg.createdAt)}</Typography>
+                            <Typography sx={{ fontSize: 9.5, color: '#64748B' }}>{fmtTime(msg.createdAt)}</Typography>
                             {mine && isLast && (
                               <Tooltip title={msg.isRead ? 'Lu' : 'Envoyé'} placement="left">
                                 {msg.isRead
                                   ? <DoneAll sx={{ fontSize: 13, color: '#60A5FA' }} />
-                                  : <Done sx={{ fontSize: 13, color: '#94A3B8' }} />
+                                  : <Done sx={{ fontSize: 13, color: '#64748B' }} />
                                 }
                               </Tooltip>
                             )}
@@ -791,7 +791,7 @@ export default function SellerChatPage() {
             {uploadPct !== null && (
               <Box sx={{ px: 2.5, py: 0.8, bgcolor: 'rgba(15,23,42,0.09)', borderTop: '1px solid rgba(15,23,42,0.09)' }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.4 }}>
-                  <Typography sx={{ fontSize: 11, color: '#94A3B8' }}>Envoi en cours…</Typography>
+                  <Typography sx={{ fontSize: 11, color: '#64748B' }}>Envoi en cours…</Typography>
                   <Typography sx={{ fontSize: 11, color: ORANGE, fontWeight: 700 }}>{uploadPct}%</Typography>
                 </Box>
                 <Box sx={{ height: 3, borderRadius: 2, bgcolor: 'rgba(15,23,42,0.09)', overflow: 'hidden' }}>
@@ -804,7 +804,7 @@ export default function SellerChatPage() {
             <Box sx={{ px: 2, py: 1.5, bgcolor: PANEL_BG, borderTop: `1px solid ${BORD}`, display: 'flex', gap: 1.2, alignItems: 'flex-end', flexShrink: 0 }}>
               <Tooltip title="Joindre image ou fichier" placement="top">
                 <IconButton size="small" onClick={() => fileRef.current?.click()} sx={{
-                  color: '#94A3B8', borderRadius: '10px', width: 38, height: 38,
+                  color: '#64748B', borderRadius: '10px', width: 38, height: 38,
                   border: `1px solid ${BORD}`, bgcolor: 'rgba(15,23,42,0.09)', flexShrink: 0,
                   '&:hover': { color: ORANGE, borderColor: 'rgba(255,107,0,0.35)', bgcolor: 'rgba(255,107,0,0.08)' },
                   transition: 'all 0.18s',
@@ -829,14 +829,14 @@ export default function SellerChatPage() {
                     if (active && socketRef.current) socketRef.current.emit('chat:typing', { conversationId: active });
                   }}
                   onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMsg(); } }}
-                  sx={{ flex: 1, '& textarea, & input': { color: '#0F172A', fontSize: 13.5, lineHeight: 1.5, '&::placeholder': { color: '#94A3B8', opacity: 1 } } }}
+                  sx={{ flex: 1, '& textarea, & input': { color: '#0F172A', fontSize: 13.5, lineHeight: 1.5, '&::placeholder': { color: '#64748B', opacity: 1 } } }}
                 />
               </Box>
 
               <IconButton onClick={sendMsg} disabled={!text.trim() || sending} sx={{
                 width: 40, height: 40, borderRadius: '10px', flexShrink: 0,
                 background: text.trim() ? `linear-gradient(135deg,${ORANGE},#D95500)` : '#FFFFFF',
-                color: text.trim() ? 'white' : '#94A3B8',
+                color: text.trim() ? 'white' : '#64748B',
                 boxShadow: text.trim() ? '0 4px 14px rgba(255,107,0,0.35)' : 'none',
                 transition: 'all 0.18s',
                 '&:hover': { transform: text.trim() ? 'scale(1.06)' : 'none', boxShadow: text.trim() ? '0 6px 18px rgba(255,107,0,0.45)' : 'none' },

@@ -619,7 +619,7 @@ export default function Header() {
                   <Box component="form" onSubmit={doSearch} sx={{
                     display: 'flex', alignItems: 'center', height: 40, borderRadius: '12px',
                     bgcolor: 'rgba(255,255,255,0.1)', border: '1.5px solid rgba(255,255,255,0.18)',
-                    '&:focus-within': { bgcolor: 'white', border: `1.5px solid ${ORANGE}`, '& input': { color: '#0F172A' }, '& input::placeholder': { color: '#94A3B8' } },
+                    '&:focus-within': { bgcolor: 'white', border: `1.5px solid ${ORANGE}`, '& input': { color: '#0F172A' }, '& input::placeholder': { color: '#64748B' } },
                   }}>
                     <InputBase placeholder="Rechercher..." value={search} onChange={e => onType(e.target.value)}
                       onFocus={() => search.length >= 2 && setShowSuggs(true)} autoFocus
@@ -640,7 +640,7 @@ export default function Header() {
                             </Box>
                             <Box sx={{ flex: 1, minWidth: 0 }}>
                               <Typography fontSize={12.5} fontWeight={600} color="#0F172A" noWrap>{p.name}</Typography>
-                              <Typography fontSize={11} color="#94A3B8" noWrap>{p.store?.name}</Typography>
+                              <Typography fontSize={11} color="#64748B" noWrap>{p.store?.name}</Typography>
                             </Box>
                             <Typography fontSize={12} fontWeight={800} color={ORANGE} noWrap>{price.toLocaleString()} G</Typography>
                           </Box>
@@ -717,7 +717,7 @@ export default function Header() {
                 display: 'flex', alignItems: 'center', height: 42, borderRadius: '12px',
                 bgcolor: 'rgba(255,255,255,0.08)', border: '1.5px solid rgba(255,255,255,0.12)',
                 transition: 'all 0.2s',
-                '&:focus-within': { bgcolor: 'white', border: `1.5px solid ${ORANGE}`, boxShadow: `0 0 0 3px ${alpha(ORANGE, 0.15)}`, '& input': { color: '#0F172A' }, '& input::placeholder': { color: '#94A3B8' } },
+                '&:focus-within': { bgcolor: 'white', border: `1.5px solid ${ORANGE}`, boxShadow: `0 0 0 3px ${alpha(ORANGE, 0.15)}`, '& input': { color: '#0F172A' }, '& input::placeholder': { color: '#64748B' } },
               }}>
                 <InputBase placeholder="Rechercher produits, boutiques..." value={search}
                   onChange={e => onType(e.target.value)}
@@ -739,7 +739,7 @@ export default function Header() {
                         </Box>
                         <Box sx={{ flex: 1, minWidth: 0 }}>
                           <Typography fontSize={13} fontWeight={600} color="#0F172A" noWrap>{p.name}</Typography>
-                          <Typography fontSize={11} color="#94A3B8" noWrap>{p.store?.name}</Typography>
+                          <Typography fontSize={11} color="#64748B" noWrap>{p.store?.name}</Typography>
                         </Box>
                         <Typography fontSize={12.5} fontWeight={800} color={ORANGE} noWrap>{price.toLocaleString()} G</Typography>
                       </Box>
@@ -841,7 +841,7 @@ export default function Header() {
             <Box component="form" onSubmit={doSearch} sx={{
               display: 'flex', alignItems: 'center', height: 46, borderRadius: '12px',
               bgcolor: 'rgba(255,255,255,0.07)', border: '1.5px solid rgba(255,255,255,0.1)', transition: 'all 0.2s',
-              '&:focus-within': { bgcolor: 'white', border: `1.5px solid ${ORANGE}`, boxShadow: `0 0 0 4px ${alpha(ORANGE, 0.15)}`, '& input': { color: '#0F172A' }, '& input::placeholder': { color: '#94A3B8' } },
+              '&:focus-within': { bgcolor: 'white', border: `1.5px solid ${ORANGE}`, boxShadow: `0 0 0 4px ${alpha(ORANGE, 0.15)}`, '& input': { color: '#0F172A' }, '& input::placeholder': { color: '#64748B' } },
             }}>
               {activeCategory && !search && (
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, ml: 1.5, pl: 1, pr: 0.5, py: 0.3, bgcolor: alpha(ORANGE, 0.18), borderRadius: '20px', border: `1px solid ${alpha(ORANGE, 0.35)}`, flexShrink: 0 }}>
@@ -874,7 +874,7 @@ export default function Header() {
                       </Box>
                       <Box sx={{ flex: 1, minWidth: 0 }}>
                         <Typography fontSize={13.5} fontWeight={600} color="#0F172A" noWrap>{p.name}</Typography>
-                        <Typography fontSize={11.5} color="#94A3B8" noWrap>{p.store?.name}</Typography>
+                        <Typography fontSize={11.5} color="#64748B" noWrap>{p.store?.name}</Typography>
                       </Box>
                       <Typography fontSize={13.5} fontWeight={800} color={ORANGE}>{price.toLocaleString()} HTG</Typography>
                     </Box>

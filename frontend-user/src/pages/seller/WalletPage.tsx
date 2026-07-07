@@ -18,8 +18,8 @@ const BG   = '#F7F8FA';
 const CARD = '#FFFFFF';
 const BORD = 'rgba(15,23,42,0.06)';
 const TXT  = '#0F172A';
-const SUB  = '#94A3B8';
-const SUB2 = '#94A3B8';
+const SUB  = '#64748B';
+const SUB2 = '#64748B';
 const GRN  = '#10B981';
 const RED  = '#EF4444';
 const YLW  = '#F59E0B';
@@ -410,7 +410,7 @@ export default function WalletPage() {
               </Button>
               <Button onClick={handleRecharge} disabled={loading || !amount || parseFloat(amount) < MIN_RECHARGE}
                 endIcon={loading ? <CircularProgress size={15} color="inherit" /> : <OpenInNew sx={{ fontSize: 15 }} />}
-                sx={{ flex: 2, py: 1.2, borderRadius: '10px', fontWeight: 700, fontSize: 14, bgcolor: OR, color: '#fff', textTransform: 'none', '&:hover': { bgcolor: '#E05A00' }, '&.Mui-disabled': { bgcolor: 'rgba(255,107,0,0.25)', color: '#94A3B8' } }}>
+                sx={{ flex: 2, py: 1.2, borderRadius: '10px', fontWeight: 700, fontSize: 14, bgcolor: OR, color: '#fff', textTransform: 'none', '&:hover': { bgcolor: '#E05A00' }, '&.Mui-disabled': { bgcolor: 'rgba(255,107,0,0.25)', color: '#64748B' } }}>
                 {loading ? 'Connexion MonCash…' : 'Payer avec MonCash'}
               </Button>
             </Box>

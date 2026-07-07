@@ -38,7 +38,7 @@ export default function SupportPage() {
                   <Icon sx={{ fontSize: 24, color }} />
                 </Box>
                 <Typography fontWeight={700} fontSize={13} color="#0F172A" lineHeight={1.3} mb={0.5}>{title}</Typography>
-                <Typography fontSize={11.5} color="#94A3B8" lineHeight={1.4}>{desc}</Typography>
+                <Typography fontSize={11.5} color="#64748B" lineHeight={1.4}>{desc}</Typography>
               </Box>
             </Grid>
           ))}
@@ -66,9 +66,9 @@ export default function SupportPage() {
                 <Icon sx={{ fontSize: 22, color }} />
               </Box>
               <Box sx={{ flex: 1, minWidth: 0 }}>
-                <Typography fontSize={11.5} color="#94A3B8" mb={0.2}>{title}</Typography>
+                <Typography fontSize={11.5} color="#64748B" mb={0.2}>{title}</Typography>
                 <Typography fontSize={14} fontWeight={700} color="#0F172A">{value}</Typography>
-                <Typography fontSize={12} color="#94A3B8">{sub}</Typography>
+                <Typography fontSize={12} color="#64748B">{sub}</Typography>
               </Box>
             </Box>
           ))}

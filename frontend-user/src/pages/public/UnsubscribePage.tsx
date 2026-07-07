@@ -57,7 +57,7 @@ export default function UnsubscribePage() {
         </Box>
         <Box sx={{ textAlign: 'center', mt: 3 }}>
           <Typography fontWeight={900} fontSize={20} color={BG}>Deal<span style={{ color: ORANGE }}>Pam</span></Typography>
-          <Typography fontSize={12} color="#94A3B8" mt={0.5}>La marketplace haïtienne</Typography>
+          <Typography fontSize={12} color="#64748B" mt={0.5}>La marketplace haïtienne</Typography>
         </Box>
       </Container>
     </Box>

@@ -93,7 +93,7 @@ export default function WishlistPage() {
               </Box>
             )}
           </Box>
-          <Typography sx={{ fontSize: 13.5, color: '#94A3B8' }}>
+          <Typography sx={{ fontSize: 13.5, color: '#64748B' }}>
             Retrouvez tous vos articles sauvegardés
           </Typography>
         </Box>
@@ -101,7 +101,7 @@ export default function WishlistPage() {
         {/* ── Filters ── */}
         {categories.length > 0 && (
           <Box sx={{ display: 'flex', gap: 1, mb: 3, flexWrap: 'wrap', alignItems: 'center' }}>
-            <FilterListOutlined sx={{ fontSize: 17, color: '#94A3B8', mr: 0.5 }} />
+            <FilterListOutlined sx={{ fontSize: 17, color: '#64748B', mr: 0.5 }} />
             {[['all', `Tout (${items.length})`], ...categories.map(([slug, name]) => [slug, `${name} (${items.filter(i => i.product?.category?.slug === slug).length})`])].map(([key, label]) => (
               <Box key={key} onClick={() => setCatFilter(key)} sx={{
                 px: 1.6, py: 0.65, borderRadius: '20px', cursor: 'pointer',
@@ -143,7 +143,7 @@ export default function WishlistPage() {
             <Typography sx={{ fontWeight: 800, fontSize: 18, color: '#0F172A', mb: 1 }}>
               {catFilter === 'all' ? 'Aucun favori pour l\'instant' : 'Aucun article dans cette catégorie'}
             </Typography>
-            <Typography sx={{ fontSize: 13.5, color: '#94A3B8', mb: 3.5 }}>
+            <Typography sx={{ fontSize: 13.5, color: '#64748B', mb: 3.5 }}>
               Appuyez sur le cœur d'un produit pour le sauvegarder ici
             </Typography>
             <Box component={Link} to="/products" sx={{
@@ -229,8 +229,8 @@ export default function WishlistPage() {
                     {/* Store */}
                     {p.store?.name && (
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.6 }}>
-                        <StorefrontOutlined sx={{ fontSize: 11, color: '#94A3B8' }} />
-                        <Typography noWrap sx={{ fontSize: 11, color: '#94A3B8', fontWeight: 600 }}>{p.store.name}</Typography>
+                        <StorefrontOutlined sx={{ fontSize: 11, color: '#64748B' }} />
+                        <Typography noWrap sx={{ fontSize: 11, color: '#64748B', fontWeight: 600 }}>{p.store.name}</Typography>
                       </Box>
                     )}
 
@@ -249,7 +249,7 @@ export default function WishlistPage() {
                         {fmt(displayPrice)}
                       </Typography>
                       {hasDiscount && (
-                        <Typography sx={{ fontSize: 11, color: '#94A3B8', textDecoration: 'line-through' }}>
+                        <Typography sx={{ fontSize: 11, color: '#64748B', textDecoration: 'line-through' }}>
                           {fmt(p.price)}
                         </Typography>
                       )}
