@@ -502,9 +502,11 @@ export default function ProductDetailPage() {
 
             {/* tags */}
             <Box sx={{ display:'flex', gap:1, mb:2.5, flexWrap:'wrap' }}>
-              <Box sx={{ px:1.4, py:0.4, borderRadius:'20px', bgcolor:cond.bg, border:`1px solid ${cond.color}40` }}>
-                <Typography fontSize={11} fontWeight={700} color={cond.color} letterSpacing="0.5px" textTransform="uppercase">{cond.label}</Typography>
-              </Box>
+              {isPhysical&&(
+                <Box sx={{ px:1.4, py:0.4, borderRadius:'20px', bgcolor:cond.bg, border:`1px solid ${cond.color}40` }}>
+                  <Typography fontSize={11} fontWeight={700} color={cond.color} letterSpacing="0.5px" textTransform="uppercase">{cond.label}</Typography>
+                </Box>
+              )}
               {product.brand&&(
                 <Box sx={{ px:1.4, py:0.4, borderRadius:'20px', bgcolor:'rgba(15,23,42,0.06)', border:`1px solid ${BORD}` }}>
                   <Typography fontSize={11} fontWeight={700} color={SUB2} letterSpacing="0.5px" textTransform="uppercase">{product.brand.name}</Typography>
@@ -854,9 +856,11 @@ export default function ProductDetailPage() {
               <Typography fontSize={12} fontWeight={700} color={SUB} textTransform="uppercase" letterSpacing="0.8px" mb={1.8}>Informations</Typography>
               <Box sx={{ borderRadius:'16px', border:`1px solid ${BORD}`, overflow:'hidden', boxShadow:'0 2px 10px rgba(15,23,42,0.03)' }}>
                 {[
-                  { l:'État',      v:cond.label },
-                  { l:'Stock',     v:stock>0?`${stock} disponibles`:'Rupture' },
-                  { l:'Livraison', v:product.hasDelivery?(product.deliveryPriceHTG?fmt(Number(product.deliveryPriceHTG)):'Gratuite'):'Retrait seulement' },
+                  ...(isPhysical ? [
+                    { l:'État',      v:cond.label },
+                    { l:'Stock',     v:stock>0?`${stock} disponibles`:'Rupture' },
+                    { l:'Livraison', v:product.hasDelivery?(product.deliveryPriceHTG?fmt(Number(product.deliveryPriceHTG)):'Gratuite'):'Retrait seulement' },
+                  ] : []),
                   { l:'Lieu',      v:[product.city,product.department].filter(Boolean).join(', ') },
                   { l:'Réf.',      v:product.sku },
                   ...Object.entries(attrs).filter(([,v])=>v).map(([k,v])=>({ l:ATTR[k]??k, v:String(v) })),
