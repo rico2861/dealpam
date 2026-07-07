@@ -490,6 +490,7 @@ model Order {
   paymentVerifiedBy    String?  @map("payment_verified_by")
   paymentVerifiedAt    DateTime? @map("payment_verified_at")
   items          OrderItem[]
+  reviews        Review[]
   createdAt      DateTime    @default(now()) @map("created_at")
   updatedAt      DateTime    @updatedAt @map("updated_at")
 
@@ -556,11 +557,15 @@ model Review {
   product    Product? @relation(fields: [productId], references: [id])
   storeId    String?  @map("store_id")
   store      Store?   @relation(fields: [storeId], references: [id])
+  orderId    String?  @map("order_id")
+  order      Order?   @relation(fields: [orderId], references: [id])
   rating     Int
   comment    String?
+  images     String?
   isApproved Boolean  @default(false) @map("is_approved")
   createdAt  DateTime @default(now()) @map("created_at")
 
+  @@unique([userId, storeId])
   @@map("reviews")
 }
 

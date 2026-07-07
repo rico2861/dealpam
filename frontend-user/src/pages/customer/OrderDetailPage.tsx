@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   Box, Typography, Button, Avatar, IconButton, Divider,
@@ -11,10 +11,12 @@ import {
   ShoppingBag, ContentCopy, Home, Storefront,
   Smartphone, InfoOutlined, ReceiptLong,
   EmailOutlined, LocationOn, ChatBubbleOutline,
+  AddPhotoAlternate, Close,
 } from '@mui/icons-material';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import api from '../../api/axios';
+import { compressImages } from '../../utils/compressImage';
 
 const OR   = '#FF6B00';
 const ORD  = '#E05A00';
@@ -52,12 +54,41 @@ function ReviewForm({ storeId, orderId, onDone }: { storeId: string; orderId: st
   const [rating,  setRating]  = useState<number | null>(5);
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [images, setImages]   = useState<File[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);
+  const [uploadingImg, setUploadingImg] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const addImages = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const picked = Array.from(e.target.files ?? []).slice(0, 6 - images.length);
+    e.target.value = '';
+    if (!picked.length) return;
+    setUploadingImg(true);
+    try {
+      const compressed = await compressImages(picked);
+      setImages(p => [...p, ...compressed]);
+      setPreviews(p => [...p, ...compressed.map(f => URL.createObjectURL(f))]);
+    } finally { setUploadingImg(false); }
+  };
+  const removeImage = (i: number) => {
+    URL.revokeObjectURL(previews[i]);
+    setImages(p => p.filter((_, j) => j !== i));
+    setPreviews(p => p.filter((_, j) => j !== i));
+  };
 
   const handleSubmit = async () => {
     if (!rating) return;
     setSubmitting(true);
     try {
-      await api.post('/reviews', { storeId, orderId, rating, comment });
+      let imageUrls: string[] = [];
+      if (images.length) {
+        const fd = new FormData();
+        images.forEach(f => fd.append('files', f));
+        fd.append('folder', 'reviews');
+        const { data } = await api.post('/upload/images', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+        imageUrls = (data as any[]).map(d => d.urlMedium || d.urlFull);
+      }
+      await api.post('/reviews', { storeId, orderId, rating, comment, images: imageUrls.length ? imageUrls : undefined });
       enqueueSnackbar('Avis publié — merci !', { variant: 'success' });
       onDone();
     } catch (e: any) {
@@ -89,6 +120,29 @@ function ReviewForm({ storeId, orderId, onDone }: { storeId: string; orderId: st
           '& .MuiInputLabel-root': { color: '#64748B' },
           '& .MuiInputBase-input': { color: '#0F172A', '&::placeholder': { color: '#64748B' } },
         }} />
+
+      <input type="file" ref={fileRef} accept="image/*" multiple hidden onChange={addImages} />
+      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2 }}>
+        {previews.map((src, i) => (
+          <Box key={i} sx={{ position: 'relative', width: 60, height: 60 }}>
+            <Box component="img" src={src} sx={{ width: 60, height: 60, borderRadius: '10px', objectFit: 'cover', border: `1px solid ${BORD}` }} />
+            <Box onClick={() => removeImage(i)}
+              sx={{ position: 'absolute', top: -6, right: -6, width: 18, height: 18, borderRadius: '50%', bgcolor: RED,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+              <Close sx={{ fontSize: 11, color: '#fff' }} />
+            </Box>
+          </Box>
+        ))}
+        {images.length < 6 && (
+          <Box onClick={() => !uploadingImg && fileRef.current?.click()}
+            sx={{ width: 60, height: 60, borderRadius: '10px', border: `1.5px dashed ${BORD}`, display: 'flex',
+              flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: uploadingImg ? 'wait' : 'pointer',
+              '&:hover': uploadingImg ? {} : { borderColor: GOLD } }}>
+            {uploadingImg ? <CircularProgress size={16} sx={{ color: GOLD }} /> : <AddPhotoAlternate sx={{ fontSize: 18, color: '#64748B' }} />}
+          </Box>
+        )}
+      </Box>
+
       <Box sx={{ display: 'flex', gap: 1 }}>
         <Button fullWidth variant="contained" disabled={!rating || submitting} onClick={handleSubmit}
           startIcon={submitting ? <CircularProgress size={14} color="inherit" /> : <Star sx={{ fontSize: 15 }} />}

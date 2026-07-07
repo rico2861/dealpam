@@ -909,6 +909,19 @@ export default function ProductDetailPage() {
                       <Typography fontSize={12} color={SUB}>{new Date(r.createdAt).toLocaleDateString('fr-FR')}</Typography>
                     </Box>
                     {r.comment&&<Typography fontSize={14} color={SUB2} lineHeight={1.8} pl={7}>{r.comment}</Typography>}
+                    {(()=>{
+                      let imgs:string[]=[];
+                      try { imgs = r.images ? JSON.parse(r.images) : []; } catch {}
+                      return imgs.length>0 ? (
+                        <Box sx={{ display:'flex', gap:1, mt:1.2, pl:7, flexWrap:'wrap' }}>
+                          {imgs.map((src,i)=>(
+                            <Box key={i} component="a" href={src} target="_blank" rel="noopener noreferrer">
+                              <Box component="img" src={src} sx={{ width:64, height:64, borderRadius:'8px', objectFit:'cover', border:`1px solid ${BORD}` }}/>
+                            </Box>
+                          ))}
+                        </Box>
+                      ) : null;
+                    })()}
                   </Box>
                 ))}
               </Box>

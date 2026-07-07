@@ -597,6 +597,19 @@ export default function StoreDetailPage() {
                           {r.comment && (
                             <Typography fontSize={13.5} color="#374151" lineHeight={1.7}>{r.comment}</Typography>
                           )}
+                          {(() => {
+                            let imgs: string[] = [];
+                            try { imgs = r.images ? JSON.parse(r.images) : []; } catch {}
+                            return imgs.length > 0 ? (
+                              <Box sx={{ display: 'flex', gap: 1, mt: 1.2, flexWrap: 'wrap' }}>
+                                {imgs.map((src, i) => (
+                                  <Box key={i} component="a" href={src} target="_blank" rel="noopener noreferrer">
+                                    <Box component="img" src={src} sx={{ width: 64, height: 64, borderRadius: '8px', objectFit: 'cover', border: '1px solid #E2E8F0' }} />
+                                  </Box>
+                                ))}
+                              </Box>
+                            ) : null;
+                          })()}
                         </Box>
                       ))}
                     </>
