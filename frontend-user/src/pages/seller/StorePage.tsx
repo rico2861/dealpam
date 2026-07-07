@@ -1,18 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Container, Typography, Card, CardContent, TextField, Button, Grid, Box,
   Alert, CircularProgress, Divider, Chip, IconButton, Switch, FormControlLabel,
-  alpha, Tabs, Tab, Select, MenuItem, InputLabel, FormControl, Tooltip,
+  alpha, Tabs, Tab, Select, MenuItem, InputLabel, FormControl, Tooltip, Avatar,
 } from '@mui/material';
 import {
   Save, Store, Add, Delete, LocationOn, Payments, LocalShipping,
-  ContentCopy, CheckCircle, Info, Edit, Phone,
+  ContentCopy, CheckCircle, Info, Edit, Phone, PhotoCamera,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import api from '../../api/axios';
 
-const ORANGE = '#FF9900';
+const ORANGE = '#FF6B00';
 const DEPARTMENTS = ['Ouest', 'Nord', 'Nord-Est', 'Nord-Ouest', 'Artibonite', 'Centre', 'Sud', 'Sud-Est', "Grand'Anse", 'Nippes'];
 
 const PAYMENT_METHODS = [
@@ -83,8 +83,8 @@ function DeliveryZonesTab({ storeId, initialZones }: { storeId: string; initialZ
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Box>
-          <Typography fontWeight={700} fontSize={15} color="#0F1111">Zones de livraison</Typography>
-          <Typography fontSize={12.5} color="#666">Definissez vos tarifs par zone geographique</Typography>
+          <Typography fontWeight={700} fontSize={15} color="#0F172A">Zones de livraison</Typography>
+          <Typography fontSize={12.5} color="#64748B">Definissez vos tarifs par zone geographique</Typography>
         </Box>
         <Button startIcon={<Add />} onClick={addZone} variant="outlined" size="small"
           sx={{ borderColor: ORANGE, color: ORANGE, borderRadius: 1.5, '&:hover': { borderColor: ORANGE, bgcolor: alpha(ORANGE, 0.05) } }}>
@@ -93,8 +93,8 @@ function DeliveryZonesTab({ storeId, initialZones }: { storeId: string; initialZ
       </Box>
 
       {zones.length === 0 && (
-        <Box sx={{ textAlign: 'center', py: 5, bgcolor: '#F8F8F8', borderRadius: 2, border: '2px dashed #DDD' }}>
-          <LocalShipping sx={{ fontSize: 40, color: '#CCC', mb: 1 }} />
+        <Box sx={{ textAlign: 'center', py: 5, bgcolor: 'rgba(15,23,42,0.03)', borderRadius: 2, border: '2px dashed rgba(15,23,42,0.15)' }}>
+          <LocalShipping sx={{ fontSize: 40, color: 'rgba(15,23,42,0.2)', mb: 1 }} />
           <Typography color="#64748B" fontSize={14}>Aucune zone de livraison configuree</Typography>
           <Button startIcon={<Add />} onClick={addZone} sx={{ mt: 1.5, color: ORANGE }} size="small">
             Ajouter votre premiere zone
@@ -104,10 +104,10 @@ function DeliveryZonesTab({ storeId, initialZones }: { storeId: string; initialZ
 
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
         {zones.map((zone, i) => (
-          <Card key={zone.id} variant="outlined" sx={{ borderRadius: 2, borderColor: '#E0E0E0' }}>
+          <Card key={zone.id} variant="outlined" sx={{ borderRadius: 2, borderColor: 'rgba(15,23,42,0.09)' }}>
             <CardContent sx={{ p: 2.5 }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                <Typography fontWeight={700} fontSize={13} color="#333">Zone {i + 1}</Typography>
+                <Typography fontWeight={700} fontSize={13} color="#0F172A">Zone {i + 1}</Typography>
                 <IconButton size="small" onClick={() => removeZone(zone.id)} sx={{ color: '#EF4444' }}>
                   <Delete fontSize="small" />
                 </IconButton>
@@ -133,7 +133,7 @@ function DeliveryZonesTab({ storeId, initialZones }: { storeId: string; initialZ
                     InputProps={{ inputProps: { min: 1 } }} />
                 </Grid>
                 <Grid item xs={12}>
-                  <Typography fontSize={12} fontWeight={600} color="#555" mb={1}>
+                  <Typography fontSize={12} fontWeight={600} color="#475569" mb={1}>
                     Departements couverts ({zone.departments.length}/10)
                   </Typography>
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.7 }}>
@@ -144,8 +144,8 @@ function DeliveryZonesTab({ storeId, initialZones }: { storeId: string; initialZ
                           onClick={() => toggleDept(zone.id, dept)}
                           sx={{
                             fontSize: 11.5,
-                            bgcolor: active ? alpha(ORANGE, 0.12) : '#F5F5F5',
-                            color: active ? ORANGE : '#555',
+                            bgcolor: active ? alpha(ORANGE, 0.12) : 'rgba(15,23,42,0.05)',
+                            color: active ? ORANGE : '#475569',
                             border: `1px solid ${active ? ORANGE : 'transparent'}`,
                             fontWeight: active ? 700 : 400,
                             '&:hover': { bgcolor: alpha(ORANGE, 0.1) },
@@ -193,8 +193,8 @@ function PickupPointsTab({ storeId, initialPoints }: { storeId: string; initialP
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Box>
-          <Typography fontWeight={700} fontSize={15} color="#0F1111">Points de retrait</Typography>
-          <Typography fontSize={12.5} color="#666">Permettez aux clients de venir retirer leurs commandes</Typography>
+          <Typography fontWeight={700} fontSize={15} color="#0F172A">Points de retrait</Typography>
+          <Typography fontSize={12.5} color="#64748B">Permettez aux clients de venir retirer leurs commandes</Typography>
         </Box>
         <Button startIcon={<Add />} onClick={addPoint} variant="outlined" size="small"
           sx={{ borderColor: ORANGE, color: ORANGE, borderRadius: 1.5, '&:hover': { bgcolor: alpha(ORANGE, 0.05) } }}>
@@ -203,8 +203,8 @@ function PickupPointsTab({ storeId, initialPoints }: { storeId: string; initialP
       </Box>
 
       {points.length === 0 && (
-        <Box sx={{ textAlign: 'center', py: 5, bgcolor: '#F8F8F8', borderRadius: 2, border: '2px dashed #DDD' }}>
-          <LocationOn sx={{ fontSize: 40, color: '#CCC', mb: 1 }} />
+        <Box sx={{ textAlign: 'center', py: 5, bgcolor: 'rgba(15,23,42,0.03)', borderRadius: 2, border: '2px dashed rgba(15,23,42,0.15)' }}>
+          <LocationOn sx={{ fontSize: 40, color: 'rgba(15,23,42,0.2)', mb: 1 }} />
           <Typography color="#64748B" fontSize={14}>Aucun point de retrait configure</Typography>
           <Button startIcon={<Add />} onClick={addPoint} sx={{ mt: 1.5, color: ORANGE }} size="small">
             Ajouter un point de retrait
@@ -214,7 +214,7 @@ function PickupPointsTab({ storeId, initialPoints }: { storeId: string; initialP
 
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
         {points.map((pt, i) => (
-          <Card key={pt.id} variant="outlined" sx={{ borderRadius: 2, borderColor: '#E0E0E0' }}>
+          <Card key={pt.id} variant="outlined" sx={{ borderRadius: 2, borderColor: 'rgba(15,23,42,0.09)' }}>
             <CardContent sx={{ p: 2.5 }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -222,7 +222,7 @@ function PickupPointsTab({ storeId, initialPoints }: { storeId: string; initialP
                     display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Typography fontSize={13} fontWeight={800} color={ORANGE}>{i + 1}</Typography>
                   </Box>
-                  <Typography fontWeight={700} fontSize={13} color="#333">
+                  <Typography fontWeight={700} fontSize={13} color="#0F172A">
                     {pt.name || 'Point de retrait ' + (i + 1)}
                   </Typography>
                 </Box>
@@ -310,10 +310,10 @@ function PaymentMethodsTab({ storeId, store }: { storeId: string; store: any }) 
 
   return (
     <Box>
-      <Typography fontWeight={700} fontSize={15} color="#0F1111" mb={0.5}>
+      <Typography fontWeight={700} fontSize={15} color="#0F172A" mb={0.5}>
         Methodes de paiement acceptees
       </Typography>
-      <Typography fontSize={12.5} color="#666" mb={2.5}>
+      <Typography fontSize={12.5} color="#64748B" mb={2.5}>
         Selectionnez les methodes que vous acceptez. Elles seront affichees aux clients lors du checkout.
       </Typography>
 
@@ -323,7 +323,7 @@ function PaymentMethodsTab({ storeId, store }: { storeId: string; store: any }) 
           return (
             <Box key={pm.key} onClick={() => toggle(pm.key)}
               sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2, borderRadius: 2, cursor: 'pointer',
-                border: `2px solid ${isActive ? pm.color : '#E0E0E0'}`,
+                border: `2px solid ${isActive ? pm.color : 'rgba(15,23,42,0.09)'}`,
                 bgcolor: isActive ? alpha(pm.color, 0.04) : 'white',
                 transition: 'all 0.2s',
                 '&:hover': { borderColor: pm.color, bgcolor: alpha(pm.color, 0.04) } }}>
@@ -332,13 +332,13 @@ function PaymentMethodsTab({ storeId, store }: { storeId: string; store: any }) 
                 <Payments sx={{ fontSize: 20, color: pm.color }} />
               </Box>
               <Box sx={{ flex: 1 }}>
-                <Typography fontSize={14} fontWeight={700} color="#0F1111">{pm.label}</Typography>
-                <Typography fontSize={12} color="#666">{pm.desc}</Typography>
+                <Typography fontSize={14} fontWeight={700} color="#0F172A">{pm.label}</Typography>
+                <Typography fontSize={12} color="#64748B">{pm.desc}</Typography>
               </Box>
               <Box sx={{ flexShrink: 0 }}>
                 {isActive
                   ? <CheckCircle sx={{ color: pm.color, fontSize: 22 }} />
-                  : <Box sx={{ width: 22, height: 22, borderRadius: '50%', border: '2px solid #CCC' }} />
+                  : <Box sx={{ width: 22, height: 22, borderRadius: '50%', border: '2px solid rgba(15,23,42,0.2)' }} />
                 }
               </Box>
             </Box>
@@ -351,7 +351,7 @@ function PaymentMethodsTab({ storeId, store }: { storeId: string; store: any }) 
         <>
           <Divider sx={{ my: 2.5 }} />
           <Typography fontWeight={700} fontSize={14} mb={0.5}>Numéros de paiement mobile</Typography>
-          <Typography fontSize={12} color="#666" mb={2}>
+          <Typography fontSize={12} color="#64748B" mb={2}>
             Ces numeros sont affichees aux clients pour effectuer le paiement.
           </Typography>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
@@ -384,7 +384,7 @@ function PaymentMethodsTab({ storeId, store }: { storeId: string; store: any }) 
 
       <Divider sx={{ my: 2.5 }} />
       <Typography fontWeight={700} fontSize={14} mb={0.5}>Devise de la boutique</Typography>
-      <Typography fontSize={12} color="#666" mb={2}>
+      <Typography fontSize={12} color="#64748B" mb={2}>
         Choisissez la devise par défaut de vos prix et votre propre taux de change. Les clients pourront basculer l'affichage entre HTG et USD sur la page produit.
       </Typography>
       <Grid container spacing={1.5}>
@@ -436,6 +436,8 @@ export default function SellerStorePage() {
   const [form, setForm] = useState({
     name: '', description: '', city: '', address: '', phone: '', email: '', department: '',
   });
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
 
   const { data: sellerData, isLoading } = useQuery({
     queryKey: ['sellerMe'],
@@ -470,6 +472,23 @@ export default function SellerStorePage() {
 
   const f = (k: string) => (e: any) => setForm(prev => ({ ...prev, [k]: e.target.value }));
 
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingLogo(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('folder', 'stores');
+      const { data } = await api.post('/upload/image', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+      await api.patch('/stores/me', { logoUrl: data.urlMedium || data.urlFull });
+      qc.invalidateQueries({ queryKey: ['sellerMe'] });
+      enqueueSnackbar('Photo de profil mise à jour !', { variant: 'success' });
+    } catch {
+      enqueueSnackbar("Erreur lors de l'envoi de l'image", { variant: 'error' });
+    } finally { setUploadingLogo(false); e.target.value = ''; }
+  };
+
   const parseArr = (val: any): any[] => {
     if (!val) return [];
     if (Array.isArray(val)) return val;
@@ -487,16 +506,28 @@ export default function SellerStorePage() {
 
       {/* Header */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-        <Box sx={{ width: 48, height: 48, borderRadius: 2, bgcolor: alpha(ORANGE, 0.12),
-          display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Store sx={{ color: ORANGE, fontSize: 24 }} />
+        <input type="file" ref={logoInputRef} accept="image/*" style={{ display: 'none' }} onChange={handleLogoUpload} />
+        <Box onClick={() => logoInputRef.current?.click()}
+          sx={{ position: 'relative', width: 56, height: 56, borderRadius: '14px', flexShrink: 0, cursor: 'pointer',
+            '&:hover .logo-overlay': { opacity: 1 } }}>
+          {store?.logoUrl
+            ? <Avatar src={store.logoUrl} variant="rounded" sx={{ width: 56, height: 56, borderRadius: '14px' }} />
+            : <Box sx={{ width: 56, height: 56, borderRadius: '14px', bgcolor: alpha(ORANGE, 0.12),
+                display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Store sx={{ color: ORANGE, fontSize: 26 }} />
+              </Box>}
+          <Box className="logo-overlay" sx={{ position: 'absolute', inset: 0, borderRadius: '14px',
+            bgcolor: 'rgba(15,23,42,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            opacity: 0, transition: 'opacity 0.15s' }}>
+            {uploadingLogo ? <CircularProgress size={16} sx={{ color: '#fff' }} /> : <PhotoCamera sx={{ fontSize: 18, color: '#fff' }} />}
+          </Box>
         </Box>
-        <Box>
-          <Typography fontWeight={900} fontSize={22} color="#0F1111">
+        <Box sx={{ minWidth: 0 }}>
+          <Typography fontWeight={900} fontSize={22} color="#0F172A">
             {store?.name || 'Ma boutique'}
           </Typography>
-          <Typography fontSize={13} color="#666">
-            Gerez les informations, zones de livraison et paiements de votre boutique
+          <Typography fontSize={13} color="#64748B">
+            Gérez les informations, zones de livraison et paiements de votre boutique
           </Typography>
         </Box>
       </Box>
@@ -514,7 +545,7 @@ export default function SellerStorePage() {
       )}
 
       {/* Tabs */}
-      <Box sx={{ borderBottom: '1px solid #E0E0E0', mb: 0 }}>
+      <Box sx={{ borderBottom: '1px solid rgba(15,23,42,0.09)', mb: 0 }}>
         <Tabs value={tab} onChange={(_, v) => setTab(v)}
           sx={{ '& .MuiTab-root': { fontWeight: 600, fontSize: 13.5, textTransform: 'none', minHeight: 44 },
             '& .Mui-selected': { color: ORANGE },
@@ -539,7 +570,7 @@ export default function SellerStorePage() {
                   size="small" multiline rows={4} sx={{ mb: 2 }}
                   helperText="Decrivez votre boutique, vos produits, votre histoire..." />
                 <Divider sx={{ my: 2.5 }} />
-                <Typography fontWeight={700} fontSize={13.5} mb={2} color="#555">Coordonnees publiques</Typography>
+                <Typography fontWeight={700} fontSize={13.5} mb={2} color="#475569">Coordonnees publiques</Typography>
                 <Grid container spacing={2}>
                   <Grid item xs={12} sm={6}>
                     <FormControl fullWidth size="small">
@@ -573,12 +604,12 @@ export default function SellerStorePage() {
               {/* Store link */}
               <Card variant="outlined" sx={{ borderRadius: 2 }}>
                 <CardContent sx={{ p: 2 }}>
-                  <Typography fontWeight={700} fontSize={13} mb={1.5} color="#0F1111">
+                  <Typography fontWeight={700} fontSize={13} mb={1.5} color="#0F172A">
                     Lien de votre boutique
                   </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, bgcolor: '#F8F8F8',
-                    p: 1.2, borderRadius: 1.5, border: '1px solid #E0E0E0' }}>
-                    <Typography fontSize={12} color="#333" sx={{ flex: 1, wordBreak: 'break-all' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, bgcolor: 'rgba(15,23,42,0.03)',
+                    p: 1.2, borderRadius: 1.5, border: '1px solid rgba(15,23,42,0.09)' }}>
+                    <Typography fontSize={12} color="#0F172A" sx={{ flex: 1, wordBreak: 'break-all' }}>
                       dealpam.com/store/{store?.slug}
                     </Typography>
                     <Tooltip title="Copier le lien">
@@ -602,7 +633,7 @@ export default function SellerStorePage() {
                   <CardContent sx={{ p: 2 }}>
                     <Typography fontWeight={700} fontSize={13} mb={1}>Score de reputation</Typography>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                      <Box sx={{ flex: 1, height: 8, bgcolor: '#F0F0F0', borderRadius: 4, overflow: 'hidden' }}>
+                      <Box sx={{ flex: 1, height: 8, bgcolor: 'rgba(15,23,42,0.06)', borderRadius: 4, overflow: 'hidden' }}>
                         <Box sx={{
                           height: '100%', borderRadius: 4, transition: 'width 0.5s',
                           width: store.reputationScore + '%',
@@ -614,7 +645,7 @@ export default function SellerStorePage() {
                         {store.reputationScore}/100
                       </Typography>
                     </Box>
-                    <Typography fontSize={11.5} color="#666" mt={0.8}>
+                    <Typography fontSize={11.5} color="#64748B" mt={0.8}>
                       {store.reputationScore >= 70 ? 'Excellent ! Continuez ainsi.' :
                         store.reputationScore >= 40 ? 'Bon score. Ameliorez vos delais.' :
                           'Score faible. Vos produits sont moins visibles.'}
