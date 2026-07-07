@@ -34,7 +34,7 @@ const STATUS: Record<string, { label: string; color: string; icon: any }> = {
 
 function fmt(v: number) { return `${Number(v).toLocaleString('fr-HT')} HTG`; }
 
-export default function SellerProductsPage() {
+export default function SellerProductsPage({ mode = 'products' }: { mode?: 'products' | 'services' }) {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { enqueueSnackbar } = useSnackbar();
@@ -43,11 +43,14 @@ export default function SellerProductsPage() {
   const [del, setDel]         = useState<{ open: boolean; id: string; name: string }>({ open: false, id: '', name: '' });
   const [deleting, setDeleting] = useState(false);
 
-  const { data: products, isLoading } = useQuery({
+  const { data: allProducts, isLoading } = useQuery({
     queryKey: ['sellerProducts'],
     queryFn: () => api.get('/products/me?limit=200').then(r => r.data?.data || []),
     enabled: !!localStorage.getItem('accessToken'),
   });
+  const products = (allProducts ?? []).filter((p: any) =>
+    mode === 'services' ? p.productType && p.productType !== 'PHYSICAL' : !p.productType || p.productType === 'PHYSICAL'
+  );
 
   const handleDelete = async () => {
     setDeleting(true);
@@ -91,18 +94,18 @@ export default function SellerProductsPage() {
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3, flexWrap: 'wrap', gap: 2 }}>
         <Box>
           <Typography fontWeight={900} fontSize={{ xs: 20, md: 24 }} color={TXT} letterSpacing="-0.5px">
-            Mes produits
+            {mode === 'services' ? 'Mes services' : 'Mes produits'}
           </Typography>
           <Typography fontSize={13} color={SUB}>
-            {list.length} produit{list.length !== 1 ? 's' : ''} au total
+            {list.length} {mode === 'services' ? 'service' : 'produit'}{list.length !== 1 ? 's' : ''} au total
           </Typography>
         </Box>
         <Button
-          onClick={() => navigate('/seller/products/add')}
+          onClick={() => navigate(mode === 'services' ? '/seller/services/add' : '/seller/products/add')}
           startIcon={<Add sx={{ fontSize: 18 }} />}
           sx={{ bgcolor: OR, color: '#fff', borderRadius: '12px', fontWeight: 700, px: 2.5, py: 1.2,
             boxShadow: '0 4px 14px rgba(255,107,0,0.28)', '&:hover': { bgcolor: '#E05A00' } }}>
-          + Ajouter un produit
+          {mode === 'services' ? '+ Ajouter un service' : '+ Ajouter un produit'}
         </Button>
       </Box>
 
@@ -147,26 +150,26 @@ export default function SellerProductsPage() {
         <Box sx={{ textAlign: 'center', py: 12, borderRadius: '16px', bgcolor: CARD, border: `1px solid ${BORD}` }}>
           <Inventory sx={{ fontSize: 56, color: BORD, mb: 2 }}/>
           <Typography color={SUB} fontSize={15} fontWeight={600}>
-            {search || filter !== 'ALL' ? 'Aucun produit trouvé' : 'Aucun produit pour l\'instant'}
+            {search || filter !== 'ALL' ? `Aucun${mode==='services'?' service':' produit'} trouvé` : `Aucun${mode==='services'?' service':' produit'} pour l'instant`}
           </Typography>
           <Typography color={SUB} fontSize={13} mt={0.5} mb={3}>
-            {search ? `Aucun résultat pour "${search}"` : 'Ajoutez votre premier produit pour commencer à vendre'}
+            {search ? `Aucun résultat pour "${search}"` : `Ajoutez votre premier ${mode==='services'?'service':'produit'} pour commencer à vendre`}
           </Typography>
           {!search && filter === 'ALL' && (
-            <Button onClick={() => navigate('/seller/products/add')} startIcon={<Add/>}
+            <Button onClick={() => navigate(mode==='services'?'/seller/services/add':'/seller/products/add')} startIcon={<Add/>}
               sx={{ bgcolor: OR, color: '#fff', borderRadius: '10px', fontWeight: 700,
                 '&:hover': { bgcolor: '#E05A00' } }}>
-              Ajouter un produit
+              {mode==='services'?'Ajouter un service':'Ajouter un produit'}
             </Button>
           )}
         </Box>
       ) : (
         <Box sx={{ borderRadius: '16px', bgcolor: CARD, border: `1px solid ${BORD}`, overflow: 'hidden' }}>
           {/* Table header */}
-          <Box sx={{ display: 'grid', gridTemplateColumns: '48px 1fr 140px 80px 120px 100px 160px',
+          <Box sx={{ display: 'grid', gridTemplateColumns: mode==='services' ? '48px 1fr 140px 120px 100px 160px' : '48px 1fr 140px 80px 120px 100px 160px',
             gap: 1, px: 2, py: 1.5, borderBottom: `1px solid ${BORD}`,
             '@media (max-width:900px)': { display: 'none' } }}>
-            {['', 'Produit', 'Prix', 'Stock', 'Statut', 'Date', 'Actions'].map(h => (
+            {(mode==='services' ? ['', 'Service', 'Prix', 'Statut', 'Date', 'Actions'] : ['', 'Produit', 'Prix', 'Stock', 'Statut', 'Date', 'Actions']).map(h => (
               <Typography key={h} fontSize={11} fontWeight={700} color={SUB}
                 sx={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}>{h}</Typography>
             ))}
@@ -180,7 +183,7 @@ export default function SellerProductsPage() {
             return (
               <Box key={p.id}
                 sx={{ display: 'grid',
-                  gridTemplateColumns: { xs: '1fr', md: '48px 1fr 140px 80px 120px 100px 160px' },
+                  gridTemplateColumns: { xs: '1fr', md: mode==='services' ? '48px 1fr 140px 120px 100px 160px' : '48px 1fr 140px 80px 120px 100px 160px' },
                   gap: 1, px: 2, py: 1.8, alignItems: 'center',
                   borderBottom: i < filtered.length - 1 ? `1px solid ${BORD}` : 'none',
                   '&:hover': { bgcolor: 'rgba(15,23,42,0.04)' }, transition: 'all 0.12s' }}>
@@ -222,15 +225,17 @@ export default function SellerProductsPage() {
                   )}
                 </Box>
 
-                {/* Stock */}
-                <Box>
-                  <Typography fontSize={13} fontWeight={700}
-                    color={isOutStock ? RED : isLowStock ? YLW : TXT}>
-                    {p.stock}
-                  </Typography>
-                  {isLowStock && <Typography fontSize={10} color={YLW}>stock faible</Typography>}
-                  {isOutStock && <Typography fontSize={10} color={RED}>rupture</Typography>}
-                </Box>
+                {/* Stock — not applicable to services */}
+                {mode!=='services' && (
+                  <Box>
+                    <Typography fontSize={13} fontWeight={700}
+                      color={isOutStock ? RED : isLowStock ? YLW : TXT}>
+                      {p.stock}
+                    </Typography>
+                    {isLowStock && <Typography fontSize={10} color={YLW}>stock faible</Typography>}
+                    {isOutStock && <Typography fontSize={10} color={RED}>rupture</Typography>}
+                  </Box>
+                )}
 
                 {/* Status */}
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.7 }}>
@@ -245,13 +250,15 @@ export default function SellerProductsPage() {
 
                 {/* Actions */}
                 <Box sx={{ display: 'flex', gap: 1 }}>
-                  <Box onClick={() => navigate(`/seller/products/edit/${p.id}`)}
-                    sx={{ display: 'flex', alignItems: 'center', gap: 0.6, px: 1.2, py: 0.6, borderRadius: '8px',
-                      border: `1px solid ${BORD}`, cursor: 'pointer', transition: 'all 0.13s',
-                      '&:hover': { borderColor: 'rgba(255,107,0,0.4)', bgcolor: 'rgba(255,107,0,0.08)' } }}>
-                    <Edit sx={{ fontSize: 13, color: OR }}/>
-                    <Typography fontSize={12} fontWeight={600} color={OR}>Éditer</Typography>
-                  </Box>
+                  {mode!=='services' && (
+                    <Box onClick={() => navigate(`/seller/products/edit/${p.id}`)}
+                      sx={{ display: 'flex', alignItems: 'center', gap: 0.6, px: 1.2, py: 0.6, borderRadius: '8px',
+                        border: `1px solid ${BORD}`, cursor: 'pointer', transition: 'all 0.13s',
+                        '&:hover': { borderColor: 'rgba(255,107,0,0.4)', bgcolor: 'rgba(255,107,0,0.08)' } }}>
+                      <Edit sx={{ fontSize: 13, color: OR }}/>
+                      <Typography fontSize={12} fontWeight={600} color={OR}>Éditer</Typography>
+                    </Box>
+                  )}
                   <Box onClick={() => setDel({ open: true, id: p.id, name: p.name })}
                     sx={{ display: 'flex', alignItems: 'center', gap: 0.6, px: 1.2, py: 0.6, borderRadius: '8px',
                       border: `1px solid ${BORD}`, cursor: 'pointer', transition: 'all 0.13s',
