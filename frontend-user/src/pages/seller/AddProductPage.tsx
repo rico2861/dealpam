@@ -142,6 +142,41 @@ function DarkToggle({ checked, onChange, label, sub }: { checked: boolean; onCha
 
 // ── Attribute panels ───────────────────────────────────────────────────────
 
+const VEH_WEEKDAYS = [
+  { key: 'mon', label: 'Lun' }, { key: 'tue', label: 'Mar' }, { key: 'wed', label: 'Mer' },
+  { key: 'thu', label: 'Jeu' }, { key: 'fri', label: 'Ven' }, { key: 'sat', label: 'Sam' }, { key: 'sun', label: 'Dim' },
+];
+
+function VehicleAvailabilityEditor({ avail, onChange }: { avail: { days: string[]; start: string; end: string }; onChange: (v: any) => void }) {
+  const toggleDay = (day: string) => {
+    const days = avail.days.includes(day) ? avail.days.filter(d => d !== day) : [...avail.days, day];
+    onChange({ ...avail, days });
+  };
+  return (
+    <Box sx={{ p: 2, borderRadius: '12px', bgcolor: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.2)', mt: 1.5 }}>
+      <Typography fontSize={13} fontWeight={700} color={TXT} mb={1.2}>Disponibilités pour les visites / essais</Typography>
+      <Box sx={{ display: 'flex', gap: 0.8, flexWrap: 'wrap', mb: 2 }}>
+        {VEH_WEEKDAYS.map(d => {
+          const active = avail.days.includes(d.key);
+          return (
+            <Box key={d.key} onClick={() => toggleDay(d.key)}
+              sx={{ px: 1.6, py: 0.7, borderRadius: '8px', cursor: 'pointer', fontSize: 12.5, fontWeight: 700,
+                bgcolor: active ? '#6366F1' : '#fff', color: active ? '#fff' : SUB, border: `1.5px solid ${active ? '#6366F1' : BORD}` }}>
+              {d.label}
+            </Box>
+          );
+        })}
+      </Box>
+      <Box sx={{ display: 'flex', gap: 2 }}>
+        <TextField fullWidth type="time" label="Ouverture" sx={fieldSx} InputLabelProps={{ shrink: true }}
+          value={avail.start} onChange={e => onChange({ ...avail, start: e.target.value })} />
+        <TextField fullWidth type="time" label="Fermeture" sx={fieldSx} InputLabelProps={{ shrink: true }}
+          value={avail.end} onChange={e => onChange({ ...avail, end: e.target.value })} />
+      </Box>
+    </Box>
+  );
+}
+
 function DarkSelect({ label, value, onChange, options }: { label: string; value: string; onChange: (v: string) => void; options: string[] }) {
   return (
     <FormControl fullWidth sx={fieldSx}>
@@ -233,6 +268,8 @@ export default function AddProductPage() {
   const [error, setError]       = useState('');
   const [showAttrs, setShowAttrs]     = useState(false);
   const [showVariants, setShowVariants] = useState(false);
+  const [vehicleAppt, setVehicleAppt] = useState(false);
+  const [vehicleAvail, setVehicleAvail] = useState<{ days: string[]; start: string; end: string }>({ days: ['mon','tue','wed','thu','fri'], start: '09:00', end: '17:00' });
 
   const { data: categories } = useQuery({ queryKey: ['categories'], queryFn: () => api.get('/categories').then(r => r.data) });
   const { data: brands }     = useQuery({ queryKey: ['brands'],     queryFn: () => api.get('/brands').then(r => r.data) });
@@ -316,6 +353,11 @@ export default function AddProductPage() {
       deliveryZones.forEach(z => fd.append('deliveryDepts', z.city ? `${z.city}, ${z.dept}` : z.dept));
       if (form.storeId) fd.append('storeId', form.storeId);
       if (Object.keys(attrs).length) fd.append('attributes', JSON.stringify(attrs));
+      if (catType === 'vehicle' && vehicleAppt) {
+        fd.append('productType', 'VEHICLE');
+        fd.append('requiresAppointment', 'true');
+        fd.append('serviceConfig', JSON.stringify({ availability: vehicleAvail }));
+      }
       const variantImageFiles: File[] = [];
       const variantData = variants.map(v => { let imageFileIndex: number | undefined; if (v.imageFile) { imageFileIndex = variantImageFiles.length; variantImageFiles.push(v.imageFile); } return { color: v.color, colorHex: v.colorHex, size: v.size, stock: v.stock, priceOverride: v.priceOverride || undefined, imageFileIndex }; });
       if (variantData.length) fd.append('variants', JSON.stringify(variantData));
@@ -492,6 +534,14 @@ export default function AddProductPage() {
                         {(catType === 'phone' || catType === 'electronics') && <PhoneFields attrs={attrs} onChange={setAttr} />}
                         {catType === 'clothing' && <ClothingFields attrs={attrs} onChange={setAttr} />}
                         {catType === 'vehicle'  && <VehicleFields  attrs={attrs} onChange={setAttr} />}
+                        {catType === 'vehicle' && (
+                          <Box sx={{ mt: 2 }}>
+                            <DarkToggle checked={vehicleAppt} onChange={setVehicleAppt}
+                              label="Visite / essai uniquement sur rendez-vous"
+                              sub="L'acheteur devra prendre RDV avant de voir ou essayer le véhicule" />
+                            {vehicleAppt && <VehicleAvailabilityEditor avail={vehicleAvail} onChange={setVehicleAvail} />}
+                          </Box>
+                        )}
                       </Box>
                     </Box>
                   </Collapse>

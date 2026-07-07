@@ -12,7 +12,7 @@ import {
   FlashOn, LocationOn, CheckCircle, Phone, ContentCopy,
   Inventory, Warning, Close, ExpandMore, ExpandLess,
   NavigateNext, Security, Star, ArrowForward, ShoppingCart,
-  Chat,
+  Chat, MedicalServices,
 } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
@@ -563,31 +563,38 @@ export default function ProductDetailPage() {
 
                 {(serviceConfig.subServices?.length>0)&&(
                   <Box sx={{ mb:2 }}>
-                    <Typography fontSize={12} fontWeight={600} color="#6366F1" mb={1} textTransform="uppercase" letterSpacing="0.6px">
-                      Choisissez une ou plusieurs prestations
+                    <Typography fontSize={13} fontWeight={800} color={TXT} mb={1.5}>
+                      Découvrir nos solutions de service
                     </Typography>
-                    <Box sx={{ display:'flex', flexDirection:'column', gap:1 }}>
+                    <Box sx={{ display:'grid', gridTemplateColumns:{ xs:'1fr', sm:'repeat(2, 1fr)' }, gap:1.2 }}>
                       {serviceConfig.subServices.map((s:any,i:number)=>{
                         const sel = selectedSubServices.includes(i);
                         return (
                           <Box key={i} onClick={()=>setSelectedSubServices(p=>sel?p.filter(x=>x!==i):[...p,i])}
-                            sx={{ display:'flex', alignItems:'center', gap:1.2, p:1.4, borderRadius:'10px', cursor:'pointer',
-                              bgcolor:sel?'rgba(99,102,241,0.12)':'#fff', border:`1.5px solid ${sel?'#6366F1':BORD}`, transition:'all 0.13s' }}>
-                            <Box sx={{ width:18, height:18, borderRadius:'5px', flexShrink:0, border:`2px solid ${sel?'#6366F1':BORD}`,
-                              bgcolor:sel?'#6366F1':'transparent', display:'flex', alignItems:'center', justifyContent:'center' }}>
-                              {sel&&<CheckCircle sx={{ fontSize:13, color:'#fff' }}/>}
+                            sx={{ display:'flex', flexDirection:'column', gap:0.8, p:1.6, borderRadius:'14px', cursor:'pointer', position:'relative',
+                              bgcolor:sel?'rgba(99,102,241,0.08)':'#fff', border:`1.5px solid ${sel?'#6366F1':BORD}`, transition:'all 0.15s',
+                              '&:hover':{ borderColor:'#6366F1', boxShadow:'0 4px 14px rgba(99,102,241,0.12)' } }}>
+                            {sel&&(
+                              <Box sx={{ position:'absolute', top:10, right:10, width:20, height:20, borderRadius:'50%', bgcolor:'#6366F1',
+                                display:'flex', alignItems:'center', justifyContent:'center' }}>
+                                <CheckCircle sx={{ fontSize:14, color:'#fff' }}/>
+                              </Box>
+                            )}
+                            <Box sx={{ display:'flex', alignItems:'center', gap:1 }}>
+                              <Box sx={{ width:36, height:36, borderRadius:'10px', flexShrink:0, bgcolor:'rgba(99,102,241,0.12)',
+                                display:'flex', alignItems:'center', justifyContent:'center' }}>
+                                <MedicalServices sx={{ fontSize:18, color:'#6366F1' }}/>
+                              </Box>
+                              <Typography fontSize={13.5} fontWeight={800} color={TXT} sx={{ pr:sel?3:0 }}>{s.name||'Prestation'}</Typography>
                             </Box>
-                            <Box sx={{ flex:1, minWidth:0 }}>
-                              <Typography fontSize={13} fontWeight={700} color={TXT}>{s.name||'Prestation'}</Typography>
-                              {s.description&&<Typography fontSize={11.5} color={SUB} noWrap>{s.description}</Typography>}
-                            </Box>
-                            <Typography fontSize={13} fontWeight={800} color="#6366F1" sx={{ flexShrink:0 }}>{fmt(Number(s.price||0))}</Typography>
+                            {s.description&&<Typography fontSize={12} color={SUB} lineHeight={1.5} sx={{ display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>{s.description}</Typography>}
+                            <Typography fontSize={14} fontWeight={900} color="#6366F1">{fmt(Number(s.price||0))}</Typography>
                           </Box>
                         );
                       })}
                     </Box>
                     {selectedSubServices.length>0&&(
-                      <Box sx={{ display:'flex', justifyContent:'space-between', mt:1.2, px:0.5 }}>
+                      <Box sx={{ display:'flex', justifyContent:'space-between', mt:1.5, px:0.5 }}>
                         <Typography fontSize={13} fontWeight={700} color={TXT}>Total sélectionné</Typography>
                         <Typography fontSize={14} fontWeight={900} color="#6366F1">
                           {fmt(selectedSubServices.reduce((sum,i)=>sum+Number(serviceConfig.subServices[i]?.price||0),0))}
