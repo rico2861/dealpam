@@ -6,7 +6,7 @@ import {
   Diamond, FitnessCenter, DirectionsCar, RestaurantMenu,
   WorkOutline, DirectionsRun, SportsEsports, MiscellaneousServices,
   Smartphone, ChairOutlined, MedicalServices, MenuBook,
-  ArrowForward, LocalOffer,
+  ArrowForward, LocalOffer, Apartment, Category as CategoryIcon,
 } from '@mui/icons-material';
 import api from '../../api/axios';
 
@@ -39,6 +39,10 @@ const CAT_META: Record<string, CatMeta> = {
   meubles:      { icon: ChairOutlined,      color: '#D97706', darkBg: '#2D1E00', lightBg: '#FFFBEB' },
   sante:        { icon: MedicalServices,    color: '#34D399', darkBg: '#0E2D1E', lightBg: '#F0FDF4' },
   livres:       { icon: MenuBook,           color: '#818CF8', darkBg: '#1A1B40', lightBg: '#EEF2FF' },
+  vetements:    { icon: Checkroom,          color: '#EC4899', darkBg: '#2D1B2E', lightBg: '#FDF2F8' },
+  restaurants:  { icon: RestaurantMenu,     color: '#FB923C', darkBg: '#2D1800', lightBg: '#FFF7ED' },
+  immobilier:   { icon: Apartment,          color: '#0EA5E9', darkBg: '#0E2530', lightBg: '#ECFEFF' },
+  autres:       { icon: CategoryIcon,       color: '#64748B', darkBg: '#1E293B', lightBg: '#F8FAFC' },
 };
 
 const DEFAULT_META: CatMeta = {

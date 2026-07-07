@@ -53,23 +53,28 @@ img { -webkit-user-drag: none; user-select: none; }
 `;
 
 const CATS = [
-  { label: 'Mode',         sub: 'Vetements, Robes',  icon: Checkroom,            color: '#EC4899', bg: '#2D1B2E', path: '/products?category=mode' },
-  { label: 'Electronique', sub: 'PC, TV, Audio',     icon: PhoneAndroid,          color: '#60A5FA', bg: '#1B2440', path: '/products?category=electronique' },
-  { label: 'Maison',       sub: 'Deco, Mobilier',    icon: HomeIcon,              color: '#34D399', bg: '#1B2E2A', path: '/products?category=maison' },
-  { label: 'Beaute',       sub: 'Soin, Maquillage',  icon: LocalFlorist,          color: '#FBBF24', bg: '#2D2510', path: '/products?category=beaute' },
+  { label: 'Vêtements',    sub: 'Mode, Robes',       icon: Checkroom,            color: '#EC4899', bg: '#2D1B2E', path: '/products?category=vetements' },
+  { label: 'Électronique', sub: 'PC, TV, Audio',     icon: PhoneAndroid,          color: '#60A5FA', bg: '#1B2440', path: '/products?category=electronique' },
+  { label: 'Maison',       sub: 'Déco, Mobilier',    icon: HomeIcon,              color: '#34D399', bg: '#1B2E2A', path: '/products?category=maison' },
+  { label: 'Beauté',       sub: 'Soin, Maquillage',  icon: LocalFlorist,          color: '#FBBF24', bg: '#2D2510', path: '/products?category=beaute' },
   { label: 'Bijoux',       sub: 'Bagues, Colliers',  icon: Diamond,               color: '#A78BFA', bg: '#231B3A', path: '/products?category=bijoux' },
   { label: 'Sport',        sub: 'Fitness, Outdoor',  icon: FitnessCenter,         color: '#F87171', bg: '#2D1B1B', path: '/products?category=sport' },
-  { label: 'Vehicules',    sub: 'Autos, Motos',      icon: DirectionsCar,         color: '#22D3EE', bg: '#1B2A30', path: '/products?category=vehicules' },
-  { label: 'Alimentation', sub: 'Epicerie, Boisson', icon: RestaurantMenu,        color: '#86EFAC', bg: '#1A2D20', path: '/products?category=alimentation' },
+  { label: 'Véhicules',    sub: 'Autos, Motos',      icon: DirectionsCar,         color: '#22D3EE', bg: '#1B2A30', path: '/products?category=vehicules' },
+  { label: 'Alimentation', sub: 'Épicerie, Boisson', icon: RestaurantMenu,        color: '#86EFAC', bg: '#1A2D20', path: '/products?category=alimentation' },
   { label: 'Sacs',         sub: 'Pochettes, Valises',icon: WorkOutline,            color: '#FB923C', bg: '#2D2010', path: '/products?category=sacs' },
   { label: 'Chaussures',   sub: 'Sneakers, Sandales',icon: DirectionsRun,         color: '#2DD4BF', bg: '#1B2D2C', path: '/products?category=chaussures' },
-  { label: 'Jeux',         sub: 'Console, Jouets',   icon: SportsEsports,         color: '#C084FC', bg: '#241B38', path: '/products?category=jeux' },
+  { label: 'Jeux & Jouets',sub: 'Console, Jouets',   icon: SportsEsports,         color: '#C084FC', bg: '#241B38', path: '/products?category=jeux' },
+  { label: 'Santé',        sub: 'Bien-être, Clinique',icon: LocalFlorist,        color: '#34D399', bg: '#1B2E2A', path: '/products?category=sante' },
+  { label: 'Livres',       sub: 'Romans, Scolaire',  icon: MiscellaneousServices, color: '#818CF8', bg: '#1E1B38', path: '/products?category=livres' },
+  { label: 'Restaurants',  sub: 'Plats, Livraison',  icon: RestaurantMenu,        color: '#FB923C', bg: '#2D2010', path: '/products?category=restaurants' },
+  { label: 'Immobilier',   sub: 'Vente, Location',   icon: HomeIcon,              color: '#22D3EE', bg: '#1B2A30', path: '/products?category=immobilier' },
   { label: 'Services',     sub: 'Pro, Artisanat',    icon: MiscellaneousServices, color: '#818CF8', bg: '#1E1B38', path: '/products?category=services' },
+  { label: 'Autres',       sub: 'Tout le reste',     icon: MiscellaneousServices, color: '#64748B', bg: '#1E293B', path: '/products?category=autres' },
 ];
 
 const NAV = [
   { label: 'Nouveautés',   path: '/products?sort=latest' },
-  { label: 'Mode',         path: '/products?category=mode' },
+  { label: 'Vêtements',    path: '/products?category=vetements' },
   { label: 'Électronique', path: '/products?category=electronique' },
   { label: 'Maison',       path: '/products?category=maison' },
   { label: 'Beauté',       path: '/products?category=beaute' },
@@ -77,6 +82,8 @@ const NAV = [
   { label: 'Bijoux',       path: '/products?category=bijoux' },
   { label: 'Sport',        path: '/products?category=sport' },
   { label: 'Alimentation', path: '/products?category=alimentation' },
+  { label: 'Restaurants',  path: '/products?category=restaurants' },
+  { label: 'Immobilier',   path: '/products?category=immobilier' },
   { label: 'Services',     path: '/products?productType=SERVICE' },
 ];
 
@@ -209,7 +216,7 @@ function CatDropdown({ activeCat, onPick, onClose }: {
             Toutes les catégories
           </Typography>
           <Typography fontSize={11} color={SUB} mt={0.2}>
-            12 catégories disponibles
+            {CATS.length} catégories disponibles
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
