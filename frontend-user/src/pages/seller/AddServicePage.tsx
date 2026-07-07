@@ -114,6 +114,91 @@ function ImagePicker({ images, onChange }: { images: File[]; onChange: (files: F
 
 // ── Sub-forms ──────────────────────────────────────────────────────────────
 
+const WEEKDAYS = [
+  { key: 'mon', label: 'Lun' }, { key: 'tue', label: 'Mar' }, { key: 'wed', label: 'Mer' },
+  { key: 'thu', label: 'Jeu' }, { key: 'fri', label: 'Ven' }, { key: 'sat', label: 'Sam' }, { key: 'sun', label: 'Dim' },
+];
+
+// ── Disponibilités RDV : jours + plage horaire — utilisé par Service et Immobilier ──
+function AvailabilityEditor({ data, onChange }: { data: any; onChange: (d: any) => void }) {
+  const avail = data.availability || { days: ['mon','tue','wed','thu','fri'], start: '09:00', end: '17:00' };
+  const setAvail = (patch: any) => onChange({ ...data, availability: { ...avail, ...patch } });
+  const toggleDay = (day: string) => {
+    const days = avail.days.includes(day) ? avail.days.filter((d: string) => d !== day) : [...avail.days, day];
+    setAvail({ days });
+  };
+  return (
+    <Box sx={{ p: 2, borderRadius: '12px', bgcolor: `${BLU}08`, border: `1px solid ${BLU}25` }}>
+      <Typography fontSize={13} fontWeight={700} color={TXT} mb={1.2}>Disponibilités pour les rendez-vous</Typography>
+      <Typography fontSize={12} color={SUB} mb={1.2}>Jours où vous recevez des clients</Typography>
+      <Box sx={{ display: 'flex', gap: 0.8, flexWrap: 'wrap', mb: 2 }}>
+        {WEEKDAYS.map(d => {
+          const active = avail.days.includes(d.key);
+          return (
+            <Box key={d.key} onClick={() => toggleDay(d.key)}
+              sx={{ px: 1.6, py: 0.7, borderRadius: '8px', cursor: 'pointer', fontSize: 12.5, fontWeight: 700,
+                bgcolor: active ? BLU : '#fff', color: active ? '#fff' : SUB, border: `1.5px solid ${active ? BLU : BORD}`,
+                transition: 'all 0.13s' }}>
+              {d.label}
+            </Box>
+          );
+        })}
+      </Box>
+      <Box sx={{ display: 'flex', gap: 2 }}>
+        <TextField fullWidth type="time" label="Ouverture" sx={fieldSx} InputLabelProps={{ shrink: true }}
+          value={avail.start} onChange={e => setAvail({ start: e.target.value })} />
+        <TextField fullWidth type="time" label="Fermeture" sx={fieldSx} InputLabelProps={{ shrink: true }}
+          value={avail.end} onChange={e => setAvail({ end: e.target.value })} />
+      </Box>
+    </Box>
+  );
+}
+
+// ── Sous-services : liste de prestations avec leur propre prix ──────────────
+function SubServicesEditor({ data, onChange }: { data: any; onChange: (d: any) => void }) {
+  const list: any[] = data.subServices || [];
+  const update = (next: any[]) => onChange({ ...data, subServices: next });
+  const add = () => update([...list, { name: '', price: 0, description: '' }]);
+  const remove = (i: number) => update(list.filter((_, j) => j !== i));
+  const change = (i: number, k: string, v: any) => update(list.map((s, j) => j === i ? { ...s, [k]: v } : s));
+
+  return (
+    <Box>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.2 }}>
+        <Typography fontSize={13} fontWeight={700} color={TXT}>Prestations proposées (optionnel)</Typography>
+        <Button size="small" startIcon={<Add sx={{ fontSize: 15 }} />} onClick={add}
+          sx={{ color: OR, fontWeight: 700, fontSize: 12.5 }}>Ajouter</Button>
+      </Box>
+      <Typography fontSize={12} color={SUB} mb={1.5}>
+        Détaillez chaque prestation avec son prix — le client pourra choisir avant de prendre RDV.
+      </Typography>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+        {list.map((s, i) => (
+          <Box key={i} sx={{ p: 1.5, borderRadius: '10px', border: `1px solid ${BORD}`, position: 'relative' }}>
+            <Box onClick={() => remove(i)}
+              sx={{ position: 'absolute', top: 8, right: 8, width: 20, height: 20, borderRadius: '50%', bgcolor: 'rgba(239,68,68,0.1)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+              <Close sx={{ fontSize: 12, color: '#EF4444' }} />
+            </Box>
+            <Box sx={{ display: 'flex', gap: 1.2, mb: 1, pr: 3 }}>
+              <TextField fullWidth size="small" label="Nom de la prestation" sx={fieldSx}
+                value={s.name} onChange={e => change(i, 'name', e.target.value)} placeholder="Ex: Blanchiment dentaire" />
+              <TextField size="small" label="Prix (HTG)" type="number" sx={{ ...fieldSx, minWidth: 130 }}
+                value={s.price || ''} onChange={e => change(i, 'price', Number(e.target.value))} />
+            </Box>
+            <TextField fullWidth size="small" label="Description (optionnel)" sx={fieldSx}
+              value={s.description || ''} onChange={e => change(i, 'description', e.target.value)}
+              placeholder="Ex: Blanchiment dentaire, blanchiment simple des dents" />
+          </Box>
+        ))}
+        {list.length === 0 && (
+          <Typography fontSize={12} color={SUB} sx={{ fontStyle: 'italic' }}>Aucune prestation ajoutée pour l'instant.</Typography>
+        )}
+      </Box>
+    </Box>
+  );
+}
+
 function ServiceForm({ data, onChange }: { data: any; onChange: (d: any) => void }) {
   const set = (k: string, v: any) => onChange({ ...data, [k]: v });
   return (
@@ -135,6 +220,8 @@ function ServiceForm({ data, onChange }: { data: any; onChange: (d: any) => void
       <FormControlLabel
         control={<Checkbox checked={!!data.homeVisit} onChange={e => set('homeVisit', e.target.checked)} sx={{ color: SUB, '&.Mui-checked': { color: OR } }} />}
         label={<Typography fontSize={13} color={SUB2}>Visite à domicile disponible</Typography>} />
+      <SubServicesEditor data={data} onChange={onChange} />
+      <AvailabilityEditor data={data} onChange={onChange} />
     </Box>
   );
 }
@@ -179,6 +266,10 @@ function RealEstateForm({ data, onChange }: { data: any; onChange: (d: any) => v
             label={<Typography fontSize={13} color={SUB2}>{l}</Typography>} />
         ))}
       </Box>
+      <FormControlLabel
+        control={<Checkbox checked={!!data.requiresVisit} onChange={e => set('requiresVisit', e.target.checked)} sx={{ color: SUB, '&.Mui-checked': { color: OR } }} />}
+        label={<Typography fontSize={13} color={SUB2}>Visite du bien uniquement sur rendez-vous</Typography>} />
+      {data.requiresVisit && <AvailabilityEditor data={data} onChange={onChange} />}
     </Box>
   );
 }
@@ -271,7 +362,7 @@ export default function AddServicePage() {
     fd.append('price',       String(price));
     fd.append('priceUnit',   priceUnit);
     fd.append('productType', listingType);
-    fd.append('requiresAppointment', listingType === 'SERVICE' ? 'true' : 'false');
+    fd.append('requiresAppointment', (listingType === 'SERVICE' || (listingType === 'REAL_ESTATE' && !!extra.requiresVisit)) ? 'true' : 'false');
     fd.append('serviceConfig', JSON.stringify(extra));
     fd.append('status', 'ACTIVE');
     if (base.address.trim()) fd.append('address', base.address.trim());

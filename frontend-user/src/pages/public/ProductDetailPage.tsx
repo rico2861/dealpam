@@ -181,6 +181,7 @@ export default function ProductDetailPage() {
   const [more,     setMore]     = useState(false);
   const [hist,     setHist]     = useState<any[]>([]);
   const [apptOpen, setApptOpen] = useState(false);
+  const [selectedSubServices, setSelectedSubServices] = useState<number[]>([]);
   const t0 = useRef(0);
 
   const { data: product, isLoading } = useQuery({
@@ -545,12 +546,57 @@ export default function ProductDetailPage() {
               <Typography fontSize={12.5} color={SUB} mb={2.5}>Aucun avis</Typography>
             )}
 
+            {/* adresse complète — essentiel pour un service/RDV sur place */}
+            {product.address&&(
+              <Box sx={{ display:'flex', alignItems:'flex-start', gap:0.7, mb:2 }}>
+                <LocationOn sx={{ fontSize:15, color:SUB, mt:0.2, flexShrink:0 }}/>
+                <Typography fontSize={13.5} color={SUB2}>{product.address}{(product.city||product.department)?`, ${[product.city,product.department].filter(Boolean).join(', ')}`:''}</Typography>
+              </Box>
+            )}
+
             {/* Rendez-vous — pour les services/prestations qui en nécessitent un */}
             {product.requiresAppointment && (
               <Box sx={{ mb:3, p:2, borderRadius:'14px', bgcolor:'rgba(99,102,241,0.08)', border:'1px solid rgba(99,102,241,0.25)' }}>
                 <Typography fontSize={13.5} fontWeight={700} color="#818CF8" mb={1}>
                   📅 Ce service nécessite une prise de rendez-vous
                 </Typography>
+
+                {(serviceConfig.subServices?.length>0)&&(
+                  <Box sx={{ mb:2 }}>
+                    <Typography fontSize={12} fontWeight={600} color="#6366F1" mb={1} textTransform="uppercase" letterSpacing="0.6px">
+                      Choisissez une ou plusieurs prestations
+                    </Typography>
+                    <Box sx={{ display:'flex', flexDirection:'column', gap:1 }}>
+                      {serviceConfig.subServices.map((s:any,i:number)=>{
+                        const sel = selectedSubServices.includes(i);
+                        return (
+                          <Box key={i} onClick={()=>setSelectedSubServices(p=>sel?p.filter(x=>x!==i):[...p,i])}
+                            sx={{ display:'flex', alignItems:'center', gap:1.2, p:1.4, borderRadius:'10px', cursor:'pointer',
+                              bgcolor:sel?'rgba(99,102,241,0.12)':'#fff', border:`1.5px solid ${sel?'#6366F1':BORD}`, transition:'all 0.13s' }}>
+                            <Box sx={{ width:18, height:18, borderRadius:'5px', flexShrink:0, border:`2px solid ${sel?'#6366F1':BORD}`,
+                              bgcolor:sel?'#6366F1':'transparent', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                              {sel&&<CheckCircle sx={{ fontSize:13, color:'#fff' }}/>}
+                            </Box>
+                            <Box sx={{ flex:1, minWidth:0 }}>
+                              <Typography fontSize={13} fontWeight={700} color={TXT}>{s.name||'Prestation'}</Typography>
+                              {s.description&&<Typography fontSize={11.5} color={SUB} noWrap>{s.description}</Typography>}
+                            </Box>
+                            <Typography fontSize={13} fontWeight={800} color="#6366F1" sx={{ flexShrink:0 }}>{fmt(Number(s.price||0))}</Typography>
+                          </Box>
+                        );
+                      })}
+                    </Box>
+                    {selectedSubServices.length>0&&(
+                      <Box sx={{ display:'flex', justifyContent:'space-between', mt:1.2, px:0.5 }}>
+                        <Typography fontSize={13} fontWeight={700} color={TXT}>Total sélectionné</Typography>
+                        <Typography fontSize={14} fontWeight={900} color="#6366F1">
+                          {fmt(selectedSubServices.reduce((sum,i)=>sum+Number(serviceConfig.subServices[i]?.price||0),0))}
+                        </Typography>
+                      </Box>
+                    )}
+                  </Box>
+                )}
+
                 <Button fullWidth onClick={()=>setApptOpen(true)}
                   sx={{ py:1.3, borderRadius:'12px', fontWeight:800, fontSize:14, color:'#fff',
                     background:'linear-gradient(135deg,#4338CA,#6366F1)',
@@ -1054,6 +1100,8 @@ export default function ProductDetailPage() {
         <BookAppointmentDialog
           product={product}
           isLoggedIn={!!user && !!localStorage.getItem('accessToken')}
+          availability={serviceConfig.availability}
+          selectedServiceNames={selectedSubServices.map(i=>serviceConfig.subServices?.[i]?.name).filter(Boolean)}
           onClose={() => setApptOpen(false)}
         />
       )}
@@ -1062,9 +1110,14 @@ export default function ProductDetailPage() {
 }
 
 /* ─── Dialogue de prise de rendez-vous ──────────────────────────────────── */
-function BookAppointmentDialog({ product, isLoggedIn, onClose }: { product: any; isLoggedIn: boolean; onClose: () => void }) {
+const WEEKDAY_KEYS = ['sun','mon','tue','wed','thu','fri','sat'];
+
+function BookAppointmentDialog({ product, isLoggedIn, availability, selectedServiceNames, onClose }: {
+  product: any; isLoggedIn: boolean; availability?: { days:string[]; start:string; end:string }; selectedServiceNames?: string[]; onClose: () => void;
+}) {
   const { enqueueSnackbar } = useSnackbar();
-  const [scheduledAt, setScheduledAt] = useState('');
+  const [date,   setDate]   = useState('');
+  const [time,   setTime]   = useState('');
   const [note, setNote]               = useState('');
   const [clientName, setClientName]   = useState('');
   const [clientPhone, setClientPhone] = useState('');
@@ -1072,16 +1125,36 @@ function BookAppointmentDialog({ product, isLoggedIn, onClose }: { product: any;
   const [submitting, setSubmitting]   = useState(false);
   const [done, setDone]               = useState(false);
 
-  const canSubmit = !!scheduledAt && (isLoggedIn || (clientName.trim() && clientPhone.trim()));
+  const timeSlots = (() => {
+    if (!availability?.start || !availability?.end) return null;
+    const slots: string[] = [];
+    let [h,m] = availability.start.split(':').map(Number);
+    const [endH,endM] = availability.end.split(':').map(Number);
+    while (h < endH || (h === endH && m < endM)) {
+      slots.push(`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`);
+      m += 30; if (m >= 60) { m = 0; h += 1; }
+    }
+    return slots;
+  })();
+
+  const dateIsAllowedDay = (d: string) => {
+    if (!availability?.days?.length || !d) return true;
+    const weekday = WEEKDAY_KEYS[new Date(d + 'T00:00:00').getDay()];
+    return availability.days.includes(weekday);
+  };
+
+  const scheduledAt = date && time ? `${date}T${time}` : '';
+  const canSubmit = !!date && !!time && dateIsAllowedDay(date) && (isLoggedIn || (clientName.trim() && clientPhone.trim()));
+  const serviceType = selectedServiceNames?.length ? selectedServiceNames.join(', ') : undefined;
 
   const submit = async () => {
     setSubmitting(true);
     try {
       if (isLoggedIn) {
-        await api.post('/appointments', { productId: product.id, scheduledAt, note: note || undefined });
+        await api.post('/appointments', { productId: product.id, scheduledAt, note: note || undefined, serviceType });
       } else {
         await api.post('/appointments/public', {
-          productId: product.id, scheduledAt, note: note || undefined,
+          productId: product.id, scheduledAt, note: note || undefined, serviceType,
           clientName, clientPhone, clientEmail: clientEmail || undefined,
         });
       }
@@ -1105,13 +1178,24 @@ function BookAppointmentDialog({ product, isLoggedIn, onClose }: { product: any;
           <>
             <Typography fontSize={13} color={SUB2}>
               Pour : <strong style={{ color: TXT }}>{product.name}</strong>
+              {serviceType && <> — <strong style={{ color: '#6366F1' }}>{serviceType}</strong></>}
             </Typography>
             <TextField
-              type="datetime-local" label="Date et heure souhaitées" fullWidth size="small"
-              value={scheduledAt} onChange={e => setScheduledAt(e.target.value)}
+              type="date" label="Date souhaitée" fullWidth size="small"
+              value={date} onChange={e => setDate(e.target.value)}
               InputLabelProps={{ shrink: true }}
-              inputProps={{ min: new Date().toISOString().slice(0, 16) }}
+              inputProps={{ min: new Date().toISOString().slice(0, 10) }}
+              error={!!date && !dateIsAllowedDay(date)}
+              helperText={!!date && !dateIsAllowedDay(date) ? 'Le vendeur ne reçoit pas ce jour-là' : (availability?.days?.length ? `Jours disponibles : ${availability.days.map(d=>({mon:'Lun',tue:'Mar',wed:'Mer',thu:'Jeu',fri:'Ven',sat:'Sam',sun:'Dim'} as any)[d]).join(', ')}` : undefined)}
             />
+            {timeSlots ? (
+              <TextField select label="Heure" fullWidth size="small" value={time} onChange={e => setTime(e.target.value)} SelectProps={{ native:true }} InputLabelProps={{ shrink:true }}>
+                <option value="">-- Choisir --</option>
+                {timeSlots.map(s => <option key={s} value={s}>{s}</option>)}
+              </TextField>
+            ) : (
+              <TextField type="time" label="Heure souhaitée" fullWidth size="small" value={time} onChange={e => setTime(e.target.value)} InputLabelProps={{ shrink: true }} />
+            )}
             {!isLoggedIn && (
               <>
                 <TextField label="Votre nom *" fullWidth size="small" value={clientName} onChange={e => setClientName(e.target.value)} />
