@@ -20,26 +20,38 @@ import api from '../../api/axios';
 import { useAuthStore } from '../../store/auth.store';
 import { useCartStore } from '../../store/cart.store';
 
-/* ── palette ─────────────────────────────────────────────────────────────── */
-const OR   = '#FF6B00';
-const RED  = '#EF4444';
-const GRN  = '#10B981';
+/* ── palette (spec exacte) ───────────────────────────────────────────────── */
+const NAVY       = '#0F1B2E'; // titres, avatar vendeur, boutons secondaires (contour)
+const OR         = '#F5711A'; // CTA principal, accents actifs
+const OR_HOVER   = '#DB5E0F';
+const OR_BG      = '#FDECDF'; // fond badge stock/promo léger
+const OR_TXT     = '#B84A0C'; // texte sur fond orange clair
+const RED_BG     = '#FBE1DE'; // fond badge promo
+const RED_TXT    = '#B3261E';
+const GRN_BG     = '#E1F3E6'; // fond badge économie
+const GRN_TXT    = '#1E7B3B';
+const TEAL_BG    = '#E1F3EF'; // fond badge sécurité/livraison
+const TEAL_TXT   = '#116B57';
+const CARD       = '#FFFFFF'; // --surface
+const BG_MUTED   = '#F5F5F3'; // --surface-muted
+const BORD       = 'rgba(15,27,46,0.08)';
+const SUB2       = '#5F5E5A'; // --text-secondary
+const SUB        = '#888780'; // --text-muted
+const TXT        = NAVY;
+const BG         = CARD;
+// Legacy aliases kept for the sections of this file not yet migrated to the new palette.
+const RED  = RED_TXT;
+const GRN  = GRN_TXT;
 const GLD  = '#F59E0B';
-const BG   = '#F7F8FA';
-const CARD = '#FFFFFF';
-const BORD = 'rgba(15,23,42,0.09)';
-const TXT  = '#0F172A';
-const SUB  = '#64748B';
-const SUB2 = '#475569';
 
 const fmt = (v: number) => `${v.toLocaleString('fr-HT')} HTG`;
 const fmtUSD = (v: number) => `$${v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 const COND: Record<string, { label: string; color: string; bg: string }> = {
-  new:         { label: 'Neuf',          color: GRN,       bg: 'rgba(16,185,129,0.12)' },
-  refurbished: { label: 'Reconditionné', color: '#818CF8', bg: 'rgba(129,140,248,0.12)' },
-  used:        { label: 'Occasion',      color: GLD,       bg: 'rgba(245,158,11,0.12)' },
-  damaged:     { label: 'Endommagé',     color: RED,       bg: 'rgba(239,68,68,0.12)' },
+  new:         { label: 'Neuf',          color: GRN_TXT, bg: GRN_BG },
+  refurbished: { label: 'Reconditionné', color: TEAL_TXT, bg: TEAL_BG },
+  used:        { label: 'Occasion',      color: OR_TXT,  bg: OR_BG },
+  damaged:     { label: 'Endommagé',     color: RED_TXT, bg: RED_BG },
 };
 const PRODUCT_TYPE_LABEL: Record<string, string> = {
   SERVICE: 'Service', RENTAL: 'Location', VEHICLE: 'Véhicule', FOOD: 'Alimentation',
@@ -102,13 +114,15 @@ function saveHist(p: any) {
 }
 
 /* ── Related product card (dark) ─────────────────────────────────────────── */
-function MCard({ p }: { p: any }) {
+function MCard({ p, fluid }: { p: any; fluid?: boolean }) {
   const pr = Number(p.salePrice||p.price);
   const or = Number(p.price);
   const dc = p.salePrice&&pr<or ? Math.round((1-pr/or)*100) : 0;
   return (
     <Box component={Link} to={`/products/${p.slug}`}
-      sx={{ textDecoration:'none', flexShrink:0, width:{ xs:148, sm:168, md:184 }, scrollSnapAlign:'start' }}>
+      sx={fluid
+        ? { textDecoration:'none', width:'100%' }
+        : { textDecoration:'none', flexShrink:0, width:{ xs:148, sm:168, md:184 }, scrollSnapAlign:'start' }}>
       <Box sx={{ borderRadius:'16px', overflow:'hidden', bgcolor:CARD, border:`1px solid ${BORD}`,
         transition:'all 0.22s', '&:hover':{ transform:'translateY(-4px)', borderColor:'rgba(255,107,0,0.3)', boxShadow:'0 16px 32px rgba(15,23,42,0.12)' } }}>
         <Box sx={{ height:152, bgcolor:'rgba(15,23,42,0.04)', position:'relative', overflow:'hidden' }}>
@@ -123,6 +137,27 @@ function MCard({ p }: { p: any }) {
             sx={{ display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden', mb:0.8, minHeight:30 }}>{p.name}</Typography>
           <Typography fontWeight={800} fontSize={13} color={OR}>{fmt(pr)}</Typography>
           {dc>0&&<Typography fontSize={11} color={SUB} sx={{ textDecoration:'line-through' }}>{fmt(or)}</Typography>}
+        </Box>
+      </Box>
+    </Box>
+  );
+}
+
+/* ── Produits similaires — grille responsive pleine largeur, jamais de vide disproportionné ── */
+function SimilarProductsSection({ products }: { products:any[] }) {
+  if (!products.length) return null;
+  const few = products.length < 3;
+  return (
+    <Box sx={{ bgcolor:BG_MUTED, py:{ xs:4, md:5 } }}>
+      <Box sx={{ maxWidth:1200, mx:'auto', px:{ xs:2, md:4 } }}>
+        <Typography fontWeight={500} fontSize={19} color={TXT} mb={3}>Produits similaires</Typography>
+        <Box sx={{
+          display:'grid',
+          gridTemplateColumns:'repeat(auto-fit, minmax(220px, 1fr))',
+          gap:2,
+          ...(few ? { maxWidth:few&&products.length===1?280:620, mx:'auto' } : {}),
+        }}>
+          {products.map((p:any)=><MCard key={p.slug||p.id} p={p} fluid/>)}
         </Box>
       </Box>
     </Box>
@@ -183,6 +218,27 @@ export default function ProductDetailPage() {
   const [apptOpen, setApptOpen] = useState(false);
   const [selectedSubServices, setSelectedSubServices] = useState<number[]>([]);
   const t0 = useRef(0);
+  const zoomWrapRef = useRef<HTMLDivElement>(null);
+  const zoomTicking = useRef(false);
+  const onZoomMove = useCallback((e: React.MouseEvent) => {
+    const wrap = zoomWrapRef.current;
+    if (!wrap) return;
+    const rect = wrap.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    if (!zoomTicking.current) {
+      zoomTicking.current = true;
+      requestAnimationFrame(() => {
+        const img = wrap.querySelector('img');
+        if (img) { img.style.transformOrigin = `${x}% ${y}%`; img.style.transform = 'scale(1.6)'; }
+        zoomTicking.current = false;
+      });
+    }
+  }, []);
+  const onZoomLeave = useCallback(() => {
+    const img = zoomWrapRef.current?.querySelector('img');
+    if (img) img.style.transform = 'scale(1)';
+  }, []);
 
   const { data: product, isLoading } = useQuery({
     queryKey: ['product', slug],
@@ -405,8 +461,10 @@ export default function ProductDetailPage() {
                 boxShadow:{ xs:'none', md:'0 8px 32px rgba(15,23,42,0.06)' },
                 aspectRatio:'1 / 1', width:'100%', overflow:'hidden' }}>
 
-                <Box onTouchStart={onTS} onTouchEnd={onTE} onClick={()=>setLb(true)}
-                  sx={{ width:'100%', height:'100%', cursor:'zoom-in', '& img':{ objectFit:'contain !important' } }}>
+                <Box ref={zoomWrapRef} onTouchStart={onTS} onTouchEnd={onTE} onClick={()=>setLb(true)}
+                  onMouseMove={onZoomMove} onMouseLeave={onZoomLeave}
+                  sx={{ width:'100%', height:'100%', cursor:'zoom-in', overflow:'hidden',
+                    '& img':{ objectFit:'contain !important', transition:'transform 0.3s ease', willChange:'transform' } }}>
                   <OptimizedImg images={ci ?? {}} alt={product.name} mode="detail" eager={idx === 0} style={{ objectFit:'contain' }}/>
                 </Box>
 
@@ -528,10 +586,13 @@ export default function ProductDetailPage() {
             </Box>
 
             {/* title */}
-            <Typography fontWeight={900} color={TXT}
-              sx={{ fontSize:{ xs:22, sm:26, md:30 }, lineHeight:1.18, letterSpacing:'-0.6px', mb:1.5 }}>
+            <Typography component="h1" fontWeight={500} color={TXT}
+              sx={{ fontSize:{ xs:22, sm:26, md:30 }, lineHeight:1.25, letterSpacing:'-0.3px', mb:0.5 }}>
               {product.name}
             </Typography>
+            {product.category?.name&&(
+              <Typography fontSize={13} color={SUB} mb={1.5}>{product.category.name}</Typography>
+            )}
 
             {/* rating */}
             {product.avgRating>0 ? (
@@ -545,7 +606,9 @@ export default function ProductDetailPage() {
                 <Typography fontSize={13} color={SUB}>{product.totalSold??0} vendus</Typography>
               </Box>
             ) : (
-              <Typography fontSize={12.5} color={SUB} mb={2.5}>Aucun avis</Typography>
+              <Typography fontSize={12.5} color={SUB} mb={2.5}>
+                Aucun avis — <Box component="span" onClick={()=>setTab('rev')} sx={{ color:OR, fontWeight:500, cursor:'pointer', '&:hover':{ textDecoration:'underline' } }}>soyez le premier</Box>
+              </Typography>
             )}
 
             {/* adresse complète — essentiel pour un service/RDV sur place */}
@@ -615,63 +678,95 @@ export default function ProductDetailPage() {
               </Box>
             )}
 
-            {/* price + compact store card, side by side like a classic PDP layout */}
-            <Box sx={{ display:'flex', gap:2, alignItems:'flex-start', flexWrap:'wrap', mb:sale?0.5:3 }}>
-              <Box sx={{ flex:1, minWidth:200 }}>
-                {inFlashSale&&sale&&<CountdownBanner endAt={flashSale?.endAt} title={flashSale?.title}/>}
-                {exchangeRate&&(
-                  <Box sx={{ display:'inline-flex', borderRadius:'8px', border:`1px solid ${BORD}`, overflow:'hidden', mb:1 }}>
-                    {(['HTG','USD'] as const).map(c=>(
-                      <Box key={c} onClick={()=>setDisplayCurrency(c)} sx={{ px:1.4, py:0.4, cursor:'pointer',
-                        bgcolor:displayCurrency===c?OR:'transparent', color:displayCurrency===c?'#fff':SUB,
-                        fontSize:11, fontWeight:800 }}>{c}</Box>
-                    ))}
-                  </Box>
-                )}
-                <Box sx={{ display:'flex', alignItems:'baseline', gap:2, mb:0.5, flexWrap:'wrap' }}>
-                  <Typography fontWeight={900} color={TXT} sx={{ fontSize:{ xs:36, md:44 }, lineHeight:1, letterSpacing:'-2px' }}>
-                    {fmtDisplay(cur)}
-                  </Typography>
-                  {sale&&<Typography color={SUB} sx={{ fontSize:{ xs:20, md:24 }, textDecoration:'line-through', fontWeight:400 }}>{fmtDisplay(orig)}</Typography>}
+            {/* price block */}
+            <Box sx={{ mb:2 }}>
+              {inFlashSale&&sale&&<CountdownBanner endAt={flashSale?.endAt} title={flashSale?.title}/>}
+              {exchangeRate&&(
+                <Box sx={{ display:'inline-flex', borderRadius:'8px', border:`1px solid ${BORD}`, overflow:'hidden', mb:1 }}>
+                  {(['HTG','USD'] as const).map(c=>(
+                    <Box key={c} onClick={()=>setDisplayCurrency(c)} sx={{ px:1.4, py:0.4, cursor:'pointer',
+                      bgcolor:displayCurrency===c?OR:'transparent', color:displayCurrency===c?'#fff':SUB,
+                      fontSize:11, fontWeight:500 }}>{c}</Box>
+                  ))}
                 </Box>
+              )}
+              <Box sx={{ display:'flex', alignItems:'baseline', gap:1.5, mb:sale?1:0, flexWrap:'wrap' }}>
+                <Typography fontWeight={500} color={TXT} sx={{ fontSize:{ xs:32, md:38 }, lineHeight:1, letterSpacing:'-0.5px' }}>
+                  {fmtDisplay(cur)}
+                </Typography>
+                {sale&&<Typography color={SUB} sx={{ fontSize:{ xs:17, md:19 }, textDecoration:'line-through', fontWeight:400 }}>{fmtDisplay(orig)}</Typography>}
                 {sale&&(
-                  <Box sx={{ display:'inline-flex', alignItems:'center', gap:0.6, px:1.4, py:0.5, borderRadius:'8px',
-                    bgcolor:'rgba(16,185,129,0.1)', border:'1px solid rgba(16,185,129,0.2)' }}>
-                    <Typography fontSize={13} fontWeight={700} color={GRN}>Vous économisez {fmtDisplay(save)}</Typography>
+                  <Box sx={{ display:'inline-flex', alignItems:'center', px:1.2, py:0.4, borderRadius:'8px', bgcolor:GRN_BG }}>
+                    <Typography fontSize={12.5} fontWeight={500} color={GRN_TXT}>économisez {fmtDisplay(save)}</Typography>
                   </Box>
                 )}
               </Box>
+            </Box>
 
-              {product.store&&(
-                <Box sx={{ width:{ xs:'100%', sm:220 }, p:2, borderRadius:'16px', bgcolor:CARD, border:`1px solid ${BORD}`,
-                  boxShadow:'0 2px 10px rgba(15,23,42,0.04)', flexShrink:0 }}>
-                  <Box sx={{ display:'flex', alignItems:'center', gap:0.7, minWidth:0, mb:0.4 }}>
-                    <Typography fontWeight={800} fontSize={14} color={TXT} noWrap>{product.store.name}</Typography>
-                    {product.store.isVerified&&<Verified sx={{ fontSize:13, color:OR, flexShrink:0 }}/>}
+            {/* info badges row — stock, localisation, livraison */}
+            <Box sx={{ display:'flex', alignItems:'center', gap:1, mb:2, flexWrap:'wrap' }}>
+              {isPhysical&&(
+                stock>0 ? (
+                  <Box sx={{ display:'flex', alignItems:'center', gap:0.5, px:1.2, py:0.5, borderRadius:'8px', bgcolor:stock<=5?OR_BG:GRN_BG }}>
+                    {stock<=5?<Warning sx={{ fontSize:13, color:OR_TXT }}/>:<CheckCircle sx={{ fontSize:13, color:GRN_TXT }}/>}
+                    <Typography fontSize={12.5} fontWeight={500} color={stock<=5?OR_TXT:GRN_TXT}>{stock<=5?`plus que ${stock} en stock`:`${stock} disponibles`}</Typography>
                   </Box>
-                  <Box sx={{ display:'flex', alignItems:'center', gap:0.5, mb:1.4 }}>
-                    <Star sx={{ fontSize:12, color:GLD, flexShrink:0 }}/>
-                    <Typography fontSize={12} color={SUB} noWrap>{(product.store.avgRating||0).toFixed(1)} ({product.store.totalSales||0} ventes)</Typography>
+                ) : (
+                  <Box sx={{ display:'flex', alignItems:'center', gap:0.5, px:1.2, py:0.5, borderRadius:'8px', bgcolor:RED_BG }}>
+                    <Inventory sx={{ fontSize:13, color:RED_TXT }}/>
+                    <Typography fontSize={12.5} fontWeight={500} color={RED_TXT}>rupture de stock</Typography>
                   </Box>
-                  <Box sx={{ display:'flex', gap:0.8 }}>
-                    <Button component={Link} to={`/store/${product.store.slug}`} fullWidth size="small"
-                      sx={{ borderRadius:'8px', border:`1px solid ${BORD}`, color:SUB2, fontWeight:600, fontSize:12, py:0.7,
-                        '&:hover':{ borderColor:'rgba(15,23,42,0.16)', color:TXT } }}>
-                      Visiter la boutique
-                    </Button>
-                    {product.store.phone&&(
-                      <IconButton component="a" href={`tel:${product.store.phone}`} size="small"
-                        sx={{ border:`1px solid ${BORD}`, borderRadius:'8px', color:SUB2, flexShrink:0,
-                          '&:hover':{ borderColor:'rgba(15,23,42,0.16)', color:TXT } }}>
-                        <Phone sx={{ fontSize:14 }}/>
-                      </IconButton>
-                    )}
-                  </Box>
+                )
+              )}
+              {(product.city||product.department)&&(
+                <Box sx={{ display:'flex', alignItems:'center', gap:0.5, px:1.2, py:0.5, borderRadius:'8px', bgcolor:BG_MUTED }}>
+                  <LocationOn sx={{ fontSize:13, color:SUB2 }}/>
+                  <Typography fontSize={12.5} fontWeight={500} color={SUB2}>{[product.city,product.department].filter(Boolean).join(', ')}</Typography>
+                </Box>
+              )}
+              {isPhysical&&(
+                <Box sx={{ display:'flex', alignItems:'center', gap:0.5, px:1.2, py:0.5, borderRadius:'8px', bgcolor:TEAL_BG }}>
+                  <LocalShipping sx={{ fontSize:13, color:TEAL_TXT }}/>
+                  <Typography fontSize={12.5} fontWeight={500} color={TEAL_TXT}>{product.hasDelivery?'livraison disponible':'retrait seulement'}</Typography>
                 </Box>
               )}
             </Box>
 
-            <Box sx={{ height:'1px', bgcolor:BORD, mb:3 }}/>
+            {/* description courte — jamais vide */}
+            <Typography fontSize={14} color={SUB2} lineHeight={1.6} sx={{ mb:3,
+              display:'-webkit-box', WebkitLineClamp:3, WebkitBoxOrient:'vertical', overflow:'hidden' }}>
+              {product.description?.trim() || `Découvrez ${product.name}, disponible chez ${product.store?.name || 'ce vendeur'} sur DealPam.`}
+            </Typography>
+
+            {/* bloc vendeur */}
+            {product.store&&(
+              <Box sx={{ display:'flex', alignItems:'center', gap:1.5, p:2, borderRadius:'12px', bgcolor:BG_MUTED, border:`1px solid ${BORD}`, mb:3, flexWrap:'wrap' }}>
+                {product.store.logoUrl
+                  ? <Avatar src={product.store.logoUrl} sx={{ width:44, height:44, borderRadius:'10px' }}/>
+                  : <Avatar sx={{ width:44, height:44, borderRadius:'10px', bgcolor:NAVY, color:'#fff', fontWeight:500, fontSize:17 }}>{product.store.name?.[0]?.toUpperCase()}</Avatar>}
+                <Box sx={{ flex:1, minWidth:120 }}>
+                  <Box sx={{ display:'flex', alignItems:'center', gap:0.6 }}>
+                    <Typography fontWeight={500} fontSize={14} color={TXT} noWrap>{product.store.name}</Typography>
+                    {product.store.isVerified&&<Verified sx={{ fontSize:14, color:OR, flexShrink:0 }}/>}
+                  </Box>
+                  <Typography fontSize={12.5} color={SUB}>{product.store.totalSales||0} vente{(product.store.totalSales||0)>1?'s':''}</Typography>
+                </Box>
+                <Box sx={{ display:'flex', gap:1, ml:'auto' }}>
+                  <Button onClick={contactSeller} disabled={chatLoading} size="small"
+                    sx={{ borderRadius:'8px', border:`1px solid ${NAVY}`, color:NAVY, fontWeight:500, fontSize:12.5, px:1.6, py:0.7,
+                      transition:'background 0.15s ease, transform 0.1s ease',
+                      '&:hover':{ bgcolor:'rgba(15,27,46,0.05)' }, '&:active':{ transform:'scale(0.98)' } }}>
+                    Contacter
+                  </Button>
+                  <Button component={Link} to={`/store/${product.store.slug}`} size="small"
+                    sx={{ borderRadius:'8px', border:`1px solid ${NAVY}`, color:NAVY, fontWeight:500, fontSize:12.5, px:1.6, py:0.7,
+                      transition:'background 0.15s ease, transform 0.1s ease',
+                      '&:hover':{ bgcolor:'rgba(15,27,46,0.05)' }, '&:active':{ transform:'scale(0.98)' } }}>
+                    Visiter la boutique
+                  </Button>
+                </Box>
+              </Box>
+            )}
 
             {/* color picker */}
             {colors.length>0&&(
@@ -751,28 +846,6 @@ export default function ProductDetailPage() {
               </Box>
             )}
 
-            {/* stock + location — le concept de stock ne s'applique qu'aux produits physiques */}
-            <Box sx={{ display:'flex', alignItems:'center', gap:1.5, mb:3, flexWrap:'wrap' }}>
-              {isPhysical&&(
-                <Box sx={{ display:'flex' }}>
-                  {stock>10
-                    ? <Box sx={{ display:'flex', alignItems:'center', gap:0.6, px:1.4, py:0.5, borderRadius:'20px', bgcolor:'rgba(16,185,129,0.1)', border:'1px solid rgba(16,185,129,0.2)' }}><CheckCircle sx={{ fontSize:13, color:GRN }}/><Typography fontSize={12.5} color={GRN} fontWeight={700}>En stock · {stock} dispo.</Typography></Box>
-                    : stock>0
-                    ? <Box sx={{ display:'flex', alignItems:'center', gap:0.6, px:1.4, py:0.5, borderRadius:'20px', bgcolor:'rgba(245,158,11,0.1)', border:'1px solid rgba(245,158,11,0.25)' }}><Warning sx={{ fontSize:13, color:GLD }}/><Typography fontSize={12.5} color={GLD} fontWeight={700}>Plus que {stock} !</Typography></Box>
-                    : <Box sx={{ display:'flex', alignItems:'center', gap:0.6, px:1.4, py:0.5, borderRadius:'20px', bgcolor:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.25)' }}><Inventory sx={{ fontSize:13, color:RED }}/><Typography fontSize={12.5} color={RED} fontWeight={700}>Rupture de stock</Typography></Box>}
-                </Box>
-              )}
-              {(product.city||product.department)&&(
-                <Box sx={{ display:'flex', alignItems:'center', gap:0.5 }}>
-                  <LocationOn sx={{ fontSize:13, color:SUB }}/>
-                  <Typography fontSize={13} color={SUB}>{[product.city,product.department].filter(Boolean).join(', ')}</Typography>
-                </Box>
-              )}
-              <Box sx={{ display:'flex', alignItems:'center', gap:0.6, px:1.4, py:0.5, borderRadius:'20px', bgcolor:'rgba(16,185,129,0.1)', border:'1px solid rgba(16,185,129,0.2)' }}>
-                <Security sx={{ fontSize:13, color:GRN }}/>
-                <Typography fontSize={12.5} color={GRN} fontWeight={700}>Sécurisé</Typography>
-              </Box>
-            </Box>
 
             {/* qty + CTA achat — masqués pour les services nécessitant un RDV (la prise de RDV ci-dessus remplace l'achat) */}
             {showPurchaseFlow&&(
@@ -792,47 +865,41 @@ export default function ProductDetailPage() {
                   </Box>
                   <Button fullWidth onClick={buyNow} disabled={ctaDisabled}
                     endIcon={!loading&&<ArrowForward sx={{ fontSize:18 }}/>}
-                    sx={{ py:1.7, borderRadius:'14px', fontWeight:900, fontSize:14.5, color:'#fff', letterSpacing:'0.2px',
-                      background: ctaDisabled ? undefined : `linear-gradient(135deg,#C84D00,${RED},#FF8C38)`,
-                      boxShadow: ctaDisabled ? undefined : '0 6px 28px rgba(239,68,68,0.4)',
-                      transition:'all 0.2s',
-                      '&:hover:not(:disabled)':{ transform:'translateY(-2px)', boxShadow:'0 10px 36px rgba(239,68,68,0.5)' },
-                      '&:disabled':{ bgcolor:'rgba(15,23,42,0.07)', color:SUB, boxShadow:'none' } }}>
-                    {loading ? 'Ajout…' : needsColor ? 'Choisissez' : 'Acheter maintenant'}
+                    sx={{ py:1.4, px:2.5, borderRadius:'8px', fontWeight:500, fontSize:14.5, color:'#fff',
+                      bgcolor: ctaDisabled ? undefined : OR,
+                      transition:'background 0.15s ease, transform 0.1s ease',
+                      '&:hover:not(:disabled)':{ bgcolor:OR_HOVER },
+                      '&:active:not(:disabled)':{ transform:'scale(0.98)' },
+                      '&:focus-visible':{ outline:`2px solid ${OR}`, outlineOffset:2 },
+                      '&:disabled':{ bgcolor:'rgba(15,27,46,0.07)', color:SUB } }}>
+                    {loading ? 'ajout…' : needsColor ? 'choisissez' : 'acheter maintenant'}
                   </Button>
                 </Box>
 
                 <Button fullWidth onClick={addToCart} disabled={ctaDisabled}
                   startIcon={loading ? <CircularProgress size={16} color="inherit"/> : <ShoppingCart sx={{ fontSize:18 }}/>}
-                  sx={{ py:1.6, borderRadius:'14px', fontWeight:800, fontSize:13.5, color:OR, letterSpacing:'0.2px',
-                    bgcolor:'#fff', border:`2px solid ${ctaDisabled?BORD:OR}`,
-                    '&:hover:not(:disabled)':{ bgcolor:'rgba(255,107,0,0.06)' },
+                  sx={{ py:1.3, borderRadius:'8px', fontWeight:500, fontSize:14, color:NAVY, letterSpacing:0,
+                    bgcolor:'transparent', border:`1px solid ${ctaDisabled?BORD:NAVY}`,
+                    transition:'background 0.15s ease, transform 0.1s ease',
+                    '&:hover:not(:disabled)':{ bgcolor:'rgba(15,27,46,0.05)' },
+                    '&:active:not(:disabled)':{ transform:'scale(0.98)' },
+                    '&:focus-visible':{ outline:`2px solid ${NAVY}`, outlineOffset:2 },
                     '&:disabled':{ color:SUB, borderColor:BORD } }}>
-                  {loading ? '…' : stock===0 ? 'Épuisé' : needsColor ? 'Choisir' : 'Ajouter au panier'}
+                  {loading ? '…' : stock===0 ? 'épuisé' : needsColor ? 'choisir' : 'ajouter au panier'}
                 </Button>
               </Box>
             )}
 
-            <Button fullWidth variant="outlined"
-              onClick={contactSeller}
-              disabled={chatLoading}
-              startIcon={chatLoading ? <CircularProgress size={18} color="inherit"/> : <Chat sx={{ fontSize:20 }}/>}
-              sx={{ py:1.7, borderRadius:'14px', fontWeight:700, fontSize:14.5, mb:3.5,
-                borderWidth:1.5, borderColor:BORD, color:SUB2,
-                '&:hover':{ bgcolor:'rgba(15,23,42,0.06)', borderColor:'rgba(15,23,42,0.16)', color:TXT }, transition:'all 0.18s' }}>
-              Contacter le vendeur
-            </Button>
-
             {/* trust badges */}
-            <Box sx={{ display:'grid', gridTemplateColumns:{ xs:'1fr 1fr', lg:'repeat(4, 1fr)' }, gap:1, mb:3.5, maxWidth:{ lg:640 } }}>
+            <Box sx={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:1, mb:3.5, maxWidth:{ lg:480 } }}>
               {[
-                { Icon:Security,      label:'Paiement sécurisé',   c:'#6366F1' },
-                { Icon:LocalShipping, label:product.hasDelivery?'Livraison dispo.':'Retrait vendeur', c:GRN },
-                { Icon:Verified,      label:product.store?.isVerified?'Boutique vérifiée':'Vendeur DealPam', c:OR },
-                { Icon:FlashOn,       label:'Messages chiffrés', c:'#F472B6' },
-              ].map(({ Icon, label, c },i)=>(
-                <Box key={i} sx={{ display:'flex', alignItems:'center', gap:1, p:1.2, borderRadius:'10px', bgcolor:'rgba(15,23,42,0.03)', border:`1px solid ${BORD}` }}>
-                  <Box sx={{ width:24, height:24, borderRadius:'7px', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', bgcolor:`${c}1A` }}>
+                { Icon:Security,      label:'Paiement sécurisé',   bg:TEAL_BG, c:TEAL_TXT },
+                { Icon:LocalShipping, label:product.hasDelivery?'Livraison dispo.':'Retrait vendeur', bg:TEAL_BG, c:TEAL_TXT },
+                { Icon:Verified,      label:product.store?.isVerified?'Boutique vérifiée':'Vendeur DealPam', bg:OR_BG, c:OR_TXT },
+                { Icon:FlashOn,       label:'Messages chiffrés', bg:OR_BG, c:OR_TXT },
+              ].map(({ Icon, label, bg, c },i)=>(
+                <Box key={i} sx={{ display:'flex', alignItems:'center', gap:1, p:1.2, borderRadius:'10px', bgcolor:BG_MUTED, border:`1px solid ${BORD}` }}>
+                  <Box sx={{ width:24, height:24, borderRadius:'7px', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', bgcolor:bg }}>
                     <Icon sx={{ fontSize:13, color:c }}/>
                   </Box>
                   <Typography fontSize={11.5} fontWeight={700} color={TXT} noWrap>{label}</Typography>
@@ -987,14 +1054,16 @@ export default function ProductDetailPage() {
 
         </Box>
 
-        {/* recommendations */}
+        {/* recommendations (autres que "produits similaires", en dessous) */}
         <Box sx={{ mt:6, px:{ xs:2, md:0 } }}>
-          <MRow title="Produits similaires" products={sim}/>
           {spon.length>0&&<MRow title={dept?`Sponsorisés · ${dept}`:'Sponsorisés'} badge="PROMO" products={spon}/>}
           {stP.length>0&&<MRow title={`Plus de ${product.store?.name??'cette boutique'}`} products={stP}/>}
           {hist.length>0&&<MRow title="Récemment consultés" products={hist}/>}
         </Box>
       </Box>
+
+      {/* produits similaires — section pleine largeur, fond distinct */}
+      <SimilarProductsSection products={sim}/>
 
       {/* floating cart panel — desktop only, mirrors the Temu-style persistent mini-cart */}
       {miniCart?.items?.length > 0 && (
