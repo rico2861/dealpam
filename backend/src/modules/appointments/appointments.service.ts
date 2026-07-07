@@ -1,10 +1,18 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
+import { NotificationsService } from '../notifications/notifications.service';
+
+const STATUS_LABEL: Record<string, string> = {
+  CONFIRMED: 'confirmé',
+  REFUSED:   'refusé',
+  DONE:      'marqué comme terminé',
+  CANCELLED: 'annulé',
+};
 
 @Injectable()
 export class AppointmentsService {
-  constructor(private prisma: PrismaService, private mail: MailService) {}
+  constructor(private prisma: PrismaService, private mail: MailService, private notifications: NotificationsService) {}
 
   // ── Client: book with account ──────────────────────────────────────────────
 
@@ -83,8 +91,10 @@ export class AppointmentsService {
 
   // ── Seller: get all appointments across all their stores ───────────────────
 
-  async findForSeller(sellerId: string) {
-    const stores = await this.prisma.store.findMany({ where: { sellerId }, select: { id: true } });
+  async findForSeller(userId: string) {
+    const seller = await this.prisma.seller.findUnique({ where: { userId }, select: { id: true } });
+    if (!seller) return [];
+    const stores = await this.prisma.store.findMany({ where: { sellerId: seller.id }, select: { id: true } });
     const storeIds = stores.map(s => s.id);
     return (this.prisma.appointment as any).findMany({
       where: { storeId: { in: storeIds } },
@@ -95,8 +105,10 @@ export class AppointmentsService {
 
   // ── Seller: update status ─────────────────────────────────────────────────
 
-  async updateStatus(sellerId: string, id: string, status: string, sellerNote?: string) {
-    const stores = await this.prisma.store.findMany({ where: { sellerId }, select: { id: true } });
+  async updateStatus(userId: string, id: string, status: string, sellerNote?: string) {
+    const seller = await this.prisma.seller.findUnique({ where: { userId }, select: { id: true } });
+    if (!seller) throw new ForbiddenException('Rendez-vous introuvable');
+    const stores = await this.prisma.store.findMany({ where: { sellerId: seller.id }, select: { id: true } });
     const storeIds = stores.map(s => s.id);
     // updateMany re-filtre par storeId pour éviter toute fenêtre TOCTOU entre la vérification
     // d'appartenance et l'écriture (au lieu d'un findFirst suivi d'un update({ where: { id } })).
@@ -105,7 +117,32 @@ export class AppointmentsService {
       data: { status, sellerNote },
     });
     if (result.count === 0) throw new ForbiddenException('Rendez-vous introuvable');
-    return (this.prisma.appointment as any).findUnique({ where: { id } });
+    const appt = await (this.prisma.appointment as any).findUnique({
+      where: { id },
+      include: { product: true, store: true },
+    });
+    if (['CONFIRMED', 'REFUSED', 'DONE'].includes(status)) {
+      await this.notifyClient(appt, status);
+    }
+    return appt;
+  }
+
+  // ── Notify the client (registered user or guest) of a status change ───────
+
+  private async notifyClient(appt: any, status: string) {
+    const label = STATUS_LABEL[status] ?? status;
+    const when = new Date(appt.scheduledAt).toLocaleString('fr-FR');
+    const subject = `Votre rendez-vous a été ${label} — Dealpam`;
+    const body = `Votre rendez-vous pour <strong>${appt.product?.name}</strong> le <strong>${when}</strong> a été <strong>${label}</strong> par ${appt.store?.name}.` +
+      (appt.sellerNote ? `<br/><br/>Note du vendeur : ${appt.sellerNote}` : '');
+
+    const user = appt.userId ? await this.prisma.user.findUnique({ where: { id: appt.userId }, select: { email: true } }) : null;
+    const email = user?.email ?? appt.clientEmail;
+    if (email) this.mail.sendRaw(email, subject, body, 'client').catch(() => null);
+
+    if (appt.userId) {
+      await this.notifications.create(appt.userId, subject, `Rendez-vous ${label} pour ${appt.product?.name} le ${when}.`, 'APPOINTMENT_STATUS', { appointmentId: appt.id, status });
+    }
   }
 
   // ── Client: cancel own appointment ────────────────────────────────────────
