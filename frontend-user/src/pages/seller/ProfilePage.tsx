@@ -45,6 +45,8 @@ const BUSINESS_TYPES = [
   { value: 'VEHICLE',     label: 'Véhicules' },
   { value: 'SERVICES',    label: 'Services' },
   { value: 'ELECTRONICS', label: 'Électronique' },
+  { value: 'RESTAURANT',  label: 'Restaurant' },
+  { value: 'CLINIC',      label: 'Clinique / Santé' },
   { value: 'OTHER',       label: 'Autre' },
 ];
 

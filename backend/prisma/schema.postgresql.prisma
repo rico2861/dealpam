@@ -36,6 +36,8 @@ enum BusinessType {
   VEHICLE
   SERVICES
   ELECTRONICS
+  RESTAURANT
+  CLINIC
   OTHER
 }
 
