@@ -10,6 +10,7 @@ import {
 } from '@mui/icons-material';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import api from '../../api/axios';
+import { compressImages } from '../../utils/compressImage';
 
 const OR   = '#FF6B00';
 const BG   = '#F7F8FA';
@@ -99,10 +100,12 @@ function ImagePicker({ images, onChange }: { images: File[]; onChange: (files: F
         )}
       </Box>
       <input ref={inputRef} type="file" accept="image/*" multiple hidden
-        onChange={e => {
+        onChange={async e => {
           const picked = Array.from(e.target.files ?? []);
-          onChange([...images, ...picked].slice(0, 5));
           e.target.value = '';
+          if (!picked.length) return;
+          const compressed = await compressImages(picked);
+          onChange([...images, ...compressed].slice(0, 5));
         }} />
     </Box>
   );

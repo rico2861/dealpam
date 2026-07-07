@@ -12,6 +12,7 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import api from '../../api/axios';
+import { compressImages, compressImage } from '../../utils/compressImage';
 
 // ── Palette ────────────────────────────────────────────────────────────────
 
@@ -126,7 +127,7 @@ function DarkToggle({ checked, onChange, label, sub }: { checked: boolean; onCha
       </Box>
       <Box className="track" sx={{
         width: 44, height: 24, borderRadius: '12px', flexShrink: 0, ml: 2,
-        bgcolor: checked ? OR : '#1A2540', border: `1.5px solid ${checked ? OR : BORD}`,
+        bgcolor: checked ? OR : 'rgba(15,23,42,0.12)', border: `1.5px solid ${checked ? OR : BORD}`,
         position: 'relative', transition: 'all 0.2s',
       }}>
         <Box sx={{
@@ -248,12 +249,18 @@ export default function AddProductPage() {
   const setAttr = (k: string, v: string) => setAttrs(p => ({ ...p, [k]: v }));
 
   // Photos
-  const addPhotos = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [compressing, setCompressing] = useState(false);
+  const addPhotos = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    const valid = files.slice(0, maxImages - mainImages.length).filter(f => f.size <= 8 * 1024 * 1024);
-    setMainImages(p => [...p, ...valid]);
-    setMainPreviews(p => [...p, ...valid.map(f => URL.createObjectURL(f))]);
+    const valid = files.slice(0, maxImages - mainImages.length).filter(f => f.size <= 15 * 1024 * 1024);
     e.target.value = '';
+    if (!valid.length) return;
+    setCompressing(true);
+    try {
+      const compressed = await compressImages(valid);
+      setMainImages(p => [...p, ...compressed]);
+      setMainPreviews(p => [...p, ...compressed.map(f => URL.createObjectURL(f))]);
+    } finally { setCompressing(false); }
   };
   const removePhoto = (i: number) => {
     URL.revokeObjectURL(mainPreviews[i]);
@@ -371,13 +378,15 @@ export default function AddProductPage() {
 
           {/* ── PHOTOS ── */}
           <SectionCard title="Photos" icon={<AddPhotoAlternate sx={{ fontSize: 17 }} />}>
-            <Typography fontSize={12} color={SUB} mb={2}>La première photo sera l'image principale. Max {maxImages} photos, 8 Mo chacune.</Typography>
+            <Typography fontSize={12} color={SUB} mb={2}>La première photo sera l'image principale. Max {maxImages} photos — elles sont automatiquement compressées avant l'envoi.</Typography>
             <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
               {mainImages.length < maxImages && (
-                <Box onClick={() => mainImgRef.current?.click()}
-                  sx={{ width: 96, height: 96, borderRadius: '12px', border: `2px dashed ${BORD}`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 0.8, cursor: 'pointer', bgcolor: 'rgba(15,23,42,0.09)', transition: 'all 0.15s', '&:hover': { borderColor: OR, bgcolor: `${OR}08` } }}>
-                  <AddPhotoAlternate sx={{ fontSize: 28, color: SUB }} />
-                  <Typography fontSize={10.5} color={SUB} textAlign="center">{mainImages.length === 0 ? 'Photo\nprincipale' : 'Ajouter'}</Typography>
+                <Box onClick={() => !compressing && mainImgRef.current?.click()}
+                  sx={{ width: 96, height: 96, borderRadius: '12px', border: `2px dashed ${BORD}`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 0.8, cursor: compressing ? 'wait' : 'pointer', bgcolor: 'rgba(15,23,42,0.09)', transition: 'all 0.15s', '&:hover': compressing ? {} : { borderColor: OR, bgcolor: `${OR}08` } }}>
+                  {compressing
+                    ? <CircularProgress size={22} sx={{ color: OR }} />
+                    : <AddPhotoAlternate sx={{ fontSize: 28, color: SUB }} />}
+                  <Typography fontSize={10.5} color={SUB} textAlign="center">{compressing ? 'Optimisation…' : mainImages.length === 0 ? 'Photo\nprincipale' : 'Ajouter'}</Typography>
                 </Box>
               )}
               {mainPreviews.map((src, i) => (
