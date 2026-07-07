@@ -33,6 +33,10 @@ const useUserLoc  = () => useContext(LocationCtx);
 const OR  = '#FF6B00';
 const ORD = '#E05A00';
 const BG  = '#0F172A';
+const PRODUCT_TYPE_LABEL: Record<string, string> = {
+  SERVICE: 'Service', RENTAL: 'Location', VEHICLE: 'Véhicule', FOOD: 'Alimentation',
+  REAL_ESTATE: 'Immobilier', FREELANCE: 'Freelance',
+};
 const PG  = '#FAFAFA';
 
 /* ─── CSS ─────────────────────────────────────────────────────────────────── */
@@ -1047,7 +1051,7 @@ function ProductCard({ p, flash = false, compact = false }: { p: any; flash?: bo
               borderRadius: '6px', px: compact ? '5px' : '6px', py: compact ? '3px' : '4px',
               letterSpacing: 0.2, textTransform: 'uppercase',
             }}>
-              {p.productType === 'SERVICE' ? 'Service' : p.productType === 'RENTAL' ? 'Location' : p.productType === 'VEHICLE' ? 'Véhicule' : 'Service'}
+              {PRODUCT_TYPE_LABEL[p.productType] ?? 'Service'}
             </Box>
           )}
 

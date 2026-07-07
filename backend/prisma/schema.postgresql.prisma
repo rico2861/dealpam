@@ -54,6 +54,8 @@ enum ProductType {
   RENTAL
   VEHICLE
   FOOD
+  REAL_ESTATE
+  FREELANCE
 }
 
 enum ProductStatus {

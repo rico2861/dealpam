@@ -5,7 +5,7 @@ import {
   FormControl, FormControlLabel, Checkbox, Button, CircularProgress, Alert,
 } from '@mui/material';
 import {
-  MedicalServices, Home, DesignServices,
+  MedicalServices, Home, DesignServices, RestaurantMenu,
   Add, ArrowBack, CheckCircle, Schedule, AddPhotoAlternate, Close,
 } from '@mui/icons-material';
 import { useMutation, useQuery } from '@tanstack/react-query';
@@ -53,6 +53,7 @@ const LISTING_TYPES = [
   { key: 'SERVICE',     label: 'Service / Rendez-vous', desc: 'Clinique, coiffeur, massage, consultation… Les clients prennent RDV en ligne.', icon: MedicalServices, color: GRN },
   { key: 'REAL_ESTATE', label: 'Immobilier',            desc: 'Vente ou location de maison, appartement, terrain, bureau…',                    icon: Home,           color: BLU },
   { key: 'FREELANCE',   label: 'Freelance / Prestation', desc: 'Design, programmation, rédaction, marketing… Comme Fiverr.',                   icon: DesignServices,  color: PUR },
+  { key: 'FOOD',        label: 'Restaurant / Plat',      desc: 'Plats, menus… Le client commande directement, pas de rendez-vous.',            icon: RestaurantMenu, color: '#F97316' },
 ];
 
 const SERVICE_CATEGORIES = [
@@ -203,6 +204,20 @@ function FreelanceForm({ data, onChange }: { data: any; onChange: (d: any) => vo
       <TextField fullWidth label="Compétences / Technologies utilisées" sx={fieldSx}
         value={data.skills || ''} onChange={e => set('skills', e.target.value)}
         placeholder="Ex: Photoshop, Illustrator, React, Figma…" />
+    </Box>
+  );
+}
+
+function FoodForm({ data, onChange }: { data: any; onChange: (d: any) => void }) {
+  const set = (k: string, v: any) => onChange({ ...data, [k]: v });
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <TextField fullWidth label="Prix du plat (HTG)" type="number" sx={fieldSx}
+        value={data.price || ''} onChange={e => set('price', Number(e.target.value))} />
+      <TextField fullWidth label="Ingrédients (optionnel)" multiline rows={3} sx={fieldSx}
+        value={data.ingredients || ''} onChange={e => set('ingredients', e.target.value)}
+        placeholder="Ex: Riz, poulet grillé, bananes pesées, sauce créole…"
+        helperText="Utile pour les clients allergiques ou avec des préférences alimentaires" />
     </Box>
   );
 }
@@ -406,11 +421,12 @@ export default function AddServicePage() {
         {/* Type-specific */}
         <Box sx={{ bgcolor: CARD, border: `1px solid ${BORD}`, borderRadius: '16px', p: 3, mb: 2.5 }}>
           <Typography fontSize={12} fontWeight={700} color={SUB} sx={{ textTransform: 'uppercase', letterSpacing: '0.8px', mb: 2 }}>
-            {listingType === 'SERVICE' ? 'Détails du service' : listingType === 'REAL_ESTATE' ? 'Caractéristiques du bien' : 'Offre freelance'}
+            {listingType === 'SERVICE' ? 'Détails du service' : listingType === 'REAL_ESTATE' ? 'Caractéristiques du bien' : listingType === 'FOOD' ? 'Détails du plat' : 'Offre freelance'}
           </Typography>
           {listingType === 'SERVICE'     && <ServiceForm     data={extra} onChange={setExtra} />}
           {listingType === 'REAL_ESTATE' && <RealEstateForm  data={extra} onChange={setExtra} />}
           {listingType === 'FREELANCE'   && <FreelanceForm   data={extra} onChange={setExtra} />}
+          {listingType === 'FOOD'        && <FoodForm        data={extra} onChange={setExtra} />}
         </Box>
 
         {/* RDV info banner */}

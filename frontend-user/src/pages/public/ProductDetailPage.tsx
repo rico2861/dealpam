@@ -41,6 +41,10 @@ const COND: Record<string, { label: string; color: string; bg: string }> = {
   used:        { label: 'Occasion',      color: GLD,       bg: 'rgba(245,158,11,0.12)' },
   damaged:     { label: 'Endommagé',     color: RED,       bg: 'rgba(239,68,68,0.12)' },
 };
+const PRODUCT_TYPE_LABEL: Record<string, string> = {
+  SERVICE: 'Service', RENTAL: 'Location', VEHICLE: 'Véhicule', FOOD: 'Alimentation',
+  REAL_ESTATE: 'Immobilier', FREELANCE: 'Freelance',
+};
 const ATTR: Record<string, string> = {
   brand:'Marque',model:'Modèle',storage:'Stockage',ram:'RAM',network:'Réseau',
   os:'Système',screenSize:'Écran',battery:'Batterie',material:'Matière',
@@ -237,6 +241,11 @@ export default function ProductDetailPage() {
   const stP  = (stR  ??[]).filter((p:any)=>p.slug!==slug).slice(0,8);
   const attrs: Record<string,string> = typeof product?.attributes==='object'&&product.attributes ? product.attributes : {};
   const hasA  = Object.keys(attrs).length>0;
+  const serviceConfig: Record<string,any> = (() => {
+    try { return typeof product?.serviceConfig==='string' ? JSON.parse(product.serviceConfig) : (product?.serviceConfig||{}); }
+    catch { return {}; }
+  })();
+  const ingredients = attrs.ingredients || serviceConfig.ingredients;
   const desc  = product?.description||'';
   const descS = desc.length>500&&!more ? desc.slice(0,500)+'…' : desc;
 
@@ -354,6 +363,8 @@ export default function ProductDetailPage() {
   const cond        = COND[product.condition??'new'] ?? COND.new;
   const needsColor  = colors.length > 0 && !clr;
   const ctaDisabled = loading || stock === 0;
+  const isPhysical  = !product.productType || product.productType === 'PHYSICAL';
+  const showPurchaseFlow = !product.requiresAppointment;
 
   return (
     <Box sx={{ bgcolor:BG, minHeight:'100vh', pb:{ xs:14, md:6 } }}>
@@ -507,7 +518,7 @@ export default function ProductDetailPage() {
               {product.productType && product.productType !== 'PHYSICAL' && (
                 <Box sx={{ px:1.4, py:0.4, borderRadius:'20px', bgcolor:'rgba(99,102,241,0.14)', border:'1px solid rgba(99,102,241,0.35)' }}>
                   <Typography fontSize={11} fontWeight={700} color="#818CF8" letterSpacing="0.5px" textTransform="uppercase">
-                    {product.productType === 'SERVICE' ? 'Service' : product.productType === 'RENTAL' ? 'Location' : product.productType === 'VEHICLE' ? 'Véhicule' : 'Alimentation'}
+                    {PRODUCT_TYPE_LABEL[product.productType] ?? 'Alimentation'}
                   </Typography>
                 </Box>
               )}
@@ -647,15 +658,25 @@ export default function ProductDetailPage() {
               </Box>
             )}
 
-            {/* stock + location */}
-            <Box sx={{ display:'flex', alignItems:'center', gap:1.5, mb:3, flexWrap:'wrap' }}>
-              <Box sx={{ display:'flex' }}>
-                {stock>10
-                  ? <Box sx={{ display:'flex', alignItems:'center', gap:0.6, px:1.4, py:0.5, borderRadius:'20px', bgcolor:'rgba(16,185,129,0.1)', border:'1px solid rgba(16,185,129,0.2)' }}><CheckCircle sx={{ fontSize:13, color:GRN }}/><Typography fontSize={12.5} color={GRN} fontWeight={700}>En stock · {stock} dispo.</Typography></Box>
-                  : stock>0
-                  ? <Box sx={{ display:'flex', alignItems:'center', gap:0.6, px:1.4, py:0.5, borderRadius:'20px', bgcolor:'rgba(245,158,11,0.1)', border:'1px solid rgba(245,158,11,0.25)' }}><Warning sx={{ fontSize:13, color:GLD }}/><Typography fontSize={12.5} color={GLD} fontWeight={700}>Plus que {stock} !</Typography></Box>
-                  : <Box sx={{ display:'flex', alignItems:'center', gap:0.6, px:1.4, py:0.5, borderRadius:'20px', bgcolor:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.25)' }}><Inventory sx={{ fontSize:13, color:RED }}/><Typography fontSize={12.5} color={RED} fontWeight={700}>Rupture de stock</Typography></Box>}
+            {/* ingrédients — plats (restaurants) uniquement */}
+            {ingredients&&(
+              <Box sx={{ mb:3, p:2, borderRadius:'14px', bgcolor:'rgba(16,185,129,0.06)', border:'1px solid rgba(16,185,129,0.2)' }}>
+                <Typography fontSize={12} fontWeight={700} color={GRN} textTransform="uppercase" letterSpacing="0.6px" mb={0.8}>Ingrédients</Typography>
+                <Typography fontSize={13.5} color={SUB2} lineHeight={1.6}>{ingredients}</Typography>
               </Box>
+            )}
+
+            {/* stock + location — le concept de stock ne s'applique qu'aux produits physiques */}
+            <Box sx={{ display:'flex', alignItems:'center', gap:1.5, mb:3, flexWrap:'wrap' }}>
+              {isPhysical&&(
+                <Box sx={{ display:'flex' }}>
+                  {stock>10
+                    ? <Box sx={{ display:'flex', alignItems:'center', gap:0.6, px:1.4, py:0.5, borderRadius:'20px', bgcolor:'rgba(16,185,129,0.1)', border:'1px solid rgba(16,185,129,0.2)' }}><CheckCircle sx={{ fontSize:13, color:GRN }}/><Typography fontSize={12.5} color={GRN} fontWeight={700}>En stock · {stock} dispo.</Typography></Box>
+                    : stock>0
+                    ? <Box sx={{ display:'flex', alignItems:'center', gap:0.6, px:1.4, py:0.5, borderRadius:'20px', bgcolor:'rgba(245,158,11,0.1)', border:'1px solid rgba(245,158,11,0.25)' }}><Warning sx={{ fontSize:13, color:GLD }}/><Typography fontSize={12.5} color={GLD} fontWeight={700}>Plus que {stock} !</Typography></Box>
+                    : <Box sx={{ display:'flex', alignItems:'center', gap:0.6, px:1.4, py:0.5, borderRadius:'20px', bgcolor:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.25)' }}><Inventory sx={{ fontSize:13, color:RED }}/><Typography fontSize={12.5} color={RED} fontWeight={700}>Rupture de stock</Typography></Box>}
+                </Box>
+              )}
               {(product.city||product.department)&&(
                 <Box sx={{ display:'flex', alignItems:'center', gap:0.5 }}>
                   <LocationOn sx={{ fontSize:13, color:SUB }}/>
@@ -664,55 +685,58 @@ export default function ProductDetailPage() {
               )}
             </Box>
 
-            {/* qty */}
-            <Box sx={{ display:'flex', alignItems:'center', gap:3, mb:3 }}>
-              <Typography fontSize={12} fontWeight={600} color={SUB} textTransform="uppercase" letterSpacing="0.8px">Quantité</Typography>
-              <Box sx={{ display:'flex', alignItems:'center', bgcolor:'rgba(15,23,42,0.06)', border:`1.5px solid ${BORD}`, borderRadius:'10px', overflow:'hidden', height:44 }}>
-                <IconButton size="small" onClick={()=>setQty(q=>Math.max(1,q-1))}
-                  sx={{ borderRadius:0, px:2, height:'100%', color:TXT, '&:hover':{ bgcolor:'rgba(255,107,0,0.1)' } }}>
-                  <Typography fontWeight={600} fontSize={20} lineHeight={1}>−</Typography>
-                </IconButton>
-                <Typography sx={{ px:3, fontWeight:900, fontSize:16, minWidth:44, textAlign:'center', color:TXT }}>{qty}</Typography>
-                <IconButton size="small" onClick={()=>setQty(q=>Math.min(stock||99,q+1))}
-                  sx={{ borderRadius:0, px:2, height:'100%', color:TXT, '&:hover':{ bgcolor:'rgba(255,107,0,0.1)' } }}>
-                  <Typography fontWeight={600} fontSize={20} lineHeight={1}>+</Typography>
-                </IconButton>
-              </Box>
-            </Box>
+            {/* qty + CTA achat — masqués pour les services nécessitant un RDV (la prise de RDV ci-dessus remplace l'achat) */}
+            {showPurchaseFlow&&(
+              <>
+                <Box sx={{ display:'flex', alignItems:'center', gap:3, mb:3 }}>
+                  <Typography fontSize={12} fontWeight={600} color={SUB} textTransform="uppercase" letterSpacing="0.8px">Quantité</Typography>
+                  <Box sx={{ display:'flex', alignItems:'center', bgcolor:'rgba(15,23,42,0.06)', border:`1.5px solid ${BORD}`, borderRadius:'10px', overflow:'hidden', height:44 }}>
+                    <IconButton size="small" onClick={()=>setQty(q=>Math.max(1,q-1))}
+                      sx={{ borderRadius:0, px:2, height:'100%', color:TXT, '&:hover':{ bgcolor:'rgba(255,107,0,0.1)' } }}>
+                      <Typography fontWeight={600} fontSize={20} lineHeight={1}>−</Typography>
+                    </IconButton>
+                    <Typography sx={{ px:3, fontWeight:900, fontSize:16, minWidth:44, textAlign:'center', color:TXT }}>{qty}</Typography>
+                    <IconButton size="small" onClick={()=>setQty(q=>Math.min(stock||99,q+1))}
+                      sx={{ borderRadius:0, px:2, height:'100%', color:TXT, '&:hover':{ bgcolor:'rgba(255,107,0,0.1)' } }}>
+                      <Typography fontWeight={600} fontSize={20} lineHeight={1}>+</Typography>
+                    </IconButton>
+                  </Box>
+                </Box>
 
-            {/* ── MAIN CTA ── */}
-            <Box sx={{ display:'flex', flexDirection:'column', gap:1.5, mb:3.5, maxWidth:{ lg:480 } }}>
-              <Box sx={{ display:'flex', gap:1.2 }}>
-                <Button fullWidth onClick={addToCart} disabled={ctaDisabled}
-                  startIcon={loading ? <CircularProgress size={16} color="inherit"/> : <ShoppingCart sx={{ fontSize:18 }}/>}
-                  sx={{ py:1.8, borderRadius:'14px', fontWeight:800, fontSize:13.5, color:OR, letterSpacing:'0.2px',
-                    bgcolor:'#fff', border:`2px solid ${ctaDisabled?BORD:OR}`,
-                    '&:hover:not(:disabled)':{ bgcolor:'rgba(255,107,0,0.06)' },
-                    '&:disabled':{ color:SUB, borderColor:BORD } }}>
-                  {loading ? '…' : stock===0 ? 'Épuisé' : needsColor ? 'Choisir' : 'Ajouter'}
-                </Button>
-                <Button fullWidth onClick={buyNow} disabled={ctaDisabled}
-                  endIcon={!loading&&<ArrowForward sx={{ fontSize:18 }}/>}
-                  sx={{ py:1.8, borderRadius:'14px', fontWeight:900, fontSize:14.5, color:'#fff', letterSpacing:'0.2px',
-                    background: ctaDisabled ? undefined : `linear-gradient(135deg,#C84D00,${RED},#FF8C38)`,
-                    boxShadow: ctaDisabled ? undefined : '0 6px 28px rgba(239,68,68,0.4)',
-                    transition:'all 0.2s',
-                    '&:hover:not(:disabled)':{ transform:'translateY(-2px)', boxShadow:'0 10px 36px rgba(239,68,68,0.5)' },
-                    '&:disabled':{ bgcolor:'rgba(15,23,42,0.07)', color:SUB, boxShadow:'none' } }}>
-                  {loading ? 'Ajout…' : needsColor ? 'Choisissez' : 'Acheter maintenant'}
-                </Button>
-              </Box>
+                <Box sx={{ display:'flex', flexDirection:'column', gap:1.5, mb:3.5, maxWidth:{ lg:480 } }}>
+                  <Box sx={{ display:'flex', gap:1.2 }}>
+                    <Button fullWidth onClick={addToCart} disabled={ctaDisabled}
+                      startIcon={loading ? <CircularProgress size={16} color="inherit"/> : <ShoppingCart sx={{ fontSize:18 }}/>}
+                      sx={{ py:1.8, borderRadius:'14px', fontWeight:800, fontSize:13.5, color:OR, letterSpacing:'0.2px',
+                        bgcolor:'#fff', border:`2px solid ${ctaDisabled?BORD:OR}`,
+                        '&:hover:not(:disabled)':{ bgcolor:'rgba(255,107,0,0.06)' },
+                        '&:disabled':{ color:SUB, borderColor:BORD } }}>
+                      {loading ? '…' : stock===0 ? 'Épuisé' : needsColor ? 'Choisir' : 'Ajouter'}
+                    </Button>
+                    <Button fullWidth onClick={buyNow} disabled={ctaDisabled}
+                      endIcon={!loading&&<ArrowForward sx={{ fontSize:18 }}/>}
+                      sx={{ py:1.8, borderRadius:'14px', fontWeight:900, fontSize:14.5, color:'#fff', letterSpacing:'0.2px',
+                        background: ctaDisabled ? undefined : `linear-gradient(135deg,#C84D00,${RED},#FF8C38)`,
+                        boxShadow: ctaDisabled ? undefined : '0 6px 28px rgba(239,68,68,0.4)',
+                        transition:'all 0.2s',
+                        '&:hover:not(:disabled)':{ transform:'translateY(-2px)', boxShadow:'0 10px 36px rgba(239,68,68,0.5)' },
+                        '&:disabled':{ bgcolor:'rgba(15,23,42,0.07)', color:SUB, boxShadow:'none' } }}>
+                      {loading ? 'Ajout…' : needsColor ? 'Choisissez' : 'Acheter maintenant'}
+                    </Button>
+                  </Box>
+                </Box>
+              </>
+            )}
 
-              <Button fullWidth variant="outlined"
-                onClick={contactSeller}
-                disabled={chatLoading}
-                startIcon={chatLoading ? <CircularProgress size={18} color="inherit"/> : <Chat sx={{ fontSize:20 }}/>}
-                sx={{ py:1.7, borderRadius:'14px', fontWeight:700, fontSize:14.5,
-                  borderWidth:1.5, borderColor:BORD, color:SUB2,
-                  '&:hover':{ bgcolor:'rgba(15,23,42,0.06)', borderColor:'rgba(15,23,42,0.16)', color:TXT }, transition:'all 0.18s' }}>
-                Contacter le vendeur
-              </Button>
-            </Box>
+            <Button fullWidth variant="outlined"
+              onClick={contactSeller}
+              disabled={chatLoading}
+              startIcon={chatLoading ? <CircularProgress size={18} color="inherit"/> : <Chat sx={{ fontSize:20 }}/>}
+              sx={{ py:1.7, borderRadius:'14px', fontWeight:700, fontSize:14.5, mb:3.5,
+                borderWidth:1.5, borderColor:BORD, color:SUB2,
+                '&:hover':{ bgcolor:'rgba(15,23,42,0.06)', borderColor:'rgba(15,23,42,0.16)', color:TXT }, transition:'all 0.18s' }}>
+              Contacter le vendeur
+            </Button>
 
             {/* trust badges */}
             <Box sx={{ display:'grid', gridTemplateColumns:{ xs:'1fr 1fr', lg:'repeat(4, 1fr)' }, gap:1, mb:3.5, maxWidth:{ lg:640 } }}>
@@ -992,7 +1016,13 @@ export default function ProductDetailPage() {
           variant="outlined">
           Vendeur
         </Button>
-        {!inCart ? (
+        {product.requiresAppointment ? (
+          <Button size="small" onClick={()=>setApptOpen(true)}
+            sx={{ py:1.2, borderRadius:'10px', fontWeight:900, fontSize:13, px:2.2, color:'#fff', flexShrink:0,
+              background:'linear-gradient(135deg,#4338CA,#6366F1)' }}>
+            RDV
+          </Button>
+        ) : !inCart ? (
           <Button size="small"
             onClick={needsColor ? ()=>document.getElementById('color-picker')?.scrollIntoView({behavior:'smooth',block:'center'}) : addToCart}
             disabled={loading||stock===0}
