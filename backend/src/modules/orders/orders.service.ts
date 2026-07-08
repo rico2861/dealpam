@@ -199,15 +199,23 @@ export class OrdersService {
   }
 
   // ── Vendeur : changer le statut de la commande ────────────────────────────
-  async updateStatus(id: string, status: string, sellerId?: string) {
+  async updateStatus(id: string, status: string, userId?: string) {
     const SELLER_ALLOWED = ['CONFIRMED', 'PREPARING', 'SHIPPED', 'DELIVERED', 'CANCELLED'];
     const ADMIN_ALLOWED  = ['PENDING', 'CONFIRMED', 'PREPARING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'REFUNDED'];
-    const allowed = sellerId ? SELLER_ALLOWED : ADMIN_ALLOWED;
+    const allowed = userId ? SELLER_ALLOWED : ADMIN_ALLOWED;
     if (!allowed.includes(status)) {
       throw new BadRequestException(`Statut invalide. Valeurs permises: ${allowed.join(', ')}`);
     }
     const where: any = { id };
-    if (sellerId) where.store = { sellerId };
+    if (userId) {
+      // Store.sellerId référence Seller.id, pas User.id — il faut résoudre
+      // le vendeur à partir de l'utilisateur JWT avant de filtrer la commande,
+      // sinon le filtre ne matche jamais (bug: la mise à jour échouait
+      // toujours avec "Commande introuvable" pour les vendeurs).
+      const seller = await this.prisma.seller.findUnique({ where: { userId }, select: { id: true } });
+      if (!seller) throw new NotFoundException('Vendeur introuvable');
+      where.store = { sellerId: seller.id };
+    }
 
     const order = await this.prisma.order.findFirst({
       where,
@@ -302,9 +310,14 @@ export class OrdersService {
   }
 
   // ── Vendeur : ses commandes ───────────────────────────────────────────────
-  findSellerOrders(sellerId: string, page = 1) {
+  async findSellerOrders(userId: string, page = 1) {
+    // Store.sellerId référence Seller.id, pas User.id (JWT) — sans cette
+    // résolution le filtre ne matchait jamais aucune commande et la liste
+    // restait vide en production, sans erreur visible.
+    const seller = await this.prisma.seller.findUnique({ where: { userId }, select: { id: true } });
+    if (!seller) throw new NotFoundException('Vendeur introuvable');
     return this.prisma.order.findMany({
-      where:   { store: { sellerId } },
+      where:   { store: { sellerId: seller.id } },
       include: {
         user:    { select: { firstName: true, lastName: true, phone: true, email: true } },
         items:   { include: { product: { select: { name: true, images: { take: 1 } } } } },

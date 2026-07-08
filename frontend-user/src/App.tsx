@@ -209,6 +209,7 @@ export default function App() {
             <Route path="statistics" element={<StatisticsPage />} />
             <Route path="services" element={<SellerProductsPage mode="services" />} />
             <Route path="services/add" element={<AddServicePage />} />
+            <Route path="services/edit/:id" element={<AddServicePage />} />
             <Route path="appointments" element={<AppointmentsPage />} />
           </Route>
 

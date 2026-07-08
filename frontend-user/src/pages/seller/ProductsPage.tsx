@@ -258,15 +258,13 @@ export default function SellerProductsPage({ mode = 'products' }: { mode?: 'prod
 
                 {/* Actions */}
                 <Box sx={{ display: 'flex', gap: 1 }}>
-                  {mode!=='services' && (
-                    <Box onClick={() => navigate(`/seller/products/edit/${p.id}`)}
-                      sx={{ display: 'flex', alignItems: 'center', gap: 0.6, px: 1.2, py: 0.6, borderRadius: '8px',
-                        border: `1px solid ${BORD}`, cursor: 'pointer', transition: 'all 0.13s',
-                        '&:hover': { borderColor: 'rgba(255,107,0,0.4)', bgcolor: 'rgba(255,107,0,0.08)' } }}>
-                      <Edit sx={{ fontSize: 13, color: OR }}/>
-                      <Typography fontSize={12} fontWeight={600} color={OR}>Éditer</Typography>
-                    </Box>
-                  )}
+                  <Box onClick={() => navigate(mode==='services' ? `/seller/services/edit/${p.id}` : `/seller/products/edit/${p.id}`)}
+                    sx={{ display: 'flex', alignItems: 'center', gap: 0.6, px: 1.2, py: 0.6, borderRadius: '8px',
+                      border: `1px solid ${BORD}`, cursor: 'pointer', transition: 'all 0.13s',
+                      '&:hover': { borderColor: 'rgba(255,107,0,0.4)', bgcolor: 'rgba(255,107,0,0.08)' } }}>
+                    <Edit sx={{ fontSize: 13, color: OR }}/>
+                    <Typography fontSize={12} fontWeight={600} color={OR}>Éditer</Typography>
+                  </Box>
                   <Box onClick={() => setDel({ open: true, id: p.id, name: p.name })}
                     sx={{ display: 'flex', alignItems: 'center', gap: 0.6, px: 1.2, py: 0.6, borderRadius: '8px',
                       border: `1px solid ${BORD}`, cursor: 'pointer', transition: 'all 0.13s',

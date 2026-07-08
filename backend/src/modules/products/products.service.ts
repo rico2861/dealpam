@@ -157,6 +157,18 @@ export class ProductsService {
     return product;
   }
 
+  // ── Vendeur : récupérer un de ses produits par id (page d'édition) ────────
+  // findOne(slug) ne convient pas ici : l'id de route utilisé par la page
+  // d'édition vendeur est l'uuid du produit, pas son slug.
+  async getMyProductById(id: string, userId: string) {
+    const product = await this.prisma.product.findFirst({
+      where: { id, store: { seller: { userId } } },
+      include: PRODUCT_INCLUDE,
+    });
+    if (!product) throw new NotFoundException('Produit introuvable');
+    return product;
+  }
+
   async create(userId: string, dto: CreateProductDto, files: { images?: Express.Multer.File[], variantImages?: Express.Multer.File[] }) {
     const seller = await this.prisma.seller.findUnique({
       where: { userId },

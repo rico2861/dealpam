@@ -16,10 +16,14 @@ export default function EditProductPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const { data: product, isLoading } = useQuery({
+  const { data: product, isLoading, isError } = useQuery({
     queryKey: ['product-edit', id],
-    queryFn: () => api.get(`/products/${id}`).then(r => r.data),
+    // /products/:slug (findOne) attend un slug, pas l'id du produit — utiliser
+    // /products/me/:id (scoped vendeur) qui résout par id et vérifie la
+    // propriété. L'ancien appel renvoyait un 404 silencieux → spinner infini.
+    queryFn: () => api.get(`/products/me/${id}`).then(r => r.data),
     enabled: !!id,
+    retry: false,
   });
   const { data: categories } = useQuery({ queryKey: ['categories'], queryFn: () => api.get('/categories').then(r => r.data) });
   const { data: brands } = useQuery({ queryKey: ['brands'], queryFn: () => api.get('/brands').then(r => r.data) });
@@ -82,6 +86,16 @@ export default function EditProductPage() {
     }
   };
 
+  if (isError) {
+    return (
+      <Container maxWidth="sm" sx={{ py: 6 }}>
+        <Alert severity="error">
+          Impossible de charger ce produit (introuvable ou vous n'y avez pas accès).
+        </Alert>
+        <Button sx={{ mt: 2 }} onClick={() => navigate('/seller/products')}>Retour</Button>
+      </Container>
+    );
+  }
   if (isLoading || !form) return <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}><CircularProgress /></Box>;
 
   const f = (k: string) => (e: any) => setForm({ ...form, [k]: e.target.value });

@@ -13,6 +13,16 @@ import { useSnackbar } from 'notistack';
 import api from '../../api/axios';
 
 const ORANGE = '#FF6B00';
+const OR   = '#FF6B00';
+const BG   = '#F7F8FA';
+const CARD = '#FFFFFF';
+const BORD = 'rgba(15,23,42,0.06)';
+const TXT  = '#0F172A';
+const SUB  = '#64748B';
+const SUB2 = '#64748B';
+const GRN  = '#10B981';
+const RED  = '#EF4444';
+const BLU  = '#3B82F6';
 const DEPARTMENTS = ['Ouest', 'Nord', 'Nord-Est', 'Nord-Ouest', 'Artibonite', 'Centre', 'Sud', 'Sud-Est', "Grand'Anse", 'Nippes'];
 
 const PAYMENT_METHODS = [
@@ -444,7 +454,11 @@ export default function SellerStorePage() {
     queryFn: () => api.get('/sellers/me').then(r => r.data),
   });
 
-  const store = sellerData?.store;
+  // /sellers/me renvoie `stores` (tableau), pas `store` — l'ancien code lisait
+  // `sellerData?.store` (singulier), toujours undefined : la page ne se
+  // remplissait jamais et paraissait cassée/vide en production.
+  const stores: any[] = sellerData?.stores ?? [];
+  const store = stores.find((s: any) => s.isPrimary) ?? stores[0];
   const storeId = store?.id;
 
   useEffect(() => {
@@ -496,25 +510,26 @@ export default function SellerStorePage() {
   };
 
   if (isLoading) return (
-    <Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}>
-      <CircularProgress sx={{ color: ORANGE }} />
+    <Box sx={{ display: 'flex', justifyContent: 'center', py: 10, bgcolor: BG, minHeight: '100vh' }}>
+      <CircularProgress sx={{ color: OR }} />
     </Box>
   );
 
   return (
-    <Container maxWidth="lg" sx={{ py: 3 }}>
+    <Box sx={{ p: { xs: 2, md: 3 }, bgcolor: BG, minHeight: '100vh' }}>
+      <Box sx={{ maxWidth: 1200, mx: 'auto' }}>
 
       {/* Header */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3, flexWrap: 'wrap' }}>
         <input type="file" ref={logoInputRef} accept="image/*" style={{ display: 'none' }} onChange={handleLogoUpload} />
         <Box onClick={() => logoInputRef.current?.click()}
           sx={{ position: 'relative', width: 56, height: 56, borderRadius: '14px', flexShrink: 0, cursor: 'pointer',
             '&:hover .logo-overlay': { opacity: 1 } }}>
           {store?.logoUrl
             ? <Avatar src={store.logoUrl} variant="rounded" sx={{ width: 56, height: 56, borderRadius: '14px' }} />
-            : <Box sx={{ width: 56, height: 56, borderRadius: '14px', bgcolor: alpha(ORANGE, 0.12),
+            : <Box sx={{ width: 56, height: 56, borderRadius: '14px', bgcolor: alpha(OR, 0.12), border: `1px solid ${alpha(OR, 0.2)}`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Store sx={{ color: ORANGE, fontSize: 26 }} />
+                <Store sx={{ color: OR, fontSize: 26 }} />
               </Box>}
           <Box className="logo-overlay" sx={{ position: 'absolute', inset: 0, borderRadius: '14px',
             bgcolor: 'rgba(15,23,42,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -523,10 +538,10 @@ export default function SellerStorePage() {
           </Box>
         </Box>
         <Box sx={{ minWidth: 0 }}>
-          <Typography fontWeight={900} fontSize={22} color="#0F172A">
+          <Typography fontWeight={900} fontSize={{ xs: 20, md: 24 }} color={TXT} letterSpacing="-0.5px">
             {store?.name || 'Ma boutique'}
           </Typography>
-          <Typography fontSize={13} color="#64748B">
+          <Typography fontSize={13} color={SUB}>
             Gérez les informations, zones de livraison et paiements de votre boutique
           </Typography>
         </Box>
@@ -534,22 +549,27 @@ export default function SellerStorePage() {
 
       {/* Status alerts */}
       {sellerData?.status === 'PENDING' && (
-        <Alert severity="warning" sx={{ mb: 2.5, borderRadius: 1.5 }}>
+        <Alert severity="warning" sx={{ mb: 2.5, borderRadius: '14px' }}>
           Votre boutique est en cours de validation. Vous serez notifie par email.
         </Alert>
       )}
       {sellerData?.status === 'REJECTED' && (
-        <Alert severity="error" sx={{ mb: 2.5, borderRadius: 1.5 }}>
+        <Alert severity="error" sx={{ mb: 2.5, borderRadius: '14px' }}>
           Boutique rejetee : {sellerData.rejectionReason}
         </Alert>
       )}
+      {!store && sellerData?.status !== 'PENDING' && sellerData?.status !== 'REJECTED' && (
+        <Box sx={{ mb: 3, p: 2.5, borderRadius: '16px', bgcolor: CARD, border: `1px dashed rgba(15,23,42,0.15)`, textAlign: 'center' }}>
+          <Typography fontSize={14} fontWeight={700} color={SUB}>Aucune boutique trouvée pour votre compte.</Typography>
+        </Box>
+      )}
 
       {/* Tabs */}
-      <Box sx={{ borderBottom: '1px solid rgba(15,23,42,0.09)', mb: 0 }}>
+      <Box sx={{ borderBottom: `1px solid ${BORD}`, mb: 0, bgcolor: CARD, borderRadius: '16px 16px 0 0', px: 1 }}>
         <Tabs value={tab} onChange={(_, v) => setTab(v)}
-          sx={{ '& .MuiTab-root': { fontWeight: 600, fontSize: 13.5, textTransform: 'none', minHeight: 44 },
-            '& .Mui-selected': { color: ORANGE },
-            '& .MuiTabs-indicator': { bgcolor: ORANGE } }}>
+          sx={{ '& .MuiTab-root': { fontWeight: 600, fontSize: 13.5, textTransform: 'none', minHeight: 48, color: SUB },
+            '& .Mui-selected': { color: OR },
+            '& .MuiTabs-indicator': { bgcolor: OR } }}>
           <Tab label="Infos boutique" icon={<Store sx={{ fontSize: 16 }} />} iconPosition="start" />
           <Tab label="Zones de livraison" icon={<LocalShipping sx={{ fontSize: 16 }} />} iconPosition="start" />
           <Tab label="Points de retrait" icon={<LocationOn sx={{ fontSize: 16 }} />} iconPosition="start" />
@@ -561,16 +581,16 @@ export default function SellerStorePage() {
       <TabPanel value={tab} index={0}>
         <Grid container spacing={3}>
           <Grid item xs={12} md={8}>
-            <Card variant="outlined" sx={{ borderRadius: 2 }}>
-              <CardContent sx={{ p: { xs: 2, md: 3 } }}>
-                <Typography fontWeight={700} fontSize={15} mb={2.5}>Informations principales</Typography>
+            <Box sx={{ borderRadius: '16px', bgcolor: CARD, border: `1px solid ${BORD}`, boxShadow: '0 4px 16px rgba(15,23,42,0.06)' }}>
+              <Box sx={{ p: { xs: 2, md: 3 } }}>
+                <Typography fontWeight={800} fontSize={15} color={TXT} mb={2.5}>Informations principales</Typography>
                 <TextField fullWidth label="Nom de la boutique" value={form.name} onChange={f('name')}
                   size="small" sx={{ mb: 2 }} />
                 <TextField fullWidth label="Description" value={form.description} onChange={f('description')}
                   size="small" multiline rows={4} sx={{ mb: 2 }}
                   helperText="Decrivez votre boutique, vos produits, votre histoire..." />
-                <Divider sx={{ my: 2.5 }} />
-                <Typography fontWeight={700} fontSize={13.5} mb={2} color="#475569">Coordonnees publiques</Typography>
+                <Divider sx={{ my: 2.5, borderColor: BORD }} />
+                <Typography fontWeight={700} fontSize={13.5} mb={2} color={SUB2}>Coordonnees publiques</Typography>
                 <Grid container spacing={2}>
                   <Grid item xs={12} sm={6}>
                     <FormControl fullWidth size="small">
@@ -595,63 +615,63 @@ export default function SellerStorePage() {
                       placeholder="Rue, quartier, ville..." />
                   </Grid>
                 </Grid>
-              </CardContent>
-            </Card>
+              </Box>
+            </Box>
           </Grid>
 
           <Grid item xs={12} md={4}>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               {/* Store link */}
-              <Card variant="outlined" sx={{ borderRadius: 2 }}>
-                <CardContent sx={{ p: 2 }}>
-                  <Typography fontWeight={700} fontSize={13} mb={1.5} color="#0F172A">
+              <Box sx={{ borderRadius: '16px', bgcolor: CARD, border: `1px solid ${BORD}`, boxShadow: '0 4px 16px rgba(15,23,42,0.06)' }}>
+                <Box sx={{ p: 2.5 }}>
+                  <Typography fontWeight={700} fontSize={13} mb={1.5} color={TXT}>
                     Lien de votre boutique
                   </Typography>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, bgcolor: 'rgba(15,23,42,0.03)',
-                    p: 1.2, borderRadius: 1.5, border: '1px solid rgba(15,23,42,0.09)' }}>
-                    <Typography fontSize={12} color="#0F172A" sx={{ flex: 1, wordBreak: 'break-all' }}>
+                    p: 1.2, borderRadius: '10px', border: `1px solid ${BORD}` }}>
+                    <Typography fontSize={12} color={TXT} sx={{ flex: 1, wordBreak: 'break-all' }}>
                       dealpam.com/store/{store?.slug}
                     </Typography>
                     <Tooltip title="Copier le lien">
                       <IconButton size="small" onClick={() => navigator.clipboard.writeText(`https://dealpam.com/store/${store?.slug}`)}>
-                        <ContentCopy sx={{ fontSize: 15, color: '#64748B' }} />
+                        <ContentCopy sx={{ fontSize: 15, color: SUB }} />
                       </IconButton>
                     </Tooltip>
                   </Box>
-                  <Button fullWidth variant="contained" disableElevation startIcon={<Save />}
+                  <Button fullWidth disableElevation startIcon={<Save />}
                     onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}
-                    sx={{ mt: 2.5, py: 1.2, bgcolor: ORANGE, color: '#111', fontWeight: 700,
-                      borderRadius: 1.5, '&:hover': { bgcolor: '#FFB703' } }}>
+                    sx={{ mt: 2.5, py: 1.2, bgcolor: OR, color: '#fff', fontWeight: 700,
+                      borderRadius: '12px', boxShadow: '0 4px 14px rgba(255,107,0,0.28)', '&:hover': { bgcolor: '#E05A00' } }}>
                     {saveMutation.isPending ? <CircularProgress size={18} color="inherit" /> : 'Sauvegarder'}
                   </Button>
-                </CardContent>
-              </Card>
+                </Box>
+              </Box>
 
               {/* Reputation score */}
               {store?.reputationScore !== undefined && (
-                <Card variant="outlined" sx={{ borderRadius: 2 }}>
-                  <CardContent sx={{ p: 2 }}>
-                    <Typography fontWeight={700} fontSize={13} mb={1}>Score de reputation</Typography>
+                <Box sx={{ borderRadius: '16px', bgcolor: CARD, border: `1px solid ${BORD}`, boxShadow: '0 4px 16px rgba(15,23,42,0.06)' }}>
+                  <Box sx={{ p: 2.5 }}>
+                    <Typography fontWeight={700} fontSize={13} color={TXT} mb={1}>Score de reputation</Typography>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                       <Box sx={{ flex: 1, height: 8, bgcolor: 'rgba(15,23,42,0.06)', borderRadius: 4, overflow: 'hidden' }}>
                         <Box sx={{
                           height: '100%', borderRadius: 4, transition: 'width 0.5s',
                           width: store.reputationScore + '%',
-                          bgcolor: store.reputationScore >= 70 ? '#007600' : store.reputationScore >= 40 ? '#D97706' : '#EF4444',
+                          bgcolor: store.reputationScore >= 70 ? GRN : store.reputationScore >= 40 ? '#D97706' : RED,
                         }} />
                       </Box>
                       <Typography fontWeight={800} fontSize={16}
-                        color={store.reputationScore >= 70 ? '#007600' : store.reputationScore >= 40 ? '#D97706' : '#EF4444'}>
+                        color={store.reputationScore >= 70 ? GRN : store.reputationScore >= 40 ? '#D97706' : RED}>
                         {store.reputationScore}/100
                       </Typography>
                     </Box>
-                    <Typography fontSize={11.5} color="#64748B" mt={0.8}>
+                    <Typography fontSize={11.5} color={SUB} mt={0.8}>
                       {store.reputationScore >= 70 ? 'Excellent ! Continuez ainsi.' :
                         store.reputationScore >= 40 ? 'Bon score. Ameliorez vos delais.' :
                           'Score faible. Vos produits sont moins visibles.'}
                     </Typography>
-                  </CardContent>
-                </Card>
+                  </Box>
+                </Box>
               )}
             </Box>
           </Grid>
@@ -677,6 +697,7 @@ export default function SellerStorePage() {
         {storeId && <PaymentMethodsTab storeId={storeId} store={store} />}
       </TabPanel>
 
-    </Container>
+      </Box>
+    </Box>
   );
 }

@@ -98,6 +98,16 @@ export class ProductsController {
   @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('ADMIN', 'SUPER_ADMIN', 'MODERATOR')
   findPendingEdits() { return this.productsService.findPendingEdits(); }
 
+  // Doit rester avant @Get(':slug') plus bas, sinon "me" serait capturé
+  // comme un slug de produit. Utilisé par la page d'édition vendeur : findOne(:slug)
+  // ne fonctionne pas pour l'édition car l'id du produit (uuid) n'est pas son slug —
+  // ce mismatch causait un 404 silencieux et un spinner infini côté frontend.
+  @Get('me/:id')
+  @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('SELLER')
+  getMyProductById(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.productsService.getMyProductById(id, user.id);
+  }
+
   @Get(':slug') findOne(@Param('slug') slug: string) { return this.productsService.findOne(slug); }
 
   @Post()

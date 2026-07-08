@@ -1,5 +1,5 @@
-import { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useRef, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   Box, Typography, TextField, MenuItem, Select, InputLabel,
   FormControl, FormControlLabel, Checkbox, Button, CircularProgress, Alert,
@@ -317,7 +317,9 @@ function FoodForm({ data, onChange }: { data: any; onChange: (d: any) => void })
 
 export default function AddServicePage() {
   const navigate = useNavigate();
-  const [step, setStep]           = useState<'type' | 'form'>('type');
+  const { id } = useParams();
+  const isEdit = !!id;
+  const [step, setStep]           = useState<'type' | 'form'>(isEdit ? 'form' : 'type');
   const [listingType, setListingType] = useState('');
   const [storeId, setStoreId]     = useState('');
   const [categoryId, setCategoryId] = useState('');
@@ -330,16 +332,44 @@ export default function AddServicePage() {
   });
   const [extra, setExtra] = useState<any>({});
 
-  const { data: storesData } = useQuery({ queryKey: ['myStores'], queryFn: () => api.get('/stores/mine').then(r => r.data) });
+  // /stores/mine n'existe pas côté backend (seule /stores/me/all existe) —
+  // cet appel échouait silencieusement et laissait le sélecteur de boutique vide.
+  const { data: storesData } = useQuery({ queryKey: ['myStores'], queryFn: () => api.get('/stores/me/all').then(r => r.data) });
   const { data: cats }       = useQuery({ queryKey: ['categories'], queryFn: () => api.get('/categories').then(r => r.data) });
   const stores: any[] = storesData?.stores ?? [];
 
+  // Mode édition : charge le service existant (même endpoint scoped-vendeur
+  // que EditProductPage — /products/:slug ne convient pas pour un id).
+  const { data: existing, isLoading: loadingExisting, isError: loadError } = useQuery({
+    queryKey: ['service-edit', id],
+    queryFn: () => api.get(`/products/me/${id}`).then(r => r.data),
+    enabled: isEdit,
+    retry: false,
+  });
+
+  useEffect(() => {
+    if (!existing) return;
+    setListingType(existing.productType || 'SERVICE');
+    setStoreId(existing.storeId || '');
+    setCategoryId(existing.categoryId || '');
+    setBase({
+      title:       existing.name || '',
+      description: existing.description || '',
+      address:     existing.address || '',
+      city:        existing.city || '',
+      department:  existing.department || '',
+    });
+    try { setExtra(existing.serviceConfig ? JSON.parse(existing.serviceConfig) : {}); } catch { setExtra({}); }
+  }, [existing]);
+
   const mutation = useMutation({
-    mutationFn: (fd: FormData) => api.post('/products', fd, { headers: { 'Content-Type': 'multipart/form-data' } }).then(r => r.data),
+    mutationFn: (fd: FormData) => isEdit
+      ? api.patch(`/products/${id}`, fd, { headers: { 'Content-Type': 'multipart/form-data' } }).then(r => r.data)
+      : api.post('/products', fd, { headers: { 'Content-Type': 'multipart/form-data' } }).then(r => r.data),
     onSuccess: () => navigate('/seller/services'),
     onError: (e: any) => {
       const msg = e.response?.data?.message;
-      setError(Array.isArray(msg) ? msg.join(' · ') : (msg ?? 'Erreur lors de la création'));
+      setError(Array.isArray(msg) ? msg.join(' · ') : (msg ?? `Erreur lors de la ${isEdit ? 'mise à jour' : 'création'}`));
     },
   });
 
@@ -375,6 +405,18 @@ export default function AddServicePage() {
   };
 
   const selectedType = LISTING_TYPES.find(t => t.key === listingType);
+
+  if (isEdit && loadingExisting) {
+    return <Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}><CircularProgress sx={{ color: OR }} /></Box>;
+  }
+  if (isEdit && loadError) {
+    return (
+      <Box sx={{ p: 4 }}>
+        <Alert severity="error">Impossible de charger cette annonce (introuvable ou accès refusé).</Alert>
+        <Button sx={{ mt: 2 }} onClick={() => navigate('/seller/services')}>Retour</Button>
+      </Box>
+    );
+  }
 
   // ── Step 1 ────────────────────────────────────────────────────────────────
 
@@ -438,7 +480,7 @@ export default function AddServicePage() {
             {selectedType && <selectedType.icon sx={{ fontSize: 20, color: selectedType.color }} />}
           </Box>
           <Box>
-            <Typography fontSize={18} fontWeight={800} color={TXT}>{selectedType?.label}</Typography>
+            <Typography fontSize={18} fontWeight={800} color={TXT}>{isEdit ? 'Modifier : ' : ''}{selectedType?.label}</Typography>
             <Typography fontSize={11.5} color={SUB}>Remplissez les informations de votre annonce</Typography>
           </Box>
         </Box>
@@ -534,7 +576,7 @@ export default function AddServicePage() {
         {/* Submit */}
         <Button fullWidth onClick={handleSubmit} disabled={mutation.isPending}
           sx={{ py: 1.6, borderRadius: '12px', fontWeight: 800, fontSize: 14, bgcolor: OR, color: '#fff', textTransform: 'none', '&:hover': { bgcolor: '#E05A00' }, '&.Mui-disabled': { bgcolor: 'rgba(255,107,0,0.3)', color: '#64748B' } }}>
-          {mutation.isPending ? <CircularProgress size={20} sx={{ color: '#fff' }} /> : 'Publier l\'annonce'}
+          {mutation.isPending ? <CircularProgress size={20} sx={{ color: '#fff' }} /> : (isEdit ? 'Enregistrer les modifications' : 'Publier l\'annonce')}
         </Button>
 
       </Box>
