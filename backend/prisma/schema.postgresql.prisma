@@ -427,6 +427,12 @@ model Product {
   stock           Int         @default(0)
   sizes           String[]
   colors          String[]
+  // Prix dégressifs par palier de quantité — ex: [{"minQty":1,"price":500},{"minQty":3,"price":650},{"minQty":12,"price":2345}]
+  // stocké en JSON.stringify(), trié par minQty croissant. Le prix appliqué est
+  // celui du plus grand palier dont minQty <= quantité commandée (jamais < 1er palier).
+  priceTiers      String?     @map("price_tiers")
+  // Quantité minimale de commande imposée par le vendeur sur ce produit (défaut 1).
+  minOrderQty     Int         @default(1) @map("min_order_qty")
 
   // Geo / Delivery
   address         String?                 // Full address (for services/RE)

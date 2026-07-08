@@ -313,6 +313,8 @@ model Product {
   stock           Int         @default(0)
   sizes           String  @default("[]")
   colors          String  @default("[]")
+  priceTiers      String?     @map("price_tiers")
+  minOrderQty     Int         @default(1) @map("min_order_qty")
 
   // Geo / Delivery
   address         String?                 // Full address (for services/RE)

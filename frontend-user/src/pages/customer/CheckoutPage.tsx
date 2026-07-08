@@ -10,11 +10,12 @@ import {
   Phone, WhatsApp, LocalShipping, ContentCopy,
   DirectionsWalk, Info, Smartphone, AccountBalance, AttachMoney,
   CreditCard, AccessTime, Lock, Shield, Add, Close,
-  Warning, ChatBubbleOutline, Person, Storefront,
+  Warning, ChatBubbleOutline, Person,
 } from '@mui/icons-material';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import api from '../../api/axios';
+import { getEffectiveUnitPrice } from '../../utils/priceTiers';
 import { useCartStore } from '../../store/cart.store';
 
 // ─── Theme ───────────────────────────────────────────────────────────────────
@@ -501,54 +502,6 @@ function PaymentStep({ paymentMethods, selectedPayment, setSelectedPayment, note
   );
 }
 
-// ─── Step: Vendeur tiers — pas de paiement sur la plateforme ─────────────────
-// DealPam ne traite le paiement en ligne que pour sa propre boutique. Pour
-// tout autre vendeur, la commande part directement chez lui avec toutes les
-// infos de livraison/contact — c'est lui qui organise le paiement (MonCash
-// manuel, cash, etc.) directement avec le client, jamais via la plateforme.
-function ThirdPartyOrderStep({ notes, setNotes, onBack, onNext, storeInfo, placing }: any) {
-  return (
-    <Box>
-      <Typography fontWeight={600} fontSize={16} mb={2} color={TXT}>Confirmer la commande</Typography>
-
-      <Box sx={{ display: 'flex', gap: 1.5, p: 2, borderRadius: '14px', border: `1px solid ${BORD}`, bgcolor: CARD, mb: 2 }}>
-        <Storefront sx={{ fontSize: 20, color: TXT2, flexShrink: 0, mt: 0.2 }} />
-        <Box>
-          <Typography fontSize={13.5} fontWeight={600} color={TXT} mb={0.4}>
-            {storeInfo?.name || 'Ce vendeur'} gère le paiement directement
-          </Typography>
-          <Typography fontSize={12.5} color="#475569" lineHeight={1.5}>
-            Cette boutique n'est pas la boutique officielle DealPam — le paiement en ligne n'est donc pas disponible ici.
-            Votre commande, avec l'adresse et vos coordonnées, sera envoyée directement au vendeur, qui vous contactera
-            pour organiser le paiement et la livraison.
-          </Typography>
-        </Box>
-      </Box>
-
-      <TextField fullWidth multiline rows={2} label="Note pour le vendeur (optionnel)"
-        value={notes} onChange={e => setNotes(e.target.value)}
-        placeholder="Instructions spéciales, couleur, taille préférée..."
-        InputLabelProps={{ shrink: true }}
-        sx={{ mb: 2,
-          '& .MuiOutlinedInput-root': { borderRadius: '12px', color: TXT, bgcolor: CARD,
-            '& fieldset': { borderColor: BORD }, '&:hover fieldset': { borderColor: alpha(OR, 0.4) },
-            '&.Mui-focused fieldset': { borderColor: OR } } }} />
-
-      <Box sx={{ display: 'flex', gap: 1.5 }}>
-        <Button onClick={onBack} variant="outlined" sx={{ px: 2.5, borderRadius: '14px', flex: 1, fontWeight: 600, textTransform: 'none',
-          borderColor: BORD, color: '#475569', '&:hover': { borderColor: alpha(OR, 0.5), bgcolor: 'transparent' } }}>
-          Retour
-        </Button>
-        <Button onClick={onNext} variant="contained" disabled={placing}
-          sx={{ flex: 2, py: 1.4, borderRadius: '14px', fontWeight: 600, textTransform: 'none', fontSize: 14.5,
-            bgcolor: OR, boxShadow: `0 8px 24px ${alpha(OR, 0.3)}`, '&:hover': { bgcolor: ORD },
-            '&.Mui-disabled': { bgcolor: '#F1F5F9', color: '#64748B' } }}>
-          {placing ? <CircularProgress size={18} sx={{ color: 'white' }} /> : 'Commander maintenant'}
-        </Button>
-      </Box>
-    </Box>
-  );
-}
 
 // ─── Main Checkout ────────────────────────────────────────────────────────────
 
@@ -613,7 +566,8 @@ export default function CheckoutPage() {
     else if (!selectedAddress && addresses.length > 0) setSelectedAddress(addresses[0].id);
   }, [addresses]);
 
-  const subtotal = items.reduce((s: number, i: any) => s + Number(i.product?.salePrice ?? i.product?.price ?? 0) * i.quantity, 0);
+  const subtotal = items.reduce((s: number, i: any) =>
+    s + getEffectiveUnitPrice(i.product?.price, i.product?.salePrice, i.product?.priceTiers, i.quantity) * i.quantity, 0);
   const total = subtotal + shippingCost;
 
   const handleAddressAdded = (addr: any) => {
@@ -643,6 +597,7 @@ export default function CheckoutPage() {
       });
       const orders = Array.isArray(res.data) ? res.data : [res.data];
       await fetchCount();
+      qc.invalidateQueries({ queryKey: ['cart'] });
       navigate('/order-received/thank-you', {
         replace: true,
         state: {
@@ -727,22 +682,14 @@ export default function CheckoutPage() {
                 />
               )}
               {step === 1 && (
-                storeDetail?.isPlatformStore ? (
-                  <PaymentStep
-                    paymentMethods={paymentMethods}
-                    selectedPayment={selectedPayment} setSelectedPayment={setSelectedPayment}
-                    notes={notes} setNotes={setNotes}
-                    couponCode={couponCode} setCouponCode={setCouponCode}
-                    storeInfo={{ ...storeDetail, ...storeOptions }}
-                    onBack={() => setStep(0)} onNext={placeOrder} placing={placing}
-                  />
-                ) : (
-                  <ThirdPartyOrderStep
-                    notes={notes} setNotes={setNotes}
-                    storeInfo={{ ...storeDetail, ...storeOptions }}
-                    onBack={() => setStep(0)} onNext={placeOrder} placing={placing}
-                  />
-                )
+                <PaymentStep
+                  paymentMethods={paymentMethods}
+                  selectedPayment={selectedPayment} setSelectedPayment={setSelectedPayment}
+                  notes={notes} setNotes={setNotes}
+                  couponCode={couponCode} setCouponCode={setCouponCode}
+                  storeInfo={{ ...storeDetail, ...storeOptions }}
+                  onBack={() => setStep(0)} onNext={placeOrder} placing={placing}
+                />
               )}
             </Box>
           </Grid>
@@ -759,7 +706,7 @@ export default function CheckoutPage() {
                 {items.map((item: any) => {
                   const p = item.product;
                   const img = p?.images?.[0]?.urlThumb;
-                  const price = Number(p?.salePrice ?? p?.price ?? 0);
+                  const price = getEffectiveUnitPrice(p?.price, p?.salePrice, p?.priceTiers, item.quantity);
                   return (
                     <Box key={item.id} sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
                       <Box sx={{ width: 52, height: 52, borderRadius: '12px', overflow: 'hidden',

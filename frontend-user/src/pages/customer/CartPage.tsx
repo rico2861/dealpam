@@ -14,6 +14,7 @@ import { useQuery, useMutation, useQueryClient, useQueries } from '@tanstack/rea
 import { useNavigate, Link } from 'react-router-dom';
 import { useSnackbar } from 'notistack';
 import api from '../../api/axios';
+import { getEffectiveUnitPrice } from '../../utils/priceTiers';
 import { useCartStore } from '../../store/cart.store';
 import { useAuthStore } from '../../store/auth.store';
 
@@ -204,7 +205,7 @@ function StoreGroup({ group, opts, onRemove, onUpdate, navigate }: any) {
             {group.items.map((item: any) => {
               const orig = Number(item.product?.price);
               const sale = item.product?.salePrice ? Number(item.product.salePrice) : null;
-              const price = sale ?? orig;
+              const price = getEffectiveUnitPrice(item.product?.price, item.product?.salePrice, item.product?.priceTiers, item.quantity);
               const isOnSale = sale != null && sale < orig;
               const discount = isOnSale ? Math.round((1 - sale! / orig) * 100) : 0;
               const img = item.product?.images?.[0]?.urlMedium || item.product?.images?.[0]?.url || '';
@@ -394,7 +395,7 @@ export default function CartPage() {
             </Box>
             <Box sx={{ px: 2.5, py: 2 }}>
               {items.map((item: any) => {
-                const price = Number(item.product?.salePrice || item.product?.price);
+                const price = getEffectiveUnitPrice(item.product?.price, item.product?.salePrice, item.product?.priceTiers, item.quantity);
                 return (
                   <Box key={item.id} sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.7, gap: 1 }}>
                     <Typography fontSize={12} color="#64748B" sx={{ flex: 1, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical' }}>

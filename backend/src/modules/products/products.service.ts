@@ -224,6 +224,8 @@ export class ProductsService {
       try { attributes = JSON.parse(dto.attributes); } catch {}
     }
 
+    const priceTiers = this.normalizePriceTiers(dto.priceTiers);
+
     let variantInput: any[] = [];
     if (dto.variants) {
       try { variantInput = JSON.parse(dto.variants); } catch {}
@@ -267,6 +269,8 @@ export class ProductsService {
         department:  dto.department || null,
         address:     (dto as any).address || null,
         attributes:  attributes,
+        priceTiers,
+        minOrderQty: dto.minOrderQty || 1,
         productType: (dto as any).productType || 'PHYSICAL',
         requiresAppointment: (dto as any).requiresAppointment ?? false,
         serviceConfig: (dto as any).serviceConfig || null,
@@ -407,7 +411,8 @@ export class ProductsService {
     }
 
     // storeId must never be reassigned via update — ownership is fixed at creation
-    const { storeId: _ignoredStoreId, ...safeDto } = dto as any;
+    const { storeId: _ignoredStoreId, priceTiers: _rawPriceTiers, ...safeDto } = dto as any;
+    const priceTiers = _rawPriceTiers !== undefined ? this.normalizePriceTiers(_rawPriceTiers) : undefined;
 
     const moderation = scanForProhibitedContent(
       (dto as any).name ?? product.name,
@@ -420,6 +425,7 @@ export class ProductsService {
       data: {
         ...safeDto,
         attributes: attributes !== undefined ? attributes : undefined,
+        priceTiers,
         variants: undefined,
         status: 'PENDING_REVIEW',
         isFlagged: moderation.isFlagged,
@@ -599,6 +605,30 @@ export class ProductsService {
     if (Array.isArray(val)) return val.filter(Boolean);
     try { const p = JSON.parse(val); if (Array.isArray(p)) return p; } catch {}
     return val.split(',').map(s => s.trim()).filter(Boolean);
+  }
+
+  // ── Paliers de prix dégressifs (bundles) ──────────────────────────────────
+  // Valide + normalise le JSON envoyé par le vendeur : [{"minQty":1,"price":500},...].
+  // Trié par minQty croissant, jamais négatif, jamais un doublon de palier.
+  // Retourne null si aucun palier fourni (produit sans bundle, cas normal).
+  private normalizePriceTiers(raw: string | undefined): string | null {
+    if (!raw) return null;
+    let tiers: any[];
+    try { tiers = JSON.parse(raw); } catch { throw new BadRequestException('Paliers de prix invalides (JSON malformé)'); }
+    if (!Array.isArray(tiers) || tiers.length === 0) return null;
+
+    const clean = tiers.map(t => ({ minQty: Number(t.minQty), price: Number(t.price) }));
+    for (const t of clean) {
+      if (!Number.isInteger(t.minQty) || t.minQty < 1) throw new BadRequestException('Quantité de palier invalide (doit être un entier ≥ 1)');
+      if (!Number.isFinite(t.price) || t.price < 0) throw new BadRequestException('Prix de palier invalide');
+    }
+    clean.sort((a, b) => a.minQty - b.minQty);
+    const seenQty = new Set<number>();
+    for (const t of clean) {
+      if (seenQty.has(t.minQty)) throw new BadRequestException(`Palier en double pour la quantité ${t.minQty}`);
+      seenQty.add(t.minQty);
+    }
+    return JSON.stringify(clean);
   }
 
   // ── Intelligent recommendations engine ────────────────────────────────────

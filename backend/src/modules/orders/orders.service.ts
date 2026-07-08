@@ -3,6 +3,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
+import { getEffectiveUnitPrice } from '../products/price-tiers.util';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Commandes = demandes de contact client → vendeur
@@ -55,6 +56,16 @@ export class OrdersService {
     });
     if (!cart || cart.items.length === 0) throw new ForbiddenException('Panier vide');
 
+    // Un vendeur ne peut jamais acheter ses propres produits sur la plateforme —
+    // sinon la même commande apparaît à la fois dans son historique d'achats
+    // ET dans ses commandes à traiter en tant que vendeur (les deux listes
+    // sont filtrées sur des colonnes différentes — userId vs store.sellerId —
+    // qui ne s'excluent pas mutuellement pour une auto-commande).
+    const ownSeller = await this.prisma.seller.findUnique({ where: { userId }, select: { id: true } });
+    if (ownSeller && cart.items.some(item => item.product.store.sellerId === ownSeller.id)) {
+      throw new BadRequestException("Vous ne pouvez pas commander vos propres produits.");
+    }
+
     // Grouper par boutique (une commande par boutique)
     const storeGroups: Record<string, typeof cart.items> = {};
     for (const item of cart.items) {
@@ -80,9 +91,10 @@ export class OrdersService {
 
       const orders = [];
       for (const [storeId, items] of Object.entries(storeGroups)) {
-        const subtotal = items.reduce(
-          (s, i) => s + Number(i.product.salePrice ?? i.product.price) * i.quantity, 0
+        const unitPrices = items.map(i =>
+          getEffectiveUnitPrice(Number(i.product.price), i.product.salePrice ? Number(i.product.salePrice) : null, (i.product as any).priceTiers, i.quantity)
         );
+        const subtotal = items.reduce((s, i, idx) => s + unitPrices[idx] * i.quantity, 0);
         const order = await tx.order.create({
           data: {
             userId,
@@ -96,13 +108,13 @@ export class OrdersService {
             subtotalHTG: subtotal,
             totalHTG:    subtotal,
             items: {
-              create: items.map(i => ({
+              create: items.map((i, idx) => ({
                 productId:   i.productId,
                 productName: i.product.name,
                 imageUrl:    i.product.images[0]?.urlThumb ?? null,
                 quantity:    i.quantity,
-                unitPrice:   i.product.salePrice ?? i.product.price,
-                subtotal:    Number(i.product.salePrice ?? i.product.price) * i.quantity,
+                unitPrice:   unitPrices[idx],
+                subtotal:    unitPrices[idx] * i.quantity,
               })),
             },
           },

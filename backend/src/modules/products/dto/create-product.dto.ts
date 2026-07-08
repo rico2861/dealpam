@@ -29,6 +29,14 @@ export class CreateProductDto {
   @IsNumber() @Min(0)
   stock?: number;
 
+  /** JSON string — paliers de prix dégressifs: [{"minQty":1,"price":500},{"minQty":3,"price":650}] */
+  @IsOptional() @IsString()
+  priceTiers?: string;
+
+  @IsOptional() @Transform(({ value }) => parseInt(value) || 1)
+  @IsNumber() @Min(1)
+  minOrderQty?: number;
+
   @IsOptional() @IsString()
   sku?: string;
 

@@ -392,18 +392,20 @@ export class SellersService {
     return this.prisma.seller.update({ where: { userId }, data });
   }
 
-  // ── Public: featured sellers (ELITE > BUSINESS > STARTER, verified first) ─
+  // ── Public: featured sellers — vérifiées d'abord, puis meilleure note, puis
+  // plan le plus rentable pour la plateforme (ELITE > PREMIUM > BUSINESS > STARTER).
   async getFeatured(limit = 20, department?: string) {
-    const tierOrder: Record<string, number> = { ELITE: 0, BUSINESS: 1, STARTER: 2, FREE: 3 };
+    const tierOrder: Record<string, number> = { ELITE: 0, PREMIUM: 1, BUSINESS: 2, STARTER: 3, FREE: 4 };
 
     const sellers: any[] = await (this.prisma.seller as any).findMany({
       where: {
         status: 'APPROVED',
+        stores: { some: { isActive: true, isPrimary: true, isVerified: true } },
         subscriptions: {
           some: {
             isActive: true,
             endDate: { gt: new Date() },
-            plan: { tier: { in: ['ELITE', 'BUSINESS', 'STARTER'] } },
+            plan: { tier: { in: ['ELITE', 'PREMIUM', 'BUSINESS', 'STARTER'] } },
           },
         },
       },

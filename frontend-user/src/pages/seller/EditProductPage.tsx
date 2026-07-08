@@ -44,8 +44,24 @@ export default function EditProductPage() {
     }
     setLoading(true); setError('');
     try {
-      await api.patch(`/products/${id}`, form);
-      enqueueSnackbar('Produit mis a jour !', { variant: 'success' });
+      // @IsOptional() de class-validator ne traite que `undefined` comme absent —
+      // une chaîne vide ('') échoue encore la validation (@IsUUID/@IsNumber).
+      // On nettoie donc le payload avant envoi au lieu de forwarder le form tel quel.
+      const payload = {
+        name: form.name,
+        description: form.description,
+        categoryId: form.categoryId || undefined,
+        brandId: form.brandId || undefined,
+        price: form.price !== '' ? Number(form.price) : undefined,
+        salePrice: form.salePrice !== '' ? Number(form.salePrice) : undefined,
+        stock: form.stock !== '' ? Number(form.stock) : undefined,
+        sku: form.sku || undefined,
+      };
+      await api.patch(`/products/${id}`, payload);
+      enqueueSnackbar(
+        'Produit mis à jour — il repasse en vérification avant d\'être republié',
+        { variant: 'success', autoHideDuration: 5000 },
+      );
       navigate('/seller/products');
     } catch (e: any) {
       setError(e.response?.data?.message || 'Erreur lors de la mise a jour');

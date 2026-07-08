@@ -257,7 +257,9 @@ export default function AddProductPage() {
     stock: '1', sku: '', condition: 'new', conditionNote: '',
     city: '', department: 'Ouest', storeId: '',
     hasDelivery: false, deliveryPriceHTG: '',
+    minOrderQty: '1',
   });
+  const [priceTiers, setPriceTiers] = useState<{ minQty: string; price: string }[]>([]);
   const [deliveryZones, setDeliveryZones] = useState<{ city: string; dept: string }[]>([]);
   const [zoneInput, setZoneInput]         = useState({ city: '', dept: 'Ouest' });
   const [attrs, setAttrs]       = useState<Record<string, string>>({});
@@ -342,6 +344,11 @@ export default function AddProductPage() {
       if (form.salePrice) fd.append('salePrice', form.salePrice);
       const totalStock = variants.length > 0 ? variants.reduce((s, v) => s + v.stock, 0) : parseInt(form.stock) || 1;
       fd.append('stock', String(totalStock));
+      if (form.minOrderQty) fd.append('minOrderQty', form.minOrderQty);
+      const cleanTiers = priceTiers
+        .filter(t => t.minQty !== '' && t.price !== '')
+        .map(t => ({ minQty: Number(t.minQty), price: Number(t.price) }));
+      if (cleanTiers.length) fd.append('priceTiers', JSON.stringify(cleanTiers));
       if (form.sku) fd.append('sku', form.sku);
       fd.append('condition', form.condition);
       if (form.conditionNote) fd.append('conditionNote', form.conditionNote);
@@ -479,6 +486,38 @@ export default function AddProductPage() {
                   required inputProps={{ min: 0 }} sx={fieldSx} />
                 <TextField fullWidth label="Prix promo (optionnel)" type="number" value={form.salePrice}
                   onChange={set('salePrice')} inputProps={{ min: 0 }} sx={{ ...fieldSx, '& .MuiInputLabel-root.Mui-focused': { color: '#F59E0B' }, '& .MuiOutlinedInput-root.Mui-focused fieldset': { borderColor: '#F59E0B' } }} />
+              </Box>
+
+              <TextField fullWidth label="Quantité minimum de commande" type="number" value={form.minOrderQty}
+                onChange={set('minOrderQty')} inputProps={{ min: 1 }} sx={fieldSx}
+                helperText="Le client ne peut pas commander moins que cette quantité (1 par défaut)" />
+
+              {/* Paliers de prix dégressifs (bundles) */}
+              <Box>
+                <Typography fontSize={13} fontWeight={600} color={TXT} mb={0.8}>
+                  Prix dégressifs par quantité (optionnel)
+                </Typography>
+                <Typography fontSize={12} color={SUB} mb={1.2}>
+                  Ex: 1 unité = 500 HTG, à partir de 3 = 650 HTG chacune, à partir de 12 = 2345 HTG chacune.
+                </Typography>
+                {priceTiers.map((t, i) => (
+                  <Box key={i} sx={{ display: 'flex', gap: 1, mb: 1, alignItems: 'center' }}>
+                    <TextField size="small" label="À partir de (qté)" type="number" value={t.minQty}
+                      onChange={e => setPriceTiers(p => p.map((x, j) => j === i ? { ...x, minQty: e.target.value } : x))}
+                      inputProps={{ min: 1 }} sx={{ ...fieldSx, flex: 1 }} />
+                    <TextField size="small" label="Prix unitaire (HTG)" type="number" value={t.price}
+                      onChange={e => setPriceTiers(p => p.map((x, j) => j === i ? { ...x, price: e.target.value } : x))}
+                      inputProps={{ min: 0 }} sx={{ ...fieldSx, flex: 1 }} />
+                    <IconButton size="small" onClick={() => setPriceTiers(p => p.filter((_, j) => j !== i))}>
+                      <Close fontSize="small" />
+                    </IconButton>
+                  </Box>
+                ))}
+                <Button size="small" startIcon={<Add />}
+                  onClick={() => setPriceTiers(p => [...p, { minQty: '', price: '' }])}
+                  sx={{ textTransform: 'none', fontWeight: 600 }}>
+                  Ajouter un palier
+                </Button>
               </Box>
 
               <FormControl fullWidth sx={fieldSx}>
