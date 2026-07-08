@@ -12,6 +12,8 @@ import {
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import api from '../../api/axios';
+import { TableSkeleton } from '../../components/shared/Skeletons';
+import { useDelayedLoading } from '../../hooks/useDelayedLoading';
 
 const OR   = '#FF6B00';
 const BG   = '#F7F8FA';
@@ -48,6 +50,7 @@ export default function SellerProductsPage({ mode = 'products' }: { mode?: 'prod
     queryFn: () => api.get('/products/me?limit=200').then(r => r.data?.data || []),
     enabled: !!localStorage.getItem('accessToken'),
   });
+  const showSkel = useDelayedLoading(isLoading);
   const products = (allProducts ?? []).filter((p: any) =>
     mode === 'services' ? p.productType && p.productType !== 'PHYSICAL' : !p.productType || p.productType === 'PHYSICAL'
   );
@@ -143,9 +146,7 @@ export default function SellerProductsPage({ mode = 'products' }: { mode?: 'prod
 
       {/* Content */}
       {isLoading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 12 }}>
-          <CircularProgress sx={{ color: OR }}/>
-        </Box>
+        showSkel ? <TableSkeleton rows={6} columns={mode==='services'?5:6} /> : null
       ) : filtered.length === 0 ? (
         <Box sx={{ textAlign: 'center', py: 12, borderRadius: '16px', bgcolor: CARD, border: `1px solid ${BORD}` }}>
           <Inventory sx={{ fontSize: 56, color: BORD, mb: 2 }}/>

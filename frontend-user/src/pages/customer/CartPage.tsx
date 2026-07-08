@@ -15,6 +15,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useSnackbar } from 'notistack';
 import api from '../../api/axios';
 import { getEffectiveUnitPrice } from '../../utils/priceTiers';
+import { ListSkeleton } from '../../components/shared/Skeletons';
+import { useDelayedLoading } from '../../hooks/useDelayedLoading';
 import { useCartStore } from '../../store/cart.store';
 import { useAuthStore } from '../../store/auth.store';
 
@@ -280,6 +282,7 @@ export default function CartPage() {
   const { data: cart, isLoading } = useQuery({
     queryKey: ['cart'], queryFn: () => api.get('/cart').then(r => r.data), enabled: !!user, retry: 1,
   });
+  const showSkel = useDelayedLoading(isLoading);
 
   const items: any[]    = cart?.items || [];
   const subtotal: number = cart?.total || 0;
@@ -319,21 +322,49 @@ export default function CartPage() {
   const cartIds = new Set(items.map((i: any) => i.product?.id));
   const recos   = ((recoData || []) as any[]).filter((p: any) => !cartIds.has(p.id)).slice(0, 10);
 
+  // Interface optimiste : la quantité (et le sous-total qui en dépend) change
+  // à l'écran dès le clic, avant la réponse serveur. En cas d'échec, on
+  // restaure le panier précédent depuis le cache et on avertit l'utilisateur
+  // sans être intrusif — jamais un rollback silencieux.
   const updateMutation = useMutation({
     mutationFn: ({ itemId, quantity }: any) => api.patch(`/cart/items/${itemId}`, { quantity }),
-    onSuccess:  () => { qc.invalidateQueries({ queryKey: ['cart'] }); fetchCount(); },
-    onError:    (err: any) => enqueueSnackbar(err?.response?.data?.message || 'Erreur', { variant: 'error' }),
+    onMutate: async ({ itemId, quantity }: any) => {
+      await qc.cancelQueries({ queryKey: ['cart'] });
+      const previous = qc.getQueryData(['cart']);
+      qc.setQueryData(['cart'], (old: any) => {
+        if (!old) return old;
+        const items = old.items.map((it: any) => it.id === itemId ? { ...it, quantity } : it);
+        return { ...old, items };
+      });
+      return { previous };
+    },
+    onError: (err: any, _vars, context: any) => {
+      if (context?.previous) qc.setQueryData(['cart'], context.previous);
+      enqueueSnackbar(err?.response?.data?.message || "La quantité n'a pas pu être mise à jour", { variant: 'error' });
+    },
+    onSettled: () => { qc.invalidateQueries({ queryKey: ['cart'] }); fetchCount(); },
   });
   const removeMutation = useMutation({
     mutationFn: (itemId: string) => api.delete(`/cart/items/${itemId}`),
-    onSuccess:  () => { qc.invalidateQueries({ queryKey: ['cart'] }); fetchCount(); enqueueSnackbar('Article retiré', { variant: 'info' }); },
+    onMutate: async (itemId: string) => {
+      await qc.cancelQueries({ queryKey: ['cart'] });
+      const previous = qc.getQueryData(['cart']);
+      qc.setQueryData(['cart'], (old: any) => old ? { ...old, items: old.items.filter((it: any) => it.id !== itemId) } : old);
+      return { previous };
+    },
+    onError: (err: any, _itemId, context: any) => {
+      if (context?.previous) qc.setQueryData(['cart'], context.previous);
+      enqueueSnackbar(err?.response?.data?.message || "L'article n'a pas pu être retiré", { variant: 'error' });
+    },
+    onSuccess: () => enqueueSnackbar('Article retiré', { variant: 'info' }),
+    onSettled: () => { qc.invalidateQueries({ queryKey: ['cart'] }); fetchCount(); },
   });
 
-  if (isLoading) return (
-    <Box sx={{ bgcolor: BG, minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-      <CircularProgress sx={{ color: OR }} />
+  if (isLoading) return showSkel ? (
+    <Box sx={{ bgcolor: BG, minHeight: '100vh', maxWidth: 900, mx: 'auto', px: 2, py: 3 }}>
+      <ListSkeleton rows={4} />
     </Box>
-  );
+  ) : null;
 
   if (!isLoading && items.length === 0) return (
     <Box sx={{ bgcolor: BG, minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', px: 2 }}>

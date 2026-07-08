@@ -17,6 +17,8 @@ import {
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import api from '../../api/axios';
+import { ProductDetailSkeleton } from '../../components/shared/Skeletons';
+import { useDelayedLoading } from '../../hooks/useDelayedLoading';
 import { parsePriceTiers, getEffectiveUnitPrice } from '../../utils/priceTiers';
 import { useAuthStore } from '../../store/auth.store';
 import { useCartStore } from '../../store/cart.store';
@@ -184,12 +186,7 @@ function MRow({ title, badge, products }: { title:string; badge?:string; product
 function Skel() {
   return (
     <Box sx={{ bgcolor:BG, minHeight:'100vh' }}>
-      <Box sx={{ height:520, bgcolor:CARD }}/>
-      <Box sx={{ maxWidth:1200, mx:'auto', px:4, py:4 }}>
-        {[[200,28],[300,52],[240,20]].map(([w,h],i)=>(
-          <Box key={i} sx={{ width:w, height:h, bgcolor:CARD, borderRadius:2, mb:2, opacity:0.6 }}/>
-        ))}
-      </Box>
+      <ProductDetailSkeleton />
     </Box>
   );
 }
@@ -247,6 +244,7 @@ export default function ProductDetailPage() {
     queryFn: () => api.get(`/products/${slug}`).then(r => r.data),
     staleTime: 60_000,
   });
+  const showSkel = useDelayedLoading(isLoading);
   const catSl = product?.category?.slug;
   const stId  = product?.store?.id || product?.storeId;
   const dept  = product?.department || user?.department || '';
@@ -403,7 +401,7 @@ export default function ProductDetailPage() {
 
   const copyLink = () => { navigator.clipboard.writeText(window.location.href); setCopied(true); setTimeout(()=>setCopied(false),2000); enqueueSnackbar('Lien copié !', { variant:'info' }); };
 
-  if (isLoading) return <Skel/>;
+  if (isLoading) return showSkel ? <Skel/> : null;
   if (!product) return (
     <Box sx={{ minHeight:'80vh', display:'flex', alignItems:'center', justifyContent:'center', bgcolor:BG, px:3 }}>
       <Box sx={{ textAlign:'center', maxWidth:420 }}>

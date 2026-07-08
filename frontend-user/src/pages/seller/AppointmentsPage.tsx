@@ -10,6 +10,8 @@ import {
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../api/axios';
+import { ListSkeleton } from '../../components/shared/Skeletons';
+import { useDelayedLoading } from '../../hooks/useDelayedLoading';
 
 const OR   = '#FF6B00';
 const BG   = '#F7F8FA';
@@ -279,6 +281,7 @@ export default function AppointmentsPage() {
     queryFn: () => api.get('/appointments/seller').then(r => r.data),
     refetchInterval: 30000,
   });
+  const showSkel = useDelayedLoading(isLoading);
 
   const pending = appts.filter((a: any) => a.status === 'PENDING').length;
 
@@ -358,9 +361,7 @@ export default function AppointmentsPage() {
 
         {/* List */}
         {isLoading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-            <CircularProgress sx={{ color: OR }} />
-          </Box>
+          showSkel ? <ListSkeleton rows={5} /> : null
         ) : filtered.length === 0 ? (
           <Box sx={{ py: 10, textAlign: 'center' }}>
             <CalendarMonth sx={{ fontSize: 48, color: BORD, mb: 1.5 }} />

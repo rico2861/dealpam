@@ -12,3 +12,25 @@ input:-webkit-autofill:active {
   -webkit-text-fill-color: inherit !important;
   caret-color: inherit;
 }
+
+/* ── Système d'états de chargement — squelettes (identique au frontend user) ── */
+@keyframes dp-skeleton-sweep {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.dp-skeleton {
+  background: linear-gradient(90deg, rgba(15,27,46,0.06) 25%, rgba(15,27,46,0.12) 37%, rgba(15,27,46,0.06) 63%);
+  background-size: 400% 100%;
+  animation: dp-skeleton-sweep 1.6s ease-in-out infinite;
+  border-radius: 8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dp-skeleton { animation: none; background-position: 0 0; }
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

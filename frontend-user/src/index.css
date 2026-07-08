@@ -21,6 +21,33 @@ a { text-decoration: none; }
 
 ::selection { background: rgba(37,99,235,0.15); }
 
+/* ── Système d'états de chargement — squelettes ──────────────────────────
+   Balayage lumineux discret et continu (pas une couleur grise statique).
+   Utilisé par components/shared/Skeletons.tsx sur les deux applications. */
+@keyframes dp-skeleton-sweep {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.dp-skeleton {
+  background: linear-gradient(90deg, rgba(15,27,46,0.06) 25%, rgba(15,27,46,0.12) 37%, rgba(15,27,46,0.06) 63%);
+  background-size: 400% 100%;
+  animation: dp-skeleton-sweep 1.6s ease-in-out infinite;
+  border-radius: 8px;
+}
+
+/* Réduction de mouvement globale — respecte la préférence système sur
+   TOUTES les animations de l'app (squelettes, spinners, transitions),
+   pas seulement celles déclarées localement page par page. */
+@media (prefers-reduced-motion: reduce) {
+  .dp-skeleton { animation: none; background-position: 0 0; }
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* Neutralise le fond blanc/jaune imposé par le navigateur sur l'autofill,
    quel que soit le thème (clair ou sombre) : on retarde indéfiniment la
    transition de background-color et on force le texte à hériter de sa
