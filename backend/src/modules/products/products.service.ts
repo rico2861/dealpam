@@ -867,7 +867,7 @@ export class ProductsService {
 
   // ── Produits près de l'utilisateur — fallback progressif ─────────────────
   async getNearProducts(department: string, city: string, limit = 20): Promise<{
-    products: any[]; level: 'city' | 'department' | 'national'; label: string;
+    products: any[]; level: 'city' | 'department' | 'national'; label: string; hasLocalVendor: boolean;
   }> {
     const base = { status: 'PUBLISHED' as any, stock: { gt: 0 }, productType: { not: 'SERVICE' as any } };
 
@@ -897,6 +897,20 @@ export class ProductsService {
       return storeCity.includes(cityNorm) || prodCity.includes(cityNorm);
     };
 
+    // Un vendeur (produit OU service publié, sans exigence de stock) présent dans le
+    // département suffit à dire "il y a un vendeur ici" — même si aucun produit
+    // physique n'est en stock. Évite le message trompeur "aucun vendeur" alors
+    // qu'un service actif existe bien dans la zone.
+    const hasLocalVendor = await this.prisma.product.count({
+      where: {
+        status: 'PUBLISHED',
+        OR: [
+          { store: { is: { department: { equals: department, mode: 'insensitive' } } } },
+          { department: { equals: department, mode: 'insensitive' } },
+        ],
+      },
+    }).then(count => count > 0);
+
     // Niveau 1 : ville exacte dans département couvert
     if (cityNorm) {
       const byCity = all.filter(p => matchesDept(p) && matchesCity(p));
@@ -904,6 +918,7 @@ export class ProductsService {
         products: byCity.slice(0, limit),
         level: 'city' as const,
         label: `Produits disponibles a ${city}`,
+        hasLocalVendor,
       };
     }
 
@@ -913,6 +928,7 @@ export class ProductsService {
       products: byDept.slice(0, limit),
       level: 'department' as const,
       label: `Produits disponibles en ${department}`,
+      hasLocalVendor,
     };
 
     // Niveau 3 : national
@@ -920,6 +936,7 @@ export class ProductsService {
       products: all.slice(0, limit),
       level: 'national' as const,
       label: 'Produits populaires en Haiti',
+      hasLocalVendor,
     };
   }
 

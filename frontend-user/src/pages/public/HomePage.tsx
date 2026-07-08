@@ -1762,8 +1762,8 @@ function LevelBadge({ level }: { level?: string }) {
 }
 
 /* ─── Near-you section ────────────────────────────────────────────────────── */
-function NearYouSection({ products, location, onModal, label, level }: {
-  products: any[]; location: any; onModal: () => void; label?: string | null; level?: string;
+function NearYouSection({ products, location, onModal, label, level, hasLocalVendor }: {
+  products: any[]; location: any; onModal: () => void; label?: string | null; level?: string; hasLocalVendor?: boolean;
 }) {
   const { user } = useAuthStore();
   const isSeller = user?.role === 'SELLER';
@@ -1855,10 +1855,14 @@ function NearYouSection({ products, location, onModal, label, level }: {
                 </Box>
 
                 <Typography sx={{ fontSize: { xs: 20, md: 26 }, fontWeight: 900, color: 'white', lineHeight: 1.2, mb: 1, letterSpacing: '-0.5px' }}>
-                  Aucun vendeur dans votre zone pour l'instant.
+                  {hasLocalVendor
+                    ? "Aucun produit disponible dans votre zone pour l'instant."
+                    : "Aucun vendeur dans votre zone pour l'instant."}
                 </Typography>
                 <Typography sx={{ fontSize: { xs: 13, md: 14.5 }, color: 'rgba(255,255,255,0.55)', mb: 3, maxWidth: 480, lineHeight: 1.75 }}>
-                  Les boutiques de <strong style={{ color: 'rgba(255,255,255,0.85)' }}>{city}</strong> arrivent bientôt. En attendant, explorez tous les produits disponibles partout en Haïti — ou soyez le premier vendeur de votre région.
+                  {hasLocalVendor
+                    ? <>Des vendeurs sont déjà présents à <strong style={{ color: 'rgba(255,255,255,0.85)' }}>{city}</strong>, mais aucun produit en stock pour l'instant — jetez un œil à leurs services, ou explorez les produits disponibles partout en Haïti.</>
+                    : <>Les boutiques de <strong style={{ color: 'rgba(255,255,255,0.85)' }}>{city}</strong> arrivent bientôt. En attendant, explorez tous les produits disponibles partout en Haïti — ou soyez le premier vendeur de votre région.</>}
                 </Typography>
 
                 <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', justifyContent: { xs: 'center', md: 'flex-start' } }}>
@@ -1872,7 +1876,21 @@ function NearYouSection({ products, location, onModal, label, level }: {
                   }}>
                     Changer de zone
                   </Button>
-                  {!isSeller && (
+                  {hasLocalVendor && (
+                    <Button component={Link}
+                      to={`/products?productType=SERVICE${location?.department ? `&department=${encodeURIComponent(location.department)}` : ''}`}
+                      sx={{
+                        color: 'white', fontWeight: 700, borderRadius: '12px',
+                        textTransform: 'none', px: 3, py: 1.1, fontSize: 13.5,
+                        border: `1.5px solid ${alpha(OR, 0.4)}`,
+                        bgcolor: alpha(OR, 0.08),
+                        '&:hover': { bgcolor: alpha(OR, 0.16), borderColor: OR },
+                        transition: 'all 0.2s',
+                      }}>
+                      Voir les services à {city}
+                    </Button>
+                  )}
+                  {!isSeller && !hasLocalVendor && (
                     <Button component={Link} to={sellerCtaLink} sx={{
                       color: 'white', fontWeight: 700, borderRadius: '12px',
                       textTransform: 'none', px: 3, py: 1.1, fontSize: 13.5,
@@ -2352,6 +2370,7 @@ export default function HomePage() {
   const nearYou  = (nearRaw as any)?.products ?? [];
   const nearLabel = (nearRaw as any)?.label ?? null;
   const nearLevel = (nearRaw as any)?.level ?? 'national';
+  const nearHasLocalVendor = (nearRaw as any)?.hasLocalVendor ?? false;
 
   // Flash = produits avec salePrice (déja filtré par hasSale=true côté API)
   // On garde seulement ceux où salePrice < price (sécurité)
@@ -2416,7 +2435,7 @@ export default function HomePage() {
 
       {/* 5 — Produits pres de chez toi */}
       <NearYouSection products={nearYou as any[]} location={location}
-        onModal={openLocModal} label={nearLabel} level={nearLevel} />
+        onModal={openLocModal} label={nearLabel} level={nearLevel} hasLocalVendor={nearHasLocalVendor} />
 
       {/* 6 — Ventes Flash (après produits locaux) */}
       {flashItems.length > 0 && (
