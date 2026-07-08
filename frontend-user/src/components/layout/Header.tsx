@@ -330,7 +330,7 @@ function AccountDropdown({ user, isSeller, navigate, onClose, logout }: any) {
     { label: 'Produits',     path: '/seller/products' },
     { label: 'Commandes',    path: '/seller/orders' },
     { label: 'Boutique',     path: '/seller/store' },
-    { label: 'Statistiques', path: '/seller/stats' },
+    { label: 'Statistiques', path: '/seller/statistics' },
     { label: 'Abonnement',   path: '/seller/subscription' },
   ];
 

@@ -11,6 +11,7 @@ import {
   SmartToyOutlined, HeadsetMicOutlined, LockOutlined,
 } from '@mui/icons-material';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useSnackbar } from 'notistack';
 import { io, Socket } from 'socket.io-client';
 import api from '../../api/axios';
 import { useAuthStore } from '../../store/auth.store';
@@ -109,6 +110,7 @@ export default function SellerChatPage() {
   const { user } = useAuthStore();
   const token = localStorage.getItem('accessToken');
   const qc = useQueryClient();
+  const { enqueueSnackbar } = useSnackbar();
 
   const [active, setActive]         = useState<string | null>(null);
   const [messages, setMessages]     = useState<Msg[]>([]);
@@ -271,7 +273,9 @@ export default function SellerChatPage() {
         const { data: conv } = await api.post('/chat/conversations', { userId: deepLinkUserId });
         qc.invalidateQueries({ queryKey: ['seller-conversations'] });
         selectConv(conv.id);
-      } catch { /* ignore — le client n'a peut-être plus de compte actif */ }
+      } catch {
+        enqueueSnackbar("Impossible d'ouvrir la conversation avec ce client — réessayez.", { variant: 'error' });
+      }
     })();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);

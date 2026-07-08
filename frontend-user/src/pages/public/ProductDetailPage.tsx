@@ -852,10 +852,15 @@ export default function ProductDetailPage() {
 
             {/* Propre produit du vendeur connecté — jamais de bouton d'achat qui échouerait de toute façon côté serveur */}
             {showPurchaseFlow && isOwnProduct && (
-              <Box sx={{ mb:3.5, maxWidth:{ lg:480 }, p:2, borderRadius:'10px', bgcolor:'rgba(15,27,46,0.04)', border:`1px solid ${BORD}` }}>
+              <Box sx={{ mb:3.5, maxWidth:{ lg:480 }, p:2, borderRadius:'10px', bgcolor:'rgba(15,27,46,0.04)', border:`1px solid ${BORD}`,
+                display:'flex', alignItems:'center', justifyContent:'space-between', gap:1.5, flexWrap:'wrap' }}>
                 <Typography fontSize={13.5} color={SUB2} fontWeight={500}>
-                  Ceci est votre propre produit — vous ne pouvez pas l'acheter.
+                  C'est votre produit — l'achat est désactivé pour vous.
                 </Typography>
+                <Button component={Link} to={`/seller/products/edit/${product.id}`} size="small"
+                  sx={{ color:OR, fontWeight:700, fontSize:12.5, textTransform:'none', whiteSpace:'nowrap' }}>
+                  Modifier →
+                </Button>
               </Box>
             )}
 
