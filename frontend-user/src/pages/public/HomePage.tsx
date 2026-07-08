@@ -587,32 +587,64 @@ function SellerCard({ s }: { s: any }) {
   const name = s.store.name;
   const img  = s.store.logoUrl || s.store.bannerUrl;
   const hasImg = !!img && !imgError;
+  const isVerif = s.store.isVerified;
+  const address = s.store.address || [s.store.city, s.store.department].filter(Boolean).join(', ') || null;
 
   return (
     <Box component={Link} to={`/boutique/${s.store.slug}`}
       sx={{
         flexShrink: 0,
-        width: { xs: 108, sm: 128, md: 140 },
+        width: { xs: 132, sm: 152, md: 164 },
         scrollSnapAlign: { xs: 'start', md: 'none' },
         textDecoration: 'none',
         display: 'flex', flexDirection: 'column', alignItems: 'center',
         '&:hover .sc-avatar': { transform: 'scale(1.04)' },
+        '&:hover .sc-visit': { bgcolor: FS_ORANGE, color: '#fff', borderColor: FS_ORANGE },
       }}>
-      <Box className="sc-avatar" sx={{
-        width: '100%', aspectRatio: '1 / 1', borderRadius: '28px',
-        bgcolor: '#F1F5F9', overflow: 'hidden', flexShrink: 0,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        transition: 'transform 0.2s ease',
-        color: FS_ORANGE, fontWeight: 800, fontSize: 22,
-      }}>
-        {hasImg
-          ? <Box component="img" src={img} alt={name} onError={() => setImgError(true)}
-              sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          : initials}
+      <Box sx={{ position: 'relative', width: '100%' }}>
+        <Box className="sc-avatar" sx={{
+          width: '100%', aspectRatio: '1 / 1', borderRadius: '28px',
+          bgcolor: '#F1F5F9', overflow: 'hidden', flexShrink: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          transition: 'transform 0.2s ease',
+          color: FS_ORANGE, fontWeight: 800, fontSize: 22,
+        }}>
+          {hasImg
+            ? <Box component="img" src={img} alt={name} onError={() => setImgError(true)}
+                sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            : initials}
+        </Box>
+        {isVerif && (
+          <Box sx={{
+            position: 'absolute', bottom: -2, right: -2,
+            width: 26, height: 26, borderRadius: '50%',
+            bgcolor: '#fff', border: '2px solid #fff',
+            boxShadow: '0 2px 6px rgba(15,27,46,0.18)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <Verified sx={{ fontSize: 16, color: '#16A34A' }} />
+          </Box>
+        )}
       </Box>
+
       <Typography fontSize={13.5} fontWeight={600} color={FS_NAVY} textAlign="center" lineHeight={1.3} mt={1.2} noWrap sx={{ maxWidth: '100%' }}>
         {name}
       </Typography>
+      {address && (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3, mt: 0.2, maxWidth: '100%' }}>
+          <LocationOn sx={{ fontSize: 11, color: FS_MUTED, flexShrink: 0 }} />
+          <Typography fontSize={11} color={FS_MUTED} noWrap>{address}</Typography>
+        </Box>
+      )}
+
+      <Box className="sc-visit" sx={{
+        mt: 1, px: 1.4, py: 0.5, borderRadius: '8px', fontSize: 11.5, fontWeight: 700,
+        bgcolor: 'transparent', color: FS_NAVY, border: `1.5px solid ${FS_BORDER}`,
+        transition: 'background 0.18s ease, color 0.18s ease, border-color 0.18s ease',
+        whiteSpace: 'nowrap',
+      }}>
+        Voir la boutique
+      </Box>
     </Box>
   );
 }
