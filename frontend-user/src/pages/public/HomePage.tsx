@@ -95,8 +95,8 @@ function FlashTimer({ endsAt, onEnded }: { endsAt: Date | null; onEnded?: () => 
     return <Typography sx={{ color: FS_ORANGE, fontWeight: 600, fontSize: 13, letterSpacing: '0.4px' }}>vente terminée</Typography>;
   }
 
-  const unit = { fontSize: 12, color: 'rgba(255,255,255,0.4)', ml: '2px' };
-  const val  = { fontSize: 24, fontWeight: 600, color: '#fff', fontVariantNumeric: 'tabular-nums' as const, lineHeight: 1 };
+  const unit = { fontSize: 12, color: FS_MUTED, ml: '2px' };
+  const val  = { fontSize: 24, fontWeight: 600, color: FS_NAVY, fontVariantNumeric: 'tabular-nums' as const, lineHeight: 1 };
 
   return (
     <Box sx={{ display: 'flex', alignItems: 'baseline', gap: '3px' }}>
@@ -1304,11 +1304,12 @@ function DealCarousel({ products, flash = false }: { products: any[]; flash?: bo
 
   const arrowSx = (enabled: boolean) => ({
     width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
-    bgcolor: 'rgba(255,255,255,0.06)',
-    color: '#fff',
+    bgcolor: '#F1F5F9',
+    color: FS_NAVY,
+    border: `1px solid ${FS_BORDER}`,
     opacity: enabled ? 1 : 0.3, pointerEvents: enabled ? 'auto' as const : 'none' as const,
     transition: 'background 0.15s ease, opacity 0.2s ease',
-    '&:hover': { bgcolor: 'rgba(255,255,255,0.14)' },
+    '&:hover': { bgcolor: '#E2E8F0' },
   });
 
   return (
@@ -1381,10 +1382,11 @@ function FlashSection({ products, to }: { products: any[]; to: string }) {
     <Container maxWidth="xl" sx={{ px: { xs: 1.5, md: 2 }, py: { xs: 2, md: 3 } }}>
       <Box sx={{
         position: 'relative',
-        bgcolor: FS_NAVY,
+        bgcolor: '#fff',
         borderRadius: '16px',
-        border: `1px solid rgba(255,255,255,0.08)`,
-        p: { xs: '18px', md: '24px 28px' },
+        border: `1px solid ${FS_BORDER}`,
+        boxShadow: '0 2px 10px rgba(15,27,46,0.05)',
+        p: { xs: '18px', md: '22px 24px' },
         maxWidth: { xs: '100%', md: panelMaxWidth },
         mx: { md: 'auto' },
       }}>
@@ -1401,7 +1403,7 @@ function FlashSection({ products, to }: { products: any[]; to: string }) {
               <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: FS_ORANGE, animation: 'dp-pulse 1.6s ease-in-out infinite' }} />
               <FlashOn sx={{ fontSize: 13 }} /> offres à durée limitée
             </Typography>
-            <Typography sx={{ fontSize: { xs: 19, md: 24 }, fontWeight: 700, color: '#fff', lineHeight: 1.2, letterSpacing: '-0.3px', textTransform: 'capitalize' }}>
+            <Typography sx={{ fontSize: { xs: 19, md: 24 }, fontWeight: 700, color: FS_NAVY, lineHeight: 1.2, letterSpacing: '-0.3px', textTransform: 'capitalize' }}>
               {title.toLowerCase()}
             </Typography>
           </Box>
@@ -1409,7 +1411,7 @@ function FlashSection({ products, to }: { products: any[]; to: string }) {
           <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1.5, md: 2 }, flexWrap: 'wrap' }}>
             {endAt && (
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                <Typography sx={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                <Typography sx={{ fontSize: 10, color: FS_MUTED, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
                   se termine dans
                 </Typography>
                 <FlashTimer endsAt={endAt} onEnded={() => setEnded(true)} />
