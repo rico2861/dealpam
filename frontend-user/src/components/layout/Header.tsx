@@ -170,18 +170,19 @@ function ZoneDropdown({ city, geoLoading, detectGeo, setCity, onClose }: {
 function CatDropdown({ activeCat, onPick, onClose }: {
   activeCat: string; onPick: (label: string, path: string) => void; onClose: () => void;
 }) {
-  const CARD = '#FFFFFF';
-  const BORDER_COL = 'rgba(15,23,42,0.09)';
-  const TXT = '#0F172A';
-  const SUB = '#64748B';
+  const CARD    = '#FFFFFF';
+  const BORDER_COL = 'rgba(15,23,42,0.08)';
+  const TXT     = '#0F1B2E';
+  const SUB     = '#6B7280';
+  const ACCENT  = '#0F1B2E'; // navy — un seul accent, pas de rainbow d'icônes
 
   return (
     <>
     {/* Backdrop */}
     <Box onClick={onClose} sx={{
       position: 'fixed', inset: 0, zIndex: 9998,
-      bgcolor: 'rgba(15,23,42,0.4)',
-      backdropFilter: 'blur(3px)',
+      bgcolor: 'rgba(15,27,46,0.35)',
+      backdropFilter: 'blur(2px)',
       animation: 'dp-fadeIn 150ms ease forwards',
     }} />
 
@@ -194,38 +195,36 @@ function CatDropdown({ activeCat, onPick, onClose }: {
       width: { xs: 'auto', md: 620 },
       maxHeight: 'calc(100vh - 130px)',
       overflowY: 'auto',
-      bgcolor: '#F7F8FA', borderRadius: '22px',
-      boxShadow: '0 32px 80px rgba(15,23,42,0.25), 0 4px 24px rgba(15,23,42,0.12)',
+      bgcolor: CARD, borderRadius: '14px',
+      boxShadow: '0 16px 48px rgba(15,27,46,0.16), 0 2px 8px rgba(15,27,46,0.08)',
       border: `1px solid ${BORDER_COL}`,
       zIndex: 9999,
-      animation: 'dp-slideDown 180ms cubic-bezier(0.16,1,0.3,1) forwards',
+      animation: 'dp-slideDown 160ms cubic-bezier(0.16,1,0.3,1) forwards',
       '&::-webkit-scrollbar': { display: 'none' },
       scrollbarWidth: 'none',
     }}>
 
       {/* Header */}
       <Box sx={{
-        px: { xs: 1.5, sm: 2.2 }, pt: { xs: 1.6, sm: 2 }, pb: { xs: 1.2, sm: 1.6 },
+        px: { xs: 2, sm: 2.5 }, pt: { xs: 1.8, sm: 2.2 }, pb: { xs: 1.6, sm: 1.8 },
         borderBottom: `1px solid ${BORDER_COL}`,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        bgcolor: CARD,
-        borderTopLeftRadius: '22px', borderTopRightRadius: '22px',
       }}>
         <Box>
-          <Typography fontSize={{ xs: 15, sm: 16 }} fontWeight={800} color={TXT} letterSpacing={-0.4} lineHeight={1.2}>
+          <Typography fontSize={{ xs: 14.5, sm: 15.5 }} fontWeight={600} color={TXT} letterSpacing={-0.2} lineHeight={1.2}>
             Toutes les catégories
           </Typography>
-          <Typography fontSize={11} color={SUB} mt={0.2}>
+          <Typography fontSize={11.5} color={SUB} mt={0.3}>
             {CATS.length} catégories disponibles
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Box component={Link} to="/products?sort=latest" onClick={onClose}
             sx={{
-              fontSize: 11.5, fontWeight: 600, color: SUB,
-              textDecoration: 'none', px: 1.2, py: 0.4, borderRadius: '20px',
+              fontSize: 12, fontWeight: 500, color: SUB,
+              textDecoration: 'none', px: 1.3, py: 0.5, borderRadius: '8px',
               border: `1px solid ${BORDER_COL}`,
-              '&:hover': { color: TXT, borderColor: 'rgba(15,23,42,0.2)', bgcolor: 'rgba(15,23,42,0.04)' },
+              '&:hover': { color: TXT, borderColor: 'rgba(15,27,46,0.18)', bgcolor: 'rgba(15,27,46,0.03)' },
               transition: 'all 0.15s',
             }}>
             Nouveautés
@@ -233,10 +232,10 @@ function CatDropdown({ activeCat, onPick, onClose }: {
           <Box component={Link} to="/categories" onClick={onClose}
             sx={{
               display: 'flex', alignItems: 'center', gap: 0.2,
-              fontSize: 12, fontWeight: 700, color: ORANGE, textDecoration: 'none',
-              px: 1.2, py: 0.4, borderRadius: '20px',
-              bgcolor: alpha(ORANGE, 0.1), border: `1px solid ${alpha(ORANGE, 0.25)}`,
-              '&:hover': { bgcolor: alpha(ORANGE, 0.18) }, transition: 'all 0.15s',
+              fontSize: 12, fontWeight: 500, color: TXT, textDecoration: 'none',
+              px: 1.3, py: 0.5, borderRadius: '8px',
+              bgcolor: 'rgba(15,27,46,0.04)', border: `1px solid ${BORDER_COL}`,
+              '&:hover': { bgcolor: 'rgba(15,27,46,0.07)' }, transition: 'all 0.15s',
             }}>
             Voir tout <KeyboardArrowRight sx={{ fontSize: 14 }} />
           </Box>
@@ -244,36 +243,36 @@ function CatDropdown({ activeCat, onPick, onClose }: {
       </Box>
 
       {/* Category grid — 3 colonnes pour tout voir sans scroll */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(3, 1fr)' }, p: 1.5, gap: 1 }}>
-        {CATS.map(({ label, sub, icon: Icon, color, bg, path }) => {
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(3, 1fr)' }, p: 1.5, gap: 0.75 }}>
+        {CATS.map(({ label, sub, icon: Icon, path }) => {
           const active = activeCat === label;
           return (
             <Box key={label} onClick={() => { onPick(label, path); onClose(); }}
               sx={{
-                display: 'flex', alignItems: 'center', gap: 1.3,
-                px: { xs: 1, sm: 1.4 }, py: { xs: 0.9, sm: 1.1 },
-                borderRadius: '16px', cursor: 'pointer',
-                bgcolor: active ? alpha(color, 0.1) : CARD,
-                border: `1.5px solid ${active ? alpha(color, 0.4) : BORDER_COL}`,
-                transition: 'all 0.18s cubic-bezier(0.16,1,0.3,1)',
+                display: 'flex', alignItems: 'center', gap: 1.2,
+                px: { xs: 1, sm: 1.3 }, py: { xs: 0.9, sm: 1 },
+                borderRadius: '10px', cursor: 'pointer',
+                bgcolor: active ? 'rgba(15,27,46,0.05)' : 'transparent',
+                border: `1px solid ${active ? BORDER_COL : 'transparent'}`,
+                transition: 'background 0.15s ease, border-color 0.15s ease',
                 '&:hover': {
-                  bgcolor: alpha(color, 0.07),
-                  border: `1.5px solid ${alpha(color, 0.35)}`,
-                  transform: 'translateY(-1px)',
-                  boxShadow: `0 6px 20px rgba(15,23,42,0.08)`,
+                  bgcolor: 'rgba(15,27,46,0.035)',
+                  border: `1px solid ${BORDER_COL}`,
                 },
               }}>
               <Box sx={{
-                width: { xs: 34, sm: 40 }, height: { xs: 34, sm: 40 },
-                borderRadius: '12px', bgcolor: bg, flexShrink: 0,
+                width: { xs: 32, sm: 36 }, height: { xs: 32, sm: 36 },
+                borderRadius: '9px',
+                bgcolor: active ? ACCENT : 'rgba(15,27,46,0.055)',
+                flexShrink: 0,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: `0 3px 10px rgba(15,23,42,0.08)`,
+                transition: 'background 0.15s ease',
               }}>
-                <Icon sx={{ fontSize: { xs: 17, sm: 20 }, color }} />
+                <Icon sx={{ fontSize: { xs: 16, sm: 18 }, color: active ? '#FFFFFF' : ACCENT }} />
               </Box>
               <Box sx={{ minWidth: 0 }}>
-                <Typography fontSize={{ xs: 12.5, sm: 13.5 }} fontWeight={active ? 800 : 600}
-                  color={active ? color : TXT} lineHeight={1.25} noWrap>
+                <Typography fontSize={{ xs: 12.5, sm: 13.5 }} fontWeight={500}
+                  color={TXT} lineHeight={1.25} noWrap>
                   {label}
                 </Typography>
                 <Typography fontSize={{ xs: 10, sm: 11 }} color={SUB} lineHeight={1.3} noWrap>
@@ -290,25 +289,24 @@ function CatDropdown({ activeCat, onPick, onClose }: {
         <Box component={Link} to="/ventes-flash" onClick={onClose}
           sx={{
             display: 'flex', alignItems: 'center', gap: 1.5,
-            px: 1.8, py: 1.2, borderRadius: '14px',
-            background: 'linear-gradient(135deg, #FF6B00 0%, #FF9A00 100%)',
+            px: 1.8, py: 1.2, borderRadius: '10px',
+            bgcolor: ORANGE,
             textDecoration: 'none',
-            boxShadow: '0 4px 20px rgba(255,107,0,0.4)',
-            transition: 'filter 0.15s, transform 0.15s',
-            '&:hover': { filter: 'brightness(1.08)', transform: 'scale(1.01)' },
+            transition: 'filter 0.15s',
+            '&:hover': { filter: 'brightness(1.05)' },
           }}>
           <Box sx={{
-            width: 36, height: 36, borderRadius: '10px',
-            bgcolor: 'rgba(255,255,255,0.2)',
+            width: 32, height: 32, borderRadius: '8px',
+            bgcolor: 'rgba(255,255,255,0.18)',
             display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
           }}>
-            <FlashOn sx={{ fontSize: 20, color: 'white' }} />
+            <FlashOn sx={{ fontSize: 18, color: 'white' }} />
           </Box>
           <Box sx={{ flex: 1 }}>
-            <Typography fontSize={13.5} fontWeight={800} color="white" lineHeight={1.2}>Ventes Flash</Typography>
-            <Typography fontSize={11} color="rgba(255,255,255,0.75)" lineHeight={1.3}>Offres du jour</Typography>
+            <Typography fontSize={13} fontWeight={600} color="white" lineHeight={1.2}>Ventes Flash</Typography>
+            <Typography fontSize={11} color="rgba(255,255,255,0.8)" lineHeight={1.3}>Offres du jour</Typography>
           </Box>
-          <KeyboardArrowRight sx={{ fontSize: 18, color: 'rgba(255,255,255,0.75)' }} />
+          <KeyboardArrowRight sx={{ fontSize: 18, color: 'rgba(255,255,255,0.8)' }} />
         </Box>
       </Box>
     </Box>
