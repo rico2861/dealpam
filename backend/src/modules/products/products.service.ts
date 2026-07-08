@@ -39,10 +39,15 @@ export class ProductsService {
   async findAll(filter: FilterProductsDto) {
     const { brand, minPrice, maxPrice, search, sort, page = 1, limit = 20, storeId, inStock, department, city, featured, sponsored, minRating, hasSale, storeVerified, productType } = filter as any;
     const category = filter.category || filter.categorySlug;
+    // 'services' est un pseudo-slug utilise par le frontend (filtre catégorie
+    // "Services") — il ne correspond a aucune Category reelle, c'est un alias
+    // pour productType=SERVICE. Sans ce cas particulier, le filtre par defaut
+    // qui exclut les services faisait disparaitre tous les resultats de cette page.
+    const isServicesPseudoCategory = category === 'services';
 
     const baseWhere: any = { status: 'PUBLISHED' };
-    baseWhere.productType = productType || { not: 'SERVICE' };
-    if (category)  baseWhere.category = { slug: category };
+    baseWhere.productType = productType || (isServicesPseudoCategory ? 'SERVICE' : { not: 'SERVICE' });
+    if (category && !isServicesPseudoCategory)  baseWhere.category = { slug: category };
     if (brand)     baseWhere.brand = { slug: brand };
     if (minPrice)  baseWhere.price = { ...baseWhere.price, gte: minPrice };
     if (maxPrice)  baseWhere.price = { ...baseWhere.price, lte: maxPrice };
