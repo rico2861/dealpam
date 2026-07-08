@@ -72,13 +72,13 @@ function FlashTimer({ endsAt, onEnded }: { endsAt: Date | null; onEnded?: () => 
   const [diff, setDiff] = useState(() => (endsAt ? Math.max(0, endsAt.getTime() - Date.now()) : 0));
   useEffect(() => {
     if (!endsAt) return;
-    const tick = () => {
-      const d = Math.max(0, endsAt.getTime() - Date.now());
+    const id = setInterval(tick, 1000);
+    function tick() {
+      const d = Math.max(0, endsAt!.getTime() - Date.now());
       setDiff(d);
       if (d === 0) { clearInterval(id); onEnded?.(); }
-    };
+    }
     tick();
-    const id = setInterval(tick, 1000);
     return () => clearInterval(id);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [endsAt]);
@@ -602,10 +602,11 @@ function SellerCard({ s }: { s: any }) {
         maxWidth: { md: 320 },
         scrollSnapAlign: { xs: 'start', md: 'none' },
         textDecoration: 'none',
-        borderRadius: '16px',
+        borderRadius: '18px',
         overflow: 'hidden',
         bgcolor: 'white',
         border: `0.5px solid ${FS_BORDER}`,
+        boxShadow: '0 2px 10px rgba(15,27,46,0.05)',
         transition: 'box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease',
         '&:hover': {
           transform: 'translateY(-4px)',
@@ -621,18 +622,37 @@ function SellerCard({ s }: { s: any }) {
       <Box sx={{
         height: 110, position: 'relative', overflow: 'hidden',
         display: 'flex', alignItems: 'flex-end', p: '14px',
-        background: hasBanner ? undefined : 'linear-gradient(160deg, #1a2d47 0%, #0F1B2E 100%)',
+        background: hasBanner ? undefined : 'radial-gradient(ellipse 130% 100% at 20% 0%, #223550 0%, #0F1B2E 60%)',
       }}>
         {hasBanner && (
           <Box component="img" src={s.store.bannerUrl} alt="" onError={() => setBannerError(true)}
             sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
         )}
+        {!hasBanner && (
+          <Box sx={{
+            position: 'absolute', inset: 0, opacity: 0.4, pointerEvents: 'none',
+            backgroundImage: 'radial-gradient(rgba(255,255,255,0.08) 1px, transparent 1px)',
+            backgroundSize: '16px 16px',
+            maskImage: 'radial-gradient(ellipse 70% 70% at 75% 20%, black 0%, transparent 70%)',
+          }} />
+        )}
         <Box sx={{
           position: 'absolute', inset: 0,
           background: hasBanner
             ? 'linear-gradient(to top, rgba(15,27,46,0.7), transparent 60%)'
-            : 'radial-gradient(circle at 80% 20%, rgba(245,113,26,0.25), transparent 60%)',
+            : 'radial-gradient(circle at 80% 20%, rgba(245,113,26,0.28), transparent 60%)',
         }} />
+        {/* Ruban vedette */}
+        <Box sx={{
+          position: 'absolute', top: 10, right: 10, zIndex: 1,
+          display: 'flex', alignItems: 'center', gap: 0.4,
+          px: 1, py: 0.4, borderRadius: '100px',
+          bgcolor: 'rgba(0,0,0,0.28)', backdropFilter: 'blur(6px)',
+          border: '1px solid rgba(255,255,255,0.18)',
+        }}>
+          <Star sx={{ fontSize: 11, color: FS_STAR }} />
+          <Typography fontSize={9.5} fontWeight={700} color="#fff" letterSpacing="0.04em">VEDETTE</Typography>
+        </Box>
 
         {/* Avatar + nom en glassmorphism, superposés à la bannière */}
         <Box sx={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: 1.2, minWidth: 0 }}>
@@ -814,8 +834,63 @@ function FeaturedSellersSection({ sellers }: { sellers: any[] }) {
             pb: 1, cursor: 'grab', '&:active': { cursor: 'grabbing' }, userSelect: 'none',
           }}>
           {sellers.map((s: any) => <SellerCard key={s.id} s={s} />)}
+          {/* Peu de boutiques en vedette pour l'instant : on comble l'espace avec un
+              call-to-action plutôt que de laisser un grand vide qui parait cassé. */}
+          {sellers.length < 3 && Array.from({ length: 3 - sellers.length }).map((_, i) => (
+            <BecomeFeaturedSellerCard key={`invite-${i}`} />
+          ))}
         </Box>
       </Container>
+    </Box>
+  );
+}
+
+/* ─── Carte invitation "devenir vendeur vedette" — comble un carousel clairsemé ── */
+function BecomeFeaturedSellerCard() {
+  return (
+    <Box component={Link} to="/register?role=SELLER"
+      sx={{
+        flexShrink: 0,
+        width: { xs: '78%', sm: 260, md: 'calc(33.333% - 14px)' },
+        minWidth: { xs: '78%', sm: 260, md: 260 },
+        maxWidth: { md: 320 },
+        scrollSnapAlign: { xs: 'start', md: 'none' },
+        textDecoration: 'none',
+        borderRadius: '16px',
+        overflow: 'hidden',
+        position: 'relative',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        textAlign: 'center', gap: 1.2, px: 3, py: 4,
+        border: `1.5px dashed ${alpha(FS_ORANGE, 0.35)}`,
+        bgcolor: alpha(FS_ORANGE, 0.03),
+        transition: 'all 0.2s ease',
+        '&:hover': {
+          bgcolor: alpha(FS_ORANGE, 0.06),
+          borderColor: FS_ORANGE,
+          transform: 'translateY(-4px)',
+        },
+      }}>
+      <Box sx={{
+        width: 52, height: 52, borderRadius: '14px',
+        background: `linear-gradient(135deg, ${alpha(FS_ORANGE, 0.18)}, ${alpha(FS_ORANGE, 0.05)})`,
+        border: `1.5px solid ${alpha(FS_ORANGE, 0.25)}`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        <StorefrontOutlined sx={{ fontSize: 24, color: FS_ORANGE }} />
+      </Box>
+      <Typography fontSize={14.5} fontWeight={700} color={FS_NAVY} lineHeight={1.35}>
+        Votre boutique ici ?
+      </Typography>
+      <Typography fontSize={12.5} color={FS_MUTED} lineHeight={1.6}>
+        Rejoignez les vendeurs vedettes de DealPam et gagnez en visibilité.
+      </Typography>
+      <Box sx={{
+        display: 'inline-flex', alignItems: 'center', gap: 0.5, mt: 0.5,
+        px: 2, py: 0.9, borderRadius: '8px', fontSize: 12.5, fontWeight: 600,
+        color: FS_ORANGE, border: `1px solid ${alpha(FS_ORANGE, 0.35)}`,
+      }}>
+        Devenir vendeur <KeyboardArrowRight sx={{ fontSize: 15 }} />
+      </Box>
     </Box>
   );
 }
