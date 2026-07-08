@@ -92,6 +92,12 @@ export class ProductsController {
     return this.productsService.findAllAdmin(Number(page), Number(limit));
   }
 
+  // Doit rester avant @Get(':slug') plus bas, sinon "pending-edits" serait
+  // capturé comme un slug de produit.
+  @Get('admin/pending-edits')
+  @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('ADMIN', 'SUPER_ADMIN', 'MODERATOR')
+  findPendingEdits() { return this.productsService.findPendingEdits(); }
+
   @Get(':slug') findOne(@Param('slug') slug: string) { return this.productsService.findOne(slug); }
 
   @Post()
@@ -165,4 +171,12 @@ export class ProductsController {
   @Post(':id/reject')
   @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('ADMIN', 'SUPER_ADMIN', 'MODERATOR')
   reject(@Param('id') id: string, @Body('reason') reason: string) { return this.productsService.reject(id, reason); }
+
+  @Post(':id/approve-edit')
+  @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('ADMIN', 'SUPER_ADMIN', 'MODERATOR')
+  approveEdit(@Param('id') id: string) { return this.productsService.approveEdit(id); }
+
+  @Post(':id/reject-edit')
+  @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('ADMIN', 'SUPER_ADMIN', 'MODERATOR')
+  rejectEdit(@Param('id') id: string, @Body('reason') reason: string) { return this.productsService.rejectEdit(id, reason); }
 }

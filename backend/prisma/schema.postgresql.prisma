@@ -462,6 +462,13 @@ model Product {
   isFlagged       Boolean   @default(false) @map("is_flagged")
   flagReason      String?   @map("flag_reason")
 
+  // Modification d'un produit déjà PUBLISHED : la version en ligne reste
+  // visible telle quelle pendant la validation — les changements proposés
+  // sont stockés ici (JSON.stringify()) et appliqués seulement à l'approbation.
+  hasPendingEdit         Boolean  @default(false) @map("has_pending_edit")
+  pendingChanges         String?  @map("pending_changes")
+  pendingRejectionReason String?  @map("pending_rejection_reason")
+
   // Category-specific attributes stored as JSON (phone: brand/model/storage/ram; clothing: material/gender; etc.) — stocké en JSON.stringify()
   attributes      String?       @map("attributes")
   // Service / Immobilier / Freelance extra config (JSON) — stocké en JSON.stringify()

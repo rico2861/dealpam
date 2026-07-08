@@ -359,6 +359,14 @@ export class ProductsService {
     });
     if (!product) throw new NotFoundException('Produit introuvable');
 
+    // Produit déjà PUBLISHED → la version en ligne reste visible et intacte
+    // pendant la validation. On stocke seulement les changements proposés ;
+    // rien n'est appliqué (ni prix, ni stock, ni images/variants) tant que
+    // l'admin n'a pas approuvé — voir approveEdit()/rejectEdit().
+    if (product.status === 'PUBLISHED') {
+      return this.savePendingEdit(product, userId, dto, files);
+    }
+
     // Record price history + notify wishlist users if price dropped
     const newPrice     = dto.price     != null ? Number(dto.price)     : null;
     const newSalePrice = (dto as any).salePrice != null ? Number((dto as any).salePrice) : null;
@@ -650,6 +658,109 @@ export class ProductsService {
     if (Array.isArray(val)) return val.filter(Boolean);
     try { const p = JSON.parse(val); if (Array.isArray(p)) return p; } catch {}
     return val.split(',').map(s => s.trim()).filter(Boolean);
+  }
+
+  // ── Admin : file des modifications en attente de validation ───────────────
+  async findPendingEdits() {
+    return (this.prisma.product as any).findMany({
+      where: { hasPendingEdit: true },
+      include: { store: { select: { name: true, slug: true } } },
+      orderBy: { updatedAt: 'desc' },
+    });
+  }
+
+  // ── Modification d'un produit déjà publié : stocke sans rien appliquer ────
+  private async savePendingEdit(
+    product: any, userId: string, dto: UpdateProductDto,
+    files?: { images?: Express.Multer.File[], variantImages?: Express.Multer.File[] },
+  ) {
+    if (dto.salePrice != null && Number(dto.salePrice) >= Number(dto.price ?? product.price)) {
+      throw new BadRequestException('Le prix normal doit être supérieur au prix promo');
+    }
+
+    const { storeId: _ignoredStoreId, priceTiers: rawPriceTiers, ...safeDto } = dto as any;
+    const priceTiers = rawPriceTiers !== undefined ? this.normalizePriceTiers(rawPriceTiers) : undefined;
+
+    let attributes: any = undefined;
+    if ((dto as any).attributes) {
+      try { attributes = JSON.parse((dto as any).attributes); } catch {}
+    }
+    let variants: any[] | undefined;
+    if ((dto as any).variants) {
+      try { variants = JSON.parse((dto as any).variants); } catch {}
+    }
+
+    // Note : les fichiers (nouvelles images) ne sont pas pris en charge dans une
+    // édition en attente pour l'instant — seuls les champs texte/prix/stock/
+    // bundles sont différés. Un vendeur qui doit changer ses photos doit passer
+    // par les endpoints images dédiés (addImages/deleteImage), non affectés ici.
+    const pendingChanges = JSON.stringify({ ...safeDto, attributes, priceTiers, variants });
+
+    await this.prisma.product.update({
+      where: { id: product.id },
+      data: { hasPendingEdit: true, pendingChanges, pendingRejectionReason: null } as any,
+    });
+
+    await this.notifications.create(
+      userId,
+      `🔍 Modification de "${(dto as any).name ?? product.name}" en cours de vérification`,
+      `Votre produit reste visible tel quel pendant que la modification est examinée. Vous serez notifié dès qu'elle sera approuvée ou refusée.`,
+      'PRODUCT_MODERATION',
+      { productId: product.id, result: 'PENDING_EDIT' },
+    ).catch(() => {});
+
+    return this.prisma.product.findUnique({ where: { id: product.id }, include: PRODUCT_INCLUDE });
+  }
+
+  // ── Admin : approuver une modification en attente — applique enfin les changements ─
+  async approveEdit(productId: string) {
+    const product = await this.prisma.product.findUnique({ where: { id: productId } });
+    if (!product) throw new NotFoundException('Produit introuvable');
+    if (!(product as any).hasPendingEdit || !(product as any).pendingChanges) {
+      throw new BadRequestException('Aucune modification en attente pour ce produit');
+    }
+
+    let changes: any;
+    try { changes = JSON.parse((product as any).pendingChanges); } catch {
+      throw new BadRequestException('Modification en attente corrompue');
+    }
+    const { variants, ...fieldChanges } = changes;
+
+    const updated = await this.prisma.product.update({
+      where: { id: productId },
+      data: {
+        ...fieldChanges,
+        hasPendingEdit: false,
+        pendingChanges: null,
+        pendingRejectionReason: null,
+      } as any,
+      include: { store: { select: { name: true, seller: { select: { userId: true } } } } },
+    });
+
+    if (Array.isArray(variants) && variants.length > 0) {
+      await this.prisma.productVariant.deleteMany({ where: { productId } });
+      await this.prisma.productVariant.createMany({
+        data: variants.map((v: any, sortOrder: number) => ({
+          productId, color: v.color || null, colorHex: v.colorHex || null, size: v.size || null,
+          stock: v.stock || 0, priceOverride: v.priceOverride || null, imageUrl: v.imageUrl || null,
+          imagePublicId: v.imagePublicId || null, sku: v.sku || null, sortOrder, isActive: true,
+        })),
+      });
+    }
+
+    await this.notifyModerationResult(updated, 'APPROVED');
+    return updated;
+  }
+
+  // ── Admin : refuser une modification en attente — la version live ne bouge pas ─
+  async rejectEdit(productId: string, reason: string) {
+    const product = await this.prisma.product.update({
+      where: { id: productId },
+      data: { hasPendingEdit: false, pendingChanges: null, pendingRejectionReason: reason } as any,
+      include: { store: { select: { name: true, seller: { select: { userId: true } } } } },
+    });
+    await this.notifyModerationResult(product, 'REJECTED', reason);
+    return product;
   }
 
   // ── Paliers de prix dégressifs (bundles) ──────────────────────────────────

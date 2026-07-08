@@ -89,6 +89,17 @@ export default function EditProductPage() {
   return (
     <Container maxWidth="lg" sx={{ py: 3 }}>
       <Typography variant="h4" fontWeight={800} mb={3}>Modifier le produit</Typography>
+      {product?.hasPendingEdit && (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          Une modification précédente est déjà en attente de validation — la version actuellement en ligne reste
+          affichée aux clients. Enregistrer un nouveau changement ici remplacera cette modification en attente.
+        </Alert>
+      )}
+      {product?.pendingRejectionReason && (
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          Votre dernière modification a été refusée : {product.pendingRejectionReason}
+        </Alert>
+      )}
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
       <form onSubmit={handleSubmit}>
         <Grid container spacing={3}>

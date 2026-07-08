@@ -238,9 +238,16 @@ export default function SellerProductsPage({ mode = 'products' }: { mode?: 'prod
                 )}
 
                 {/* Status */}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.7 }}>
-                  <StIcon sx={{ fontSize: 14, color: st.color, flexShrink: 0 }}/>
-                  <Typography fontSize={12} fontWeight={600} color={st.color}>{st.label}</Typography>
+                <Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.7 }}>
+                    <StIcon sx={{ fontSize: 14, color: st.color, flexShrink: 0 }}/>
+                    <Typography fontSize={12} fontWeight={600} color={st.color}>{st.label}</Typography>
+                  </Box>
+                  {p.hasPendingEdit && (
+                    <Typography fontSize={10.5} color="#F59E0B" fontWeight={600} mt={0.3}>
+                      modification en attente de validation
+                    </Typography>
+                  )}
                 </Box>
 
                 {/* Date */}

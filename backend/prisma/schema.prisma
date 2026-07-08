@@ -341,6 +341,9 @@ model Product {
   rejectionReason String?   @map("rejection_reason")
   isFlagged       Boolean   @default(false) @map("is_flagged")
   flagReason      String?   @map("flag_reason")
+  hasPendingEdit         Boolean  @default(false) @map("has_pending_edit")
+  pendingChanges         String?  @map("pending_changes")
+  pendingRejectionReason String?  @map("pending_rejection_reason")
 
   // Category-specific attributes stored as JSON (phone: brand/model/storage/ram; clothing: material/gender; etc.)
   attributes      String?         @map("attributes")
