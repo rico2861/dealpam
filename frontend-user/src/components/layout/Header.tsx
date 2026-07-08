@@ -1018,7 +1018,7 @@ export default function Header() {
             </Box>
 
             {/* Right CTA */}
-            <Box component={Link} to={isSeller ? '/seller' : '/register?role=SELLER'} sx={{
+            <Box component={Link} to={isSeller ? '/seller' : user ? '/become-seller' : '/register?role=SELLER'} sx={{
               display: 'flex', alignItems: 'center', gap: 0.8, px: 2, flexShrink: 0,
               borderLeft: `1px solid ${BORDER}`, textDecoration: 'none',
               transition: 'background 0.15s',

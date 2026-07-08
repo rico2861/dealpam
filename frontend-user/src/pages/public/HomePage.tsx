@@ -1765,6 +1765,9 @@ function LevelBadge({ level }: { level?: string }) {
 function NearYouSection({ products, location, onModal, label, level }: {
   products: any[]; location: any; onModal: () => void; label?: string | null; level?: string;
 }) {
+  const { user } = useAuthStore();
+  const isSeller = user?.role === 'SELLER';
+  const sellerCtaLink = isSeller ? '/seller' : user ? '/become-seller' : '/register?role=SELLER';
   const city = location?.city || location?.department;
   const sectionTitle = label
     || (location?.city
@@ -1869,16 +1872,18 @@ function NearYouSection({ products, location, onModal, label, level }: {
                   }}>
                     Changer de zone
                   </Button>
-                  <Button component={Link} to="/register?role=SELLER" sx={{
-                    color: 'white', fontWeight: 700, borderRadius: '12px',
-                    textTransform: 'none', px: 3, py: 1.1, fontSize: 13.5,
-                    border: `1.5px solid ${alpha(OR, 0.4)}`,
-                    bgcolor: alpha(OR, 0.08),
-                    '&:hover': { bgcolor: alpha(OR, 0.16), borderColor: OR },
-                    transition: 'all 0.2s',
-                  }}>
-                    Vendre à {city}
-                  </Button>
+                  {!isSeller && (
+                    <Button component={Link} to={sellerCtaLink} sx={{
+                      color: 'white', fontWeight: 700, borderRadius: '12px',
+                      textTransform: 'none', px: 3, py: 1.1, fontSize: 13.5,
+                      border: `1.5px solid ${alpha(OR, 0.4)}`,
+                      bgcolor: alpha(OR, 0.08),
+                      '&:hover': { bgcolor: alpha(OR, 0.16), borderColor: OR },
+                      transition: 'all 0.2s',
+                    }}>
+                      Vendre à {city}
+                    </Button>
+                  )}
                 </Box>
               </Box>
             </Box>

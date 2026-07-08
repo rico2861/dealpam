@@ -1,6 +1,7 @@
 import { Box, Container, Typography, alpha } from '@mui/material';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useAuthStore } from '../../store/auth.store';
 import {
   Checkroom, PhoneAndroid, Home as HomeIcon, LocalFlorist,
   Diamond, FitnessCenter, DirectionsCar, RestaurantMenu,
@@ -157,6 +158,10 @@ function CategoryCard({ cat }: { cat: CategoryItem }) {
 }
 
 export default function CategoriesPage() {
+  const { user } = useAuthStore();
+  const isSeller = user?.role === 'SELLER';
+  const sellerCtaLink = isSeller ? '/seller' : user ? '/become-seller' : '/register?role=SELLER';
+
   const { data: apiCategories } = useQuery<CategoryItem[]>({
     queryKey: ['categories'],
     queryFn: () => api.get('/categories').then(r => r.data).catch(() => []),
@@ -287,15 +292,17 @@ export default function CategoriesPage() {
         }}>
           <Box>
             <Typography fontWeight={800} fontSize={{ xs: 16, md: 18 }} color="white" mb={0.5}>
-              Vous êtes vendeur ?
+              {isSeller ? 'Gérez votre boutique' : 'Vous êtes vendeur ?'}
             </Typography>
             <Typography fontSize={13.5} color="rgba(255,255,255,0.5)">
-              Publiez vos produits et rejoignez des milliers de vendeurs sur DealPam.
+              {isSeller
+                ? 'Accédez à votre espace vendeur pour gérer vos produits.'
+                : 'Publiez vos produits et rejoignez des milliers de vendeurs sur DealPam.'}
             </Typography>
           </Box>
           <Box
             component={Link}
-            to="/register?role=SELLER"
+            to={sellerCtaLink}
             sx={{
               display: 'inline-flex', alignItems: 'center', gap: 1,
               px: 3, py: 1.4, borderRadius: '12px',
@@ -306,7 +313,7 @@ export default function CategoriesPage() {
               '&:hover': { bgcolor: '#E05A00', transform: 'translateY(-1px)', boxShadow: `0 6px 20px ${alpha(ORANGE, 0.5)}` },
             }}
           >
-            Vendre sur DealPam
+            {isSeller ? 'Mon espace vendeur' : 'Vendre sur DealPam'}
             <ArrowForward sx={{ fontSize: 16 }} />
           </Box>
         </Box>

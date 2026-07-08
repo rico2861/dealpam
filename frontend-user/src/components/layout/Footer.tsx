@@ -69,7 +69,9 @@ const LINKS_LEGAL = [
 export default function Footer() {
   const { user } = useAuthStore();
   const isSeller = user?.role === 'SELLER';
-  const linksVendre = isSeller ? LINKS_VENDRE_SELLER : LINKS_VENDRE_GUEST;
+  const linksVendre = isSeller ? LINKS_VENDRE_SELLER : user
+    ? [{ label: 'Vendre sur DealPam', to: '/become-seller' }, ...LINKS_VENDRE_GUEST.slice(1)]
+    : LINKS_VENDRE_GUEST;
 
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
