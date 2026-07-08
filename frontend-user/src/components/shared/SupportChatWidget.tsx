@@ -48,9 +48,11 @@ function sophiaWelcome(firstName: string) {
 
 /* ── Wrapper: guard for unauthenticated users ───────────────────────────── */
 
-// Must stay above MobileBottomNav (56px) on mobile
-const FAB_BOTTOM   = { xs: 72, md: 24 };
-const PANEL_BOTTOM = { xs: 140, md: 90 };
+// Must stay above MobileBottomNav (56px) on mobile.
+// Pages with their own extra fixed bottom bar (e.g. the mobile buy bar on
+// ProductDetailPage) push --dp-fab-extra-bottom higher so the FAB clears it too.
+const FAB_BOTTOM   = { xs: 'calc(72px + var(--dp-fab-extra-bottom, 0px))', md: 24 };
+const PANEL_BOTTOM = { xs: 'calc(140px + var(--dp-fab-extra-bottom, 0px))', md: 90 };
 
 export default function SupportChatWidget() {
   const user = useAuthStore(s => s.user);

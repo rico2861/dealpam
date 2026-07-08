@@ -19,6 +19,7 @@ import { useSnackbar } from 'notistack';
 import api from '../../api/axios';
 import { ProductDetailSkeleton } from '../../components/shared/Skeletons';
 import { useDelayedLoading } from '../../hooks/useDelayedLoading';
+import { useFixedBottomBarOffset } from '../../hooks/useFixedBottomBarOffset';
 import { parsePriceTiers, getEffectiveUnitPrice } from '../../utils/priceTiers';
 import { useAuthStore } from '../../store/auth.store';
 import { useCartStore } from '../../store/cart.store';
@@ -400,6 +401,8 @@ export default function ProductDetailPage() {
   };
 
   const copyLink = () => { navigator.clipboard.writeText(window.location.href); setCopied(true); setTimeout(()=>setCopied(false),2000); enqueueSnackbar('Lien copié !', { variant:'info' }); };
+
+  const stickyBarRef = useFixedBottomBarOffset<HTMLDivElement>(!!product && !product.requiresAppointment);
 
   if (isLoading) return showSkel ? <Skel/> : null;
   if (!product) return (
@@ -1143,7 +1146,7 @@ export default function ProductDetailPage() {
 
       {/* mobile sticky bottom — les services ont leur propre résumé sticky dans ServiceInfoPanel */}
       {!product.requiresAppointment && (
-      <Box sx={{ display:{ xs:'flex', lg:'none' }, position:'fixed', bottom:56, left:0, right:0, zIndex:1200,
+      <Box ref={stickyBarRef} sx={{ display:{ xs:'flex', lg:'none' }, position:'fixed', bottom:56, left:0, right:0, zIndex:1200,
         bgcolor:'rgba(255,255,255,0.97)', backdropFilter:'blur(20px)',
         borderTop:`1px solid ${BORD}`, boxShadow:'0 -6px 24px rgba(15,23,42,0.10)',
         p:1.5, pb:'calc(12px + env(safe-area-inset-bottom))', gap:1.2, alignItems:'center' }}>
