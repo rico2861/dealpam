@@ -17,6 +17,13 @@ const ORANGE = '#FF6B00';
 
 function detectType(v: string) { return v.includes('@') ? 'email' : v ? 'username' : null; }
 
+// Codes courts échangés via ?reason= — jamais de texte brut dans l'URL,
+// le libellé humain est résolu ici uniquement pour l'affichage.
+const LOGOUT_REASON_LABELS: Record<string, string> = {
+  inactivity: 'Vous avez été déconnecté après une période d\'inactivité.',
+  session_expired: 'Votre session a expiré, veuillez vous reconnecter.',
+};
+
 const STATS = [
   { value: '5 000+', label: 'Vendeurs actifs' },
   { value: '50 000+', label: 'Produits listés' },
@@ -51,6 +58,18 @@ export default function LoginPage() {
   useEffect(() => {
     sessionStorage.removeItem('logout_reason');
   }, []);
+
+  // reason=<code> vient d'une déconnexion automatique (inactivité, session
+  // expirée...) — on affiche un libellé humain dans l'UI puis on nettoie
+  // l'URL tout de suite pour ne pas laisser de message brut dans la barre d'adresse.
+  const [logoutBanner, setLogoutBanner] = useState('');
+  useEffect(() => {
+    const code = searchParams.get('reason');
+    if (code) {
+      setLogoutBanner(LOGOUT_REASON_LABELS[code] || '');
+      navigate('/login', { replace: true });
+    }
+  }, []); // eslint-disable-line
 
   // Navigation after login is handled in handleSubmit.
   // Do NOT redirect based on user alone — tokens may be expired even if user is persisted.
@@ -156,6 +175,13 @@ export default function LoginPage() {
             Pas encore de compte ?{' '}
             <Link to="/register" style={{ color: ORANGE, fontWeight: 700, textDecoration: 'none' }}>Créer un compte →</Link>
           </Typography>
+
+          {logoutBanner && (
+            <Alert severity="info" onClose={() => setLogoutBanner('')}
+              sx={{ mb: 3, borderRadius: '12px', bgcolor: 'rgba(59,130,246,0.08)', color: '#1D4ED8', border: '1px solid rgba(59,130,246,0.2)', fontSize: 13, '& .MuiAlert-icon': { color: '#3B82F6' } }}>
+              {logoutBanner}
+            </Alert>
+          )}
 
           {error && errorType === 'banned' && (
             <Box sx={{ mb: 3, p: 2.5, borderRadius: '14px', bgcolor: 'rgba(239,68,68,0.08)', border: '1.5px solid rgba(239,68,68,0.35)' }}>

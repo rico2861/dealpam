@@ -23,7 +23,9 @@ function SessionWatcher() {
   }, []); // eslint-disable-line
 
   const onInactive = useCallback(() => {
-    window.dispatchEvent(new CustomEvent('auth:session-expired', { detail: { reason: 'Déconnecté pour inactivité' } }));
+    // Code court (pas de texte brut) — le libellé affiché est résolu côté
+    // LoginPage, pour ne pas exposer de message humain dans l'URL.
+    window.dispatchEvent(new CustomEvent('auth:session-expired', { detail: { reason: 'inactivity' } }));
   }, []);
   useInactivityLogout(INACTIVITY_TIMEOUT_MS, onInactive, !!user);
 
