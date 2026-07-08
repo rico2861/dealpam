@@ -43,7 +43,7 @@ async function tryRefresh(): Promise<string> {
   if (!refreshToken) return Promise.reject('no_refresh');
 
   _refreshPromise = axios
-    .post(`${BASE_URL}/auth/refresh`, { refreshToken })
+    .post(`${BASE_URL}/auth/refresh`, { refreshToken }, { timeout: 15000 })
     .then(({ data }) => {
       // Le refresh token tourne à chaque appel (l'ancien est invalidé côté
       // serveur) — il faut stocker le nouveau à chaque fois, sinon le
@@ -89,6 +89,15 @@ api.interceptors.response.use(
       // All other 403s (boutique not approved, limits exceeded…) → just reject.
       return Promise.reject(error);
     }
+
+    // Les endpoints d'auth eux-mêmes ne doivent jamais déclencher un refresh :
+    // un 401 sur /auth/login (mauvais mot de passe) ou /auth/refresh (refresh
+    // token expiré/déjà utilisé) est une réponse finale à propager telle
+    // quelle — sinon on masque l'échec du login derrière un refresh qui,
+    // s'il traîne ou échoue silencieusement, laisse le bouton de connexion
+    // tourner indéfiniment (le finally { setLoading(false) } n'arrive jamais).
+    const isAuthEndpoint = /\/auth\/(login|register|refresh)\b/.test(originalConfig?.url || '');
+    if (isAuthEndpoint) return Promise.reject(error);
 
     // 401 after a retry → fresh token still rejected by server → hard logout
     if (status === 401 && originalConfig?._retry) {
