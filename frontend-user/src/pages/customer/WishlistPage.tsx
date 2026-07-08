@@ -45,6 +45,7 @@ export default function WishlistPage() {
     try {
       await api.post('/cart/items', { productId: pid, quantity: 1 });
       await fetchCount();
+      qc.invalidateQueries({ queryKey: ['cart'] });
       enqueueSnackbar(`"${item.product.name}" ajouté au panier !`, { variant: 'success' });
     } catch {
       enqueueSnackbar('Erreur lors de l\'ajout', { variant: 'error' });

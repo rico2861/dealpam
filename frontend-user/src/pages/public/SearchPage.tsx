@@ -57,7 +57,7 @@ function ProductCardGrid({ p }: { p: any }) {
 
   const addToCart = useMutation({
     mutationFn: () => api.post('/cart/items', { productId: p.id, quantity: 1 }),
-    onSuccess: () => { fetchCount(); enqueueSnackbar('Ajout au panier !', { variant: 'success' }); },
+    onSuccess: () => { fetchCount(); qc.invalidateQueries({ queryKey: ['cart'] }); enqueueSnackbar('Ajout au panier !', { variant: 'success' }); },
     onError: () => enqueueSnackbar('Erreur ajout panier', { variant: 'error' }),
   });
 
@@ -141,9 +141,10 @@ function ProductCardGrid({ p }: { p: any }) {
 function ProductCardRow({ p }: { p: any }) {
   const { fetchCount } = useCartStore();
   const { enqueueSnackbar } = useSnackbar();
+  const qc = useQueryClient();
   const addToCart = useMutation({
     mutationFn: () => api.post('/cart/items', { productId: p.id, quantity: 1 }),
-    onSuccess: () => { fetchCount(); enqueueSnackbar('Ajout au panier !', { variant: 'success' }); },
+    onSuccess: () => { fetchCount(); qc.invalidateQueries({ queryKey: ['cart'] }); enqueueSnackbar('Ajout au panier !', { variant: 'success' }); },
   });
   const img = p.images?.[0]?.urlMedium || p.images?.[0]?.url || 'https://via.placeholder.com/300';
   const hasDiscount = p.salePrice && Number(p.salePrice) < Number(p.price);

@@ -14,7 +14,7 @@ import {
   NavigateNext, Security, Star, ArrowForward, ShoppingCart,
   Chat, MedicalServices,
 } from '@mui/icons-material';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import api from '../../api/axios';
 import { useAuthStore } from '../../store/auth.store';
@@ -199,6 +199,7 @@ export default function ProductDetailPage() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const { fetchCount } = useCartStore();
+  const qc = useQueryClient();
   const { enqueueSnackbar } = useSnackbar();
 
   const [idx,      setIdx]      = useState(0);
@@ -330,6 +331,7 @@ export default function ProductDetailPage() {
     try {
       await api.post('/cart/items', { productId:product.id, quantity:qty, color:clr||undefined, size:sz||undefined, variantId:av?.id||undefined });
       await fetchCount();
+      qc.invalidateQueries({ queryKey:['cart'] });
       setInCart(true);
       enqueueSnackbar('Ajouté au panier !', { variant:'success' });
     } catch(err:any) {
@@ -357,6 +359,7 @@ export default function ProductDetailPage() {
     try {
       await api.post('/cart/items', { productId:product.id, quantity:qty, color:clr||undefined, size:sz||undefined, variantId:av?.id||undefined });
       await fetchCount();
+      qc.invalidateQueries({ queryKey:['cart'] });
       setInCart(true);
       placeOrder();
     } catch(err:any) {
