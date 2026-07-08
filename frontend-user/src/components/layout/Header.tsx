@@ -946,77 +946,98 @@ export default function Header() {
         {!isMobile && (
           <Box sx={{
             bgcolor: NAV_BG,
-            height: 44,
+            height: 46,
             display: 'flex', alignItems: 'stretch',
             borderTop: `1px solid ${BORDER}`,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
+            position: 'relative',
           }}>
             {/* Categories dropdown */}
             <Box ref={catRef} sx={{ position: 'relative', flexShrink: 0 }}>
               <Box onClick={() => setShowCat(o => !o)} sx={{
-                display: 'flex', alignItems: 'center', gap: 0.8,
-                px: 2.2, height: '100%', cursor: 'pointer',
-                bgcolor: showCat ? alpha(ORANGE, 0.1) : 'transparent',
+                display: 'flex', alignItems: 'center', gap: 0.9,
+                px: 2.4, height: '100%', cursor: 'pointer',
+                bgcolor: showCat ? alpha(ORANGE, 0.12) : 'transparent',
                 borderRight: `1px solid ${BORDER}`,
                 transition: 'background 0.15s',
-                '&:hover': { bgcolor: showCat ? alpha(ORANGE, 0.12) : 'rgba(255,255,255,0.04)' },
+                '&:hover': { bgcolor: showCat ? alpha(ORANGE, 0.14) : 'rgba(255,255,255,0.05)' },
               }}>
-                <GridView sx={{ fontSize: 15, color: showCat ? ORANGE : 'rgba(255,255,255,0.65)' }} />
-                <Typography sx={{ fontSize: 13, fontWeight: 600, color: showCat ? ORANGE : 'rgba(255,255,255,0.8)', letterSpacing: 0.1 }}>
-                  Categories
+                <GridView sx={{ fontSize: 16, color: showCat ? ORANGE : 'rgba(255,255,255,0.7)', transition: 'color 0.15s' }} />
+                <Typography sx={{ fontSize: 13, fontWeight: 700, color: showCat ? ORANGE : 'rgba(255,255,255,0.88)', letterSpacing: 0.1 }}>
+                  Catégories
                 </Typography>
-                <KeyboardArrowDown sx={{ fontSize: 14, color: 'rgba(255,255,255,0.3)', transform: showCat ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+                <KeyboardArrowDown sx={{ fontSize: 15, color: 'rgba(255,255,255,0.35)', transform: showCat ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
               </Box>
               {showCat && <CatDropdown activeCat={activeCat} onPick={(l, p) => { setActiveCat(l); navigate(p); }} onClose={() => setShowCat(false)} />}
             </Box>
 
             {/* Ventes Flash — badge sobre, plus de shimmer/pulse */}
-            <Box sx={{ display: 'flex', alignItems: 'center', px: 1.5, borderRight: `1px solid ${BORDER}`, flexShrink: 0 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', px: 1.6, borderRight: `1px solid ${BORDER}`, flexShrink: 0 }}>
               <Box component={Link} to="/ventes-flash" sx={{
-                display: 'flex', alignItems: 'center', gap: 0.6, px: 1.4, height: 27,
-                borderRadius: '7px', textDecoration: 'none',
-                bgcolor: alpha(ORANGE, 0.14), border: `1px solid ${alpha(ORANGE, 0.3)}`,
-                transition: 'background 0.15s',
-                '&:hover': { bgcolor: alpha(ORANGE, 0.2) },
+                display: 'flex', alignItems: 'center', gap: 0.6, px: 1.5, height: 28,
+                borderRadius: '8px', textDecoration: 'none',
+                bgcolor: alpha(ORANGE, 0.16), border: `1px solid ${alpha(ORANGE, 0.35)}`,
+                transition: 'background 0.15s, transform 0.15s',
+                '&:hover': { bgcolor: alpha(ORANGE, 0.24), transform: 'translateY(-1px)' },
               }}>
-                <FlashOn sx={{ fontSize: 13, color: ORANGE }} />
-                <Typography sx={{ fontWeight: 500, fontSize: 12.5, color: ORANGE, whiteSpace: 'nowrap' }}>
+                <FlashOn sx={{ fontSize: 14, color: ORANGE }} />
+                <Typography sx={{ fontWeight: 700, fontSize: 12.5, color: ORANGE, whiteSpace: 'nowrap' }}>
                   Ventes Flash
                 </Typography>
               </Box>
             </Box>
 
-            {/* Nav links */}
-            <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', overflowX: 'auto', scrollbarWidth: 'none', '&::-webkit-scrollbar': { display: 'none' }, gap: 0 }}>
-              {NAV.map(({ label, path }) => (
-                <Box key={path} component={Link} to={path} sx={{
-                  textDecoration: 'none', display: 'flex', alignItems: 'center', height: '100%',
-                  px: 1.4, flexShrink: 0, position: 'relative',
-                  '&::after': { content: '""', position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: 0, height: 2, bgcolor: ORANGE, borderRadius: '2px 2px 0 0', transition: 'width 0.2s ease' },
-                  '&:hover::after': { width: '60%' },
-                  '&:hover .nt': { color: 'rgba(255,255,255,0.95)' },
-                }}>
-                  <Typography className="nt" sx={{ fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.62)', whiteSpace: 'nowrap', transition: 'color 0.15s' }}>
-                    {label}
-                  </Typography>
-                </Box>
-              ))}
+            {/* Nav links — défilement discret avec fondu en bord droit pour signaler qu'il y a plus de contenu */}
+            <Box sx={{ flex: 1, position: 'relative', minWidth: 0 }}>
+              <Box sx={{
+                height: '100%', display: 'flex', alignItems: 'center',
+                overflowX: 'auto', scrollbarWidth: 'none', '&::-webkit-scrollbar': { display: 'none' },
+                gap: 0.2, px: 0.5,
+              }}>
+                {NAV.map(({ label, path }) => (
+                  <Box key={path} component={Link} to={path} sx={{
+                    textDecoration: 'none', display: 'flex', alignItems: 'center', height: '100%',
+                    px: 1.5, flexShrink: 0, position: 'relative', borderRadius: '8px',
+                    transition: 'background 0.15s',
+                    '&::after': { content: '""', position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: 0, height: 2, bgcolor: ORANGE, borderRadius: '2px 2px 0 0', transition: 'width 0.2s ease' },
+                    '&:hover': { bgcolor: 'rgba(255,255,255,0.04)' },
+                    '&:hover::after': { width: '55%' },
+                    '&:hover .nt': { color: 'rgba(255,255,255,0.95)' },
+                  }}>
+                    <Typography className="nt" sx={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.68)', whiteSpace: 'nowrap', transition: 'color 0.15s' }}>
+                      {label}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+              {/* Fondu droit — indique un contenu scrollable sans afficher de scrollbar */}
+              <Box sx={{
+                position: 'absolute', top: 0, bottom: 0, right: 0, width: 28, pointerEvents: 'none',
+                background: `linear-gradient(90deg, transparent, ${NAV_BG})`,
+              }} />
             </Box>
 
             {/* Right CTA */}
             <Box component={Link} to={isSeller ? '/seller' : '/register?role=SELLER'} sx={{
               display: 'flex', alignItems: 'center', gap: 0.8, px: 2, flexShrink: 0,
               borderLeft: `1px solid ${BORDER}`, textDecoration: 'none',
-              transition: 'background 0.15s', '&:hover': { bgcolor: alpha(ORANGE, 0.06) },
+              transition: 'background 0.15s',
             }}>
               {isSeller ? (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.7, px: 1.4, py: 0.5, bgcolor: ORANGE, borderRadius: '7px', transition: 'filter 0.15s', '&:hover': { filter: 'brightness(1.06)' } }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.7, px: 1.5, py: 0.6, bgcolor: ORANGE, borderRadius: '8px', boxShadow: `0 2px 10px ${alpha(ORANGE, 0.35)}`, transition: 'filter 0.15s, transform 0.15s', '&:hover': { filter: 'brightness(1.06)', transform: 'translateY(-1px)' } }}>
                   <GridView sx={{ fontSize: 14, color: 'white' }} />
-                  <Typography sx={{ fontSize: 12.5, fontWeight: 500, color: 'white', whiteSpace: 'nowrap' }}>Dashboard</Typography>
+                  <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: 'white', whiteSpace: 'nowrap' }}>Dashboard</Typography>
                 </Box>
               ) : (
-                <Typography sx={{ fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.62)', whiteSpace: 'nowrap', transition: 'color 0.15s', '&:hover': { color: ORANGE } }}>
-                  Vendre sur DealPam
-                </Typography>
+                <Box sx={{
+                  display: 'flex', alignItems: 'center', gap: 0.6, px: 1.6, py: 0.6, borderRadius: '8px',
+                  border: `1px solid ${alpha(ORANGE, 0.4)}`, transition: 'background 0.15s, border-color 0.15s, transform 0.15s',
+                  '&:hover': { bgcolor: alpha(ORANGE, 0.1), borderColor: ORANGE, transform: 'translateY(-1px)' },
+                }}>
+                  <Typography sx={{ fontSize: 13, fontWeight: 700, color: ORANGE, whiteSpace: 'nowrap' }}>
+                    Vendre sur DealPam
+                  </Typography>
+                </Box>
               )}
             </Box>
           </Box>
