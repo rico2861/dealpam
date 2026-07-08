@@ -969,20 +969,17 @@ export default function Header() {
               {showCat && <CatDropdown activeCat={activeCat} onPick={(l, p) => { setActiveCat(l); navigate(p); }} onClose={() => setShowCat(false)} />}
             </Box>
 
-            {/* Ventes Flash — pill shimmer gradient */}
+            {/* Ventes Flash — badge sobre, plus de shimmer/pulse */}
             <Box sx={{ display: 'flex', alignItems: 'center', px: 1.5, borderRight: `1px solid ${BORDER}`, flexShrink: 0 }}>
               <Box component={Link} to="/ventes-flash" sx={{
-                display: 'flex', alignItems: 'center', gap: 0.5, px: 1.5, height: 28,
-                borderRadius: '100px', textDecoration: 'none',
-                background: 'linear-gradient(110deg, #DC2626 0%, #F97316 40%, #DC2626 80%, #F97316 100%)',
-                backgroundSize: '200% auto',
-                animation: 'dp-shimmer 3s linear infinite',
-                boxShadow: '0 2px 10px rgba(220,38,38,0.45)',
-                transition: 'opacity 0.15s, transform 0.15s',
-                '&:hover': { opacity: 0.9, transform: 'translateY(-1px)' },
+                display: 'flex', alignItems: 'center', gap: 0.6, px: 1.4, height: 27,
+                borderRadius: '7px', textDecoration: 'none',
+                bgcolor: alpha(ORANGE, 0.14), border: `1px solid ${alpha(ORANGE, 0.3)}`,
+                transition: 'background 0.15s',
+                '&:hover': { bgcolor: alpha(ORANGE, 0.2) },
               }}>
-                <FlashOn sx={{ fontSize: 14, color: 'white', animation: 'dp-pulse 2s ease-in-out infinite' }} />
-                <Typography sx={{ fontWeight: 800, fontSize: 12.5, color: 'white', whiteSpace: 'nowrap', letterSpacing: 0.2 }}>
+                <FlashOn sx={{ fontSize: 13, color: ORANGE }} />
+                <Typography sx={{ fontWeight: 500, fontSize: 12.5, color: ORANGE, whiteSpace: 'nowrap' }}>
                   Ventes Flash
                 </Typography>
               </Box>
@@ -994,11 +991,11 @@ export default function Header() {
                 <Box key={path} component={Link} to={path} sx={{
                   textDecoration: 'none', display: 'flex', alignItems: 'center', height: '100%',
                   px: 1.4, flexShrink: 0, position: 'relative',
-                  '&::after': { content: '""', position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: 0, height: 2, bgcolor: ORANGE, borderRadius: '2px 2px 0 0', transition: 'width 0.22s ease' },
-                  '&:hover::after': { width: '65%' },
-                  '&:hover .nt': { color: 'rgba(255,255,255,0.92)' },
+                  '&::after': { content: '""', position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: 0, height: 2, bgcolor: ORANGE, borderRadius: '2px 2px 0 0', transition: 'width 0.2s ease' },
+                  '&:hover::after': { width: '60%' },
+                  '&:hover .nt': { color: 'rgba(255,255,255,0.95)' },
                 }}>
-                  <Typography className="nt" sx={{ fontSize: 13, fontWeight: 400, color: 'rgba(255,255,255,0.5)', whiteSpace: 'nowrap', transition: 'color 0.15s' }}>
+                  <Typography className="nt" sx={{ fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.62)', whiteSpace: 'nowrap', transition: 'color 0.15s' }}>
                     {label}
                   </Typography>
                 </Box>
@@ -1009,15 +1006,15 @@ export default function Header() {
             <Box component={Link} to={isSeller ? '/seller' : '/register?role=SELLER'} sx={{
               display: 'flex', alignItems: 'center', gap: 0.8, px: 2, flexShrink: 0,
               borderLeft: `1px solid ${BORDER}`, textDecoration: 'none',
-              transition: 'background 0.15s', '&:hover': { bgcolor: alpha(ORANGE, 0.08) },
+              transition: 'background 0.15s', '&:hover': { bgcolor: alpha(ORANGE, 0.06) },
             }}>
               {isSeller ? (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.7, px: 1.4, py: 0.5, bgcolor: ORANGE, borderRadius: '100px', transition: 'filter 0.15s', '&:hover': { filter: 'brightness(1.08)' } }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.7, px: 1.4, py: 0.5, bgcolor: ORANGE, borderRadius: '7px', transition: 'filter 0.15s', '&:hover': { filter: 'brightness(1.06)' } }}>
                   <GridView sx={{ fontSize: 14, color: 'white' }} />
-                  <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: 'white', whiteSpace: 'nowrap' }}>Dashboard</Typography>
+                  <Typography sx={{ fontSize: 12.5, fontWeight: 500, color: 'white', whiteSpace: 'nowrap' }}>Dashboard</Typography>
                 </Box>
               ) : (
-                <Typography sx={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.5)', whiteSpace: 'nowrap', transition: 'color 0.15s', '&:hover': { color: ORANGE } }}>
+                <Typography sx={{ fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.62)', whiteSpace: 'nowrap', transition: 'color 0.15s', '&:hover': { color: ORANGE } }}>
                   Vendre sur DealPam
                 </Typography>
               )}
