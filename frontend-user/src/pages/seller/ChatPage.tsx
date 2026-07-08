@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Box, Typography, Avatar, IconButton, CircularProgress, alpha,
   InputBase, Tooltip, Chip,
@@ -257,6 +258,23 @@ export default function SellerChatPage() {
     api.post(`/chat/conversations/${convId}/read`).catch(() => {});
     socketRef.current?.emit('chat:read', { conversationId: convId });
   }, []);
+
+  // Deep-link depuis une autre page (ex: "Contacter" sur un rendez-vous) —
+  // ?userId=xxx ouvre (ou crée) la conversation avec ce client précis.
+  const [searchParams, setSearchParams] = useSearchParams();
+  useEffect(() => {
+    const deepLinkUserId = searchParams.get('userId');
+    if (!deepLinkUserId) return;
+    setSearchParams({}, { replace: true });
+    (async () => {
+      try {
+        const { data: conv } = await api.post('/chat/conversations', { userId: deepLinkUserId });
+        qc.invalidateQueries({ queryKey: ['seller-conversations'] });
+        selectConv(conv.id);
+      } catch { /* ignore — le client n'a peut-être plus de compte actif */ }
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const sendMsg = async () => {
     const content = text.trim();

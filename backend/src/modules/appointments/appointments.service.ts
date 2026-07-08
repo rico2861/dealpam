@@ -98,7 +98,11 @@ export class AppointmentsService {
     const storeIds = stores.map(s => s.id);
     return (this.prisma.appointment as any).findMany({
       where: { storeId: { in: storeIds } },
-      include: { product: { select: { id: true, name: true, productType: true } }, store: { select: { id: true, name: true } } },
+      include: {
+        product: { select: { id: true, name: true, productType: true } },
+        store:   { select: { id: true, name: true } },
+        user:    { select: { firstName: true, lastName: true, phone: true, email: true } },
+      },
       orderBy: { scheduledAt: 'desc' },
     });
   }
@@ -119,7 +123,7 @@ export class AppointmentsService {
     if (result.count === 0) throw new ForbiddenException('Rendez-vous introuvable');
     const appt = await (this.prisma.appointment as any).findUnique({
       where: { id },
-      include: { product: true, store: true },
+      include: { product: true, store: true, user: { select: { email: true } } },
     });
     if (['CONFIRMED', 'REFUSED', 'DONE'].includes(status)) {
       await this.notifyClient(appt, status);
@@ -136,8 +140,7 @@ export class AppointmentsService {
     const body = `Votre rendez-vous pour <strong>${appt.product?.name}</strong> le <strong>${when}</strong> a été <strong>${label}</strong> par ${appt.store?.name}.` +
       (appt.sellerNote ? `<br/><br/>Note du vendeur : ${appt.sellerNote}` : '');
 
-    const user = appt.userId ? await this.prisma.user.findUnique({ where: { id: appt.userId }, select: { email: true } }) : null;
-    const email = user?.email ?? appt.clientEmail;
+    const email = appt.user?.email ?? appt.clientEmail;
     if (email) this.mail.sendRaw(email, subject, body, 'client').catch(() => null);
 
     if (appt.userId) {

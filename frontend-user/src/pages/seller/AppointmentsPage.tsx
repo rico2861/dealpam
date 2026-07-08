@@ -1,11 +1,12 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box, Typography, Chip, TextField, MenuItem, Select, FormControl,
   InputLabel, CircularProgress, Button, Dialog, DialogContent,
 } from '@mui/material';
 import {
   CalendarMonth, Person, Phone, Email, AccessTime, Store,
-  CheckCircle, Cancel, Schedule, Done, Search, FilterList,
+  CheckCircle, Cancel, Schedule, Done, Search, FilterList, ChatBubbleOutline,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../api/axios';
@@ -62,7 +63,13 @@ function timeAgo(d: string) {
 
 function ApptDialog({ appt, onClose }: { appt: any; onClose: () => void }) {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [note, setNote] = useState(appt.sellerNote ?? '');
+
+  // Compte enregistré → vraies infos (relation user) ; sinon réservation invité (clientName/Phone/Email).
+  const clientName  = appt.user ? `${appt.user.firstName ?? ''} ${appt.user.lastName ?? ''}`.trim() : appt.clientName;
+  const clientPhone = appt.user?.phone ?? appt.clientPhone;
+  const clientEmail = appt.user?.email ?? appt.clientEmail;
 
   const mut = useMutation({
     mutationFn: ({ status, sellerNote }: { status: string; sellerNote?: string }) =>
@@ -121,22 +128,32 @@ function ApptDialog({ appt, onClose }: { appt: any; onClose: () => void }) {
 
           {/* Client info */}
           <Box sx={{ p: 2, borderRadius: '12px', bgcolor: 'rgba(15,23,42,0.09)', border: `1px solid ${BORD}` }}>
-            <Typography fontSize={11} fontWeight={700} color={SUB} sx={{ textTransform: 'uppercase', letterSpacing: '0.8px', mb: 1.5 }}>Client</Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
+              <Typography fontSize={11} fontWeight={700} color={SUB} sx={{ textTransform: 'uppercase', letterSpacing: '0.8px' }}>Client</Typography>
+              {appt.userId && (
+                <Button size="small" startIcon={<ChatBubbleOutline sx={{ fontSize: 15 }} />}
+                  onClick={() => navigate(`/seller/chat?userId=${appt.userId}`)}
+                  sx={{ py: 0.3, px: 1.2, borderRadius: '8px', fontSize: 12, fontWeight: 700, textTransform: 'none',
+                    color: OR, bgcolor: `${OR}12`, '&:hover': { bgcolor: `${OR}22` } }}>
+                  Contacter
+                </Button>
+              )}
+            </Box>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Person sx={{ fontSize: 14, color: SUB }} />
-                <Typography fontSize={13} color={TXT}>{appt.clientName ?? 'Compte enregistré'}</Typography>
+                <Typography fontSize={13} color={TXT}>{clientName || 'Compte enregistré'}</Typography>
               </Box>
-              {appt.clientPhone && (
+              {clientPhone && (
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <Phone sx={{ fontSize: 14, color: SUB }} />
-                  <Typography fontSize={13} color={TXT}>{appt.clientPhone}</Typography>
+                  <Typography fontSize={13} color={TXT}>{clientPhone}</Typography>
                 </Box>
               )}
-              {appt.clientEmail && (
+              {clientEmail && (
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <Email sx={{ fontSize: 14, color: SUB }} />
-                  <Typography fontSize={13} color={TXT}>{appt.clientEmail}</Typography>
+                  <Typography fontSize={13} color={TXT}>{clientEmail}</Typography>
                 </Box>
               )}
             </Box>
@@ -220,16 +237,19 @@ function ApptCard({ appt, onClick }: { appt: any; onClick: () => void }) {
           <CalendarMonth sx={{ fontSize: 13, color: OR }} />
           <Typography fontSize={12} color={SUB2}>{formatDate(appt.scheduledAt)} à {formatTime(appt.scheduledAt)}</Typography>
         </Box>
-        {(appt.clientName || appt.userId) && (
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
-            <Person sx={{ fontSize: 13, color: SUB }} />
-            <Typography fontSize={12} color={SUB2}>{appt.clientName ?? 'Compte enregistré'}</Typography>
-          </Box>
-        )}
-        {appt.clientPhone && (
+        {(() => {
+          const name = appt.user ? `${appt.user.firstName ?? ''} ${appt.user.lastName ?? ''}`.trim() : appt.clientName;
+          return (name || appt.userId) && (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
+              <Person sx={{ fontSize: 13, color: SUB }} />
+              <Typography fontSize={12} color={SUB2}>{name || 'Compte enregistré'}</Typography>
+            </Box>
+          );
+        })()}
+        {(appt.user?.phone ?? appt.clientPhone) && (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
             <Phone sx={{ fontSize: 13, color: SUB }} />
-            <Typography fontSize={12} color={SUB2}>{appt.clientPhone}</Typography>
+            <Typography fontSize={12} color={SUB2}>{appt.user?.phone ?? appt.clientPhone}</Typography>
           </Box>
         )}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
@@ -266,10 +286,12 @@ export default function AppointmentsPage() {
     if (filterStatus !== 'ALL' && a.status !== filterStatus) return false;
     if (search) {
       const q = search.toLowerCase();
+      const registeredName = a.user ? `${a.user.firstName ?? ''} ${a.user.lastName ?? ''}` : '';
       return (
         a.product?.name?.toLowerCase().includes(q) ||
+        registeredName.toLowerCase().includes(q) ||
         a.clientName?.toLowerCase().includes(q) ||
-        a.clientPhone?.includes(q) ||
+        (a.user?.phone ?? a.clientPhone)?.includes(q) ||
         a.serviceType?.toLowerCase().includes(q)
       );
     }

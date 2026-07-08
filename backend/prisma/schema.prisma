@@ -72,6 +72,7 @@ model User {
   sentMessages              Message[]           @relation("MessageSender")
   conversations             ConversationUser[]
   assignedConversations     Conversation[]      @relation("ConvAssignedAgent")
+  appointments              Appointment[]
 
   createdAt            DateTime  @default(now()) @map("created_at")
   updatedAt            DateTime  @updatedAt @map("updated_at")
@@ -618,6 +619,7 @@ model Complaint {
 model Appointment {
   id          String            @id @default(uuid())
   userId      String?           @map("user_id")   // null for guest bookings
+  user        User?             @relation(fields: [userId], references: [id])
   productId   String            @map("product_id")
   product     Product           @relation(fields: [productId], references: [id])
   storeId     String            @map("store_id")
