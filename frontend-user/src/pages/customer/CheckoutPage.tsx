@@ -3,14 +3,14 @@ import { useNavigate, Link } from 'react-router-dom';
 import {
   Container, Grid, Box, Typography, Button, Chip, Divider,
   TextField, CircularProgress, Radio, alpha, IconButton,
-  Dialog, DialogContent, MenuItem,
+  Dialog, MenuItem,
 } from '@mui/material';
 import {
   ShoppingCart, LocationOn, ArrowBack,
   Phone, WhatsApp, LocalShipping, ContentCopy,
   DirectionsWalk, Info, Smartphone, AccountBalance, AttachMoney,
   CreditCard, AccessTime, Lock, Shield, Add, Close,
-  Warning, ChatBubbleOutline, Person,
+  Warning, ChatBubbleOutline, Person, Storefront,
 } from '@mui/icons-material';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
@@ -19,15 +19,16 @@ import { useCartStore } from '../../store/cart.store';
 
 // ─── Theme ───────────────────────────────────────────────────────────────────
 
-const OR    = '#FF6B00';
-const ORD   = '#E05A00';
-const GRN   = '#10B981';
+const OR    = '#F5711A';
+const ORD   = '#DB5E0F';
+const GRN   = '#116B57';
+const RED   = '#E8432E';
 const BG    = '#F7F8FA';
-const CARD  = '#F7F8FA';
+const CARD  = '#F5F5F3';
 const CARD2 = '#FFFFFF';
-const BORD  = 'rgba(15,23,42,0.09)';
-const TXT   = '#0F172A';
-const TXT2  = '#64748B';
+const BORD  = 'rgba(15,27,46,0.08)';
+const TXT   = '#0F1B2E';
+const TXT2  = '#6B7280';
 
 const fmtHTG = (v: number) => `${v.toLocaleString('fr-HT')} HTG`;
 
@@ -78,43 +79,79 @@ function AddAddressModal({ open, onClose, profile, onCreated }: any) {
     } finally { setSaving(false); }
   };
 
-  const inputSx = { mb: 2,
-    '& .MuiOutlinedInput-root': { borderRadius: '10px' } };
+  const fieldSx = {
+    mb: 2,
+    '& .MuiOutlinedInput-root': {
+      borderRadius: '10px', bgcolor: CARD, fontSize: 14,
+      '& fieldset': { borderColor: BORD },
+      '&:hover fieldset': { borderColor: alpha(OR, 0.4) },
+      '&.Mui-focused fieldset': { borderColor: OR, borderWidth: 1.5 },
+    },
+    '& .MuiInputLabel-root': { fontSize: 14, color: TXT2 },
+    '& .MuiInputLabel-root.Mui-focused': { color: OR },
+  };
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs"
-      PaperProps={{ sx: { borderRadius: { xs: 0, sm: '16px' }, m: { xs: 0, sm: 2 },
-        width: { xs: '100%', sm: 'auto' }, height: { xs: '100%', sm: 'auto' },
-        maxHeight: { xs: '100%', sm: 'calc(100% - 64px)' } } }}>
-      <DialogContent sx={{ p: 0 }}>
-        <Box sx={{ px: 3, pt: 3, pb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          borderBottom: '1px solid rgba(0,0,0,0.08)' }}>
-          <Typography fontWeight={700} fontSize={17}>Nouvelle adresse de livraison</Typography>
-          <IconButton size="small" onClick={onClose}><Close fontSize="small" /></IconButton>
+      PaperProps={{ sx: {
+        borderRadius: { xs: 0, sm: '16px' }, m: { xs: 0, sm: 2 },
+        width: { xs: '100%', sm: 'auto' },
+        height: { xs: '100%', sm: 'auto' },
+        maxHeight: { xs: '100%', sm: 'calc(100vh - 64px)' },
+        display: 'flex', flexDirection: 'column',
+      } }}>
+      {/* Header */}
+      <Box sx={{
+        px: 3, py: 2.2, display: 'flex', alignItems: 'center', gap: 1.5,
+        borderBottom: `1px solid ${BORD}`, flexShrink: 0,
+      }}>
+        <Box sx={{ width: 36, height: 36, borderRadius: '10px', bgcolor: alpha(OR, 0.1),
+          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <LocationOn sx={{ fontSize: 18, color: OR }} />
         </Box>
-        <Box sx={{ px: 3, py: 3 }}>
-          <TextField fullWidth label="Libellé" value={form.label} onChange={e => set('label', e.target.value)} sx={inputSx} placeholder="Ex: Maison, Bureau..." />
-          <TextField fullWidth label="Nom complet" value={form.fullName} onChange={e => set('fullName', e.target.value)} sx={inputSx} />
-          <TextField fullWidth label="Téléphone" value={form.phone} onChange={e => set('phone', e.target.value)} sx={inputSx} />
-          <TextField fullWidth label="Adresse (rue, numéro)" value={form.line1} onChange={e => set('line1', e.target.value)} sx={inputSx} />
-          <Grid container spacing={2} sx={{ mb: 0.5 }}>
-            <Grid item xs={12} sm={6}>
-              <TextField fullWidth label="Ville" value={form.city} onChange={e => set('city', e.target.value)} sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px' } }} />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField fullWidth select label="Département" value={form.department} onChange={e => set('department', e.target.value)}
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px' } }}>
-                <MenuItem value=""><em>— Département —</em></MenuItem>
-                {HAITI_DEPTS.filter((d, i, a) => a.indexOf(d) === i).map(d => <MenuItem key={d} value={d}>{d}</MenuItem>)}
-              </TextField>
-            </Grid>
+        <Typography fontWeight={600} fontSize={16} color={TXT} sx={{ flex: 1 }}>Nouvelle adresse de livraison</Typography>
+        <IconButton size="small" onClick={onClose} sx={{ bgcolor: CARD, '&:hover': { bgcolor: BORD } }}>
+          <Close fontSize="small" sx={{ color: TXT2 }} />
+        </IconButton>
+      </Box>
+
+      {/* Fields — scrollable si le contenu dépasse, bouton toujours visible */}
+      <Box sx={{ px: 3, py: 2.5, overflowY: 'auto', flex: 1 }}>
+        <TextField fullWidth label="Libellé" value={form.label} onChange={e => set('label', e.target.value)}
+          sx={fieldSx} placeholder="Ex: Maison, Bureau..." InputLabelProps={{ shrink: true }} />
+        <TextField fullWidth label="Nom complet" value={form.fullName} onChange={e => set('fullName', e.target.value)}
+          sx={fieldSx} InputLabelProps={{ shrink: true }} />
+        <TextField fullWidth label="Téléphone" value={form.phone} onChange={e => set('phone', e.target.value)}
+          sx={fieldSx} InputLabelProps={{ shrink: true }} />
+        <TextField fullWidth label="Adresse (rue, numéro)" value={form.line1} onChange={e => set('line1', e.target.value)}
+          sx={fieldSx} InputLabelProps={{ shrink: true }} />
+        <Grid container spacing={1.5}>
+          <Grid item xs={12} sm={6}>
+            <TextField fullWidth label="Ville" value={form.city} onChange={e => set('city', e.target.value)}
+              sx={fieldSx} InputLabelProps={{ shrink: true }} />
           </Grid>
-          <Button fullWidth variant="contained" onClick={handleSave} disabled={saving}
-            sx={{ mt: 2.5, py: 1.4, borderRadius: '10px', fontWeight: 700, textTransform: 'none', bgcolor: OR, '&:hover': { bgcolor: ORD } }}>
-            {saving ? <CircularProgress size={18} sx={{ color: 'white' }} /> : 'Enregistrer l\'adresse'}
-          </Button>
-        </Box>
-      </DialogContent>
+          <Grid item xs={12} sm={6}>
+            <TextField fullWidth select label="Département" value={form.department} onChange={e => set('department', e.target.value)}
+              sx={fieldSx} InputLabelProps={{ shrink: true }}>
+              <MenuItem value=""><em>— Département —</em></MenuItem>
+              {HAITI_DEPTS.filter((d, i, a) => a.indexOf(d) === i).map(d => <MenuItem key={d} value={d}>{d}</MenuItem>)}
+            </TextField>
+          </Grid>
+        </Grid>
+      </Box>
+
+      {/* Footer — toujours visible, jamais coupé par le viewport */}
+      <Box sx={{ px: 3, py: 2, borderTop: `1px solid ${BORD}`, flexShrink: 0 }}>
+        <Button fullWidth variant="contained" onClick={handleSave} disabled={saving}
+          sx={{
+            py: 1.3, borderRadius: '10px', fontWeight: 600, fontSize: 14.5, textTransform: 'none',
+            bgcolor: OR, transition: 'background 0.15s ease',
+            '&:hover': { bgcolor: ORD },
+            '&:focus-visible': { outline: `2px solid ${OR}`, outlineOffset: 2 },
+          }}>
+          {saving ? <CircularProgress size={18} sx={{ color: 'white' }} /> : "Enregistrer l'adresse"}
+        </Button>
+      </Box>
     </Dialog>
   );
 }
@@ -150,7 +187,7 @@ function DeliveryStep({
 
   return (
     <Box>
-      <Typography fontWeight={800} fontSize={16} mb={2} color={TXT}>Choisir la livraison</Typography>
+      <Typography fontWeight={600} fontSize={16} mb={2} color={TXT}>Choisir la livraison</Typography>
 
       {/* Type selector */}
       <Box sx={{ display: 'flex', gap: 1.2, mb: 3, flexWrap: 'wrap' }}>
@@ -208,7 +245,7 @@ function DeliveryStep({
                           </Box>
                         )}
                       </Box>
-                      <Typography fontWeight={800} fontSize={14} color={z.price > 0 ? TXT : GRN}>
+                      <Typography fontWeight={600} fontSize={14} color={z.price > 0 ? TXT : GRN}>
                         {z.price > 0 ? `+${fmtHTG(z.price)}` : 'Gratuit'}
                       </Typography>
                     </Box>
@@ -271,10 +308,10 @@ function DeliveryStep({
 
           {/* Zone mismatch warning */}
           {zonesMismatch && (
-            <Box sx={{ p: 2, mb: 2, borderRadius: '14px', border: `1px solid ${alpha('#FBBF24', 0.4)}`, bgcolor: alpha('#FBBF24', 0.07) }}>
+            <Box sx={{ p: 2, mb: 2, borderRadius: '14px', border: `1px solid ${alpha(RED, 0.3)}`, bgcolor: alpha(RED, 0.06) }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.8 }}>
-                <Warning sx={{ fontSize: 18, color: '#FBBF24' }} />
-                <Typography fontSize={13.5} fontWeight={700} color="#FBBF24">Ce vendeur ne livre pas dans votre région</Typography>
+                <Warning sx={{ fontSize: 18, color: RED }} />
+                <Typography fontSize={13.5} fontWeight={600} color={RED}>Ce vendeur ne livre pas dans votre région</Typography>
               </Box>
               <Typography fontSize={12.5} color="#475569" mb={1.5}>
                 Votre adresse est au <strong style={{ color: '#0F172A' }}>{selDept}</strong> mais ce vendeur ne couvre pas ce département.
@@ -352,7 +389,7 @@ function DeliveryStep({
           (deliveryType === 'DELIVERY' && ((!selectedAddress && addresses.length > 0) || zonesMismatch || (deliveryZones.length > 0 && selectedZone === null && !zonesMismatch && !!selDept))) ||
           (deliveryType === 'PICKUP'   && selectedPickup === null)
         }
-        sx={{ mt: 1, py: 1.4, borderRadius: '14px', fontWeight: 800, textTransform: 'none', fontSize: 14.5,
+        sx={{ mt: 1, py: 1.4, borderRadius: '14px', fontWeight: 600, textTransform: 'none', fontSize: 14.5,
           bgcolor: OR, boxShadow: `0 8px 24px ${alpha(OR, 0.3)}`, '&:hover': { bgcolor: ORD },
           '&.Mui-disabled': { bgcolor: '#F1F5F9', color: '#64748B' } }}>
         Continuer vers le paiement
@@ -369,7 +406,7 @@ function DeliveryStep({
 function PaymentStep({ paymentMethods, selectedPayment, setSelectedPayment, notes, setNotes, couponCode, setCouponCode, onBack, onNext, storeInfo, placing }: any) {
   return (
     <Box>
-      <Typography fontWeight={800} fontSize={16} mb={2} color={TXT}>Mode de paiement</Typography>
+      <Typography fontWeight={600} fontSize={16} mb={2} color={TXT}>Mode de paiement</Typography>
 
       {paymentMethods.length === 0 ? (
         <Box sx={{ p: 2, borderRadius: '14px', border: `1px dashed ${alpha(OR, 0.3)}`, bgcolor: alpha(OR, 0.05), mb: 2 }}>
@@ -414,7 +451,7 @@ function PaymentStep({ paymentMethods, selectedPayment, setSelectedPayment, note
             </Typography>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Typography fontWeight={900} fontSize={20} letterSpacing={2} color={TXT}>{storeInfo.moncashPhone}</Typography>
+            <Typography fontWeight={700} fontSize={20} letterSpacing={2} color={TXT}>{storeInfo.moncashPhone}</Typography>
             <IconButton size="small" onClick={() => navigator.clipboard.writeText(storeInfo.moncashPhone)}>
               <ContentCopy sx={{ fontSize: 14, color: TXT2 }} />
             </IconButton>
@@ -454,10 +491,59 @@ function PaymentStep({ paymentMethods, selectedPayment, setSelectedPayment, note
           Retour
         </Button>
         <Button onClick={onNext} variant="contained" disabled={(paymentMethods.length > 0 && !selectedPayment) || placing}
-          sx={{ flex: 2, py: 1.4, borderRadius: '14px', fontWeight: 800, textTransform: 'none', fontSize: 14.5,
+          sx={{ flex: 2, py: 1.4, borderRadius: '14px', fontWeight: 600, textTransform: 'none', fontSize: 14.5,
             bgcolor: OR, boxShadow: `0 8px 24px ${alpha(OR, 0.3)}`, '&:hover': { bgcolor: ORD },
             '&.Mui-disabled': { bgcolor: '#F1F5F9', color: '#64748B' } }}>
           {placing ? <CircularProgress size={18} sx={{ color: 'white' }} /> : 'Confirmer la commande'}
+        </Button>
+      </Box>
+    </Box>
+  );
+}
+
+// ─── Step: Vendeur tiers — pas de paiement sur la plateforme ─────────────────
+// DealPam ne traite le paiement en ligne que pour sa propre boutique. Pour
+// tout autre vendeur, la commande part directement chez lui avec toutes les
+// infos de livraison/contact — c'est lui qui organise le paiement (MonCash
+// manuel, cash, etc.) directement avec le client, jamais via la plateforme.
+function ThirdPartyOrderStep({ notes, setNotes, onBack, onNext, storeInfo, placing }: any) {
+  return (
+    <Box>
+      <Typography fontWeight={600} fontSize={16} mb={2} color={TXT}>Confirmer la commande</Typography>
+
+      <Box sx={{ display: 'flex', gap: 1.5, p: 2, borderRadius: '14px', border: `1px solid ${BORD}`, bgcolor: CARD, mb: 2 }}>
+        <Storefront sx={{ fontSize: 20, color: TXT2, flexShrink: 0, mt: 0.2 }} />
+        <Box>
+          <Typography fontSize={13.5} fontWeight={600} color={TXT} mb={0.4}>
+            {storeInfo?.name || 'Ce vendeur'} gère le paiement directement
+          </Typography>
+          <Typography fontSize={12.5} color="#475569" lineHeight={1.5}>
+            Cette boutique n'est pas la boutique officielle DealPam — le paiement en ligne n'est donc pas disponible ici.
+            Votre commande, avec l'adresse et vos coordonnées, sera envoyée directement au vendeur, qui vous contactera
+            pour organiser le paiement et la livraison.
+          </Typography>
+        </Box>
+      </Box>
+
+      <TextField fullWidth multiline rows={2} label="Note pour le vendeur (optionnel)"
+        value={notes} onChange={e => setNotes(e.target.value)}
+        placeholder="Instructions spéciales, couleur, taille préférée..."
+        InputLabelProps={{ shrink: true }}
+        sx={{ mb: 2,
+          '& .MuiOutlinedInput-root': { borderRadius: '12px', color: TXT, bgcolor: CARD,
+            '& fieldset': { borderColor: BORD }, '&:hover fieldset': { borderColor: alpha(OR, 0.4) },
+            '&.Mui-focused fieldset': { borderColor: OR } } }} />
+
+      <Box sx={{ display: 'flex', gap: 1.5 }}>
+        <Button onClick={onBack} variant="outlined" sx={{ px: 2.5, borderRadius: '14px', flex: 1, fontWeight: 600, textTransform: 'none',
+          borderColor: BORD, color: '#475569', '&:hover': { borderColor: alpha(OR, 0.5), bgcolor: 'transparent' } }}>
+          Retour
+        </Button>
+        <Button onClick={onNext} variant="contained" disabled={placing}
+          sx={{ flex: 2, py: 1.4, borderRadius: '14px', fontWeight: 600, textTransform: 'none', fontSize: 14.5,
+            bgcolor: OR, boxShadow: `0 8px 24px ${alpha(OR, 0.3)}`, '&:hover': { bgcolor: ORD },
+            '&.Mui-disabled': { bgcolor: '#F1F5F9', color: '#64748B' } }}>
+          {placing ? <CircularProgress size={18} sx={{ color: 'white' }} /> : 'Commander maintenant'}
         </Button>
       </Box>
     </Box>
@@ -575,7 +661,7 @@ export default function CheckoutPage() {
     <Box sx={{ bgcolor: BG, minHeight: '100vh' }}>
       <Container maxWidth="sm" sx={{ py: 10, textAlign: 'center' }}>
         <ShoppingCart sx={{ fontSize: 64, color: '#CBD5E1', mb: 2 }} />
-        <Typography fontWeight={800} fontSize={22} color={TXT} mb={1}>Votre panier est vide</Typography>
+        <Typography fontWeight={600} fontSize={22} color={TXT} mb={1}>Votre panier est vide</Typography>
         <Button component={Link} to="/products" variant="contained"
           sx={{ borderRadius: '14px', textTransform: 'none', fontWeight: 700, bgcolor: OR, '&:hover': { bgcolor: ORD } }}>
           Découvrir des produits
@@ -594,7 +680,7 @@ export default function CheckoutPage() {
               sx={{ bgcolor: CARD, border: `1px solid ${BORD}`, '&:hover': { borderColor: alpha(OR, 0.5) } }}>
               <ArrowBack fontSize="small" sx={{ color: TXT }} />
             </IconButton>
-            <Typography fontWeight={800} fontSize={19} color={TXT}>Passer la commande</Typography>
+            <Typography fontWeight={600} fontSize={19} color={TXT}>Passer la commande</Typography>
             <Box sx={{ flex: 1 }} />
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
               <Lock sx={{ fontSize: 14, color: TXT2 }} />
@@ -612,7 +698,7 @@ export default function CheckoutPage() {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Box sx={{ width: 26, height: 26, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   bgcolor: step >= i ? OR : '#F1F5F9', color: step >= i ? 'white' : '#64748B',
-                  fontWeight: 800, fontSize: 12.5, transition: 'all 0.2s' }}>
+                  fontWeight: 600, fontSize: 12.5, transition: 'all 0.2s' }}>
                   {i + 1}
                 </Box>
                 <Typography fontSize={13} fontWeight={700} color={step >= i ? TXT : TXT2}>{label}</Typography>
@@ -641,14 +727,22 @@ export default function CheckoutPage() {
                 />
               )}
               {step === 1 && (
-                <PaymentStep
-                  paymentMethods={paymentMethods}
-                  selectedPayment={selectedPayment} setSelectedPayment={setSelectedPayment}
-                  notes={notes} setNotes={setNotes}
-                  couponCode={couponCode} setCouponCode={setCouponCode}
-                  storeInfo={{ ...storeDetail, ...storeOptions }}
-                  onBack={() => setStep(0)} onNext={placeOrder} placing={placing}
-                />
+                storeDetail?.isPlatformStore ? (
+                  <PaymentStep
+                    paymentMethods={paymentMethods}
+                    selectedPayment={selectedPayment} setSelectedPayment={setSelectedPayment}
+                    notes={notes} setNotes={setNotes}
+                    couponCode={couponCode} setCouponCode={setCouponCode}
+                    storeInfo={{ ...storeDetail, ...storeOptions }}
+                    onBack={() => setStep(0)} onNext={placeOrder} placing={placing}
+                  />
+                ) : (
+                  <ThirdPartyOrderStep
+                    notes={notes} setNotes={setNotes}
+                    storeInfo={{ ...storeDetail, ...storeOptions }}
+                    onBack={() => setStep(0)} onNext={placeOrder} placing={placing}
+                  />
+                )
               )}
             </Box>
           </Grid>
@@ -657,7 +751,7 @@ export default function CheckoutPage() {
           <Grid item xs={12} md={5}>
             <Box sx={{ bgcolor: CARD2, borderRadius: '20px', p: { xs: 2, md: 2.5 }, border: `1px solid ${BORD}`,
               position: { md: 'sticky' }, top: 96 }}>
-              <Typography fontWeight={800} fontSize={15} mb={2} color={TXT}>
+              <Typography fontWeight={600} fontSize={15} mb={2} color={TXT}>
                 Récapitulatif ({items.length} article{items.length > 1 ? 's' : ''})
               </Typography>
 
@@ -673,7 +767,7 @@ export default function CheckoutPage() {
                         {img && <Box component="img" src={img} alt={p?.name} sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
                         <Box sx={{ position: 'absolute', top: -6, right: -6, width: 18, height: 18,
                           borderRadius: '50%', bgcolor: OR, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <Typography sx={{ fontSize: 9, color: 'white', fontWeight: 800 }}>{item.quantity}</Typography>
+                          <Typography sx={{ fontSize: 9, color: 'white', fontWeight: 600 }}>{item.quantity}</Typography>
                         </Box>
                       </Box>
                       <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -700,8 +794,8 @@ export default function CheckoutPage() {
                 </Box>
                 <Divider sx={{ my: 0.5, borderColor: BORD }} />
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography fontSize={16} fontWeight={800} color={TXT}>Total</Typography>
-                  <Typography fontSize={18} fontWeight={900} color={OR}>{fmtHTG(total)}</Typography>
+                  <Typography fontSize={16} fontWeight={600} color={TXT}>Total</Typography>
+                  <Typography fontSize={18} fontWeight={700} color={OR}>{fmtHTG(total)}</Typography>
                 </Box>
               </Box>
 
