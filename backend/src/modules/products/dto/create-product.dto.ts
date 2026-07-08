@@ -17,6 +17,10 @@ export class CreateProductDto {
   @IsOptional() @IsString()
   brandId?: string;
 
+  /** Nom de marque libre — si aucune marque existante ne correspond, elle est créée à la volée. */
+  @IsOptional() @IsString() @MaxLength(60)
+  brandName?: string;
+
   @Transform(({ value }) => parseFloat(value))
   @IsNumber() @Min(0)
   price: number;

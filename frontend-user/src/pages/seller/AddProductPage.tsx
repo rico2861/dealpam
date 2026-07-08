@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
   Box, Typography, TextField, Button, IconButton, Collapse,
-  CircularProgress, Alert, FormControl, InputLabel, Select, MenuItem,
+  CircularProgress, Alert, FormControl, InputLabel, Select, MenuItem, Autocomplete,
 } from '@mui/material';
 import {
   ArrowBack, AddPhotoAlternate, Close, Add, Delete,
@@ -197,9 +197,9 @@ function PhoneFields({ attrs, onChange }: { attrs: any; onChange: (k: string, v:
         <TextField fullWidth label="Modèle" sx={fieldSx} value={attrs.model || ''} onChange={e => onChange('model', e.target.value)} />
       </Box>
       <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
-        <DarkSelect label="Stockage" value={attrs.storage || ''} onChange={v => onChange('storage', v)} options={['16 GB','32 GB','64 GB','128 GB','256 GB','512 GB']} />
-        <DarkSelect label="RAM" value={attrs.ram || ''} onChange={v => onChange('ram', v)} options={['2 GB','3 GB','4 GB','6 GB','8 GB','12 GB','16 GB']} />
-        <DarkSelect label="Réseau" value={attrs.network || ''} onChange={v => onChange('network', v)} options={['3G','4G','5G']} />
+        <DarkSelect label="Stockage" value={attrs.storage || ''} onChange={v => onChange('storage', v)} options={['8 GB','16 GB','32 GB','64 GB','128 GB','256 GB','512 GB','1 TB','2 TB']} />
+        <DarkSelect label="RAM" value={attrs.ram || ''} onChange={v => onChange('ram', v)} options={['1 GB','2 GB','3 GB','4 GB','6 GB','8 GB','12 GB','16 GB','32 GB','64 GB']} />
+        <DarkSelect label="Réseau" value={attrs.network || ''} onChange={v => onChange('network', v)} options={['2G','3G','4G','4G LTE','5G','Wifi uniquement']} />
       </Box>
       <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
         <TextField fullWidth label="IMEI (optionnel)" sx={fieldSx} value={attrs.imei || ''} onChange={e => onChange('imei', e.target.value)} inputProps={{ maxLength: 20 }} />
@@ -253,7 +253,7 @@ export default function AddProductPage() {
 
   const [form, setForm] = useState({
     name: '', subtitle: '', description: '',
-    categoryId: '', brandId: '', price: '', salePrice: '',
+    categoryId: '', brandId: '', brandName: '', price: '', salePrice: '',
     stock: '1', sku: '', condition: 'new', conditionNote: '',
     city: '', department: 'Ouest', storeId: '',
     hasDelivery: false, deliveryPriceHTG: '',
@@ -281,6 +281,12 @@ export default function AddProductPage() {
 
   const maxImages = sub?.plan?.maxImages ?? 5;
   const storeList: any[] = storesData?.stores ?? [];
+  const selectedStore = storeList.find((s: any) => s.id === form.storeId) ?? storeList.find((s: any) => s.isPrimary) ?? storeList[0];
+  const storePickupPoints: any[] = (() => {
+    if (!selectedStore?.pickupPoints) return [];
+    try { const p = JSON.parse(selectedStore.pickupPoints); return Array.isArray(p) ? p : []; } catch { return []; }
+  })();
+  const needsPickupPoint = !form.hasDelivery && storePickupPoints.length === 0;
   const selectedCatName = (categories ?? []).find((c: any) => c.id === form.categoryId)?.name ?? '';
   const catType = detectCategoryType(selectedCatName);
   const condOpts = conditionOptions(catType === 'electronics' ? 'phone' : catType);
@@ -333,6 +339,10 @@ export default function AddProductPage() {
       setError('Le prix normal doit être supérieur au prix promo');
       return;
     }
+    if (needsPickupPoint) {
+      setError("Sans livraison, votre boutique doit avoir au moins un point de retrait — configurez-le depuis Ma boutique > Points de retrait.");
+      return;
+    }
     setLoading(true); setError('');
     try {
       const fd = new FormData();
@@ -341,6 +351,7 @@ export default function AddProductPage() {
       fd.append('description', form.description);
       fd.append('categoryId', form.categoryId);
       if (form.brandId) fd.append('brandId', form.brandId);
+      else if (form.brandName.trim()) fd.append('brandName', form.brandName.trim());
       fd.append('price', form.price);
       if (form.salePrice) fd.append('salePrice', form.salePrice);
       const totalStock = variants.length > 0 ? variants.reduce((s, v) => s + v.stock, 0) : parseInt(form.stock) || 1;
@@ -533,14 +544,21 @@ export default function AddProductPage() {
               </FormControl>
 
               {(catType === 'phone' || catType === 'electronics' || catType === 'vehicle') && (
-                <FormControl fullWidth sx={fieldSx}>
-                  <InputLabel shrink>Marque</InputLabel>
-                  <Select value={form.brandId} label="Marque" MenuProps={darkMenu}
-                    onChange={e => setForm(p => ({ ...p, brandId: e.target.value }))}>
-                    <MenuItem value="">Sans marque spécifique</MenuItem>
-                    {(brands ?? []).map((b: any) => <MenuItem key={b.id} value={b.id}>{b.name}</MenuItem>)}
-                  </Select>
-                </FormControl>
+                <Autocomplete
+                  freeSolo
+                  options={(brands ?? []).map((b: any) => b.name)}
+                  value={form.brandName}
+                  onInputChange={(_, newVal) => {
+                    const match = (brands ?? []).find((b: any) => b.name.toLowerCase() === newVal.toLowerCase());
+                    setForm(p => ({ ...p, brandName: newVal, brandId: match ? match.id : '' }));
+                  }}
+                  renderInput={(params) => (
+                    <TextField {...params} label="Marque"
+                      placeholder="Choisissez ou tapez une nouvelle marque"
+                      helperText="Tapez le nom d'une marque non listée pour l'ajouter"
+                      sx={fieldSx} />
+                  )}
+                />
               )}
 
               <FormControl fullWidth sx={fieldSx}>
@@ -563,10 +581,10 @@ export default function AddProductPage() {
                   <Box onClick={() => setShowAttrs(p => !p)}
                     sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, py: 1.5, cursor: 'pointer', '&:hover': { bgcolor: 'rgba(15,23,42,0.04)' } }}>
                     <Typography fontSize={13} fontWeight={600} color={TXT}>
-                      {catType === 'phone' || catType === 'electronics' ? '📱 Caractéristiques téléphone / électronique'
-                        : catType === 'clothing' ? '👕 Caractéristiques vêtement'
-                        : catType === 'vehicle' ? '🚗 Caractéristiques véhicule'
-                        : '📋 Caractéristiques'}
+                      {catType === 'phone' || catType === 'electronics' ? 'Caractéristiques téléphone / électronique'
+                        : catType === 'clothing' ? 'Caractéristiques vêtement'
+                        : catType === 'vehicle' ? 'Caractéristiques véhicule'
+                        : 'Caractéristiques'}
                     </Typography>
                     {showAttrs ? <ExpandLess sx={{ color: SUB, fontSize: 18 }} /> : <ExpandMore sx={{ color: SUB, fontSize: 18 }} />}
                   </Box>
@@ -612,6 +630,18 @@ export default function AddProductPage() {
 
               <DarkToggle checked={form.hasDelivery} onChange={v => setForm(p => ({ ...p, hasDelivery: v }))}
                 label="Livraison disponible" sub="Proposer la livraison aux acheteurs" />
+
+              {needsPickupPoint && (
+                <Box sx={{ p: 1.6, borderRadius: '10px', bgcolor: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)' }}>
+                  <Typography fontSize={12.5} color={RED} fontWeight={600}>
+                    Sans livraison, votre boutique doit proposer au moins un point de retrait pour que les clients puissent choisir où récupérer leur commande.
+                  </Typography>
+                  <Button component={Link} to="/seller/store" size="small"
+                    sx={{ mt: 0.5, color: RED, fontWeight: 700, fontSize: 12, textTransform: 'none', px: 0 }}>
+                    Configurer un point de retrait →
+                  </Button>
+                </Box>
+              )}
 
               <Collapse in={form.hasDelivery}>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 0.5 }}>

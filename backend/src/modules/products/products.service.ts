@@ -262,6 +262,13 @@ export class ProductsService {
     const parseColors = this.parseArrayField(dto.colors);
     const parseDepts  = this.parseArrayField(dto.deliveryDepts);
 
+    // Marque libre (autocomplete "freeSolo" côté vendeur) : reutilise la marque
+    // existante si le nom correspond deja (insensible a la casse), sinon la cree.
+    let resolvedBrandId = dto.brandId || null;
+    if (!resolvedBrandId && dto.brandName?.trim()) {
+      resolvedBrandId = await this.findOrCreateBrand(dto.brandName.trim());
+    }
+
     // Détection automatique de contenu potentiellement illicite (armes, drogues,
     // contrefaçon…) — ne bloque jamais seule, force juste une revue admin même
     // pour les types normalement publiés directement (services, etc.).
@@ -271,7 +278,7 @@ export class ProductsService {
       data: {
         storeId:     store.id,
         categoryId:  dto.categoryId,
-        brandId:     dto.brandId || null,
+        brandId:     resolvedBrandId,
         name:        dto.name,
         slug,
         subtitle:    dto.subtitle || null,
@@ -679,6 +686,20 @@ export class ProductsService {
     if (Array.isArray(val)) return val.filter(Boolean);
     try { const p = JSON.parse(val); if (Array.isArray(p)) return p; } catch {}
     return val.split(',').map(s => s.trim()).filter(Boolean);
+  }
+
+  private async findOrCreateBrand(name: string): Promise<string> {
+    const existing = await this.prisma.brand.findFirst({
+      where: { name: { equals: name, mode: 'insensitive' } },
+      select: { id: true },
+    });
+    if (existing) return existing.id;
+
+    const slug = name.toLowerCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') + '-' + Date.now();
+    const created = await this.prisma.brand.create({ data: { name, slug } });
+    return created.id;
   }
 
   // ── Admin : file des modifications en attente de validation ───────────────
