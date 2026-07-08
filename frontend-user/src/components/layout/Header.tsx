@@ -623,7 +623,7 @@ export default function Header() {
                   sx={{ color: 'rgba(255,255,255,0.8)', flexShrink: 0, borderRadius: '10px' }}>
                   <Close sx={{ fontSize: 20 }} />
                 </IconButton>
-                <Box sx={{ flex: 1, position: 'relative' }}>
+                <Box sx={{ flex: 1 }}>
                   <Box component="form" onSubmit={doSearch} sx={{
                     display: 'flex', alignItems: 'center', height: 40, borderRadius: '12px',
                     bgcolor: 'rgba(255,255,255,0.1)', border: '1.5px solid rgba(255,255,255,0.18)',
@@ -636,31 +636,35 @@ export default function Header() {
                       <Search sx={{ fontSize: 17 }} />
                     </Button>
                   </Box>
-                  {showSuggs && suggs.length > 0 && (
-                    <Paper elevation={0} sx={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0, zIndex: 9999, borderRadius: '14px', overflow: 'hidden', border: '1px solid #E2E8F0', boxShadow: '0 16px 48px rgba(0,0,0,0.18)', animation: 'dp-slideDown 150ms ease forwards' }}>
-                      {suggs.map((p: any, i: number) => {
-                        const img = p.images?.[0]?.urlMedium || p.images?.[0]?.url;
-                        const price = p.salePrice ? Number(p.salePrice) : Number(p.price);
-                        return (
-                          <Box key={p.id} onClick={() => toProd(p.slug)} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 1.5, py: 1, cursor: 'pointer', borderBottom: i < suggs.length - 1 ? '1px solid #F8FAFC' : 'none', '&:hover': { bgcolor: '#F8FAFC' } }}>
-                            <Box sx={{ width: 38, height: 38, borderRadius: '8px', overflow: 'hidden', bgcolor: '#F1F5F9', flexShrink: 0 }}>
-                              {img && <Box component="img" src={img} alt={p.name} sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
-                            </Box>
-                            <Box sx={{ flex: 1, minWidth: 0 }}>
-                              <Typography fontSize={12.5} fontWeight={600} color="#0F172A" noWrap>{p.name}</Typography>
-                              <Typography fontSize={11} color="#64748B" noWrap>{p.store?.name}</Typography>
-                            </Box>
-                            <Typography fontSize={12} fontWeight={800} color={ORANGE} noWrap>{price.toLocaleString()} G</Typography>
-                          </Box>
-                        );
-                      })}
-                      <Box onClick={() => doSearch()} sx={{ px: 1.5, py: 1, bgcolor: '#F8FAFC', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 1, borderTop: '1px solid #E2E8F0' }}>
-                        <Search sx={{ fontSize: 13, color: '#64748B' }} />
-                        <Typography fontSize={12} color="#475569" fontWeight={500}>Voir tous les résultats pour <strong style={{ color: '#0F172A' }}>"{search}"</strong></Typography>
-                      </Box>
-                    </Paper>
-                  )}
                 </Box>
+                {showSuggs && suggs.length > 0 && (
+                  // Positionné relativement à la barre entière (position:relative sur le
+                  // Box parent ligne 615-619), pas seulement au champ de recherche — sinon
+                  // la marge occupée par le bouton close n'est pas couverte et on voit la
+                  // barre de catégories orange en dessous "percer" sur le bord gauche.
+                  <Paper elevation={0} sx={{ position: 'absolute', top: 'calc(100% + 6px)', left: 12, right: 12, zIndex: 9999, borderRadius: '14px', overflow: 'hidden', border: '1px solid #E2E8F0', boxShadow: '0 16px 48px rgba(0,0,0,0.18)', animation: 'dp-slideDown 150ms ease forwards', bgcolor: '#fff' }}>
+                    {suggs.map((p: any, i: number) => {
+                      const img = p.images?.[0]?.urlMedium || p.images?.[0]?.url;
+                      const price = p.salePrice ? Number(p.salePrice) : Number(p.price);
+                      return (
+                        <Box key={p.id} onClick={() => toProd(p.slug)} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 1.5, py: 1, cursor: 'pointer', borderBottom: i < suggs.length - 1 ? '1px solid #F8FAFC' : 'none', '&:hover': { bgcolor: '#F8FAFC' } }}>
+                          <Box sx={{ width: 38, height: 38, borderRadius: '8px', overflow: 'hidden', bgcolor: '#F1F5F9', flexShrink: 0 }}>
+                            {img && <Box component="img" src={img} alt={p.name} sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+                          </Box>
+                          <Box sx={{ flex: 1, minWidth: 0 }}>
+                            <Typography fontSize={12.5} fontWeight={600} color="#0F172A" noWrap>{p.name}</Typography>
+                            <Typography fontSize={11} color="#64748B" noWrap>{p.store?.name}</Typography>
+                          </Box>
+                          <Typography fontSize={12} fontWeight={800} color={ORANGE} noWrap>{price.toLocaleString()} G</Typography>
+                        </Box>
+                      );
+                    })}
+                    <Box onClick={() => doSearch()} sx={{ px: 1.5, py: 1, bgcolor: '#F8FAFC', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 1, borderTop: '1px solid #E2E8F0' }}>
+                      <Search sx={{ fontSize: 13, color: '#64748B' }} />
+                      <Typography fontSize={12} color="#475569" fontWeight={500}>Voir tous les résultats pour <strong style={{ color: '#0F172A' }}>"{search}"</strong></Typography>
+                    </Box>
+                  </Paper>
+                )}
               </>
             ) : (
               <>
