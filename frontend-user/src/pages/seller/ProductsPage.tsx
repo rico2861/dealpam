@@ -165,112 +165,81 @@ export default function SellerProductsPage({ mode = 'products' }: { mode?: 'prod
           )}
         </Box>
       ) : (
-        <Box sx={{ borderRadius: '16px', bgcolor: CARD, border: `1px solid ${BORD}`, overflow: 'hidden' }}>
-          {/* Table header */}
-          <Box sx={{ display: 'grid', gridTemplateColumns: mode==='services' ? '48px 1fr 140px 120px 100px 160px' : '48px 1fr 140px 80px 120px 100px 160px',
-            gap: 1, px: 2, py: 1.5, borderBottom: `1px solid ${BORD}`,
-            '@media (max-width:900px)': { display: 'none' } }}>
-            {(mode==='services' ? ['', 'Service', 'Prix', 'Statut', 'Date', 'Actions'] : ['', 'Produit', 'Prix', 'Stock', 'Statut', 'Date', 'Actions']).map(h => (
-              <Typography key={h} fontSize={11} fontWeight={700} color={SUB}
-                sx={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}>{h}</Typography>
-            ))}
-          </Box>
-
-          {filtered.map((p: any, i: number) => {
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2,1fr)', lg: 'repeat(3,1fr)' }, gap: 2 }}>
+          {filtered.map((p: any) => {
             const st = STATUS[p.status] || STATUS.DRAFT;
             const StIcon = st.icon;
             const isLowStock = p.stock <= 5 && p.stock > 0;
             const isOutStock = p.stock === 0;
+            const img = p.images?.[0]?.urlMedium || p.images?.[0]?.urlThumb || p.images?.[0]?.urlFull;
             return (
-              <Box key={p.id}
-                sx={{ display: 'grid',
-                  gridTemplateColumns: { xs: '1fr', md: mode==='services' ? '48px 1fr 140px 120px 100px 160px' : '48px 1fr 140px 80px 120px 100px 160px' },
-                  gap: 1, px: 2, py: 1.8, alignItems: 'center',
-                  borderBottom: i < filtered.length - 1 ? `1px solid ${BORD}` : 'none',
-                  '&:hover': { bgcolor: 'rgba(15,23,42,0.04)' }, transition: 'all 0.12s' }}>
-
-                {/* Avatar */}
-                <Box sx={{ display: { xs: 'none', md: 'flex' } }}>
-                  <Avatar variant="rounded" src={p.images?.[0]?.url}
-                    sx={{ width: 40, height: 40, borderRadius: '10px', bgcolor: 'rgba(255,107,0,0.15)',
-                      color: OR, fontWeight: 900, fontSize: 14, border: `1px solid rgba(255,107,0,0.15)` }}>
+              <Box key={p.id} sx={{
+                borderRadius: '16px', bgcolor: CARD, border: `1px solid ${BORD}`, overflow: 'hidden',
+                boxShadow: '0 4px 16px rgba(15,23,42,0.06)', transition: 'all 0.18s',
+                '&:hover': { borderColor: 'rgba(15,23,42,0.09)', transform: 'translateY(-1px)' },
+              }}>
+                <Box sx={{ display: 'flex', gap: 1.5, p: 2 }}>
+                  <Avatar variant="rounded" src={img}
+                    sx={{ width: 64, height: 64, borderRadius: '12px', bgcolor: 'rgba(255,107,0,0.15)',
+                      color: OR, fontWeight: 900, fontSize: 20, flexShrink: 0, border: `1px solid rgba(255,107,0,0.15)` }}>
                     {p.name?.[0]}
                   </Avatar>
-                </Box>
-
-                {/* Name + store — mobile shows everything inline */}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                  <Avatar variant="rounded" src={p.images?.[0]?.url}
-                    sx={{ width: 40, height: 40, borderRadius: '10px', bgcolor: 'rgba(255,107,0,0.15)',
-                      color: OR, fontWeight: 900, fontSize: 14, flexShrink: 0,
-                      display: { xs: 'flex', md: 'none' } }}>
-                    {p.name?.[0]}
-                  </Avatar>
-                  <Box sx={{ minWidth: 0 }}>
-                    <Typography fontSize={13.5} fontWeight={600} color={TXT} noWrap>{p.name}</Typography>
-                    {p.store?.name && (
-                      <Typography fontSize={11.5} color={SUB} noWrap>{p.store.name}</Typography>
+                  <Box sx={{ minWidth: 0, flex: 1 }}>
+                    <Typography fontSize={14.5} fontWeight={700} color={TXT} noWrap>{p.name}</Typography>
+                    {p.store?.name && <Typography fontSize={11.5} color={SUB} noWrap mb={0.5}>{p.store.name}</Typography>}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.7 }}>
+                      <StIcon sx={{ fontSize: 13, color: st.color, flexShrink: 0 }}/>
+                      <Typography fontSize={12} fontWeight={600} color={st.color}>{st.label}</Typography>
+                    </Box>
+                    {p.hasPendingEdit && (
+                      <Typography fontSize={10.5} color="#F59E0B" fontWeight={600} mt={0.3}>
+                        modification en attente de validation
+                      </Typography>
                     )}
                   </Box>
                 </Box>
 
-                {/* Price */}
-                <Box>
-                  {p.salePrice ? (
-                    <>
-                      <Typography fontSize={13} fontWeight={700} color={OR}>{fmt(Number(p.salePrice))}</Typography>
-                      <Typography fontSize={11} color={SUB} sx={{ textDecoration: 'line-through' }}>{fmt(Number(p.price))}</Typography>
-                    </>
-                  ) : (
-                    <Typography fontSize={13} fontWeight={700} color={TXT}>{fmt(Number(p.price))}</Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0, borderTop: `1px solid ${BORD}`, borderBottom: `1px solid ${BORD}`,
+                  bgcolor: 'rgba(15,23,42,0.03)' }}>
+                  <Box sx={{ flex: 1, px: 2, py: 1.2, borderRight: `1px solid ${BORD}` }}>
+                    <Typography fontSize={10.5} color={SUB} textTransform="uppercase" letterSpacing="0.4px">Prix</Typography>
+                    {p.salePrice ? (
+                      <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.6 }}>
+                        <Typography fontSize={14} fontWeight={800} color={OR}>{fmt(Number(p.salePrice))}</Typography>
+                        <Typography fontSize={11} color={SUB} sx={{ textDecoration: 'line-through' }}>{fmt(Number(p.price))}</Typography>
+                      </Box>
+                    ) : (
+                      <Typography fontSize={14} fontWeight={800} color={TXT}>{fmt(Number(p.price))}</Typography>
+                    )}
+                  </Box>
+                  {mode !== 'services' && (
+                    <Box sx={{ flex: 1, px: 2, py: 1.2 }}>
+                      <Typography fontSize={10.5} color={SUB} textTransform="uppercase" letterSpacing="0.4px">Stock</Typography>
+                      <Typography fontSize={14} fontWeight={800} color={isOutStock ? RED : isLowStock ? YLW : TXT}>
+                        {p.stock}{isOutStock ? ' · rupture' : isLowStock ? ' · faible' : ''}
+                      </Typography>
+                    </Box>
                   )}
                 </Box>
 
-                {/* Stock — not applicable to services */}
-                {mode!=='services' && (
-                  <Box>
-                    <Typography fontSize={13} fontWeight={700}
-                      color={isOutStock ? RED : isLowStock ? YLW : TXT}>
-                      {p.stock}
-                    </Typography>
-                    {isLowStock && <Typography fontSize={10} color={YLW}>stock faible</Typography>}
-                    {isOutStock && <Typography fontSize={10} color={RED}>rupture</Typography>}
-                  </Box>
-                )}
-
-                {/* Status */}
-                <Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.7 }}>
-                    <StIcon sx={{ fontSize: 14, color: st.color, flexShrink: 0 }}/>
-                    <Typography fontSize={12} fontWeight={600} color={st.color}>{st.label}</Typography>
-                  </Box>
-                  {p.hasPendingEdit && (
-                    <Typography fontSize={10.5} color="#F59E0B" fontWeight={600} mt={0.3}>
-                      modification en attente de validation
-                    </Typography>
-                  )}
-                </Box>
-
-                {/* Date */}
-                <Typography fontSize={12} color={SUB}>
-                  {new Date(p.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}
-                </Typography>
-
-                {/* Actions */}
-                <Box sx={{ display: 'flex', gap: 1 }}>
-                  <Box onClick={() => navigate(mode==='services' ? `/seller/services/edit/${p.id}` : `/seller/products/edit/${p.id}`)}
-                    sx={{ display: 'flex', alignItems: 'center', gap: 0.6, px: 1.2, py: 0.6, borderRadius: '8px',
-                      border: `1px solid ${BORD}`, cursor: 'pointer', transition: 'all 0.13s',
-                      '&:hover': { borderColor: 'rgba(255,107,0,0.4)', bgcolor: 'rgba(255,107,0,0.08)' } }}>
-                    <Edit sx={{ fontSize: 13, color: OR }}/>
-                    <Typography fontSize={12} fontWeight={600} color={OR}>Éditer</Typography>
-                  </Box>
-                  <Box onClick={() => setDel({ open: true, id: p.id, name: p.name })}
-                    sx={{ display: 'flex', alignItems: 'center', gap: 0.6, px: 1.2, py: 0.6, borderRadius: '8px',
-                      border: `1px solid ${BORD}`, cursor: 'pointer', transition: 'all 0.13s',
-                      '&:hover': { borderColor: 'rgba(239,68,68,0.4)', bgcolor: 'rgba(239,68,68,0.08)' } }}>
-                    <Delete sx={{ fontSize: 13, color: RED }}/>
-                    <Typography fontSize={12} fontWeight={600} color={RED}>Sup.</Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, py: 1.5, gap: 1 }}>
+                  <Typography fontSize={11.5} color={SUB}>
+                    {new Date(p.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}
+                  </Typography>
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Box onClick={() => navigate(mode==='services' ? `/seller/services/edit/${p.id}` : `/seller/products/edit/${p.id}`)}
+                      sx={{ display: 'flex', alignItems: 'center', gap: 0.6, px: 1.2, py: 0.6, borderRadius: '8px',
+                        border: `1px solid ${BORD}`, cursor: 'pointer', transition: 'all 0.13s',
+                        '&:hover': { borderColor: 'rgba(255,107,0,0.4)', bgcolor: 'rgba(255,107,0,0.08)' } }}>
+                      <Edit sx={{ fontSize: 13, color: OR }}/>
+                      <Typography fontSize={12} fontWeight={600} color={OR}>Éditer</Typography>
+                    </Box>
+                    <Box onClick={() => setDel({ open: true, id: p.id, name: p.name })}
+                      sx={{ display: 'flex', alignItems: 'center', gap: 0.6, px: 1.2, py: 0.6, borderRadius: '8px',
+                        border: `1px solid ${BORD}`, cursor: 'pointer', transition: 'all 0.13s',
+                        '&:hover': { borderColor: 'rgba(239,68,68,0.4)', bgcolor: 'rgba(239,68,68,0.08)' } }}>
+                      <Delete sx={{ fontSize: 13, color: RED }}/>
+                    </Box>
                   </Box>
                 </Box>
               </Box>

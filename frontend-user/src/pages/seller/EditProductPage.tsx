@@ -1,20 +1,29 @@
-﻿import { useEffect, useState } from 'react';
+﻿import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Container, Typography, Card, CardContent, TextField, Button, Grid, Box, Alert, CircularProgress, FormControl, InputLabel, Select, MenuItem, Chip, IconButton } from '@mui/material';
-import { Add, Close } from '@mui/icons-material';
-import { useQuery } from '@tanstack/react-query';
+import { Container, Typography, Card, CardContent, TextField, Button, Grid, Box, Alert, CircularProgress, FormControl, InputLabel, Select, MenuItem, Chip, IconButton, Switch, FormControlLabel, Collapse } from '@mui/material';
+import { Add, Close, PhotoCamera, Delete as DeleteIcon } from '@mui/icons-material';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import api from '../../api/axios';
 import { parsePriceTiers } from '../../utils/priceTiers';
 
+const DEPTS_HT = ['Ouest','Nord','Nord-Est','Nord-Ouest','Sud','Sud-Est','Grand-Anse','Nippes','Centre','Artibonite'];
+
 export default function EditProductPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const { enqueueSnackbar } = useSnackbar();
   const [form, setForm] = useState<any>(null);
   const [priceTiers, setPriceTiers] = useState<{ minQty: string; price: string }[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [images, setImages] = useState<any[]>([]);
+  const [newImages, setNewImages] = useState<File[]>([]);
+  const [deletingImageId, setDeletingImageId] = useState<string | null>(null);
+  const [zoneInput, setZoneInput] = useState({ city: '', dept: 'Ouest' });
+  const [deliveryZones, setDeliveryZones] = useState<{ city: string; dept: string }[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: product, isLoading, isError } = useQuery({
     queryKey: ['product-edit', id],
@@ -40,12 +49,52 @@ export default function EditProductPage() {
         stock: product.stock || 0,
         sku: product.sku || '',
         minOrderQty: product.minOrderQty || 1,
+        city: product.city || '',
+        department: product.department || '',
+        hasDelivery: !!product.hasDelivery,
+        deliveryPriceHTG: product.deliveryPriceHTG ?? '',
       });
       setPriceTiers(
         parsePriceTiers(product.priceTiers).map(t => ({ minQty: String(t.minQty), price: String(t.price) })),
       );
+      setImages(product.images || []);
+      try {
+        const depts: string[] = JSON.parse(product.deliveryDepts || '[]');
+        setDeliveryZones(depts.map(d => {
+          const [city, dept] = d.includes(',') ? d.split(',').map((s: string) => s.trim()) : ['', d.trim()];
+          return { city, dept };
+        }));
+      } catch { setDeliveryZones([]); }
     }
   }, [product]);
+
+  const addZone = () => {
+    const label = zoneInput.city.trim()
+      ? `${zoneInput.city.trim()}, ${zoneInput.dept}`
+      : zoneInput.dept;
+    if (deliveryZones.some(z => `${z.city}, ${z.dept}` === label || z.dept === label)) return;
+    setDeliveryZones(p => [...p, { city: zoneInput.city.trim(), dept: zoneInput.dept }]);
+    setZoneInput(z => ({ ...z, city: '' }));
+  };
+  const removeZone = (i: number) => setDeliveryZones(p => p.filter((_, j) => j !== i));
+
+  const handleAddImages = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    setNewImages(p => [...p, ...files]);
+    e.target.value = '';
+  };
+  const removeNewImage = (i: number) => setNewImages(p => p.filter((_, j) => j !== i));
+
+  const handleDeleteExistingImage = async (imageId: string) => {
+    setDeletingImageId(imageId);
+    try {
+      await api.delete(`/products/images/${imageId}`);
+      setImages(p => p.filter(img => img.id !== imageId));
+      enqueueSnackbar('Photo supprimée', { variant: 'success' });
+    } catch (e: any) {
+      enqueueSnackbar(e.response?.data?.message || 'Erreur lors de la suppression', { variant: 'error' });
+    } finally { setDeletingImageId(null); }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,19 +110,25 @@ export default function EditProductPage() {
       const cleanTiers = priceTiers
         .filter(t => t.minQty !== '' && t.price !== '')
         .map(t => ({ minQty: Number(t.minQty), price: Number(t.price) }));
-      const payload = {
-        name: form.name,
-        description: form.description,
-        categoryId: form.categoryId || undefined,
-        brandId: form.brandId || undefined,
-        price: form.price !== '' ? Number(form.price) : undefined,
-        salePrice: form.salePrice !== '' ? Number(form.salePrice) : undefined,
-        stock: form.stock !== '' ? Number(form.stock) : undefined,
-        sku: form.sku || undefined,
-        minOrderQty: form.minOrderQty !== '' ? Number(form.minOrderQty) : undefined,
-        priceTiers: cleanTiers.length ? JSON.stringify(cleanTiers) : undefined,
-      };
-      await api.patch(`/products/${id}`, payload);
+      const fd = new FormData();
+      fd.append('name', form.name);
+      fd.append('description', form.description);
+      if (form.categoryId) fd.append('categoryId', form.categoryId);
+      if (form.brandId) fd.append('brandId', form.brandId);
+      if (form.price !== '') fd.append('price', String(Number(form.price)));
+      if (form.salePrice !== '') fd.append('salePrice', String(Number(form.salePrice)));
+      if (form.stock !== '') fd.append('stock', String(Number(form.stock)));
+      if (form.sku) fd.append('sku', form.sku);
+      if (form.minOrderQty !== '') fd.append('minOrderQty', String(Number(form.minOrderQty)));
+      if (cleanTiers.length) fd.append('priceTiers', JSON.stringify(cleanTiers));
+      if (form.city) fd.append('city', form.city);
+      if (form.department) fd.append('department', form.department);
+      fd.append('hasDelivery', String(form.hasDelivery));
+      if (form.hasDelivery && form.deliveryPriceHTG !== '') fd.append('deliveryPriceHTG', String(Number(form.deliveryPriceHTG)));
+      deliveryZones.forEach(z => fd.append('deliveryDepts', z.city ? `${z.city}, ${z.dept}` : z.dept));
+      newImages.forEach(img => fd.append('images', img));
+      await api.patch(`/products/${id}`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+      qc.invalidateQueries({ queryKey: ['sellerProducts'] });
       enqueueSnackbar(
         'Produit mis à jour — il repasse en vérification avant d\'être republié',
         { variant: 'success', autoHideDuration: 5000 },
@@ -123,6 +178,99 @@ export default function EditProductPage() {
                 <TextField fullWidth label="Nom du produit *" value={form.name} onChange={f('name')} margin="dense" required />
                 <TextField fullWidth label="Description *" value={form.description} onChange={f('description')} margin="dense" multiline rows={5} required />
                 <TextField fullWidth label="SKU" value={form.sku} onChange={f('sku')} margin="dense" />
+              </CardContent>
+            </Card>
+
+            <Card sx={{ mt: 2 }}>
+              <CardContent>
+                <Typography fontSize={14} fontWeight={700} mb={1.5}>Photos</Typography>
+                <input type="file" ref={fileInputRef} accept="image/*" multiple style={{ display: 'none' }} onChange={handleAddImages} />
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
+                  {images.map(img => (
+                    <Box key={img.id} sx={{ position: 'relative', width: 88, height: 88, borderRadius: 2, overflow: 'hidden', border: '1px solid rgba(15,23,42,0.09)' }}>
+                      <Box component="img" src={img.urlThumb || img.urlMedium} sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <IconButton size="small" onClick={() => handleDeleteExistingImage(img.id)}
+                        disabled={deletingImageId === img.id}
+                        sx={{ position: 'absolute', top: 2, right: 2, bgcolor: 'rgba(0,0,0,0.55)', color: '#fff', width: 22, height: 22, '&:hover': { bgcolor: 'rgba(220,38,38,0.85)' } }}>
+                        {deletingImageId === img.id ? <CircularProgress size={12} color="inherit" /> : <DeleteIcon sx={{ fontSize: 13 }} />}
+                      </IconButton>
+                    </Box>
+                  ))}
+                  {newImages.map((file, i) => (
+                    <Box key={i} sx={{ position: 'relative', width: 88, height: 88, borderRadius: 2, overflow: 'hidden', border: '1px solid rgba(16,185,129,0.4)' }}>
+                      <Box component="img" src={URL.createObjectURL(file)} sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <IconButton size="small" onClick={() => removeNewImage(i)}
+                        sx={{ position: 'absolute', top: 2, right: 2, bgcolor: 'rgba(0,0,0,0.55)', color: '#fff', width: 22, height: 22, '&:hover': { bgcolor: 'rgba(220,38,38,0.85)' } }}>
+                        <Close sx={{ fontSize: 13 }} />
+                      </IconButton>
+                    </Box>
+                  ))}
+                  <Box onClick={() => fileInputRef.current?.click()}
+                    sx={{ width: 88, height: 88, borderRadius: 2, border: '2px dashed rgba(15,23,42,0.2)', cursor: 'pointer',
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#64748B',
+                      '&:hover': { borderColor: '#FF6B00', color: '#FF6B00' } }}>
+                    <PhotoCamera sx={{ fontSize: 20 }} />
+                    <Typography fontSize={10.5} mt={0.5}>Ajouter</Typography>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+
+            <Card sx={{ mt: 2 }}>
+              <CardContent>
+                <Typography fontSize={14} fontWeight={700} mb={1.5}>Localisation</Typography>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={6}>
+                    <FormControl fullWidth margin="dense">
+                      <InputLabel shrink>Département</InputLabel>
+                      <Select value={form.department} label="Département" onChange={f('department')}>
+                        {DEPTS_HT.map(d => <MenuItem key={d} value={d}>{d}</MenuItem>)}
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField fullWidth label="Ville / Quartier" value={form.city} onChange={f('city')} margin="dense" />
+                  </Grid>
+                </Grid>
+              </CardContent>
+            </Card>
+
+            <Card sx={{ mt: 2 }}>
+              <CardContent>
+                <FormControlLabel
+                  control={<Switch checked={form.hasDelivery} onChange={e => setForm({ ...form, hasDelivery: e.target.checked })} />}
+                  label={<Typography fontSize={14} fontWeight={700}>Livraison disponible</Typography>} />
+                <Collapse in={form.hasDelivery}>
+                  <Box sx={{ pt: 1.5 }}>
+                    <TextField fullWidth label="Frais de livraison (HTG — laisser vide si gratuit)" type="number"
+                      value={form.deliveryPriceHTG} onChange={f('deliveryPriceHTG')} margin="dense" inputProps={{ min: 0 }} />
+                    <Typography fontSize={12.5} fontWeight={600} color="text.secondary" mt={1} mb={1}>
+                      Zones de livraison (ville + département)
+                    </Typography>
+                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                      <TextField size="small" label="Ville (optionnel)" value={zoneInput.city}
+                        onChange={e => setZoneInput(z => ({ ...z, city: e.target.value }))}
+                        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addZone(); } }}
+                        sx={{ flex: '1 1 160px' }} />
+                      <FormControl size="small" sx={{ flex: '1 1 130px' }}>
+                        <InputLabel shrink>Département</InputLabel>
+                        <Select value={zoneInput.dept} label="Département"
+                          onChange={e => setZoneInput(z => ({ ...z, dept: e.target.value }))}>
+                          {DEPTS_HT.map(d => <MenuItem key={d} value={d}>{d}</MenuItem>)}
+                        </Select>
+                      </FormControl>
+                      <Button variant="contained" onClick={addZone} sx={{ minWidth: 44 }}><Add sx={{ fontSize: 18 }} /></Button>
+                    </Box>
+                    {deliveryZones.length > 0 && (
+                      <Box sx={{ mt: 1.5, display: 'flex', flexWrap: 'wrap', gap: 0.8 }}>
+                        {deliveryZones.map((z, i) => (
+                          <Chip key={i} label={z.city ? `${z.city}, ${z.dept}` : z.dept}
+                            onDelete={() => removeZone(i)} size="small" />
+                        ))}
+                      </Box>
+                    )}
+                  </Box>
+                </Collapse>
               </CardContent>
             </Card>
           </Grid>
