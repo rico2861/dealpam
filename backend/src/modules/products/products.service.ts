@@ -41,7 +41,7 @@ export class ProductsService {
     const category = filter.category || filter.categorySlug;
 
     const baseWhere: any = { status: 'PUBLISHED' };
-    if (productType) baseWhere.productType = productType;
+    baseWhere.productType = productType || { not: 'SERVICE' };
     if (category)  baseWhere.category = { slug: category };
     if (brand)     baseWhere.brand = { slug: brand };
     if (minPrice)  baseWhere.price = { ...baseWhere.price, gte: minPrice };
@@ -869,7 +869,7 @@ export class ProductsService {
   async getNearProducts(department: string, city: string, limit = 20): Promise<{
     products: any[]; level: 'city' | 'department' | 'national'; label: string;
   }> {
-    const base = { status: 'PUBLISHED' as any, stock: { gt: 0 } };
+    const base = { status: 'PUBLISHED' as any, stock: { gt: 0 }, productType: { not: 'SERVICE' as any } };
 
     // Fetch a wide pool with store info (including deliveryDepts)
     const all = await this.prisma.product.findMany({
