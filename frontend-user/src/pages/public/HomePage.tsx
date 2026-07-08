@@ -1290,7 +1290,7 @@ function DealCard({ p, flash = false }: { p: any; flash?: boolean }) {
 
   return (
     /* Wrapper — cœur et Link sont FRÈRES */
-    <Box sx={{ position: 'relative', borderRadius: '12px', overflow: 'hidden', contain: 'layout style' }}>
+    <Box sx={{ position: 'relative', borderRadius: '12px', overflow: 'hidden', contain: 'layout style', animation: 'dp-fadeSlide 0.4s ease' }}>
 
       {/* ── LIEN ── */}
       <Box component={Link} to={`/products/${p.slug}`}
@@ -1373,7 +1373,8 @@ function DealCard({ p, flash = false }: { p: any; flash?: boolean }) {
               <Box sx={{ height: 3, bgcolor: FS_SURFACE1, borderRadius: '2px', overflow: 'hidden', mb: '5px' }}>
                 <Box sx={{ height: '100%', width: `${soldPct}%`, bgcolor: FS_RED, transition: 'width 0.3s ease' }} />
               </Box>
-              <Typography sx={{ fontSize: 10, color: FS_RED, fontWeight: 500, textTransform: almostGone ? 'uppercase' : 'none' }}>
+              <Typography sx={{ fontSize: 10, color: FS_RED, fontWeight: 700, textTransform: almostGone ? 'uppercase' : 'none',
+                animation: almostGone ? 'dp-pulse 1.4s ease-in-out infinite' : 'none' }}>
                 {almostGone ? 'plus que quelques unités' : `déjà ${soldPct}% vendu`}
               </Typography>
             </Box>
@@ -1414,6 +1415,7 @@ function DealCarousel({ products, flash = false }: { products: any[]; flash?: bo
   const drag = useRef({ on: false, x0: 0, sl0: 0 });
   const [canPrev, setCanPrev] = useState(false);
   const [canNext, setCanNext] = useState(true);
+  const [hasOverflow, setHasOverflow] = useState(false);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -1422,6 +1424,9 @@ function DealCarousel({ products, flash = false }: { products: any[]; flash?: bo
     if (!el) return;
     setCanPrev(el.scrollLeft > 4);
     setCanNext(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+    // Rien à faire défiler (peu de produits) → pas de flèches du tout,
+    // plutôt que deux flèches grisées qui suggèrent un rendu cassé.
+    setHasOverflow(el.scrollWidth > el.clientWidth + 4);
   }, []);
 
   const scroll = (dir: number) => {
@@ -1443,14 +1448,17 @@ function DealCarousel({ products, flash = false }: { products: any[]; flash?: bo
     const el = scrollRef.current;
     if (!el) return;
     el.addEventListener('scroll', updateArrows, { passive: true });
-    updateArrows();
+    // Recalcule après que les cartes soient réellement rendues (les données
+    // arrivent souvent après le premier rendu du carousel).
+    const raf = requestAnimationFrame(updateArrows);
     const onWheel = (e: WheelEvent) => { e.preventDefault(); el.scrollBy({ left: e.deltaY * 2, behavior: 'smooth' }); };
     el.addEventListener('wheel', onWheel, { passive: false });
     return () => {
+      cancelAnimationFrame(raf);
       el.removeEventListener('scroll', updateArrows);
       el.removeEventListener('wheel', onWheel);
     };
-  }, [updateArrows]);
+  }, [updateArrows, products.length]);
 
   const arrowSx = (enabled: boolean) => ({
     width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
@@ -1462,8 +1470,8 @@ function DealCarousel({ products, flash = false }: { products: any[]; flash?: bo
   });
 
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-      {!isMobile && (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, justifyContent: hasOverflow ? 'flex-start' : 'center' }}>
+      {!isMobile && hasOverflow && (
         <IconButton onClick={() => scroll(-1)} aria-label="précédent" sx={{ ...arrowSx(canPrev), alignSelf: 'center' }}>
           <ArrowBackIos sx={{ fontSize: 13, ml: '3px' }} />
         </IconButton>
@@ -1472,12 +1480,12 @@ function DealCarousel({ products, flash = false }: { products: any[]; flash?: bo
       <Box ref={scrollRef}
         onMouseDown={onDown} onMouseMove={onMove} onMouseUp={onUp} onMouseLeave={onUp}
         sx={{
-          flex: 1, display: 'flex',
+          flex: hasOverflow ? 1 : '0 1 auto', display: 'flex',
           gap: { xs: '14px', md: '16px' },
-          overflowX: 'auto',
+          overflowX: 'auto', minWidth: 0,
           scrollbarWidth: 'none', '&::-webkit-scrollbar': { display: 'none' },
           scrollSnapType: 'x mandatory',
-          cursor: 'grab', '&:active': { cursor: 'grabbing' }, userSelect: 'none',
+          cursor: hasOverflow ? 'grab' : 'default', '&:active': { cursor: hasOverflow ? 'grabbing' : 'default' }, userSelect: 'none',
           WebkitOverflowScrolling: 'touch',
         }}>
         {products.slice(0, 30).map((p: any) => (
@@ -1491,7 +1499,7 @@ function DealCarousel({ products, flash = false }: { products: any[]; flash?: bo
         ))}
       </Box>
 
-      {!isMobile && (
+      {!isMobile && hasOverflow && (
         <IconButton onClick={() => scroll(1)} aria-label="suivant" sx={{ ...arrowSx(canNext), alignSelf: 'center' }}>
           <ArrowForwardIos sx={{ fontSize: 13 }} />
         </IconButton>
@@ -1523,15 +1531,31 @@ function FlashSection({ products, to }: { products: any[]; to: string }) {
     <Container maxWidth="xl" sx={{ px: { xs: 1.5, md: 2 }, py: { xs: 2, md: 3 } }}>
       <Box sx={{
         position: 'relative', overflow: 'hidden',
-        bgcolor: FS_NAVY, borderRadius: '18px',
+        background: `radial-gradient(ellipse 120% 100% at 85% 0%, #1a2d47 0%, ${FS_NAVY} 55%)`,
+        borderRadius: '20px',
+        border: `1px solid ${alpha(FS_ORANGE, 0.18)}`,
+        boxShadow: '0 12px 40px rgba(0,0,0,0.18)',
         p: { xs: '20px', md: '28px 32px' },
       }}>
-        {/* Halo orange unique, discret */}
+        {/* Texture points + halos, cohérent avec les autres bannières de la home */}
+        <Box sx={{
+          position: 'absolute', inset: 0, pointerEvents: 'none', opacity: 0.35,
+          backgroundImage: 'radial-gradient(rgba(255,255,255,0.08) 1px, transparent 1px)',
+          backgroundSize: '20px 20px',
+          maskImage: 'radial-gradient(ellipse 70% 70% at 90% 10%, black 0%, transparent 70%)',
+        }} />
         <Box sx={{
           position: 'absolute', top: -100, right: -60, width: 320, height: 320, borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(245,113,26,0.18), transparent 70%)',
+          background: 'radial-gradient(circle, rgba(245,113,26,0.22), transparent 70%)',
           pointerEvents: 'none',
         }} />
+        <Box sx={{
+          position: 'absolute', bottom: -80, left: '10%', width: 220, height: 220, borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(99,102,241,0.08), transparent 70%)',
+          pointerEvents: 'none',
+        }} />
+        <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2,
+          background: `linear-gradient(90deg, transparent, ${FS_ORANGE}, transparent)` }} />
 
         {/* Header */}
         <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' },
@@ -1539,13 +1563,14 @@ function FlashSection({ products, to }: { products: any[]; to: string }) {
 
           <Box>
             <Typography sx={{
-              display: 'flex', alignItems: 'center', gap: 0.5,
-              fontSize: 11, fontWeight: 600, color: FS_ORANGE,
+              display: 'flex', alignItems: 'center', gap: 0.6,
+              fontSize: 11, fontWeight: 700, color: FS_ORANGE,
               textTransform: 'uppercase', letterSpacing: '0.08em', mb: 0.4,
             }}>
+              <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: FS_ORANGE, animation: 'dp-pulse 1.6s ease-in-out infinite' }} />
               <FlashOn sx={{ fontSize: 13 }} /> offres à durée limitée
             </Typography>
-            <Typography sx={{ fontSize: { xs: 20, md: 26 }, fontWeight: 500, color: '#fff', lineHeight: 1.2 }}>
+            <Typography sx={{ fontSize: { xs: 20, md: 26 }, fontWeight: 700, color: '#fff', lineHeight: 1.2, letterSpacing: '-0.3px' }}>
               {title.toLowerCase()}
             </Typography>
           </Box>
@@ -1562,10 +1587,11 @@ function FlashSection({ products, to }: { products: any[]; to: string }) {
 
             <Button component={Link} to={to} endIcon={<KeyboardArrowRight sx={{ fontSize: 15 }} />}
               sx={{
-                bgcolor: FS_ORANGE, color: '#fff', fontWeight: 600, fontSize: 13.5, textTransform: 'none',
-                borderRadius: '100px', px: 2.4, py: 1, flexShrink: 0,
-                transition: 'background 0.15s ease',
-                '&:hover': { bgcolor: FS_ORANGE_HOV },
+                bgcolor: FS_ORANGE, color: '#fff', fontWeight: 700, fontSize: 13.5, textTransform: 'none',
+                borderRadius: '100px', px: 2.6, py: 1.1, flexShrink: 0,
+                boxShadow: `0 4px 16px ${alpha(FS_ORANGE, 0.35)}`,
+                transition: 'background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease',
+                '&:hover': { bgcolor: FS_ORANGE_HOV, transform: 'translateY(-2px)', boxShadow: `0 8px 22px ${alpha(FS_ORANGE, 0.45)}` },
               }}>
               tout voir
             </Button>
