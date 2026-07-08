@@ -2460,7 +2460,7 @@ export default function HomePage() {
         /* Nouveau visiteur : tendances régionales */
         (regionalTrending as any[]).length > 0 && (
           <Section
-            title={location?.department ? `Tendances en ${location.department}` : 'Tendances en Haiti'}
+            title={location?.city ? `Tendances dans votre localité` : location?.department ? `Tendances dans votre département` : 'Tendances en Haiti'}
             to={location?.department ? `/products?sort=views&department=${encodeURIComponent(location.department)}` : '/products?sort=views'}
             products={regionalTrending as any[]}
             count={(regionalTrending as any[]).length}
