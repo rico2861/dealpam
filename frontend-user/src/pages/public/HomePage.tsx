@@ -1345,7 +1345,7 @@ function DealCarousel({ products, flash = false }: { products: any[]; flash?: bo
   });
 
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, justifyContent: hasOverflow ? 'flex-start' : 'center' }}>
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, justifyContent: 'flex-start' }}>
       {!isMobile && hasOverflow && (
         <IconButton onClick={() => scroll(-1)} aria-label="précédent" sx={{ ...arrowSx(canPrev), alignSelf: 'center' }}>
           <ArrowBackIos sx={{ fontSize: 13, ml: '3px' }} />
@@ -1403,12 +1403,14 @@ function FlashSection({ products, to }: { products: any[]; to: string }) {
   if (!products.length || ended) return null;
 
   // Quand il y a peu d'offres, le panneau ne doit pas s'étirer sur toute la
-  // largeur derrière une seule carte — on borne sa largeur au contenu réel
-  // (avec un plancher confortable pour que l'en-tête ne se tasse pas).
+  // largeur derrière une seule carte, avec une carte perdue au milieu d'un
+  // grand vide — on borne sa largeur au contenu réel. Le plancher ne sert
+  // qu'à laisser la place à l'en-tête (titre + bouton "tout voir"), jamais
+  // pour forcer un vide artificiel autour d'une seule carte.
   const CARD_W = 260, GAP = 20, PAD = 64;
   const visible = Math.min(products.length, 5);
   const contentWidth = visible * CARD_W + Math.max(0, visible - 1) * GAP + PAD;
-  const panelMaxWidth = Math.max(640, contentWidth);
+  const panelMaxWidth = Math.max(420, contentWidth);
 
   return (
     <Container maxWidth="xl" sx={{ px: { xs: 1.5, md: 2 }, py: { xs: 2, md: 3 } }}>
