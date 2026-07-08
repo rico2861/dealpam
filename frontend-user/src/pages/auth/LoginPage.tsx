@@ -20,7 +20,6 @@ function detectType(v: string) { return v.includes('@') ? 'email' : v ? 'usernam
 // Codes courts échangés via ?reason= — jamais de texte brut dans l'URL,
 // le libellé humain est résolu ici uniquement pour l'affichage.
 const LOGOUT_REASON_LABELS: Record<string, string> = {
-  inactivity: 'Vous avez été déconnecté après une période d\'inactivité.',
   session_expired: 'Votre session a expiré, veuillez vous reconnecter.',
 };
 
