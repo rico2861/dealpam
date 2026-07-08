@@ -167,6 +167,12 @@ function DeliveryStep({
 }: any) {
   const [addOpen, setAddOpen] = useState(false);
 
+  // Un seul point de retrait défini par le vendeur → pas besoin d'obliger le
+  // client à cliquer dessus, on le présélectionne (toujours affiché, jamais caché).
+  useEffect(() => {
+    if (pickupPoints.length === 1 && selectedPickup === null) setSelectedPickup(0);
+  }, [pickupPoints.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Compute selected address dept for zone-mismatch check
   const selAddr = addresses.find((a: any) => a.id === selectedAddress);
   const selDept = selAddr?.department ?? '';
@@ -495,7 +501,42 @@ function PaymentStep({ paymentMethods, selectedPayment, setSelectedPayment, note
           sx={{ flex: 2, py: 1.4, borderRadius: '14px', fontWeight: 600, textTransform: 'none', fontSize: 14.5,
             bgcolor: OR, boxShadow: `0 8px 24px ${alpha(OR, 0.3)}`, '&:hover': { bgcolor: ORD },
             '&.Mui-disabled': { bgcolor: '#F1F5F9', color: '#64748B' } }}>
-          {placing ? <CircularProgress size={18} sx={{ color: 'white' }} /> : 'Confirmer la commande'}
+          {placing ? <CircularProgress size={18} sx={{ color: 'white' }} /> : 'Payer maintenant'}
+        </Button>
+      </Box>
+    </Box>
+  );
+}
+
+// ─── Step: Commander (boutique non-DealPam — pas de paiement sur la plateforme) ─
+// Pas de sélecteur de mode de paiement ici : le règlement se fait hors
+// plateforme entre l'acheteur et le vendeur, selon les modalités habituelles
+// de ce dernier. Le libellé "commander" (au lieu de "payer") suffit à lui
+// seul à indiquer la différence — pas de texte d'avertissement nécessaire.
+function OrderStep({ notes, setNotes, onBack, onNext, placing }: any) {
+  return (
+    <Box>
+      <Typography fontWeight={600} fontSize={16} mb={2} color={TXT}>Confirmer la commande</Typography>
+
+      <TextField fullWidth multiline rows={2} label="Note pour le vendeur (optionnel)"
+        value={notes} onChange={e => setNotes(e.target.value)}
+        placeholder="Instructions spéciales, couleur, taille préférée..."
+        InputLabelProps={{ shrink: true }}
+        sx={{ mb: 2,
+          '& .MuiOutlinedInput-root': { borderRadius: '14px', color: TXT, bgcolor: CARD,
+            '& fieldset': { borderColor: BORD }, '&:hover fieldset': { borderColor: alpha(OR, 0.4) },
+            '&.Mui-focused fieldset': { borderColor: OR } } }} />
+
+      <Box sx={{ display: 'flex', gap: 1.5 }}>
+        <Button onClick={onBack} variant="outlined" sx={{ px: 2.5, borderRadius: '14px', flex: 1, fontWeight: 700, textTransform: 'none',
+          borderColor: BORD, color: '#475569', '&:hover': { borderColor: alpha(OR, 0.5), bgcolor: 'transparent' } }}>
+          Retour
+        </Button>
+        <Button onClick={onNext} variant="contained" disabled={placing}
+          sx={{ flex: 2, py: 1.4, borderRadius: '14px', fontWeight: 600, textTransform: 'none', fontSize: 14.5,
+            bgcolor: OR, boxShadow: `0 8px 24px ${alpha(OR, 0.3)}`, '&:hover': { bgcolor: ORD },
+            '&.Mui-disabled': { bgcolor: '#F1F5F9', color: '#64748B' } }}>
+          {placing ? <CircularProgress size={18} sx={{ color: 'white' }} /> : 'Commander'}
         </Button>
       </Box>
     </Box>
@@ -682,14 +723,21 @@ export default function CheckoutPage() {
                 />
               )}
               {step === 1 && (
-                <PaymentStep
-                  paymentMethods={paymentMethods}
-                  selectedPayment={selectedPayment} setSelectedPayment={setSelectedPayment}
-                  notes={notes} setNotes={setNotes}
-                  couponCode={couponCode} setCouponCode={setCouponCode}
-                  storeInfo={{ ...storeDetail, ...storeOptions }}
-                  onBack={() => setStep(0)} onNext={placeOrder} placing={placing}
-                />
+                storeDetail?.isPlatformStore ? (
+                  <PaymentStep
+                    paymentMethods={paymentMethods}
+                    selectedPayment={selectedPayment} setSelectedPayment={setSelectedPayment}
+                    notes={notes} setNotes={setNotes}
+                    couponCode={couponCode} setCouponCode={setCouponCode}
+                    storeInfo={{ ...storeDetail, ...storeOptions }}
+                    onBack={() => setStep(0)} onNext={placeOrder} placing={placing}
+                  />
+                ) : (
+                  <OrderStep
+                    notes={notes} setNotes={setNotes}
+                    onBack={() => setStep(0)} onNext={placeOrder} placing={placing}
+                  />
+                )
               )}
             </Box>
           </Grid>

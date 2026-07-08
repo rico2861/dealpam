@@ -4,9 +4,11 @@ import { ProductsController } from './products.controller';
 import { UploadModule } from '../upload/upload.module';
 import { EventsModule } from '../events/events.module';
 import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
+import { NotificationsModule } from '../notifications/notifications.module';
+import { MailModule } from '../mail/mail.module';
 
 @Module({
-  imports: [UploadModule, EventsModule, SubscriptionsModule],
+  imports: [UploadModule, EventsModule, SubscriptionsModule, NotificationsModule, MailModule],
   providers: [ProductsService],
   controllers: [ProductsController],
 })

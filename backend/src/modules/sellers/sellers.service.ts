@@ -412,7 +412,10 @@ export class SellersService {
       include: {
         user:  { select: { firstName: true, lastName: true, avatar: true, city: true, department: true } },
         stores: {
-          where:   { isActive: true, isPrimary: true },
+          // isVerified répété ici (pas seulement dans le where racine) : sinon,
+          // pour un vendeur multi-boutiques, la boutique PRIMARY affichée
+          // pourrait ne pas être celle qui est réellement vérifiée.
+          where:   { isActive: true, isPrimary: true, isVerified: true },
           select:  { id: true, name: true, slug: true, logoUrl: true, bannerUrl: true,
                      isVerified: true, avgRating: true, totalReviews: true, totalSales: true,
                      city: true, department: true, _count: { select: { products: true } } },
@@ -429,9 +432,23 @@ export class SellersService {
     });
 
     const deptNorm = department?.toLowerCase().trim();
+    const candidates = sellers.filter((s: any) => s.stores?.length > 0);
 
-    return sellers
-      .filter((s: any) => s.stores?.length > 0)
+    // Note pondérée (moyenne bayésienne) : une boutique avec 1 avis à 5★ ne doit
+    // jamais battre une boutique avec des centaines d'avis à 4.7★. On tire vers
+    // C (la moyenne du pool candidat) tant que le nombre d'avis reste faible,
+    // et on converge vers la moyenne brute au fur et à mesure qu'elle devient
+    // statistiquement fiable (M = seuil de confiance, en nombre d'avis).
+    const M = 10;
+    const ratings = candidates.map((s: any) => Number(s.stores?.[0]?.avgRating) || 0).filter((r: number) => r > 0);
+    const C = ratings.length ? ratings.reduce((a: number, b: number) => a + b, 0) / ratings.length : 4;
+    const weightedRating = (store: any) => {
+      const R = Number(store?.avgRating) || 0;
+      const v = Number(store?.totalReviews) || 0;
+      return (v / (v + M)) * R + (M / (v + M)) * C;
+    };
+
+    return candidates
       .sort((a: any, b: any) => {
         // Vendeurs locaux (même département) en premier si department fourni
         if (deptNorm) {
@@ -442,10 +459,7 @@ export class SellersService {
         const aTier = tierOrder[a.subscriptions?.[0]?.plan?.tier ?? 'FREE'] ?? 9;
         const bTier = tierOrder[b.subscriptions?.[0]?.plan?.tier ?? 'FREE'] ?? 9;
         if (aTier !== bTier) return aTier - bTier;
-        const aVer = a.stores?.[0]?.isVerified ? 0 : 1;
-        const bVer = b.stores?.[0]?.isVerified ? 0 : 1;
-        if (aVer !== bVer) return aVer - bVer;
-        return (b.stores?.[0]?.avgRating || 0) - (a.stores?.[0]?.avgRating || 0);
+        return weightedRating(b.stores?.[0]) - weightedRating(a.stores?.[0]);
       })
       .slice(0, limit)
       .map((s: any) => ({

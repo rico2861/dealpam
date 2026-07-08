@@ -3,6 +3,8 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { UploadService } from '../upload/upload.service';
 import { EventsService } from '../events/events.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { MailService } from '../mail/mail.service';
 import { scanForProhibitedContent } from './content-moderation.util';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -30,6 +32,8 @@ export class ProductsService {
     private uploadService: UploadService,
     private eventsService: EventsService,
     private subscriptionsService: SubscriptionsService,
+    private notifications: NotificationsService,
+    private mail: MailService,
   ) {}
 
   async findAll(filter: FilterProductsDto) {
@@ -455,6 +459,16 @@ export class ProductsService {
       await this.prisma.productVariant.createMany({ data: variantCreateData });
     }
 
+    // La modification repasse le produit en file de modération — le vendeur
+    // doit le savoir immédiatement, pas seulement constater sa disparition.
+    await this.notifications.create(
+      userId,
+      `🔍 "${(dto as any).name ?? product.name}" en cours de vérification`,
+      `Votre modification a bien été enregistrée. Le produit repasse en file de modération et sera republié après validation.`,
+      'PRODUCT_MODERATION',
+      { productId, result: 'PENDING' },
+    ).catch(() => {});
+
     return this.prisma.product.findUnique({ where: { id: productId }, include: PRODUCT_INCLUDE });
   }
 
@@ -567,11 +581,42 @@ export class ProductsService {
   }
 
   async approve(productId: string) {
-    return this.prisma.product.update({ where: { id: productId }, data: { status: 'PUBLISHED', rejectionReason: null } });
+    const product = await this.prisma.product.update({
+      where: { id: productId }, data: { status: 'PUBLISHED', rejectionReason: null },
+      include: { store: { select: { name: true, seller: { select: { userId: true } } } } },
+    });
+    await this.notifyModerationResult(product, 'APPROVED');
+    return product;
   }
 
   async reject(productId: string, reason: string) {
-    return this.prisma.product.update({ where: { id: productId }, data: { status: 'REJECTED', rejectionReason: reason } });
+    const product = await this.prisma.product.update({
+      where: { id: productId }, data: { status: 'REJECTED', rejectionReason: reason },
+      include: { store: { select: { name: true, seller: { select: { userId: true } } } } },
+    });
+    await this.notifyModerationResult(product, 'REJECTED', reason);
+    return product;
+  }
+
+  // ── Notifie le vendeur du résultat de la modération (approbation/rejet) ────
+  private async notifyModerationResult(product: any, result: 'APPROVED' | 'REJECTED', reason?: string) {
+    const sellerUserId = product?.store?.seller?.userId;
+    if (!sellerUserId) return;
+
+    const isApproved = result === 'APPROVED';
+    const title = isApproved
+      ? `✅ "${product.name}" est en ligne`
+      : `❌ "${product.name}" a été refusé`;
+    const body = isApproved
+      ? `Votre produit/service a été validé et est maintenant visible sur DealPam.`
+      : `Votre produit/service n'a pas été approuvé.${reason ? ` Raison : ${reason}` : ''}`;
+
+    await this.notifications.create(sellerUserId, title, body, 'PRODUCT_MODERATION', { productId: product.id, result, reason }).catch(() => {});
+
+    const user = await this.prisma.user.findUnique({ where: { id: sellerUserId }, select: { email: true } });
+    if (user?.email) {
+      this.mail.sendRaw(user.email, title, `${body}<br/><br/>Boutique : ${product.store?.name ?? ''}`, 'seller').catch(() => {});
+    }
   }
 
   async toggleFeatured(productId: string) {

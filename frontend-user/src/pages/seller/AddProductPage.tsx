@@ -498,14 +498,14 @@ export default function AddProductPage() {
                   Prix dégressifs par quantité (optionnel)
                 </Typography>
                 <Typography fontSize={12} color={SUB} mb={1.2}>
-                  Ex: 1 unité = 500 HTG, à partir de 3 = 650 HTG chacune, à partir de 12 = 2345 HTG chacune.
+                  Ex: si le produit coûte 1000 HTG l'unité, un lot de 3 peut être vendu 2500 HTG au total (au lieu de 3000), un lot de 6 pour 4500 HTG, etc. — le prix indiqué est le total du lot, pas un prix unitaire.
                 </Typography>
                 {priceTiers.map((t, i) => (
                   <Box key={i} sx={{ display: 'flex', gap: 1, mb: 1, alignItems: 'center' }}>
                     <TextField size="small" label="À partir de (qté)" type="number" value={t.minQty}
                       onChange={e => setPriceTiers(p => p.map((x, j) => j === i ? { ...x, minQty: e.target.value } : x))}
                       inputProps={{ min: 1 }} sx={{ ...fieldSx, flex: 1 }} />
-                    <TextField size="small" label="Prix unitaire (HTG)" type="number" value={t.price}
+                    <TextField size="small" label="Prix total du lot (HTG)" type="number" value={t.price}
                       onChange={e => setPriceTiers(p => p.map((x, j) => j === i ? { ...x, price: e.target.value } : x))}
                       inputProps={{ min: 0 }} sx={{ ...fieldSx, flex: 1 }} />
                     <IconButton size="small" onClick={() => setPriceTiers(p => p.filter((_, j) => j !== i))}>

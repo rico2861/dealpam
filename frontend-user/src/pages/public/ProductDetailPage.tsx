@@ -438,6 +438,9 @@ export default function ProductDetailPage() {
   const ctaDisabled = loading || stock === 0;
   const isPhysical  = !product.productType || product.productType === 'PHYSICAL';
   const showPurchaseFlow = !product.requiresAppointment;
+  // Un vendeur ne peut jamais acheter son propre produit — remplacé par une
+  // mention discrète plutôt qu'un bouton qui échouerait de toute façon côté serveur.
+  const isOwnProduct = !!user && !!product?.store?.seller?.userId && product.store.seller.userId === user.id;
 
   return (
     <Box sx={{ bgcolor:BG, minHeight:'100vh', pb:{ xs:14, md:6 } }}>
@@ -812,8 +815,17 @@ export default function ProductDetailPage() {
             )}
 
 
+            {/* Propre produit du vendeur connecté — jamais de bouton d'achat qui échouerait de toute façon côté serveur */}
+            {showPurchaseFlow && isOwnProduct && (
+              <Box sx={{ mb:3.5, maxWidth:{ lg:480 }, p:2, borderRadius:'10px', bgcolor:'rgba(15,27,46,0.04)', border:`1px solid ${BORD}` }}>
+                <Typography fontSize={13.5} color={SUB2} fontWeight={500}>
+                  Ceci est votre propre produit — vous ne pouvez pas l'acheter.
+                </Typography>
+              </Box>
+            )}
+
             {/* qty + CTA achat — masqués pour les services nécessitant un RDV (la prise de RDV ci-dessus remplace l'achat) */}
-            {showPurchaseFlow&&(
+            {showPurchaseFlow && !isOwnProduct && (
               <Box sx={{ mb:3.5, maxWidth:{ lg:480 } }}>
                 <Box sx={{ display:'flex', alignItems:'center', gap:1.2, mb:1.5, flexWrap:{ xs:'wrap', sm:'nowrap' } }}>
                   <Typography fontSize={12} fontWeight={600} color={SUB} textTransform="uppercase" letterSpacing="0.8px" sx={{ flexShrink:0, width:{ xs:'100%', sm:'auto' } }}>Quantité</Typography>
@@ -850,18 +862,22 @@ export default function ProductDetailPage() {
                 {priceTiers.length>0 && (
                   <Box sx={{ mb:1.5, borderRadius:'10px', border:`1px solid ${BORD}`, overflow:'hidden' }}>
                     <Box sx={{ px:1.6, py:1, bgcolor:'rgba(15,27,46,0.04)' }}>
-                      <Typography fontSize={12} fontWeight={600} color={TXT}>Prix par quantité</Typography>
+                      <Typography fontSize={12} fontWeight={600} color={TXT}>Offres par lot</Typography>
                     </Box>
                     {priceTiers.map((t,i)=>{
                       const next = priceTiers[i+1];
                       const rangeLabel = next ? `${t.minQty} - ${next.minQty-1}` : `${t.minQty}+`;
                       const active = qty>=t.minQty && (!next || qty<next.minQty);
+                      const perUnit = t.price / t.minQty;
                       return (
                         <Box key={i} sx={{ display:'flex', justifyContent:'space-between', alignItems:'center',
                           px:1.6, py:0.9, bgcolor: active?'rgba(245,113,26,0.08)':'transparent',
                           borderTop: i>0 ? `1px solid ${BORD}` : 'none' }}>
                           <Typography fontSize={13} color={active?OR:TXT} fontWeight={active?600:400}>{rangeLabel} unités</Typography>
-                          <Typography fontSize={13} color={active?OR:TXT} fontWeight={active?600:400}>{fmtDisplay(t.price)} / unité</Typography>
+                          <Box sx={{ textAlign:'right' }}>
+                            <Typography fontSize={13} color={active?OR:TXT} fontWeight={active?600:400}>{fmtDisplay(t.price)} le lot</Typography>
+                            <Typography fontSize={10.5} color={SUB2}>soit {fmtDisplay(perUnit)}/unité</Typography>
+                          </Box>
                         </Box>
                       );
                     })}
@@ -1149,7 +1165,11 @@ export default function ProductDetailPage() {
           variant="outlined">
           Vendeur
         </Button>
-        {!inCart ? (
+        {isOwnProduct ? (
+          <Typography fontSize={11.5} color={SUB2} sx={{ flexShrink:0, maxWidth:110, textAlign:'right' }}>
+            Votre produit
+          </Typography>
+        ) : !inCart ? (
           <Button size="small"
             onClick={needsColor ? ()=>document.getElementById('color-picker')?.scrollIntoView({behavior:'smooth',block:'center'}) : addToCart}
             disabled={loading||stock===0}
