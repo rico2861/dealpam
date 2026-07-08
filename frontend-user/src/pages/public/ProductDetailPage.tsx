@@ -825,7 +825,7 @@ export default function ProductDetailPage() {
                       '&:active:not(:disabled)':{ transform:'scale(0.98)' },
                       '&:focus-visible':{ outline:`2px solid ${OR}`, outlineOffset:2 },
                       '&:disabled':{ bgcolor:'rgba(15,27,46,0.07)', color:SUB } }}>
-                    {loading ? 'ajout…' : needsColor ? 'choisissez' : 'acheter maintenant'}
+                    {loading ? 'un instant…' : needsColor ? 'choisissez' : 'acheter maintenant'}
                   </Button>
                 </Box>
 
@@ -838,7 +838,7 @@ export default function ProductDetailPage() {
                     '&:active:not(:disabled)':{ transform:'scale(0.98)' },
                     '&:focus-visible':{ outline:`2px solid ${NAVY}`, outlineOffset:2 },
                     '&:disabled':{ color:SUB, borderColor:BORD } }}>
-                  {loading ? '…' : stock===0 ? 'épuisé' : needsColor ? 'choisir' : 'ajouter au panier'}
+                  {loading ? 'ajout…' : stock===0 ? 'épuisé' : needsColor ? 'choisir' : 'ajouter au panier'}
                 </Button>
               </Box>
             )}
@@ -1112,7 +1112,7 @@ export default function ProductDetailPage() {
               background: stock===0 ? undefined : `linear-gradient(135deg,#C84D00,${OR})`,
               boxShadow: stock>0 ? '0 3px 14px rgba(255,107,0,0.4)' : undefined,
               '&:disabled':{ bgcolor:'rgba(15,23,42,0.07)', color:SUB, boxShadow:'none' } }}>
-            {loading?'…':stock===0?'Épuisé':needsColor?'Couleur':'Ajouter'}
+            {loading?'Ajout…':stock===0?'Épuisé':needsColor?'Couleur':'Ajouter'}
           </Button>
         ) : (
           <Button size="small" onClick={placeOrder}
