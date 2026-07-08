@@ -36,6 +36,7 @@ import { NewsletterModule } from './modules/newsletter/newsletter.module';
 import { PlatformStoreModule } from './modules/platform-store/platform-store.module';
 import { WalletModule } from './modules/wallet/wallet.module';
 import { MoncashTransactionsModule } from './modules/moncash-transactions/moncash-transactions.module';
+import { CouponsModule } from './modules/coupons/coupons.module';
 
 @Module({
   imports: [
@@ -74,6 +75,7 @@ import { MoncashTransactionsModule } from './modules/moncash-transactions/moncas
     PlatformStoreModule,
     WalletModule,
     MoncashTransactionsModule,
+    CouponsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

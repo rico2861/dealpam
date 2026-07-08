@@ -12,6 +12,7 @@ import { PaymentsService } from './payments.service';
 class InitiateSubDto {
   @IsUUID() planId: string;
   @IsOptional() @IsIn(['MONTHLY', 'ANNUAL']) billingCycle?: 'MONTHLY' | 'ANNUAL';
+  @IsOptional() @IsString() couponCode?: string;
 }
 class InitiateAdDto     { @IsUUID() campaignId: string; }
 class VerifyDto {
@@ -30,7 +31,7 @@ export class PaymentsController {
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Vendeur — initie le paiement MonCash pour un abonnement' })
   initiateSubscription(@CurrentUser() u: any, @Body() dto: InitiateSubDto) {
-    return this.ps.initiateSubscriptionPayment(u.id, dto.planId, dto.billingCycle || 'MONTHLY');
+    return this.ps.initiateSubscriptionPayment(u.id, dto.planId, dto.billingCycle || 'MONTHLY', dto.couponCode);
   }
 
   // ── Pub : initier le paiement MonCash pour une campagne ───────────────────
