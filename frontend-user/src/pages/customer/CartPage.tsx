@@ -205,10 +205,11 @@ function StoreGroup({ group, opts, onRemove, onUpdate, navigate }: any) {
           {/* Items */}
           <Box sx={{ px: { xs: 1.5, sm: 2.5 }, py: 1.5, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
             {group.items.map((item: any) => {
+              const isOffer = item.offeredPrice != null;
               const orig = Number(item.product?.price);
               const sale = item.product?.salePrice ? Number(item.product.salePrice) : null;
-              const price = getEffectiveUnitPrice(item.product?.price, item.product?.salePrice, item.product?.priceTiers, item.quantity);
-              const isOnSale = sale != null && sale < orig;
+              const price = isOffer ? Number(item.offeredPrice) : getEffectiveUnitPrice(item.product?.price, item.product?.salePrice, item.product?.priceTiers, item.quantity);
+              const isOnSale = !isOffer && sale != null && sale < orig;
               const discount = isOnSale ? Math.round((1 - sale! / orig) * 100) : 0;
               const img = item.product?.images?.[0]?.urlMedium || item.product?.images?.[0]?.url || '';
               const stock = item.product?.stock ?? 99;
@@ -235,24 +236,34 @@ function StoreGroup({ group, opts, onRemove, onUpdate, navigate }: any) {
                       {item.product?.name}
                     </Typography>
                     <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.6 }}>
-                      <Typography fontWeight={900} fontSize={14} color={OR}>{price.toLocaleString()} HTG</Typography>
-                      {isOnSale && <Typography fontSize={11} color="#64748B" sx={{ textDecoration: 'line-through' }}>{orig.toLocaleString()}</Typography>}
+                      {isOffer ? (
+                        <Typography fontWeight={900} fontSize={14} color={OR}>Offre : {price.toLocaleString()} HTG</Typography>
+                      ) : (
+                        <>
+                          <Typography fontWeight={900} fontSize={14} color={OR}>{price.toLocaleString()} HTG</Typography>
+                          {isOnSale && <Typography fontSize={11} color="#64748B" sx={{ textDecoration: 'line-through' }}>{orig.toLocaleString()}</Typography>}
+                        </>
+                      )}
                     </Box>
                   </Box>
                   <Box sx={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0.8 }}>
                     <Typography fontWeight={800} fontSize={13.5} color="#0F172A">{(price * item.quantity).toLocaleString()} HTG</Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.2, bgcolor: '#F1F5F9', borderRadius: '10px', px: 0.3 }}>
-                      <IconButton size="small" onClick={() => onUpdate(item.id, item.quantity - 1)} disabled={item.quantity <= 1}
-                        sx={{ width: 26, height: 26, color: '#64748B', '&:hover': { color: OR } }}>
-                        <Remove sx={{ fontSize: 13 }} />
-                      </IconButton>
-                      <Typography fontWeight={700} fontSize={13} color="#0F172A" sx={{ minWidth: 20, textAlign: 'center' }}>{item.quantity}</Typography>
-                      <IconButton size="small" onClick={() => onUpdate(item.id, item.quantity + 1)} disabled={atMax}
-                        sx={{ width: 26, height: 26, color: '#64748B', '&:hover': { color: OR } }}>
-                        <Add sx={{ fontSize: 13 }} />
-                      </IconButton>
-                    </Box>
-                    {atMax && <Typography fontSize={10.5} color="#F59E0B" fontWeight={700}>Stock max ({stock})</Typography>}
+                    {isOffer ? (
+                      <Typography fontSize={11} color="#64748B">Quantité : 1 (offre)</Typography>
+                    ) : (
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.2, bgcolor: '#F1F5F9', borderRadius: '10px', px: 0.3 }}>
+                        <IconButton size="small" onClick={() => onUpdate(item.id, item.quantity - 1)} disabled={item.quantity <= 1}
+                          sx={{ width: 26, height: 26, color: '#64748B', '&:hover': { color: OR } }}>
+                          <Remove sx={{ fontSize: 13 }} />
+                        </IconButton>
+                        <Typography fontWeight={700} fontSize={13} color="#0F172A" sx={{ minWidth: 20, textAlign: 'center' }}>{item.quantity}</Typography>
+                        <IconButton size="small" onClick={() => onUpdate(item.id, item.quantity + 1)} disabled={atMax}
+                          sx={{ width: 26, height: 26, color: '#64748B', '&:hover': { color: OR } }}>
+                          <Add sx={{ fontSize: 13 }} />
+                        </IconButton>
+                      </Box>
+                    )}
+                    {!isOffer && atMax && <Typography fontSize={10.5} color="#F59E0B" fontWeight={700}>Stock max ({stock})</Typography>}
                     <Tooltip title="Retirer">
                       <IconButton size="small" onClick={() => onRemove(item.id)}
                         sx={{ color: '#CBD5E1', width: 24, height: 24, '&:hover': { color: '#EF4444', bgcolor: alpha('#EF4444', 0.08) } }}>
@@ -426,7 +437,7 @@ export default function CartPage() {
             </Box>
             <Box sx={{ px: 2.5, py: 2 }}>
               {items.map((item: any) => {
-                const price = getEffectiveUnitPrice(item.product?.price, item.product?.salePrice, item.product?.priceTiers, item.quantity);
+                const price = item.offeredPrice != null ? Number(item.offeredPrice) : getEffectiveUnitPrice(item.product?.price, item.product?.salePrice, item.product?.priceTiers, item.quantity);
                 return (
                   <Box key={item.id} sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.7, gap: 1 }}>
                     <Typography fontSize={12} color="#64748B" sx={{ flex: 1, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical' }}>

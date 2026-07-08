@@ -287,6 +287,8 @@ export class ProductsService {
         condition:   dto.condition || null,
         hasDelivery: dto.hasDelivery || false,
         deliveryPriceHTG: dto.deliveryPriceHTG || null,
+        allowOffers: dto.allowOffers || false,
+        minOfferPriceHTG: dto.minOfferPriceHTG || null,
         deliveryDepts: parseDepts,
         city:        dto.city || null,
         department:  dto.department || null,
@@ -910,8 +912,8 @@ export class ProductsService {
       where: {
         status: 'PUBLISHED',
         OR: [
-          { store: { is: { department: { equals: department, mode: 'insensitive' } } } },
-          { department: { equals: department, mode: 'insensitive' } },
+          { store: { is: { department } } },
+          { department },
         ],
       },
     }).then(count => count > 0);

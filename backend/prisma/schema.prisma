@@ -324,6 +324,10 @@ model Product {
   deliveryPriceHTG Float?  @map("delivery_price_htg")
   deliveryDepts   String   @default("[]") @map("delivery_depts")  // List of departments where delivery is available
 
+  // Offres de prix (négociation acheteur → vendeur)
+  allowOffers      Boolean @default(false) @map("allow_offers")
+  minOfferPriceHTG Float?  @map("min_offer_price_htg")
+
   // Vehicle / Rental specific
   year            Int?
   mileage         Int?
@@ -434,6 +438,7 @@ model CartItem {
   quantity  Int     @default(1)
   size      String?
   color     String?
+  offeredPrice Float? @map("offered_price")
 
   @@unique([cartId, productId])
   @@map("cart_items")
@@ -495,6 +500,8 @@ model Order {
   paymentTxNote        String?  @map("payment_tx_note")
   paymentVerifiedBy    String?  @map("payment_verified_by")
   paymentVerifiedAt    DateTime? @map("payment_verified_at")
+  cancelReason         String?  @map("cancel_reason")
+  reminderSentAt       DateTime? @map("reminder_sent_at")
   items          OrderItem[]
   reviews        Review[]
   createdAt      DateTime    @default(now()) @map("created_at")
@@ -520,6 +527,9 @@ model OrderItem {
   quantity    Int
   unitPrice   Float @map("unit_price")
   subtotal    Float
+  offeredPrice   Float?  @map("offered_price")
+  offerStatus    String? @map("offer_status")
+  offerRejectionReason String? @map("offer_rejection_reason")
 
   @@map("order_items")
 }

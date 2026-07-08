@@ -257,6 +257,7 @@ export default function AddProductPage() {
     stock: '1', sku: '', condition: 'new', conditionNote: '',
     city: '', department: 'Ouest', storeId: '',
     hasDelivery: false, deliveryPriceHTG: '',
+    allowOffers: false, minOfferPriceHTG: '',
     minOrderQty: '1',
   });
   const [priceTiers, setPriceTiers] = useState<{ minQty: string; price: string }[]>([]);
@@ -356,6 +357,8 @@ export default function AddProductPage() {
       if (form.department) fd.append('department', form.department);
       fd.append('hasDelivery', String(form.hasDelivery));
       if (form.hasDelivery && form.deliveryPriceHTG) fd.append('deliveryPriceHTG', form.deliveryPriceHTG);
+      fd.append('allowOffers', String(form.allowOffers));
+      if (form.allowOffers && form.minOfferPriceHTG) fd.append('minOfferPriceHTG', form.minOfferPriceHTG);
       // deliveryDepts: send each zone as "Ville, Département" or just "Département"
       deliveryZones.forEach(z => fd.append('deliveryDepts', z.city ? `${z.city}, ${z.dept}` : z.dept));
       if (form.storeId) fd.append('storeId', form.storeId);
@@ -656,6 +659,16 @@ export default function AddProductPage() {
                       <Typography fontSize={11.5} color={SUB} mt={1}>Aucune zone ajoutée — les clients verront ces zones lors de la commande.</Typography>
                     )}
                   </Box>
+                </Box>
+              </Collapse>
+
+              <DarkToggle checked={form.allowOffers} onChange={v => setForm(p => ({ ...p, allowOffers: v }))}
+                label="Accepter les offres de prix" sub="Les clients pourront vous proposer leur propre prix" />
+
+              <Collapse in={form.allowOffers}>
+                <Box sx={{ pt: 0.5 }}>
+                  <TextField fullWidth label="Prix minimum accepté (HTG) — laisser vide pour accepter toute offre" type="number"
+                    value={form.minOfferPriceHTG} onChange={set('minOfferPriceHTG')} inputProps={{ min: 0 }} sx={fieldSx} />
                 </Box>
               </Collapse>
 

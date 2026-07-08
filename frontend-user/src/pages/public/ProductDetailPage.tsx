@@ -348,6 +348,40 @@ export default function ProductDetailPage() {
     } finally { setLoading(false); }
   };
 
+  /* ── faire une offre de prix ─────────────────────────────────────────────── */
+  const [offerOpen, setOfferOpen] = useState(false);
+  const [offerPrice, setOfferPrice] = useState('');
+  const [offerMsg, setOfferMsg] = useState('');
+  const [offerLoading, setOfferLoading] = useState(false);
+
+  const submitOffer = async () => {
+    if (!user || !localStorage.getItem('accessToken')) {
+      navigate(`/login?next=${encodeURIComponent(window.location.pathname)}`);
+      return;
+    }
+    const val = Number(offerPrice);
+    if (!val || val <= 0) {
+      enqueueSnackbar('Veuillez entrer un montant valide', { variant:'warning' });
+      return;
+    }
+    if (product?.minOfferPriceHTG && val < Number(product.minOfferPriceHTG)) {
+      enqueueSnackbar(`L'offre minimum acceptée est de ${Number(product.minOfferPriceHTG).toLocaleString()} HTG`, { variant:'warning' });
+      return;
+    }
+    setOfferLoading(true);
+    try {
+      await api.post('/cart/items', { productId: product.id, quantity: 1, offeredPrice: val });
+      await fetchCount();
+      qc.invalidateQueries({ queryKey:['cart'] });
+      enqueueSnackbar("Offre ajoutée au panier — finalisez votre commande pour l'envoyer au vendeur", { variant:'success' });
+      setOfferOpen(false);
+      setOfferPrice(''); setOfferMsg('');
+    } catch(err:any) {
+      if (err?.response?.status === 401) navigate(`/login?next=${encodeURIComponent(window.location.pathname)}`);
+      else enqueueSnackbar(err?.response?.data?.message || "Erreur lors de l'envoi de l'offre", { variant:'error' });
+    } finally { setOfferLoading(false); }
+  };
+
   /* ── go to checkout (second CTA state) ──────────────────────────────────── */
   const placeOrder = () => navigate('/account/checkout');
 
@@ -903,8 +937,44 @@ export default function ProductDetailPage() {
                     '&:disabled':{ color:SUB, borderColor:BORD } }}>
                   {loading ? 'ajout…' : stock===0 ? 'épuisé' : needsColor ? 'choisir' : 'ajouter au panier'}
                 </Button>
+
+                {product.allowOffers && (
+                  <Button fullWidth onClick={()=>setOfferOpen(true)}
+                    sx={{ mt:1, py:1.3, borderRadius:'8px', fontWeight:600, fontSize:14, color:OR, letterSpacing:0,
+                      bgcolor:'transparent', border:`1px solid ${OR}`,
+                      transition:'background 0.15s ease, transform 0.1s ease',
+                      '&:hover':{ bgcolor:OR_BG },
+                      '&:active':{ transform:'scale(0.98)' } }}>
+                    faire une offre
+                  </Button>
+                )}
               </Box>
             )}
+
+            <Dialog open={offerOpen} onClose={()=>setOfferOpen(false)} maxWidth="xs" fullWidth>
+              <DialogTitle sx={{ fontWeight:700 }}>Faire une offre de prix</DialogTitle>
+              <DialogContent>
+                <Typography fontSize={13} color={SUB2} mb={2}>
+                  Prix affiché : <strong>{fmtDisplay(effUnit)}</strong>
+                </Typography>
+                <TextField fullWidth type="number" label="Votre offre (HTG)" value={offerPrice}
+                  onChange={e=>setOfferPrice(e.target.value)} sx={{ mb:1 }} inputProps={{ min:0 }} autoFocus />
+                {product?.minOfferPriceHTG != null && (
+                  <Typography fontSize={11.5} color={SUB} mb={1.5}>
+                    Offre minimum acceptée : {Number(product.minOfferPriceHTG).toLocaleString()} HTG
+                  </Typography>
+                )}
+                <TextField fullWidth multiline minRows={2} label="Message (optionnel)" value={offerMsg}
+                  onChange={e=>setOfferMsg(e.target.value)} />
+              </DialogContent>
+              <DialogActions sx={{ px:3, pb:2.5 }}>
+                <Button onClick={()=>setOfferOpen(false)}>Annuler</Button>
+                <Button variant="contained" onClick={submitOffer} disabled={offerLoading}
+                  sx={{ bgcolor:OR, '&:hover':{ bgcolor:OR_HOVER } }}>
+                  {offerLoading ? <CircularProgress size={18} color="inherit"/> : 'Envoyer l\'offre'}
+                </Button>
+              </DialogActions>
+            </Dialog>
 
             {/* trust badges */}
             <Box sx={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:1, mb:3.5, maxWidth:{ lg:480 } }}>

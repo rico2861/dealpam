@@ -433,6 +433,9 @@ model Product {
   priceTiers      String?     @map("price_tiers")
   // Quantité minimale de commande imposée par le vendeur sur ce produit (défaut 1).
   minOrderQty     Int         @default(1) @map("min_order_qty")
+  // Le client peut proposer son propre prix (négociation) au lieu du prix catalogue.
+  allowOffers     Boolean     @default(false) @map("allow_offers")
+  minOfferPriceHTG Decimal?   @map("min_offer_price_htg") @db.Decimal(10, 2)
 
   // Geo / Delivery
   address         String?                 // Full address (for services/RE)
@@ -561,6 +564,8 @@ model CartItem {
   quantity  Int     @default(1)
   size      String?
   color     String?
+  // Prix négocié propose par le client (feature "faire une offre") — force quantity=1.
+  offeredPrice Decimal? @map("offered_price") @db.Decimal(10, 2)
 
   @@unique([cartId, productId])
   @@map("cart_items")
@@ -622,6 +627,10 @@ model Order {
   paymentTxNote        String?  @map("payment_tx_note")
   paymentVerifiedBy    String?  @map("payment_verified_by")
   paymentVerifiedAt    DateTime? @map("payment_verified_at")
+  // Motif d'annulation (manuel par le vendeur, ou automatique via le cron de commandes bloquées).
+  cancelReason         String?  @map("cancel_reason")
+  // Anti-double-envoi de la relance vendeur (cron 48h) — non-null = relance déjà envoyée.
+  reminderSentAt       DateTime? @map("reminder_sent_at")
   items          OrderItem[]
   reviews        Review[]
   createdAt      DateTime    @default(now()) @map("created_at")
@@ -647,6 +656,11 @@ model OrderItem {
   quantity    Int
   unitPrice   Decimal @map("unit_price") @db.Decimal(10, 2)
   subtotal    Decimal @db.Decimal(10, 2)
+  // Negociation de prix ("faire une offre") — offeredPrice = prix propose par le
+  // client (deja copie dans unitPrice si accepte). offerStatus: PENDING/ACCEPTED/REJECTED, null = item normal.
+  offeredPrice         Decimal? @map("offered_price") @db.Decimal(10, 2)
+  offerStatus          String?  @map("offer_status")
+  offerRejectionReason String?  @map("offer_rejection_reason")
 
   @@map("order_items")
 }

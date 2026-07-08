@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
-import { IsInt, IsOptional, IsString, IsUUID, Max, Min } from 'class-validator';
+import { IsInt, IsOptional, IsString, IsUUID, IsNumber, Max, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
 import { CurrentUser } from '../../shared/decorators/current-user.decorator';
@@ -11,6 +11,7 @@ class AddCartItemDto {
   @IsInt() @Min(1) @Max(100) @Type(() => Number) quantity: number;
   @IsOptional() @IsString() size?: string;
   @IsOptional() @IsString() color?: string;
+  @IsOptional() @IsNumber() @Min(0) @Type(() => Number) offeredPrice?: number;
 }
 
 class UpdateCartItemDto {
@@ -24,7 +25,7 @@ class UpdateCartItemDto {
 export class CartController {
   constructor(private cs: CartService) {}
   @Get() get(@CurrentUser() u: any) { return this.cs.getCart(u.id); }
-  @Post('items') add(@CurrentUser() u: any, @Body() b: AddCartItemDto) { return this.cs.addItem(u.id, b.productId, b.quantity, b.size, b.color); }
+  @Post('items') add(@CurrentUser() u: any, @Body() b: AddCartItemDto) { return this.cs.addItem(u.id, b.productId, b.quantity, b.size, b.color, b.offeredPrice); }
   @Patch('items/:id') update(@CurrentUser() u: any, @Param('id') id: string, @Body() b: UpdateCartItemDto) { return this.cs.updateItem(u.id, id, b.quantity); }
   @Delete('items/:id') remove(@CurrentUser() u: any, @Param('id') id: string) { return this.cs.removeItem(u.id, id); }
   @Delete() clear(@CurrentUser() u: any) { return this.cs.clearCart(u.id); }

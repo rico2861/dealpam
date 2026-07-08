@@ -60,6 +60,14 @@ export class CreateProductDto {
   @IsNumber() @Min(0)
   deliveryPriceHTG?: number;
 
+  @IsOptional() @Transform(({ value }) => value === 'true' || value === true)
+  @IsBoolean()
+  allowOffers?: boolean;
+
+  @IsOptional() @Transform(({ value }) => (value ? parseFloat(value) : undefined))
+  @IsNumber() @Min(0)
+  minOfferPriceHTG?: number;
+
   @IsOptional()
   deliveryDepts?: string | string[];
 

@@ -469,6 +469,36 @@ export class MailService {
     await this.send(to, `${s.icon} Commande #${orderNumber} — ${s.title} — DealPam`, this.layout(s.title, s.msg, body), 'client');
   }
 
+  // ── 11bis. PRICE OFFER DECISION (accept/reject by seller) ─────────────────
+
+  async sendOfferDecision(
+    to: string, customerName: string, productName: string, offeredPriceHTG: number,
+    decision: 'ACCEPTED' | 'REJECTED', reason?: string,
+  ): Promise<void> {
+    const isAccepted = decision === 'ACCEPTED';
+    const body = isAccepted
+      ? `
+        ${this.hero('🎉', '#F0FDF4', 'Votre offre a été acceptée !', `${this.esc(productName)}`)}
+        ${this.greeting(customerName)}
+        ${this.para(`Bonne nouvelle ! Le vendeur a accepté votre offre de <strong>${offeredPriceHTG.toLocaleString()} HTG</strong> pour "${this.esc(productName)}".`)}
+        ${this.alert('Votre commande suit maintenant son cours normal — le vendeur va la préparer.', 'success')}
+        ${this.btn('Voir mes commandes', `${BRAND.url}/account/orders`)}
+      `
+      : `
+        ${this.hero('📋', '#FFF8EC', 'Votre offre n\'a pas été acceptée', `${this.esc(productName)}`)}
+        ${this.greeting(customerName)}
+        ${this.para(`Le vendeur n'a pas pu accepter votre offre de <strong>${offeredPriceHTG.toLocaleString()} HTG</strong> pour "${this.esc(productName)}".`)}
+        ${reason ? this.alert(this.esc(reason), 'warning') : ''}
+        ${this.para('Vous pouvez soumettre une nouvelle offre à un montant plus élevé directement depuis la fiche produit.')}
+      `;
+    await this.send(
+      to,
+      isAccepted ? `🎉 Offre acceptée pour ${productName} — DealPam` : `Offre refusée pour ${productName} — DealPam`,
+      this.layout(isAccepted ? 'Offre acceptée' : 'Offre refusée', isAccepted ? 'Votre offre de prix a été acceptée.' : 'Votre offre de prix a été refusée.', body),
+      'client',
+    );
+  }
+
   // ── 12. NEW MESSAGE NOTIFICATION ──────────────────────────────────────────
 
   async sendNewMessageNotification(to: string, recipientName: string, senderName: string, preview: string, chatUrl: string, as: MailAccountType = 'client'): Promise<void> {

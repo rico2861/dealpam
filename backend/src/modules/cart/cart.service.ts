@@ -16,13 +16,13 @@ export class CartService {
       include: { items: { include: { product: { include: { images: { where: { isPrimary: true }, take: 1 }, store: { select: { name: true, slug: true } } } } } } }
     }) ?? await this.prisma.cart.create({ data: { userId }, include: { items: { include: { product: { include: { images: { where: { isPrimary: true }, take: 1 }, store: { select: { name: true, slug: true } } } } } } } });
     const total = (cart.items as any[]).reduce((s, i) => {
-      const unit = getEffectiveUnitPrice(i.product?.price, i.product?.salePrice, i.product?.priceTiers, i.quantity);
+      const unit = i.offeredPrice != null ? Number(i.offeredPrice) : getEffectiveUnitPrice(i.product?.price, i.product?.salePrice, i.product?.priceTiers, i.quantity);
       return s + unit * i.quantity;
     }, 0);
     return { ...cart, total };
   }
 
-  async addItem(userId: string, productId: string, quantity: number, size?: string, color?: string) {
+  async addItem(userId: string, productId: string, quantity: number, size?: string, color?: string, offeredPrice?: number) {
     const product = await this.prisma.product.findFirst({
       where: { id: productId, status: 'PUBLISHED', stock: { gt: 0 } },
       include: { store: { select: { sellerId: true } } },
@@ -35,22 +35,35 @@ export class CartService {
       throw new BadRequestException("Vous ne pouvez pas ajouter votre propre produit au panier.");
     }
 
+    // Offre de prix : un article négocié est toujours limité à quantité 1,
+    // et n'est autorisé que si le produit accepte les offres.
+    if (offeredPrice != null) {
+      if (!(product as any).allowOffers) {
+        throw new BadRequestException("Ce produit n'accepte pas les offres de prix.");
+      }
+      const minOffer = (product as any).minOfferPriceHTG;
+      if (minOffer != null && offeredPrice < minOffer) {
+        throw new BadRequestException(`L'offre doit être d'au moins ${minOffer} HTG pour ce produit`);
+      }
+      quantity = 1;
+    }
+
     let cart = await this.prisma.cart.findUnique({ where: { userId } });
     if (!cart) cart = await this.prisma.cart.create({ data: { userId } });
 
     const existing = await this.prisma.cartItem.findFirst({ where: { cartId: cart.id, productId } });
-    const nextQuantity = (existing?.quantity ?? 0) + quantity;
+    const nextQuantity = offeredPrice != null ? 1 : (existing?.quantity ?? 0) + quantity;
     if (nextQuantity > product.stock) {
       throw new BadRequestException(`Stock insuffisant : ${product.stock} disponible(s) seulement`);
     }
     const minQty = (product as any).minOrderQty || 1;
-    if (nextQuantity < minQty) {
+    if (offeredPrice == null && nextQuantity < minQty) {
       throw new BadRequestException(`Quantité minimum de commande pour ce produit : ${minQty}`);
     }
     if (existing) {
-      return this.prisma.cartItem.update({ where: { id: existing.id }, data: { quantity: nextQuantity } });
+      return this.prisma.cartItem.update({ where: { id: existing.id }, data: { quantity: nextQuantity, offeredPrice: offeredPrice ?? null } });
     }
-    return this.prisma.cartItem.create({ data: { cartId: cart.id, productId, quantity, size, color } });
+    return this.prisma.cartItem.create({ data: { cartId: cart.id, productId, quantity, size, color, offeredPrice: offeredPrice ?? null } });
   }
 
   async updateItem(userId: string, itemId: string, quantity: number) {

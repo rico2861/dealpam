@@ -38,7 +38,18 @@ export class OrdersController {
   getSellerOrders(@CurrentUser() u: any, @Query('page') p: number) { return this.os.findSellerOrders(u.id, p); }
 
   @Patch('seller/:id/status') @UseGuards(RolesGuard) @Roles('SELLER')
-  updateSellerOrder(@Param('id') id: string, @CurrentUser() u: any, @Body('status') s: string) { return this.os.updateStatus(id, s, u.id); }
+  updateSellerOrder(@Param('id') id: string, @CurrentUser() u: any, @Body('status') s: string, @Body('cancelReason') reason: string) { return this.os.updateStatus(id, s, u.id, reason); }
+
+  @Patch('seller/:orderId/items/:itemId/offer') @UseGuards(RolesGuard) @Roles('SELLER')
+  decideOffer(
+    @CurrentUser() u: any,
+    @Param('orderId') orderId: string,
+    @Param('itemId') itemId: string,
+    @Body('action') action: 'ACCEPT' | 'REJECT',
+    @Body('reason') reason: string,
+  ) {
+    return this.os.decideOffer(u.id, orderId, itemId, action, reason);
+  }
 
   @Get() @UseGuards(RolesGuard) @Roles('ADMIN','SUPER_ADMIN')
   findAll(@Query('page') p: number) { return this.os.findAll(p); }

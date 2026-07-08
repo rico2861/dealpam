@@ -3,6 +3,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { getEffectiveUnitPrice } from '../products/price-tiers.util';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -16,6 +17,7 @@ export class OrdersService {
   constructor(
     private prisma: PrismaService,
     private mail:   MailService,
+    private notifications: NotificationsService,
   ) {}
 
   // ── Client : passer une commande ──────────────────────────────────────────
@@ -92,7 +94,9 @@ export class OrdersService {
       const orders = [];
       for (const [storeId, items] of Object.entries(storeGroups)) {
         const unitPrices = items.map(i =>
-          getEffectiveUnitPrice(Number(i.product.price), i.product.salePrice ? Number(i.product.salePrice) : null, (i.product as any).priceTiers, i.quantity)
+          (i as any).offeredPrice != null
+            ? Number((i as any).offeredPrice)
+            : getEffectiveUnitPrice(Number(i.product.price), i.product.salePrice ? Number(i.product.salePrice) : null, (i.product as any).priceTiers, i.quantity)
         );
         const subtotal = items.reduce((s, i, idx) => s + unitPrices[idx] * i.quantity, 0);
         const order = await tx.order.create({
@@ -115,6 +119,8 @@ export class OrdersService {
                 quantity:    i.quantity,
                 unitPrice:   unitPrices[idx],
                 subtotal:    unitPrices[idx] * i.quantity,
+                offeredPrice: (i as any).offeredPrice ?? null,
+                offerStatus:  (i as any).offeredPrice != null ? 'PENDING' : null,
               })),
             },
           },
@@ -199,7 +205,7 @@ export class OrdersService {
   }
 
   // ── Vendeur : changer le statut de la commande ────────────────────────────
-  async updateStatus(id: string, status: string, userId?: string) {
+  async updateStatus(id: string, status: string, userId?: string, cancelReason?: string) {
     const SELLER_ALLOWED = ['CONFIRMED', 'PREPARING', 'SHIPPED', 'DELIVERED', 'CANCELLED'];
     const ADMIN_ALLOWED  = ['PENDING', 'CONFIRMED', 'PREPARING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'REFUNDED'];
     const allowed = userId ? SELLER_ALLOWED : ADMIN_ALLOWED;
@@ -238,6 +244,9 @@ export class OrdersService {
     }
 
     const updateData: any = { status: status as any };
+    if (status === 'CANCELLED' && cancelReason) {
+      updateData.cancelReason = cancelReason;
+    }
     if (status === 'REFUNDED') {
       updateData.notes = `${order.notes ? order.notes + ' | ' : ''}[REFUNDED marqué le ${new Date().toISOString()} — statut informatif, aucun fonds recrédité automatiquement]`;
     }
@@ -293,6 +302,82 @@ export class OrdersService {
     }
 
     return updated;
+  }
+
+  // Wrapper public utilisé par OrdersCron (l'auto-annulation vit dans un autre
+  // provider et n'a pas accès à la méthode privée ci-dessous).
+  async applyAutoCancelPenalty(storeId: string) {
+    const store = await this.prisma.store.findUnique({ where: { id: storeId }, select: { reputationScore: true } });
+    const curScore = Number(store?.reputationScore ?? 100);
+    const newScore = Math.max(0, curScore - 10);
+    await this.applyReputationPenalty(storeId, newScore, 'Commande non traitée sous 4 jours');
+  }
+
+  // ── Vendeur : accepter/refuser une offre de prix sur un article ──────────
+  async decideOffer(userId: string, orderId: string, itemId: string, action: 'ACCEPT' | 'REJECT', reason?: string) {
+    const seller = await this.prisma.seller.findUnique({ where: { userId }, select: { id: true } });
+    if (!seller) throw new NotFoundException('Vendeur introuvable');
+
+    const order = await this.prisma.order.findFirst({
+      where: { id: orderId, store: { sellerId: seller.id } },
+      include: {
+        items: true,
+        user: { select: { id: true, email: true, firstName: true } },
+        store: { select: { id: true, name: true } },
+      },
+    });
+    if (!order) throw new NotFoundException('Commande introuvable');
+
+    const item = order.items.find(i => i.id === itemId);
+    if (!item) throw new NotFoundException('Article introuvable');
+    if ((item as any).offerStatus !== 'PENDING') {
+      throw new BadRequestException('Cette offre a déjà été traitée');
+    }
+
+    if (action === 'REJECT' && !reason?.trim()) {
+      throw new BadRequestException('Un motif de refus est requis');
+    }
+
+    if (action === 'ACCEPT') {
+      await this.prisma.orderItem.update({ where: { id: itemId }, data: { offerStatus: 'ACCEPTED' } });
+      if (order.user?.email) {
+        await this.mail.sendOfferDecision(
+          order.user.email, order.user.firstName, item.productName, Number((item as any).offeredPrice), 'ACCEPTED',
+        ).catch(() => {});
+      }
+      await this.notifications.create(
+        order.user.id,
+        'Offre acceptée',
+        `Votre offre de ${Number((item as any).offeredPrice).toLocaleString()} HTG pour "${item.productName}" a été acceptée par le vendeur.`,
+        'OFFER_ACCEPTED',
+        { orderId, itemId },
+      ).catch(() => {});
+    } else {
+      await this.prisma.orderItem.update({
+        where: { id: itemId },
+        data: { offerStatus: 'REJECTED', offerRejectionReason: reason },
+      });
+      // Refus légitime d'une offre = décision commerciale normale, pas une négligence
+      // du vendeur : on annule la commande sans appliquer la pénalité -10 habituelle.
+      await this.prisma.order.update({
+        where: { id: orderId },
+        data: { status: 'CANCELLED', cancelReason: reason },
+      });
+      if (order.user?.email) {
+        await this.mail.sendOfferDecision(
+          order.user.email, order.user.firstName, item.productName, Number((item as any).offeredPrice), 'REJECTED', reason,
+        ).catch(() => {});
+      }
+      await this.notifications.create(
+        order.user.id,
+        'Offre refusée',
+        `Votre offre pour "${item.productName}" a été refusée. Motif : ${reason}. N'hésitez pas à soumettre une nouvelle offre.`,
+        'OFFER_REJECTED',
+        { orderId, itemId, reason },
+      ).catch(() => {});
+    }
+
+    return this.prisma.order.findUnique({ where: { id: orderId }, include: { items: true } });
   }
 
   private async applyReputationPenalty(storeId: string, newScore: number, reason: string) {

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Box, Typography, Button, Avatar, CircularProgress,
   Dialog, DialogTitle, DialogContent, DialogActions,
-  Collapse, Tooltip, IconButton,
+  Collapse, Tooltip, IconButton, TextField, Chip,
 } from '@mui/material';
 import {
   LocalShipping, CheckCircle, HourglassEmpty, Cancel,
@@ -58,10 +58,76 @@ const TABS = [
   { label: 'Annulées',  value: 'CANCELLED' },
 ];
 
+const REJECT_SUGGESTION = 'Montant trop bas, augmentez votre offre';
+
+/* ── Offer decision (accept / reject) ──────────────────────────────────── */
+function OfferBlock({ order, item }: { order: any; item: any }) {
+  const qc = useQueryClient();
+  const { enqueueSnackbar } = useSnackbar();
+  const [rejectOpen, setRejectOpen] = useState(false);
+  const [reason, setReason] = useState('');
+
+  const decideMut = useMutation({
+    mutationFn: ({ action, reason }: { action: 'ACCEPT' | 'REJECT'; reason?: string }) =>
+      api.patch(`/orders/seller/${order.id}/items/${item.id}/offer`, { action, reason }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['sellerOrders'] });
+      enqueueSnackbar('Offre traitée avec succès', { variant: 'success' });
+      setRejectOpen(false);
+      setReason('');
+    },
+    onError: (e: any) => enqueueSnackbar(e?.response?.data?.message || 'Erreur', { variant: 'error' }),
+  });
+
+  return (
+    <Box sx={{ mx: 2.5, mt: 1.5, mb: 0.5, p: 1.6, borderRadius: '10px',
+      bgcolor: 'rgba(139,92,246,0.08)', border: `1px solid ${PUR}40` }}>
+      <Typography fontSize={12.5} fontWeight={700} color={PUR} mb={0.8}>
+        💬 Offre de prix : {fmt(Number(item.offeredPrice))} (prix catalogue : {fmt(Number(item.product?.price ?? item.unitPrice))})
+      </Typography>
+      <Box sx={{ display: 'flex', gap: 1 }}>
+        <Button size="small" onClick={() => decideMut.mutate({ action: 'ACCEPT' })} disabled={decideMut.isPending}
+          sx={{ borderRadius: '9px', fontWeight: 700, fontSize: 12, px: 1.8, py: 0.6,
+            bgcolor: GRN, color: '#fff', '&:hover': { bgcolor: '#0EA271' } }}>
+          Accepter l'offre
+        </Button>
+        <Button size="small" onClick={() => setRejectOpen(true)} disabled={decideMut.isPending}
+          sx={{ borderRadius: '9px', fontWeight: 700, fontSize: 12, px: 1.8, py: 0.6,
+            bgcolor: 'transparent', color: RED, border: '1px solid rgba(239,68,68,0.35)',
+            '&:hover': { bgcolor: 'rgba(239,68,68,0.1)' } }}>
+          Refuser
+        </Button>
+      </Box>
+
+      <Dialog open={rejectOpen} onClose={() => setRejectOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ fontWeight: 800, fontSize: 16 }}>Refuser l'offre</DialogTitle>
+        <DialogContent>
+          <Typography fontSize={12.5} color={SUB} mb={1.2}>
+            Expliquez pourquoi vous refusez cette offre — le client en sera informé et la commande sera annulée.
+          </Typography>
+          <Chip label={REJECT_SUGGESTION} size="small" onClick={() => setReason(REJECT_SUGGESTION)}
+            sx={{ mb: 1.5, cursor: 'pointer', bgcolor: 'rgba(139,92,246,0.1)', color: PUR, fontWeight: 600 }} />
+          <TextField fullWidth multiline minRows={2} label="Motif du refus" value={reason}
+            onChange={e => setReason(e.target.value)} />
+        </DialogContent>
+        <DialogActions sx={{ px: 2.5, pb: 2.5 }}>
+          <Button onClick={() => setRejectOpen(false)}>Annuler</Button>
+          <Button variant="contained" disabled={!reason.trim() || decideMut.isPending}
+            onClick={() => decideMut.mutate({ action: 'REJECT', reason })}
+            sx={{ bgcolor: RED, '&:hover': { bgcolor: '#DC2626' } }}>
+            {decideMut.isPending ? <CircularProgress size={16} color="inherit"/> : 'Confirmer le refus'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
+  );
+}
+
 /* ── Order card ─────────────────────────────────────────────────────────── */
 function OrderCard({ order, onUpdate }: { order: any; onUpdate: (id: string, status: string) => void }) {
   const navigate = useNavigate();
   const [expanded, setExpanded] = useState(false);
+  const pendingOfferItems = (order.items || []).filter((i: any) => i.offerStatus === 'PENDING');
   const st      = STATUS[order.status] ?? STATUS.PENDING;
   const Icon    = st.icon;
   const hours   = hoursAgo(order.createdAt);
@@ -217,6 +283,11 @@ function OrderCard({ order, onUpdate }: { order: any; onUpdate: (id: string, sta
           </Typography>
         )}
       </Box>
+
+      {/* Pending price offers */}
+      {pendingOfferItems.map((item: any) => (
+        <OfferBlock key={item.id} order={order} item={item} />
+      ))}
 
       {/* Expandable delivery details */}
       <Box sx={{ px: 2.5, borderTop: `1px solid ${BORD}` }}>

@@ -53,6 +53,8 @@ export default function EditProductPage() {
         department: product.department || '',
         hasDelivery: !!product.hasDelivery,
         deliveryPriceHTG: product.deliveryPriceHTG ?? '',
+        allowOffers: !!product.allowOffers,
+        minOfferPriceHTG: product.minOfferPriceHTG ?? '',
       });
       setPriceTiers(
         parsePriceTiers(product.priceTiers).map(t => ({ minQty: String(t.minQty), price: String(t.price) })),
@@ -125,6 +127,8 @@ export default function EditProductPage() {
       if (form.department) fd.append('department', form.department);
       fd.append('hasDelivery', String(form.hasDelivery));
       if (form.hasDelivery && form.deliveryPriceHTG !== '') fd.append('deliveryPriceHTG', String(Number(form.deliveryPriceHTG)));
+      fd.append('allowOffers', String(form.allowOffers));
+      if (form.allowOffers && form.minOfferPriceHTG !== '') fd.append('minOfferPriceHTG', String(Number(form.minOfferPriceHTG)));
       deliveryZones.forEach(z => fd.append('deliveryDepts', z.city ? `${z.city}, ${z.dept}` : z.dept));
       newImages.forEach(img => fd.append('images', img));
       await api.patch(`/products/${id}`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
@@ -269,6 +273,23 @@ export default function EditProductPage() {
                         ))}
                       </Box>
                     )}
+                  </Box>
+                </Collapse>
+              </CardContent>
+            </Card>
+
+            <Card sx={{ mt: 2 }}>
+              <CardContent>
+                <FormControlLabel
+                  control={<Switch checked={form.allowOffers} onChange={e => setForm({ ...form, allowOffers: e.target.checked })} />}
+                  label={<Typography fontSize={14} fontWeight={700}>Accepter les offres de prix</Typography>} />
+                <Typography fontSize={12.5} color="text.secondary" mb={0.5}>
+                  Les clients pourront vous proposer leur propre prix
+                </Typography>
+                <Collapse in={form.allowOffers}>
+                  <Box sx={{ pt: 1.5 }}>
+                    <TextField fullWidth label="Prix minimum accepté (HTG) — laisser vide pour accepter toute offre" type="number"
+                      value={form.minOfferPriceHTG} onChange={f('minOfferPriceHTG')} margin="dense" inputProps={{ min: 0 }} />
                   </Box>
                 </Collapse>
               </CardContent>
