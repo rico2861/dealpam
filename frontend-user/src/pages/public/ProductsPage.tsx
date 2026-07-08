@@ -423,6 +423,7 @@ export default function ProductsPage() {
   const { location: locData } = useLocationStore();
   const userDept = locData?.department || localStorage.getItem('dealpam_dept') || localStorage.getItem('dealpam_city') || '';
   const userCity = locData?.city || '';
+  const isServiceFilter = searchParams.get('productType') === 'SERVICE' || fs.category === 'services';
 
   // Sync searchParams → fs quand l'URL change
   useEffect(() => {
@@ -511,11 +512,11 @@ export default function ProductsPage() {
             </Typography>
             <Typography fontSize={12} color="#D1D5DB">›</Typography>
             <Typography fontSize={12} color="#64748B">Produits</Typography>
-            {fs.category && (
+            {(fs.category || isServiceFilter) && (
               <>
                 <Typography fontSize={12} color="#D1D5DB">›</Typography>
                 <Typography fontSize={12} color={ORANGE} fontWeight={600} sx={{ textTransform: 'capitalize' }}>
-                  {fs.category}
+                  {fs.category || 'Services'}
                 </Typography>
               </>
             )}
@@ -528,7 +529,9 @@ export default function ProductsPage() {
                 <Typography fontWeight={900} sx={{ fontSize: { xs: 20, md: 26 }, letterSpacing: '-0.5px', color: '#111827' }}>
                   {fs.category
                     ? fs.category.charAt(0).toUpperCase() + fs.category.slice(1)
-                    : 'Tous les produits'}
+                    : isServiceFilter
+                      ? 'Services'
+                      : 'Tous les produits'}
                 </Typography>
                 {data?.total > 0 && (
                   <Box sx={{
