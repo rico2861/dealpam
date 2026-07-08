@@ -3,24 +3,127 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider  = "postgresql"
   url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
+enum Role {
+  CUSTOMER
+  SELLER
+  MODERATOR
+  ADMIN
+  SUPER_ADMIN
+  PARTNER
+  CUSTOMER_CARE
+  ACCOUNTANT
+}
 
+enum SellerStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
 
+enum BusinessType {
+  FOOD
+  COSMETICS
+  CLOTHING
+  HOUSING
+  VEHICLE
+  SERVICES
+  ELECTRONICS
+  RESTAURANT
+  CLINIC
+  OTHER
+}
 
+enum SubscriptionTier {
+  STARTER
+  BUSINESS
+  PREMIUM
+  ELITE
+}
 
+enum ProductType {
+  PHYSICAL
+  SERVICE
+  RENTAL
+  VEHICLE
+  FOOD
+  REAL_ESTATE
+  FREELANCE
+}
 
+enum ProductStatus {
+  DRAFT
+  PENDING_REVIEW
+  PUBLISHED
+  REJECTED
+  ARCHIVED
+  SUSPENDED
+}
 
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PREPARING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
 
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
 
+enum PaymentMethod {
+  MONCASH
+  NATCASH
+  STRIPE
+  PAYPAL
+  MANUAL
+}
 
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
 
+enum ComplaintStatus {
+  OPEN
+  UNDER_REVIEW
+  CONFIRMED
+  RESOLVED
+  RESOLVED_AGAINST_SELLER
+  DISMISSED
+}
 
+enum ComplaintType {
+  PRODUCT_QUALITY
+  SELLER_BEHAVIOR
+  FRAUD
+  DELIVERY
+  PAYMENT
+  OTHER
+}
 
+enum MessageType {
+  TEXT
+  IMAGE
+  FILE
+  BOT
+  SYSTEM
+}
 
 // ─── Models ───────────────────────────────────────────────────────────────────
 
@@ -33,17 +136,17 @@ model User {
   firstName            String    @map("first_name")
   lastName             String    @map("last_name")
   avatar               String?
-  role                 String      @default("CUSTOMER")
+  role                 Role      @default(CUSTOMER)
   isEmailVerified      Boolean   @default(false) @map("is_email_verified")
   isActive             Boolean   @default(true) @map("is_active")
   mustChangePassword   Boolean   @default(false) @map("must_change_password")
   failedLoginAttempts  Int       @default(0) @map("failed_login_attempts")
   lockedUntil          DateTime? @map("locked_until")
-  tokenVersion         Int       @default(0) @map("token_version")
   passwordResetToken   String?   @unique @map("password_reset_token")
   passwordResetExpires DateTime? @map("password_reset_expires")
   lastLoginAt          DateTime? @map("last_login_at")
   lastLoginIp          String?   @map("last_login_ip")
+  tokenVersion         Int       @default(0) @map("token_version")
 
   // Geo
   city                 String?
@@ -69,10 +172,10 @@ model User {
   notifications        Notification[]
   seller               Seller?
   auditLogs            AuditLog[]
-  sentMessages              Message[]           @relation("MessageSender")
-  conversations             ConversationUser[]
-  assignedConversations     Conversation[]      @relation("ConvAssignedAgent")
-  appointments              Appointment[]
+  sentMessages         Message[]           @relation("MessageSender")
+  conversations        ConversationUser[]
+  assignedConversations Conversation[]     @relation("ConvAssignedAgent")
+  appointments          Appointment[]
 
   createdAt            DateTime  @default(now()) @map("created_at")
   updatedAt            DateTime  @updatedAt @map("updated_at")
@@ -90,6 +193,9 @@ model RefreshToken {
   userId    String   @map("user_id")
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   expiresAt DateTime @map("expires_at")
+  // Marqué au moment de la rotation (au lieu d'une suppression immédiate) pour
+  // pouvoir détecter une réutilisation : un refresh token déjà consommé qui
+  // revient signale un vol — toute la session de l'utilisateur est révoquée.
   usedAt    DateTime? @map("used_at")
   createdAt DateTime @default(now()) @map("created_at")
 
@@ -101,8 +207,8 @@ model Seller {
   id               String        @id @default(uuid())
   userId           String        @unique @map("user_id")
   user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  status           String  @default("PENDING")
-  businessType     String? @map("business_type")
+  status           SellerStatus  @default(PENDING)
+  businessType     BusinessType? @map("business_type")
   businessCity     String?       @map("business_city")
   businessDept     String?       @map("business_dept")
   businessAddress  String?       @map("business_address")
@@ -157,25 +263,27 @@ model Store {
   phone        String?
   email        String?
   whatsapp     String?
-  // Méthodes de paiement que le vendeur accepte (MONCASH, NATCASH, CASH, BANK_TRANSFER, OTHER)
+  // Méthodes de paiement que le vendeur accepte (MONCASH, NATCASH, CASH, BANK_TRANSFER, OTHER) — stocké en JSON.stringify()
   acceptedPaymentMethods String @default("[]") @map("accepted_payment_methods")
+  isPlatformStore  Boolean   @default(false) @map("is_platform_store")
   // Numéro MonCash du vendeur (pour que le client sache où payer)
   moncashPhone String?  @map("moncash_phone")
-  // Points de retrait : [{name, address, city, dept, phone, hours}]
-  pickupPoints String?    @map("pickup_points")
-  // Zones de livraison : [{dept, priceHTG, estimatedDays}]
-  deliveryZones String?   @map("delivery_zones")
-  // Horaires : {mon:{open,close,closed},tue:…,wed:…,thu:…,fri:…,sat:…,sun:…}
-  schedule      String?   @map("schedule")
+  // Points de retrait : [{name, address, city, dept, phone, hours}] — stocké en JSON.stringify()
+  pickupPoints String?  @map("pickup_points")
+  // Zones de livraison : [{dept, priceHTG, estimatedDays}] — stocké en JSON.stringify()
+  deliveryZones String? @map("delivery_zones")
+  // Devise d'affichage par défaut de la boutique : "HTG" ou "USD". Les prix
+  // produits restent toujours stockés en HTG ; ce champ ne pilote que l'affichage.
   currency     String    @default("HTG")
-  exchangeRate Decimal?  @map("exchange_rate")
+  // Taux de change défini par le vendeur : nombre de HTG pour 1 USD (ex: 132.5).
+  // Modifiable à tout moment — recalcule automatiquement les prix affichés.
+  exchangeRate Decimal?  @map("exchange_rate") @db.Decimal(10, 4)
   avgRating        Float     @default(0) @map("avg_rating")
   totalReviews     Int       @default(0) @map("total_reviews")
   totalSales       Int       @default(0) @map("total_sales")
   isVerified       Boolean   @default(false) @map("is_verified")
   isActive         Boolean   @default(true) @map("is_active")
-  isPlatformStore  Boolean   @default(false) @map("is_platform_store")
-  badges           String  @default("[]")
+  badges           String[]  @default([])
   reputationScore  Float     @default(100) @map("reputation_score")
   avgResponseTime  Int?      @map("avg_response_time") // minutes
   lastBadgeUpdate  DateTime? @map("last_badge_update")
@@ -195,10 +303,11 @@ model Store {
 
 model SubscriptionPlan {
   id                String           @id @default(uuid())
-  tier              String @unique
+  tier              SubscriptionTier @unique
   name              String
-  priceHTG          Float          @map("price_htg")
+  priceHTG          Decimal          @map("price_htg") @db.Decimal(10, 2)
   maxProducts       Int?             @map("max_products")
+  // Quota séparé pour les produits de type SERVICE — null = illimité, 0 = non autorisé
   maxServices       Int?             @map("max_services")
   maxImages         Int              @default(5) @map("max_images")
   maxStores         Int              @default(1) @map("max_stores")
@@ -211,9 +320,13 @@ model SubscriptionPlan {
   hasKeywordTargeting Boolean        @default(false) @map("has_keyword_targeting")
   description       String?
   isActive          Boolean          @default(true) @map("is_active")
+  // Mis en avant "POPULAIRE" — pilotable depuis l'admin (un seul plan à la fois en pratique)
   isPopular         Boolean          @default(false) @map("is_popular")
-  originalPriceHTG  Float?           @map("original_price_htg")
+  // Prix "barré" affiché avant le prix réel, pour créer un effet d'ancrage (optionnel)
+  originalPriceHTG  Decimal?         @map("original_price_htg") @db.Decimal(10, 2)
+  // Produits que le vendeur peut publier comme pub (jamais dans le carousel homepage)
   maxPromoProducts    Int            @default(0) @map("max_promo_products")
+  // Sous-ensemble des produits pub qui peuvent aussi apparaître dans le carousel homepage
   maxCarouselProducts Int            @default(0) @map("max_carousel_products")
   // % de réduction si le vendeur paie pour 1 an d'un coup (configurable par l'admin)
   annualDiscountPercent Int          @default(25) @map("annual_discount_percent")
@@ -236,6 +349,7 @@ model SellerSubscription {
   autoRenew Boolean          @default(true) @map("auto_renew")
   billingCycle String        @default("MONTHLY") @map("billing_cycle") // MONTHLY | ANNUAL
   isTrial   Boolean          @default(false) @map("is_trial")
+  // Le vendeur a demandé l'annulation : reste actif jusqu'à endDate, puis n'est pas renouvelé.
   cancelAtPeriodEnd Boolean  @default(false) @map("cancel_at_period_end")
   payment   Payment?
   createdAt DateTime         @default(now()) @map("created_at")
@@ -302,31 +416,34 @@ model Product {
   brand           Brand?      @relation(fields: [brandId], references: [id])
   name            String
   slug            String      @unique
-  subtitle        String?
+  subtitle        String?     @db.VarChar(80)
   description     String
   sku             String?     @unique
-  productType     String @default("PHYSICAL") @map("product_type")
+  productType     ProductType @default(PHYSICAL) @map("product_type")
 
   // Pricing
-  price           Float
-  salePrice       Float?    @map("sale_price")
+  price           Decimal     @db.Decimal(10, 2)
+  salePrice       Decimal?    @map("sale_price") @db.Decimal(10, 2)
   stock           Int         @default(0)
-  sizes           String  @default("[]")
-  colors          String  @default("[]")
+  sizes           String[]
+  colors          String[]
+  // Prix dégressifs par palier de quantité — ex: [{"minQty":1,"price":500},{"minQty":3,"price":650},{"minQty":12,"price":2345}]
+  // stocké en JSON.stringify(), trié par minQty croissant. Le prix appliqué est
+  // celui du plus grand palier dont minQty <= quantité commandée (jamais < 1er palier).
   priceTiers      String?     @map("price_tiers")
+  // Quantité minimale de commande imposée par le vendeur sur ce produit (défaut 1).
   minOrderQty     Int         @default(1) @map("min_order_qty")
+  // Le client peut proposer son propre prix (négociation) au lieu du prix catalogue.
+  allowOffers     Boolean     @default(false) @map("allow_offers")
+  minOfferPriceHTG Decimal?   @map("min_offer_price_htg") @db.Decimal(10, 2)
 
   // Geo / Delivery
   address         String?                 // Full address (for services/RE)
   city            String?
   department      String?    // Département haïtien
   hasDelivery     Boolean    @default(false) @map("has_delivery")
-  deliveryPriceHTG Float?  @map("delivery_price_htg")
-  deliveryDepts   String   @default("[]") @map("delivery_depts")  // List of departments where delivery is available
-
-  // Offres de prix (négociation acheteur → vendeur)
-  allowOffers      Boolean @default(false) @map("allow_offers")
-  minOfferPriceHTG Float?  @map("min_offer_price_htg")
+  deliveryPriceHTG Decimal?  @map("delivery_price_htg") @db.Decimal(10, 2)
+  deliveryDepts   String[]   @map("delivery_depts")  // List of departments where delivery is available
 
   // Vehicle / Rental specific
   year            Int?
@@ -335,7 +452,7 @@ model Product {
   requiresAppointment Boolean @default(false) @map("requires_appointment")
 
   // Status & flags
-  status          String @default("DRAFT")
+  status          ProductStatus @default(DRAFT)
   isFeatured      Boolean   @default(false) @map("is_featured")
   isSponsored     Boolean   @default(false) @map("is_sponsored")
   avgRating       Float     @default(0) @map("avg_rating")
@@ -343,18 +460,24 @@ model Product {
   totalSold       Int       @default(0) @map("total_sold")
   viewCount       Int       @default(0) @map("view_count")
   rejectionReason String?   @map("rejection_reason")
+  // Détection automatique de mots-clés interdits (armes, drogues, contrefaçon…)
+  // à la publication — ne bloque jamais seul, force juste une revue admin.
   isFlagged       Boolean   @default(false) @map("is_flagged")
   flagReason      String?   @map("flag_reason")
+
+  // Modification d'un produit déjà PUBLISHED : la version en ligne reste
+  // visible telle quelle pendant la validation — les changements proposés
+  // sont stockés ici (JSON.stringify()) et appliqués seulement à l'approbation.
   hasPendingEdit         Boolean  @default(false) @map("has_pending_edit")
   pendingChanges         String?  @map("pending_changes")
   pendingRejectionReason String?  @map("pending_rejection_reason")
 
-  // Category-specific attributes stored as JSON (phone: brand/model/storage/ram; clothing: material/gender; etc.)
-  attributes      String?         @map("attributes")
-  // Service / Immobilier / Freelance extra config (JSON)
-  serviceConfig   String?         @map("service_config")
+  // Category-specific attributes stored as JSON (phone: brand/model/storage/ram; clothing: material/gender; etc.) — stocké en JSON.stringify()
+  attributes      String?       @map("attributes")
+  // Service / Immobilier / Freelance extra config (JSON) — stocké en JSON.stringify()
+  serviceConfig   String?       @map("service_config")
   // Price unit label: "HTG/heure", "HTG/séance", "HTG/m²", "HTG/projet", "HTG/nuit"
-  priceUnit       String?         @map("price_unit")
+  priceUnit       String?       @map("price_unit")
 
   images          ProductImage[]
   variants        ProductVariant[]
@@ -377,6 +500,9 @@ model Product {
   @@index([hasDelivery])
   @@index([productType])
   @@index([isFeatured])
+  // Combinaisons réellement filtrées ensemble dans products.service.ts —
+  // un index composite évite un scan supplémentaire par rapport à deux index
+  // simples croisés.
   @@index([storeId, status])
   @@index([storeId, productType, status])
   @@index([categoryId, status])
@@ -407,7 +533,7 @@ model ProductVariant {
   colorHex      String?  @map("color_hex")
   size          String?
   stock         Int      @default(0)
-  priceOverride Float? @map("price_override")
+  priceOverride Decimal? @map("price_override") @db.Decimal(10, 2)
   imageUrl      String?  @map("image_url")
   imagePublicId String?  @map("image_public_id")
   sku           String?
@@ -438,7 +564,8 @@ model CartItem {
   quantity  Int     @default(1)
   size      String?
   color     String?
-  offeredPrice Float? @map("offered_price")
+  // Prix négocié propose par le client (feature "faire une offre") — force quantity=1.
+  offeredPrice Decimal? @map("offered_price") @db.Decimal(10, 2)
 
   @@unique([cartId, productId])
   @@map("cart_items")
@@ -482,10 +609,10 @@ model Order {
   store          Store       @relation(fields: [storeId], references: [id])
   addressId      String?     @map("address_id")
   address        Address?    @relation(fields: [addressId], references: [id])
-  status         String @default("PENDING")
-  subtotalHTG    Float     @map("subtotal_htg")
-  shippingHTG    Float     @default(0) @map("shipping_htg")
-  totalHTG       Float     @map("total_htg")
+  status         OrderStatus @default(PENDING)
+  subtotalHTG    Decimal     @map("subtotal_htg") @db.Decimal(10, 2)
+  shippingHTG    Decimal     @default(0) @map("shipping_htg") @db.Decimal(10, 2)
+  totalHTG       Decimal     @map("total_htg") @db.Decimal(10, 2)
   notes                String?
   trackingNumber       String?  @map("tracking_number")
   // Livraison : DELIVERY (adresse) | PICKUP (retrait boutique) | CONTACT (direct contact)
@@ -500,7 +627,9 @@ model Order {
   paymentTxNote        String?  @map("payment_tx_note")
   paymentVerifiedBy    String?  @map("payment_verified_by")
   paymentVerifiedAt    DateTime? @map("payment_verified_at")
+  // Motif d'annulation (manuel par le vendeur, ou automatique via le cron de commandes bloquées).
   cancelReason         String?  @map("cancel_reason")
+  // Anti-double-envoi de la relance vendeur (cron 48h) — non-null = relance déjà envoyée.
   reminderSentAt       DateTime? @map("reminder_sent_at")
   items          OrderItem[]
   reviews        Review[]
@@ -525,11 +654,13 @@ model OrderItem {
   productName String  @map("product_name")
   imageUrl    String? @map("image_url")
   quantity    Int
-  unitPrice   Float @map("unit_price")
-  subtotal    Float
-  offeredPrice   Float?  @map("offered_price")
-  offerStatus    String? @map("offer_status")
-  offerRejectionReason String? @map("offer_rejection_reason")
+  unitPrice   Decimal @map("unit_price") @db.Decimal(10, 2)
+  subtotal    Decimal @db.Decimal(10, 2)
+  // Negociation de prix ("faire une offre") — offeredPrice = prix propose par le
+  // client (deja copie dans unitPrice si accepte). offerStatus: PENDING/ACCEPTED/REJECTED, null = item normal.
+  offeredPrice         Decimal? @map("offered_price") @db.Decimal(10, 2)
+  offerStatus          String?  @map("offer_status")
+  offerRejectionReason String?  @map("offer_rejection_reason")
 
   @@map("order_items")
 }
@@ -540,11 +671,11 @@ model Payment {
   subscriptionId String?             @unique @map("subscription_id")
   subscription   SellerSubscription? @relation(fields: [subscriptionId], references: [id])
   adCampaign     AdCampaign?
-  couponId          String? @map("coupon_id")
-  couponDiscountHTG Float?  @map("coupon_discount_htg")
-  method         String
-  status         String       @default("PENDING")
-  amountHTG            Float             @map("amount_htg")
+  couponId          String?  @map("coupon_id")
+  couponDiscountHTG Decimal? @map("coupon_discount_htg") @db.Decimal(10, 2)
+  method         PaymentMethod
+  status         PaymentStatus       @default(PENDING)
+  amountHTG            Decimal             @map("amount_htg") @db.Decimal(10, 2)
 
   // Référence interne plateforme (UUID envoyé à MonCash comme orderId)
   transactionId        String?             @unique @map("transaction_id")
@@ -553,7 +684,7 @@ model Payment {
   // transaction_id final confirmé par MonCash (webhook / confirm endpoint)
   moncashTransactionId String?             @unique @map("moncash_transaction_id")
 
-  gatewayData          String?               @map("gateway_data")
+  gatewayData          Json?               @map("gateway_data")
   paidAt               DateTime?           @map("paid_at")
   failureReason        String?             @map("failure_reason")
   createdAt            DateTime            @default(now()) @map("created_at")
@@ -565,23 +696,31 @@ model Payment {
   @@map("payments")
 }
 
+enum MoncashTxStatus {
+  SUCCESS
+  FAILED
+  ALREADY_CREDITED
+  PENDING
+  UNKNOWN
+}
+
 // Journal exhaustif de chaque vérification MonCash effectuée (succès ou échec),
 // tous scénarios confondus (wallet, abonnement, campagne pub). Sert à la fois
 // de verrou anti-double-crédit et de piste d'audit pour la page admin.
 model MoncashTransaction {
-  id                   String   @id @default(uuid())
-  orderId              String?  @map("order_id")
-  moncashTransactionId String?  @unique @map("moncash_transaction_id")
+  id                   String          @id @default(uuid())
+  orderId              String?         @map("order_id")
+  moncashTransactionId String?         @unique @map("moncash_transaction_id")
   reference            String?
-  amount               Float?
+  amount               Decimal?        @db.Decimal(10, 2)
   payer                String?
-  status               String   @default("PENDING")
-  failReason           String?  @map("fail_reason")
-  credited             Boolean  @default(false)
+  status               MoncashTxStatus @default(PENDING)
+  failReason           String?         @map("fail_reason")
+  credited             Boolean         @default(false)
   scenario             String
-  rawResponse          String?  @map("raw_response")
-  createdAt            DateTime @default(now()) @map("created_at")
-  updatedAt            DateTime @updatedAt @map("updated_at")
+  rawResponse          Json?           @map("raw_response")
+  createdAt            DateTime        @default(now()) @map("created_at")
+  updatedAt            DateTime        @updatedAt @map("updated_at")
 
   @@index([orderId])
   @@index([status])
@@ -605,6 +744,9 @@ model Review {
   isApproved Boolean  @default(false) @map("is_approved")
   createdAt  DateTime @default(now()) @map("created_at")
 
+  // Un client ne peut laisser qu'un seul avis par boutique (les lignes avec
+  // storeId NULL — avis produit sans boutique — ne sont pas concernées par
+  // cette contrainte : NULL n'est jamais égal à NULL en SQL).
   @@unique([userId, storeId])
   @@map("reviews")
 }
@@ -613,8 +755,8 @@ model Complaint {
   id          String          @id @default(uuid())
   userId      String          @map("user_id")
   user        User            @relation(fields: [userId], references: [id])
-  type        String
-  status      String @default("OPEN")
+  type        ComplaintType
+  status      ComplaintStatus @default(OPEN)
   subject     String
   description String
   orderId     String?         @map("order_id")
@@ -639,7 +781,7 @@ model Appointment {
   product     Product           @relation(fields: [productId], references: [id])
   storeId     String            @map("store_id")
   store       Store             @relation(fields: [storeId], references: [id])
-  status      String @default("PENDING")
+  status      AppointmentStatus @default(PENDING)
   scheduledAt DateTime          @map("scheduled_at")
   note        String?
   sellerNote  String?           @map("seller_note")
@@ -701,7 +843,7 @@ model Message {
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   senderId       String      @map("sender_id")
   sender         User        @relation("MessageSender", fields: [senderId], references: [id])
-  type           String @default("TEXT")
+  type           MessageType @default(TEXT)
   content        String
   mediaUrl       String?     @map("media_url")
   isRead         Boolean     @default(false) @map("is_read")
@@ -719,7 +861,7 @@ model Notification {
   title     String
   body      String
   type      String
-  data      String?
+  data      Json?
   isRead    Boolean  @default(false) @map("is_read")
   createdAt DateTime @default(now()) @map("created_at")
 
@@ -734,8 +876,8 @@ model AuditLog {
   action    String
   entity    String
   entityId  String?  @map("entity_id")
-  oldValues String?    @map("old_values")
-  newValues String?    @map("new_values")
+  oldValues Json?    @map("old_values")
+  newValues Json?    @map("new_values")
   ipAddress String?  @map("ip_address")
   createdAt DateTime @default(now()) @map("created_at")
 
@@ -747,8 +889,8 @@ model PriceHistory {
   id          String   @id @default(uuid())
   productId   String   @map("product_id")
   product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  price       Float
-  salePrice   Float? @map("sale_price")
+  price       Decimal  @db.Decimal(10, 2)
+  salePrice   Decimal? @map("sale_price") @db.Decimal(10, 2)
   recordedAt  DateTime @default(now()) @map("recorded_at")
 
   @@index([productId, recordedAt])
@@ -775,7 +917,22 @@ model UserEvent {
 
 // ─── Ad Campaign (Boost Produit — style Meta Ads) ─────────────────────────────
 
+enum AdStatus {
+  DRAFT
+  PENDING_PAYMENT
+  PENDING_REVIEW
+  ACTIVE
+  PAUSED
+  COMPLETED
+  REJECTED
+  CANCELLED
+}
 
+enum AdObjective {
+  AWARENESS      // Impressions max
+  TRAFFIC        // Clics vers la fiche produit
+  CONVERSIONS    // Achats
+}
 
 model AdCampaign {
   id             String      @id @default(uuid())
@@ -788,24 +945,24 @@ model AdCampaign {
 
   // Paramètres de la campagne
   name           String
-  objective      String @default("TRAFFIC")
-  status         String    @default("DRAFT")
+  objective      AdObjective @default(TRAFFIC)
+  status         AdStatus    @default(DRAFT)
 
   // Budget
-  totalBudget    Float     @map("total_budget")  // HTG total
-  dailyBudget    Float?    @map("daily_budget")
-  spent          Float     @default(0)           // HTG dépensé
+  totalBudget    Decimal     @map("total_budget") @db.Decimal(10, 2)  // HTG total
+  dailyBudget    Decimal?    @map("daily_budget") @db.Decimal(10, 2)
+  spent          Decimal     @default(0) @db.Decimal(10, 2)           // HTG dépensé
 
   // Durée
   startDate      DateTime    @map("start_date")
   endDate        DateTime    @map("end_date")
 
   // Ciblage
-  targetGenders    String  @default("[]") @map("target_genders")   // ["MALE","FEMALE","ALL"]
+  targetGenders    String[]  @default([]) @map("target_genders")   // ["MALE","FEMALE","ALL"]
   targetAgeMin     Int?      @map("target_age_min")
   targetAgeMax     Int?      @map("target_age_max")
-  targetDepts      String  @default("[]") @map("target_depts")     // Départements haïtiens
-  targetCategories String  @default("[]") @map("target_categories")
+  targetDepts      String[]  @default([]) @map("target_depts")     // Départements haïtiens
+  targetCategories String[]  @default([]) @map("target_categories")
 
   // Statistiques
   impressions    Int         @default(0)
@@ -840,7 +997,7 @@ model AdEvent {
   type        String     // "IMPRESSION" | "CLICK" | "CONVERSION"
   userId      String?    @map("user_id")  // null = visiteur anonyme
   userDept    String?    @map("user_dept")
-  cost        Float    @default(0)  // HTG débité
+  cost        Decimal    @default(0) @db.Decimal(10, 2)  // HTG débité
   createdAt   DateTime   @default(now()) @map("created_at")
 
   @@index([campaignId])
@@ -849,7 +1006,15 @@ model AdEvent {
   @@map("ad_events")
 }
 
-// ─── Seller Wallet ────────────────────────────────────────────────────────────
+model Setting {
+  key       String   @id
+  value     String
+  group     String   @default("general")
+  isPublic  Boolean  @default(false) @map("is_public")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("settings")
+}
 
 model SellerWallet {
   id        String   @id @default(uuid())
@@ -878,23 +1043,64 @@ model WalletTransaction {
   @@map("wallet_transactions")
 }
 
-model Setting {
-  key       String   @id
-  value     String
-  group     String   @default("general")
-  isPublic  Boolean  @default(false) @map("is_public")
-  updatedAt DateTime @updatedAt @map("updated_at")
+model NewsletterSubscriber {
+  id          String   @id @default(uuid())
+  email       String   @unique
+  token       String   @unique
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt      @map("updated_at")
 
-  @@map("settings")
+  @@map("newsletter_subscribers")
+}
+
+model Coupon {
+  id              String    @id @default(uuid())
+  code            String    @unique
+  description     String?
+  discountType    String    @map("discount_type") // PERCENTAGE | FIXED_AMOUNT
+  discountValue   Decimal   @map("discount_value") @db.Decimal(10, 2)
+  // Où le coupon est utilisable : SUBSCRIPTION | PLATFORM_PRODUCT | BOTH
+  appliesTo       String    @default("BOTH") @map("applies_to")
+  minAmountHTG    Decimal?  @map("min_amount_htg") @db.Decimal(10, 2)
+  maxDiscountHTG  Decimal?  @map("max_discount_htg") @db.Decimal(10, 2)
+  maxUses         Int?      @map("max_uses") // null = illimité
+  usedCount       Int       @default(0) @map("used_count")
+  maxUsesPerUser  Int       @default(1) @map("max_uses_per_user")
+  startsAt        DateTime? @map("starts_at")
+  endsAt          DateTime? @map("ends_at")
+  isActive        Boolean   @default(true) @map("is_active")
+  redemptions     CouponRedemption[]
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@index([code])
+  @@index([isActive])
+  @@map("coupons")
+}
+
+model CouponRedemption {
+  id                String   @id @default(uuid())
+  couponId          String   @map("coupon_id")
+  coupon            Coupon   @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  userId            String   @map("user_id")
+  context           String   // SUBSCRIPTION | PLATFORM_PRODUCT
+  referenceId       String?  @map("reference_id") // subscriptionId ou orderId
+  amountDiscounted  Decimal  @map("amount_discounted") @db.Decimal(10, 2)
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  @@index([couponId])
+  @@index([userId])
+  @@map("coupon_redemptions")
 }
 
 model HomepageBanner {
   id          String   @id @default(uuid())
-  tag         String?
+  tag         String?  // ex: "MODE & STYLE", badge affiché au-dessus du titre
   title       String?
-  subtitle    String?
-  ctaText     String?  @map("cta_text")
-  catFilter   String?  @map("cat_filter")
+  subtitle    String?  // texte descriptif sous le titre
+  ctaText     String?  @map("cta_text") // texte du bouton, ex: "Découvrir"
+  catFilter   String?  @map("cat_filter") // slug catégorie utilisé pour filtrer les produits du mini-carousel
   imageUrl    String   @map("image_url")
   targetUrl   String   @map("target_url")
   sortOrder   Int      @default(0) @map("sort_order")
@@ -923,7 +1129,7 @@ model FlashSaleItem {
 
 model TrendingCache {
   id        Int      @id @default(1)
-  data      String   @default("{}")
+  data      Json     @default("{}")
   updatedAt DateTime @default(now()) @map("updated_at")
 
   @@map("trending_cache")
@@ -931,58 +1137,8 @@ model TrendingCache {
 
 model MlModelState {
   id         Int      @id @default(1)
-  stateJson  String   @default("{}") @map("state_json")
+  stateJson  Json     @default("{}") @map("state_json")
   updatedAt  DateTime @default(now()) @map("updated_at")
 
   @@map("ml_model_state")
-}
-
-model NewsletterSubscriber {
-  id          String   @id @default(uuid())
-  email       String   @unique
-  token       String   @unique
-  active      Boolean  @default(true)
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt      @map("updated_at")
-
-  @@map("newsletter_subscribers")
-}
-
-model Coupon {
-  id              String    @id @default(uuid())
-  code            String    @unique
-  description     String?
-  discountType    String    @map("discount_type")
-  discountValue   Float     @map("discount_value")
-  appliesTo       String    @default("BOTH") @map("applies_to")
-  minAmountHTG    Float?    @map("min_amount_htg")
-  maxDiscountHTG  Float?    @map("max_discount_htg")
-  maxUses         Int?      @map("max_uses")
-  usedCount       Int       @default(0) @map("used_count")
-  maxUsesPerUser  Int       @default(1) @map("max_uses_per_user")
-  startsAt        DateTime? @map("starts_at")
-  endsAt          DateTime? @map("ends_at")
-  isActive        Boolean   @default(true) @map("is_active")
-  redemptions     CouponRedemption[]
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
-
-  @@index([code])
-  @@index([isActive])
-  @@map("coupons")
-}
-
-model CouponRedemption {
-  id                String   @id @default(uuid())
-  couponId          String   @map("coupon_id")
-  coupon            Coupon   @relation(fields: [couponId], references: [id], onDelete: Cascade)
-  userId            String   @map("user_id")
-  context           String
-  referenceId       String?  @map("reference_id")
-  amountDiscounted  Float    @map("amount_discounted")
-  createdAt         DateTime @default(now()) @map("created_at")
-
-  @@index([couponId])
-  @@index([userId])
-  @@map("coupon_redemptions")
 }
