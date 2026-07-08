@@ -597,115 +597,100 @@ function SellerCard({ s }: { s: any }) {
     <Box component={Link} to={`/boutique/${s.store.slug}`}
       sx={{
         flexShrink: 0,
-        width: { xs: '68%', sm: 210, md: 'calc(25% - 15px)' },
-        minWidth: { xs: '68%', sm: 210, md: 210 },
-        maxWidth: { md: 250 },
+        width: { xs: '72%', sm: 240, md: 'calc(25% - 15px)' },
+        minWidth: { xs: '72%', sm: 240, md: 220 },
+        maxWidth: { md: 264 },
         scrollSnapAlign: { xs: 'start', md: 'none' },
         textDecoration: 'none',
-        borderRadius: '14px',
+        borderRadius: '18px',
         overflow: 'hidden',
-        bgcolor: 'white',
-        border: `0.5px solid ${FS_BORDER}`,
-        boxShadow: '0 1px 6px rgba(15,27,46,0.05)',
-        transition: 'box-shadow 0.18s ease, transform 0.18s ease, border-color 0.18s ease',
+        bgcolor: '#fff',
+        border: `1px solid ${FS_BORDER}`,
+        boxShadow: '0 2px 10px rgba(15,27,46,0.05)',
+        transition: 'box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease',
         '&:hover': {
-          transform: 'translateY(-2px)',
-          boxShadow: '0 8px 20px rgba(15,27,46,0.1)',
-          borderColor: 'rgba(245,113,26,0.35)',
+          transform: 'translateY(-3px)',
+          boxShadow: '0 14px 32px rgba(15,27,46,0.12)',
+          borderColor: 'rgba(245,113,26,0.4)',
         },
-        '&:hover .sc-avatar': { transform: 'scale(1.05)' },
-        '&:hover .sc-visit': { bgcolor: FS_NAVY, color: '#fff' },
+        '&:hover .sc-visit': { bgcolor: FS_ORANGE, color: '#fff', borderColor: FS_ORANGE },
         '&:hover .sc-arrow': { transform: 'translateX(3px)', opacity: 1 },
       }}>
 
-      {/* Bannière — vraie photo si dispo, sinon dégradé marine + glow orange */}
+      {/* Bandeau de tête — clair, teinté marque, jamais un bloc marine plein */}
       <Box sx={{
-        height: 78, position: 'relative', overflow: 'hidden',
-        display: 'flex', alignItems: 'flex-end', p: '10px',
-        background: hasBanner ? undefined : 'radial-gradient(ellipse 130% 100% at 20% 0%, #223550 0%, #0F1B2E 60%)',
+        height: 64, position: 'relative', overflow: 'hidden',
+        background: hasBanner ? undefined : `linear-gradient(135deg, ${alpha(FS_ORANGE, 0.14)} 0%, ${alpha(FS_NAVY, 0.06)} 100%)`,
       }}>
         {hasBanner && (
           <Box component="img" src={s.store.bannerUrl} alt="" onError={() => setBannerError(true)}
             sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
         )}
-        {!hasBanner && (
-          <Box sx={{
-            position: 'absolute', inset: 0, opacity: 0.4, pointerEvents: 'none',
-            backgroundImage: 'radial-gradient(rgba(255,255,255,0.08) 1px, transparent 1px)',
-            backgroundSize: '16px 16px',
-            maskImage: 'radial-gradient(ellipse 70% 70% at 75% 20%, black 0%, transparent 70%)',
-          }} />
+        {hasBanner && (
+          <Box sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15,27,46,0.35), transparent 55%)' }} />
         )}
-        <Box sx={{
-          position: 'absolute', inset: 0,
-          background: hasBanner
-            ? 'linear-gradient(to top, rgba(15,27,46,0.7), transparent 60%)'
-            : 'radial-gradient(circle at 80% 20%, rgba(245,113,26,0.28), transparent 60%)',
-        }} />
         {/* Boutiques mises en avant = vérifiées + plan payant (règle métier) — le
             badge reflète honnêtement ce statut, pas un "vedette" arbitraire. */}
         {isVerif && (
           <Box sx={{
-            position: 'absolute', top: 8, right: 8, zIndex: 1,
-            display: 'flex', alignItems: 'center', gap: 0.3,
-            px: 0.9, py: 0.35, borderRadius: '100px',
-            bgcolor: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(6px)',
-            border: '1px solid rgba(255,255,255,0.18)',
+            position: 'absolute', top: 9, right: 9, zIndex: 1,
+            display: 'flex', alignItems: 'center', gap: 0.35,
+            px: 1, py: 0.35, borderRadius: '100px',
+            bgcolor: hasBanner ? 'rgba(0,0,0,0.35)' : '#fff',
+            border: `1px solid ${hasBanner ? 'rgba(255,255,255,0.25)' : FS_BORDER}`,
+            boxShadow: hasBanner ? 'none' : '0 2px 6px rgba(15,27,46,0.08)',
           }}>
-            <Verified sx={{ fontSize: 11, color: '#4ADE80' }} />
-            <Typography fontSize={9} fontWeight={700} color="#fff" letterSpacing="0.03em">Vérifié</Typography>
+            <Verified sx={{ fontSize: 11, color: '#16A34A' }} />
+            <Typography fontSize={9} fontWeight={700} color={hasBanner ? '#fff' : FS_NAVY} letterSpacing="0.03em">Vérifié</Typography>
           </Box>
         )}
+      </Box>
 
-        {/* Avatar + nom en glassmorphism, superposés à la bannière */}
-        <Box sx={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
-          <Box className="sc-avatar" sx={{
-            width: 36, height: 36, borderRadius: '10px', flexShrink: 0,
-            bgcolor: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(4px)',
-            border: '1px solid rgba(255,255,255,0.2)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: '#fff', fontWeight: 600, fontSize: 13, overflow: 'hidden',
-            transition: 'transform 0.18s ease',
-          }}>
-            {s.store.logoUrl
-              ? <Box component="img" src={s.store.logoUrl} alt={name} sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              : initials}
-          </Box>
-          <Box sx={{ minWidth: 0 }}>
-            <Typography fontSize={13} fontWeight={600} color="#fff" lineHeight={1.3} noWrap>{name}</Typography>
-            {(city || dept) && (
-              <Typography fontSize={10.5} color="rgba(255,255,255,0.65)" lineHeight={1.3} noWrap>{city || dept}</Typography>
-            )}
-          </Box>
+      {/* Avatar superposé au bandeau — logo carré blanc, ombre nette */}
+      <Box sx={{ px: 1.8, mt: '-24px', position: 'relative', zIndex: 1 }}>
+        <Box className="sc-avatar" sx={{
+          width: 52, height: 52, borderRadius: '14px', flexShrink: 0,
+          bgcolor: '#fff', border: '3px solid #fff',
+          boxShadow: '0 4px 14px rgba(15,27,46,0.18)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: FS_ORANGE, fontWeight: 800, fontSize: 17, overflow: 'hidden',
+        }}>
+          {s.store.logoUrl
+            ? <Box component="img" src={s.store.logoUrl} alt={name} sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            : initials}
         </Box>
       </Box>
 
       {/* Corps de carte */}
-      <Box sx={{ px: 1.6, py: '10px' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', minHeight: 18, mb: 1 }}>
+      <Box sx={{ px: 1.8, pt: 1.2, pb: 1.6 }}>
+        <Typography fontSize={14.5} fontWeight={700} color={FS_NAVY} lineHeight={1.3} noWrap mb={0.3}>
+          {name}
+        </Typography>
+
+        <Box sx={{ display: 'flex', alignItems: 'center', minHeight: 18, mb: 1.4 }}>
           {rating ? (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4 }}>
-              <Star sx={{ fontSize: 12, color: FS_STAR }} />
-              <Typography fontSize={11.5} fontWeight={600} color={FS_NAVY}>
-                {rating} <Typography component="span" fontSize={11.5} fontWeight={400} color={FS_MUTED}>({reviews})</Typography>
+              <Star sx={{ fontSize: 13, color: FS_STAR }} />
+              <Typography fontSize={12} fontWeight={600} color={FS_NAVY}>
+                {rating} <Typography component="span" fontSize={12} fontWeight={400} color={FS_MUTED}>({reviews})</Typography>
               </Typography>
             </Box>
           ) : address ? (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4, minWidth: 0 }}>
-              <LocationOn sx={{ fontSize: 12, color: FS_MUTED, flexShrink: 0 }} />
-              <Typography fontSize={11.5} color={FS_MUTED} noWrap>{address}</Typography>
+              <LocationOn sx={{ fontSize: 13, color: FS_MUTED, flexShrink: 0 }} />
+              <Typography fontSize={12} color={FS_MUTED} noWrap>{address}</Typography>
             </Box>
           ) : <span />}
         </Box>
 
-        {/* Bouton visiter — secondaire, jamais orange plein */}
+        {/* Bouton visiter */}
         <Box className="sc-visit" sx={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.4,
-          py: 0.85, borderRadius: '7px', fontSize: 12, fontWeight: 600,
-          bgcolor: FS_SURFACE1, color: FS_NAVY,
-          transition: 'background 0.15s ease, color 0.15s ease',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5,
+          py: 0.95, borderRadius: '10px', fontSize: 12.5, fontWeight: 700,
+          bgcolor: 'transparent', color: FS_NAVY, border: `1.5px solid ${FS_BORDER}`,
+          transition: 'background 0.18s ease, color 0.18s ease, border-color 0.18s ease',
         }}>
-          visiter la boutique
+          Visiter la boutique
           <KeyboardArrowRight className="sc-arrow" sx={{ fontSize: 14, opacity: 0, transform: 'translateX(-2px)', transition: 'transform 0.2s ease, opacity 0.2s ease' }} />
         </Box>
       </Box>
