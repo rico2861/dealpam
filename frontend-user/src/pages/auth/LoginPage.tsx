@@ -46,6 +46,10 @@ export default function LoginPage() {
   const [identifier, setIdentifier] = useState('');
   const [password,   setPassword]   = useState('');
   const [loading,    setLoading]    = useState(false);
+  // Le backend (plan gratuit) se met en veille apres inactivite et peut mettre
+  // 20-60s a redemarrer sur la premiere requete — sans indice, le bouton qui
+  // tourne longtemps donne l'impression d'etre bloque/casse.
+  const [slowServer, setSlowServer] = useState(false);
   const [error,      setError]      = useState('');
   const [errorType,  setErrorType]  = useState<'banned' | 'locked' | 'generic'>('generic');
   const [showPwd,    setShowPwd]    = useState(false);
@@ -75,7 +79,8 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true); setError('');
+    setLoading(true); setError(''); setSlowServer(false);
+    const slowTimer = setTimeout(() => setSlowServer(true), 6000);
     try {
       const { data } = await api.post('/auth/login', { identifier, password, clientType: 'user' });
       setUser(data.user, data.accessToken, data.refreshToken);
@@ -93,7 +98,7 @@ export default function LoginPage() {
         setError(msg);
         setErrorType(isBanned ? 'banned' : isLocked ? 'locked' : 'generic');
       }
-    } finally { setLoading(false); }
+    } finally { clearTimeout(slowTimer); setSlowServer(false); setLoading(false); }
   };
 
   return (
@@ -288,6 +293,11 @@ export default function LoginPage() {
               }}>
               {loading ? <CircularProgress size={20} sx={{ color: 'rgba(255,255,255,0.5)' }} /> : 'Se connecter'}
             </Button>
+            {slowServer && (
+              <Typography sx={{ fontSize: 12.5, color: '#64748B', textAlign: 'center', mt: -1 }}>
+                Le serveur se réveille après une période d'inactivité — encore quelques secondes…
+              </Typography>
+            )}
           </Box>
 
           {/* Divider */}
