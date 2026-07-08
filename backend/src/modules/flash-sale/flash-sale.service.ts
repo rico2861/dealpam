@@ -7,7 +7,7 @@ const KEY_TITLE  = 'flash_sale_title';
 const KEY_MODE   = 'flash_sale_mode'; // "manual" | "auto" | "both"
 
 const PRODUCT_SELECT = {
-  id: true, name: true, slug: true, price: true, salePrice: true,
+  id: true, name: true, slug: true, price: true, salePrice: true, stock: true,
   isFeatured: true, isSponsored: true, avgRating: true, totalReviews: true, totalSold: true,
   images: { take: 3, orderBy: { sortOrder: 'asc' as any }, select: { urlMedium: true, urlFull: true, urlThumb: true } },
   store: { select: { name: true, slug: true } },

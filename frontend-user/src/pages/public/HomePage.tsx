@@ -42,6 +42,7 @@ const FS_STAR    = '#F5B301';
 const FS_SURFACE1 = '#F5F5F3';
 const FS_BORDER  = 'rgba(15,27,46,0.08)';
 const FS_MUTED   = '#888780';
+const FS_RED     = '#E8432E';
 const PRODUCT_TYPE_LABEL: Record<string, string> = {
   SERVICE: 'Service', RENTAL: 'Location', VEHICLE: 'Véhicule', FOOD: 'Alimentation',
   REAL_ESTATE: 'Immobilier', FREELANCE: 'Freelance',
@@ -67,92 +68,41 @@ const fmtP = (n: number) => new Intl.NumberFormat('fr-HT').format(Math.round(n))
 const pct  = (p: number, s: number) => Math.round((1 - s / p) * 100);
 
 /* ─── FlashTimer ──────────────────────────────────────────────────────────── */
-function FlashTimer({ endsAt }: { endsAt: Date | null }) {
-  const [diff, setDiff] = useState(0);
+function FlashTimer({ endsAt, onEnded }: { endsAt: Date | null; onEnded?: () => void }) {
+  const [diff, setDiff] = useState(() => (endsAt ? Math.max(0, endsAt.getTime() - Date.now()) : 0));
   useEffect(() => {
     if (!endsAt) return;
-    const tick = () => setDiff(Math.max(0, endsAt.getTime() - Date.now()));
+    const tick = () => {
+      const d = Math.max(0, endsAt.getTime() - Date.now());
+      setDiff(d);
+      if (d === 0) { clearInterval(id); onEnded?.(); }
+    };
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [endsAt]);
 
   if (!endsAt) return null;
 
-  const pad = (n: number) => String(Math.floor(n)).padStart(2, '0');
+  const pad = (n: number) => String(Math.max(0, Math.floor(n))).padStart(2, '0');
   const totalS = diff / 1000;
-  const days  = Math.floor(totalS / 86400);
-  const hours = Math.floor((totalS % 86400) / 3600);
-  const mins  = Math.floor((totalS % 3600) / 60);
-  const secs  = Math.floor(totalS % 60);
+  const h = pad(totalS / 3600);
+  const m = pad((totalS % 3600) / 60);
+  const s = pad(totalS % 60);
 
-  const segments = days > 0
-    ? [{ v: pad(days), label: 'J' }, { v: pad(hours), label: 'H' }, { v: pad(mins), label: 'M' }]
-    : [{ v: pad(hours), label: 'H' }, { v: pad(mins), label: 'M' }, { v: pad(secs), label: 'S' }];
-
-  if (diff === 0) {
-    return (
-      <Box sx={{ px: 1.5, py: 0.5, borderRadius: '6px', bgcolor: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)' }}>
-        <Typography color="#FF6B6B" fontWeight={800} fontSize={11} letterSpacing={1.5}>TERMINÉ</Typography>
-      </Box>
-    );
+  if (diff <= 0) {
+    return <Typography sx={{ color: FS_ORANGE, fontWeight: 600, fontSize: 13, letterSpacing: '0.4px' }}>vente terminée</Typography>;
   }
 
-  return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-      {segments.map(({ v, label }, i) => (
-        <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-          {/* Digit pill */}
-          <Box sx={{
-            display: 'flex', alignItems: 'baseline', gap: '1px',
-            bgcolor: 'rgba(255,255,255,0.06)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: '8px',
-            px: { xs: '8px', md: '10px' },
-            py: { xs: '5px', md: '6px' },
-            backdropFilter: 'blur(8px)',
-            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08)',
-          }}>
-            <Typography sx={{
-              color: '#fff',
-              fontWeight: 700,
-              fontSize: { xs: 15, md: 17 },
-              fontFamily: '"SF Mono","Fira Code",monospace',
-              lineHeight: 1,
-              letterSpacing: '1px',
-            }}>
-              {v}
-            </Typography>
-            <Typography sx={{
-              color: 'rgba(255,255,255,0.35)',
-              fontWeight: 600,
-              fontSize: { xs: 9, md: 10 },
-              lineHeight: 1,
-              letterSpacing: '0.5px',
-              ml: '3px',
-              alignSelf: 'flex-end',
-              pb: '1px',
-            }}>
-              {label}
-            </Typography>
-          </Box>
+  const unit = { fontSize: 12, color: 'rgba(255,255,255,0.4)', ml: '2px' };
+  const val  = { fontSize: 24, fontWeight: 600, color: '#fff', fontVariantNumeric: 'tabular-nums' as const, lineHeight: 1 };
 
-          {/* Separator */}
-          {i < segments.length - 1 && (
-            <Typography sx={{
-              color: 'rgba(255,255,255,0.2)',
-              fontSize: { xs: 12, md: 14 },
-              fontWeight: 300,
-              lineHeight: 1,
-              mx: '1px',
-              animation: 'ft-blink 1.4s ease-in-out infinite',
-              '@keyframes ft-blink': { '0%,100%': { opacity: 0.4 }, '50%': { opacity: 0.1 } },
-            }}>
-              /
-            </Typography>
-          )}
-        </Box>
-      ))}
+  return (
+    <Box sx={{ display: 'flex', alignItems: 'baseline', gap: '3px' }}>
+      <Typography sx={val}>{h}</Typography><Typography sx={unit}>h</Typography>
+      <Typography sx={val}>{m}</Typography><Typography sx={unit}>m</Typography>
+      <Typography sx={{ ...val, color: FS_ORANGE }}>{s}</Typography><Typography sx={unit}>s</Typography>
     </Box>
   );
 }
@@ -1208,12 +1158,18 @@ function DealCard({ p, flash = false }: { p: any; flash?: boolean }) {
   const nearLabel = isNearCity ? (p.city || userLoc.city) : isNearDept ? (p.department || userLoc.department) : null;
   const [liked, setLiked] = useState(() => likedIds.has(p.id));
   const [busy,  setBusy]  = useState(false);
+  const [imgError, setImgError] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const qc = useQueryClient();
   const imgUrl = p.images?.[0]?.urlThumb || p.images?.[0]?.urlMedium || p.images?.[0]?.url || p.imageUrl || '';
   const hasSale = p.salePrice && Number(p.salePrice) < Number(p.price);
   const off     = hasSale ? pct(Number(p.price), Number(p.salePrice)) : 0;
+  // % vendu = donnée réelle (totalSold / (totalSold + stock restant)), jamais inventée.
+  const sold = Number(p.totalSold) || 0;
+  const stockLeft = Number(p.stock) || 0;
+  const soldPct = flash && (sold + stockLeft) > 0 ? Math.min(100, Math.max(0, Math.round((sold / (sold + stockLeft)) * 100))) : null;
+  const almostGone = soldPct !== null && soldPct >= 90;
 
   useEffect(() => { setLiked(likedIds.has(p.id)); }, [likedIds, p.id]);
 
@@ -1257,10 +1213,10 @@ function DealCard({ p, flash = false }: { p: any; flash?: boolean }) {
         }}>
 
         {/* Image */}
-        <Box sx={{ position: 'relative', paddingTop: '105%', bgcolor: '#F3F4F6', overflow: 'hidden', flexShrink: 0 }}>
-          {imgUrl
+        <Box sx={{ position: 'relative', paddingTop: '105%', bgcolor: flash ? FS_SURFACE1 : '#F3F4F6', overflow: 'hidden', flexShrink: 0 }}>
+          {imgUrl && !imgError
             ? <Box component="img" src={imgUrl} alt={p.name} className="dc-img"
-                loading="lazy" decoding="async"
+                loading="lazy" decoding="async" onError={() => setImgError(true)}
                 sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%',
                   objectFit: 'cover', transition: 'transform 0.35s ease' }} />
             : <Box sx={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center',
@@ -1270,16 +1226,21 @@ function DealCard({ p, flash = false }: { p: any; flash?: boolean }) {
           }
           {/* Badge % */}
           {hasSale && (
-            <Box sx={{
-              position: 'absolute', top: 10, left: 10,
-              minWidth: 42, height: 42, borderRadius: '50%',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              bgcolor: flash ? '#EF4444' : OR,
-              boxShadow: flash ? '0 2px 8px rgba(239,68,68,0.5)' : `0 2px 8px ${alpha(OR, 0.5)}`,
-              flexDirection: 'column',
-            }}>
-              <Typography fontSize={11} fontWeight={900} color="white" lineHeight={1}>-{off}%</Typography>
-            </Box>
+            flash ? (
+              <Box sx={{ position: 'absolute', top: 10, left: 10, bgcolor: FS_RED, borderRadius: '6px', px: '8px', py: '3px' }}>
+                <Typography fontSize={11} fontWeight={700} color="white" lineHeight={1}>-{off}%</Typography>
+              </Box>
+            ) : (
+              <Box sx={{
+                position: 'absolute', top: 10, left: 10,
+                minWidth: 42, height: 42, borderRadius: '50%',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                bgcolor: OR, boxShadow: `0 2px 8px ${alpha(OR, 0.5)}`,
+                flexDirection: 'column',
+              }}>
+                <Typography fontSize={11} fontWeight={900} color="white" lineHeight={1}>-{off}%</Typography>
+              </Box>
+            )
           )}
           {/* Badge localisation */}
           {nearLabel && (
@@ -1301,12 +1262,12 @@ function DealCard({ p, flash = false }: { p: any; flash?: boolean }) {
 
         {/* Info */}
         <Box sx={{ p: '10px 12px 12px', display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
-          <Typography fontSize={12} color="#1F2937" fontWeight={500} lineHeight={1.35}
+          <Typography fontSize={12.5} color="#1F2937" fontWeight={500} lineHeight={1.35}
             sx={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
             {p.name}
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'baseline', gap: '5px', flexWrap: 'nowrap', overflow: 'hidden', minWidth: 0 }}>
-            <Typography fontSize={14} fontWeight={900} color={flash ? '#EF4444' : OR} noWrap sx={{ flexShrink: 0 }}>
+            <Typography fontSize={15} fontWeight={600} color={flash ? FS_NAVY : OR} noWrap sx={{ flexShrink: 0 }}>
               {fmtP(Number(hasSale ? p.salePrice : p.price))}
             </Typography>
             {hasSale && (
@@ -1315,7 +1276,19 @@ function DealCard({ p, flash = false }: { p: any; flash?: boolean }) {
               </Typography>
             )}
           </Box>
-          <Typography fontSize={10.5} color="#64748B" noWrap>{p.store?.name || ''}</Typography>
+
+          {soldPct !== null ? (
+            <Box sx={{ mt: '2px' }}>
+              <Box sx={{ height: 3, bgcolor: FS_SURFACE1, borderRadius: '2px', overflow: 'hidden', mb: '5px' }}>
+                <Box sx={{ height: '100%', width: `${soldPct}%`, bgcolor: FS_RED, transition: 'width 0.3s ease' }} />
+              </Box>
+              <Typography sx={{ fontSize: 10, color: FS_RED, fontWeight: 500, textTransform: almostGone ? 'uppercase' : 'none' }}>
+                {almostGone ? 'plus que quelques unités' : `déjà ${soldPct}% vendu`}
+              </Typography>
+            </Box>
+          ) : (
+            <Typography fontSize={10.5} color="#64748B" noWrap>{p.store?.name || ''}</Typography>
+          )}
         </Box>
       </Box>
 
@@ -1348,8 +1321,23 @@ function DealCard({ p, flash = false }: { p: any; flash?: boolean }) {
 function DealCarousel({ products, flash = false }: { products: any[]; flash?: boolean }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const drag = useRef({ on: false, x0: 0, sl0: 0 });
+  const [canPrev, setCanPrev] = useState(false);
+  const [canNext, setCanNext] = useState(true);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-  const scroll = (dir: number) => scrollRef.current?.scrollBy({ left: dir * 860, behavior: 'smooth' });
+  const updateArrows = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setCanPrev(el.scrollLeft > 4);
+    setCanNext(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+  }, []);
+
+  const scroll = (dir: number) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * el.clientWidth * 0.9, behavior: 'smooth' });
+  };
   const onDown = (e: React.MouseEvent) => {
     drag.current = { on: true, x0: e.pageX, sl0: scrollRef.current?.scrollLeft ?? 0 };
   };
@@ -1363,68 +1351,67 @@ function DealCarousel({ products, flash = false }: { products: any[]; flash?: bo
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
+    el.addEventListener('scroll', updateArrows, { passive: true });
+    updateArrows();
     const onWheel = (e: WheelEvent) => { e.preventDefault(); el.scrollBy({ left: e.deltaY * 2, behavior: 'smooth' }); };
     el.addEventListener('wheel', onWheel, { passive: false });
-    return () => el.removeEventListener('wheel', onWheel);
-  }, []);
+    return () => {
+      el.removeEventListener('scroll', updateArrows);
+      el.removeEventListener('wheel', onWheel);
+    };
+  }, [updateArrows]);
 
-  const arrowSx = (side: 'left' | 'right') => ({
-    position: 'absolute' as const,
-    [side]: { xs: side === 'left' ? 2 : 2, md: -18 },
-    top: '38%', transform: 'translateY(-50%)',
-    zIndex: 10,
-    width: { xs: 30, md: 40 }, height: { xs: 30, md: 40 },
-    bgcolor: flash ? 'rgba(30,5,5,0.75)' : 'rgba(255,255,255,0.92)',
-    border: flash ? '1px solid rgba(239,68,68,0.25)' : '1px solid rgba(0,0,0,0.08)',
-    color: flash ? 'rgba(255,255,255,0.8)' : 'text.primary',
-    boxShadow: '0 4px 14px rgba(0,0,0,0.2)',
-    backdropFilter: 'blur(6px)',
-    '&:hover': {
-      bgcolor: flash ? '#EF4444' : OR,
-      color: 'white',
-      borderColor: 'transparent',
-      boxShadow: flash ? '0 4px 18px rgba(239,68,68,0.5)' : `0 4px 18px ${alpha(OR, 0.5)}`,
-    },
-    transition: 'all 0.2s',
+  const arrowSx = (enabled: boolean) => ({
+    width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
+    bgcolor: 'rgba(255,255,255,0.06)',
+    color: '#fff',
+    opacity: enabled ? 1 : 0.3, pointerEvents: enabled ? 'auto' as const : 'none' as const,
+    transition: 'background 0.15s ease, opacity 0.2s ease',
+    '&:hover': { bgcolor: 'rgba(255,255,255,0.14)' },
   });
 
   return (
-    <Box sx={{ position: 'relative', mx: { xs: 0, md: '20px' } }}>
-      <IconButton onClick={() => scroll(-1)} sx={arrowSx('left')}>
-        <ArrowBackIos sx={{ fontSize: { xs: 11, md: 14 }, ml: '3px' }} />
-      </IconButton>
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+      {!isMobile && (
+        <IconButton onClick={() => scroll(-1)} aria-label="précédent" sx={{ ...arrowSx(canPrev), alignSelf: 'center' }}>
+          <ArrowBackIos sx={{ fontSize: 13, ml: '3px' }} />
+        </IconButton>
+      )}
 
       <Box ref={scrollRef}
         onMouseDown={onDown} onMouseMove={onMove} onMouseUp={onUp} onMouseLeave={onUp}
         sx={{
-          display: 'flex', gap: { xs: '8px', md: '12px' },
-          overflowX: 'auto', scrollbarWidth: 'none', '&::-webkit-scrollbar': { display: 'none' },
+          flex: 1, display: 'flex',
+          gap: { xs: '14px', md: '16px' },
+          overflowX: 'auto',
+          scrollbarWidth: 'none', '&::-webkit-scrollbar': { display: 'none' },
           scrollSnapType: 'x mandatory',
-          px: { xs: 4.5, md: 0 },
           cursor: 'grab', '&:active': { cursor: 'grabbing' }, userSelect: 'none',
-          pb: 1,
           WebkitOverflowScrolling: 'touch',
-          willChange: 'scroll-position',
         }}>
         {products.slice(0, 30).map((p: any) => (
           <Box key={p.id} sx={{
             flexShrink: 0, scrollSnapAlign: 'start',
-            width: { xs: 150, sm: 165, md: 185, lg: 200 },
+            width: { xs: '42%', sm: 'calc(33.333% - 11px)', md: 'calc(25% - 12px)' },
+            minWidth: { xs: 150, sm: 190 },
           }}>
             <DealCard p={p} flash={flash} />
           </Box>
         ))}
       </Box>
 
-      <IconButton onClick={() => scroll(1)} sx={arrowSx('right')}>
-        <ArrowForwardIos sx={{ fontSize: { xs: 11, md: 14 } }} />
-      </IconButton>
+      {!isMobile && (
+        <IconButton onClick={() => scroll(1)} aria-label="suivant" sx={{ ...arrowSx(canNext), alignSelf: 'center' }}>
+          <ArrowForwardIos sx={{ fontSize: 13 }} />
+        </IconButton>
+      )}
     </Box>
   );
 }
 
-/* ─── Section Ventes Flash — design premium ──────────────────────────────── */
+/* ─── Section Ventes Flash — palette exacte du spec ──────────────────────── */
 function FlashSection({ products, to }: { products: any[]; to: string }) {
+  const [ended, setEnded] = useState(false);
   const { data: flashConfig } = useQuery({
     queryKey: ['flash-config-public'],
     queryFn: () => api.get('/flash-sale/active').then(r => r.data).catch(() => null),
@@ -1432,86 +1419,71 @@ function FlashSection({ products, to }: { products: any[]; to: string }) {
     refetchInterval: 60_000,
   });
 
-  // Fallback : si pas de date configurée, afficher un timer de 24h glissant
-  const endAt = flashConfig?.endAt
-    ? new Date(flashConfig.endAt)
-    : new Date(Date.now() + 24 * 3600 * 1000);
-  const title = flashConfig?.title || 'VENTES FLASH';
+  // endAt vient toujours du serveur — jamais calculé côté client à partir
+  // d'un délai fixe (sinon un simple refresh de page réinitialiserait le
+  // compte à rebours et tromperait l'utilisateur). Pas de date réelle
+  // configurée → pas de timer affiché, plutôt qu'un faux délai glissant.
+  const endAt = flashConfig?.endAt ? new Date(flashConfig.endAt) : null;
+  const title = flashConfig?.title || 'ventes flash';
 
-  if (!products.length) return null;
+  if (!products.length || ended) return null;
 
   return (
-    <Box sx={{ position: 'relative', overflow: 'hidden', background: 'linear-gradient(135deg, #0D0000 0%, #1A0505 40%, #0D0814 100%)' }}>
-
-      {/* Bande shimmer top */}
+    <Container maxWidth="xl" sx={{ px: { xs: 1.5, md: 2 }, py: { xs: 2, md: 3 } }}>
       <Box sx={{
-        position: 'absolute', top: 0, left: 0, right: 0, height: '3px',
-        background: 'linear-gradient(90deg, transparent, #EF4444, #FBBF24, #EF4444, transparent)',
-        backgroundSize: '200% 100%',
-        animation: 'dp-shimmer 2.4s linear infinite',
-      }} />
+        position: 'relative', overflow: 'hidden',
+        bgcolor: FS_NAVY, borderRadius: '18px',
+        p: { xs: '20px', md: '28px 32px' },
+      }}>
+        {/* Halo orange unique, discret */}
+        <Box sx={{
+          position: 'absolute', top: -100, right: -60, width: 320, height: 320, borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(245,113,26,0.18), transparent 70%)',
+          pointerEvents: 'none',
+        }} />
 
-      {/* Cercles lumineux déco */}
-      <Box sx={{ position: 'absolute', top: -80, left: -40, width: 300, height: 300, borderRadius: '50%', background: 'radial-gradient(circle, rgba(239,68,68,0.12) 0%, transparent 70%)', pointerEvents: 'none' }} />
-      <Box sx={{ position: 'absolute', bottom: -60, right: '20%', width: 260, height: 260, borderRadius: '50%', background: 'radial-gradient(circle, rgba(251,191,36,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
+        {/* Header */}
+        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' },
+          justifyContent: 'space-between', gap: 1.5, mb: { xs: 2, md: 2.5 }, position: 'relative' }}>
 
-      <Container maxWidth="xl" sx={{ px: { xs: 1.5, md: 3 }, py: { xs: 2, md: 3 }, position: 'relative' }}>
-
-        {/* ── Header row ── */}
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: { xs: 2, md: 2.5 }, gap: 1, flexWrap: 'wrap' }}>
-
-          {/* LEFT: icon + title */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
-            <Box sx={{
-              width: { xs: 38, md: 46 }, height: { xs: 38, md: 46 }, borderRadius: '12px', flexShrink: 0,
-              background: 'linear-gradient(135deg, #FF2424 0%, #8B0000 100%)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 0 20px rgba(239,68,68,0.5)',
-              animation: 'dp-pulse 2.5s ease-in-out infinite',
-              '@keyframes dp-pulse': { '0%,100%': { boxShadow: '0 0 16px rgba(239,68,68,0.4)' }, '50%': { boxShadow: '0 0 32px rgba(239,68,68,0.75)' } },
+          <Box>
+            <Typography sx={{
+              display: 'flex', alignItems: 'center', gap: 0.5,
+              fontSize: 11, fontWeight: 600, color: FS_ORANGE,
+              textTransform: 'uppercase', letterSpacing: '0.08em', mb: 0.4,
             }}>
-              <FlashOn sx={{ color: '#FBBF24', fontSize: { xs: 22, md: 26 } }} />
-            </Box>
-            <Box>
-              <Typography fontSize={{ xs: 18, md: 24 }} fontWeight={900} lineHeight={1}
-                sx={{ background: 'linear-gradient(90deg,#fff 30%,#FFAAAA 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', letterSpacing: '-0.5px' }}>
-                {title}
-              </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6, mt: 0.3 }}>
-                <Box sx={{ width: 5, height: 5, borderRadius: '50%', bgcolor: '#EF4444',
-                  animation: 'dp-live 1s step-start infinite', '@keyframes dp-live': { '50%': { opacity: 0 } } }} />
-                <Typography fontSize={10.5} color="rgba(255,255,255,0.38)" letterSpacing="0.3px">
-                  Offres limitées · Stocks réduits
-                </Typography>
-              </Box>
-            </Box>
+              <FlashOn sx={{ fontSize: 13 }} /> offres à durée limitée
+            </Typography>
+            <Typography sx={{ fontSize: { xs: 20, md: 26 }, fontWeight: 500, color: '#fff', lineHeight: 1.2 }}>
+              {title.toLowerCase()}
+            </Typography>
           </Box>
 
-          {/* RIGHT: timer + voir tout */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1.5, md: 2 }, flexWrap: 'wrap' }}>
-            {/* Timer inline */}
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
-              <Typography fontSize={9} color="rgba(255,255,255,0.28)" fontWeight={700} letterSpacing="1.5px" textTransform="uppercase">
-                Se termine dans
-              </Typography>
-              <FlashTimer endsAt={endAt} />
-            </Box>
+            {endAt && (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                <Typography sx={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                  se termine dans
+                </Typography>
+                <FlashTimer endsAt={endAt} onEnded={() => setEnded(true)} />
+              </Box>
+            )}
 
-            <Button component={Link} to={to} endIcon={<KeyboardArrowRight sx={{ fontSize: 14 }} />}
+            <Button component={Link} to={to} endIcon={<KeyboardArrowRight sx={{ fontSize: 15 }} />}
               sx={{
-                color: '#FBBF24', fontWeight: 700, fontSize: { xs: 11.5, md: 13 }, textTransform: 'none',
-                border: '1px solid rgba(251,191,36,0.25)', borderRadius: '10px',
-                px: { xs: 1.5, md: 2 }, py: { xs: 0.6, md: 0.9 },
-                '&:hover': { bgcolor: 'rgba(251,191,36,0.08)', borderColor: '#FBBF24' },
+                bgcolor: FS_ORANGE, color: '#fff', fontWeight: 600, fontSize: 13.5, textTransform: 'none',
+                borderRadius: '100px', px: 2.4, py: 1, flexShrink: 0,
+                transition: 'background 0.15s ease',
+                '&:hover': { bgcolor: FS_ORANGE_HOV },
               }}>
-              Voir tout
+              tout voir
             </Button>
           </Box>
         </Box>
 
         <DealCarousel products={products} flash />
-      </Container>
-    </Box>
+      </Box>
+    </Container>
   );
 }
 
