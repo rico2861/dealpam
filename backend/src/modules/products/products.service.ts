@@ -262,7 +262,9 @@ export class ProductsService {
         sku:         dto.sku || null,
         price:       dto.price,
         salePrice:   dto.salePrice || null,
-        stock:       variantInput.length > 0 ? variantInput.reduce((s, v) => s + (v.stock || 0), 0) : (dto.stock || 0),
+        // Les services n'ont pas de stock physique — un stock à 0 par défaut les
+        // excluait silencieusement de tous les filtres "stock > 0" (near-you, featured, etc.)
+        stock:       isService ? 999999 : (variantInput.length > 0 ? variantInput.reduce((s, v) => s + (v.stock || 0), 0) : (dto.stock || 0)),
         sizes:       parseSizes,
         colors:      parseColors,
         condition:   dto.condition || null,

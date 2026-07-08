@@ -1774,45 +1774,61 @@ function NearYouSection({ products, location, onModal, label, level }: {
       <Box sx={{ bgcolor: 'white', borderBottom: '1px solid #F0F0F0' }}>
         {/* Empty state banner */}
         <Box sx={{
-          background: 'linear-gradient(135deg, #0C1220 0%, #0F1A30 100%)',
+          background: 'radial-gradient(ellipse 120% 100% at 15% 0%, #16213A 0%, #0B0F1C 55%, #070A12 100%)',
+          borderTop: `1px solid ${alpha(OR, 0.25)}`,
           borderBottom: '1px solid rgba(255,255,255,0.06)',
-          py: { xs: 3.5, md: 5 },
+          py: { xs: 4, md: 6 },
           position: 'relative', overflow: 'hidden',
+          boxShadow: 'inset 0 -1px 0 rgba(255,255,255,0.04), 0 12px 40px rgba(0,0,0,0.25)',
         }}>
-          {/* Glow */}
-          <Box sx={{ position: 'absolute', width: 500, height: 500, borderRadius: '50%', top: '-60%', right: '-5%', pointerEvents: 'none',
-            background: `radial-gradient(circle, ${alpha(OR, 0.07)} 0%, transparent 65%)` }} />
-          <Box sx={{ position: 'absolute', width: 300, height: 300, borderRadius: '50%', bottom: '-50%', left: '10%', pointerEvents: 'none',
-            background: 'radial-gradient(circle, rgba(99,102,241,0.06) 0%, transparent 65%)' }} />
+          {/* Dot-grid texture */}
+          <Box sx={{
+            position: 'absolute', inset: 0, pointerEvents: 'none', opacity: 0.5,
+            backgroundImage: 'radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px)',
+            backgroundSize: '22px 22px',
+            maskImage: 'radial-gradient(ellipse 80% 80% at 30% 30%, black 0%, transparent 75%)',
+          }} />
+          {/* Glows */}
+          <Box sx={{ position: 'absolute', width: 560, height: 560, borderRadius: '50%', top: '-65%', right: '-8%', pointerEvents: 'none',
+            background: `radial-gradient(circle, ${alpha(OR, 0.14)} 0%, transparent 65%)` }} />
+          <Box sx={{ position: 'absolute', width: 340, height: 340, borderRadius: '50%', bottom: '-55%', left: '8%', pointerEvents: 'none',
+            background: 'radial-gradient(circle, rgba(99,102,241,0.10) 0%, transparent 65%)' }} />
+          {/* Accent top hairline */}
+          <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2,
+            background: `linear-gradient(90deg, transparent, ${OR}, transparent)` }} />
 
           <Container maxWidth="xl" sx={{ px: { xs: 2, md: 3 }, position: 'relative', zIndex: 1 }}>
             <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: 'center', gap: { xs: 3, md: 5 }, textAlign: { xs: 'center', md: 'left' } }}>
 
-              {/* Icon */}
-              <Box sx={{
-                width: { xs: 72, md: 88 }, height: { xs: 72, md: 88 }, flexShrink: 0, borderRadius: '22px',
-                background: `linear-gradient(135deg, ${alpha(OR, 0.18)}, ${alpha(OR, 0.06)})`,
-                border: `1.5px solid ${alpha(OR, 0.22)}`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: `0 8px 32px ${alpha(OR, 0.15)}`,
-              }}>
-                <LocationOn sx={{ fontSize: { xs: 32, md: 40 }, color: OR }} />
+              {/* Icon with radar ring */}
+              <Box sx={{ position: 'relative', flexShrink: 0, width: { xs: 88, md: 104 }, height: { xs: 88, md: 104 },
+                display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Box sx={{ position: 'absolute', inset: 0, borderRadius: '26px', border: `1.5px solid ${alpha(OR, 0.15)}` }} />
+                <Box sx={{
+                  width: { xs: 72, md: 88 }, height: { xs: 72, md: 88 }, borderRadius: '22px',
+                  background: `linear-gradient(135deg, ${alpha(OR, 0.22)}, ${alpha(OR, 0.05)})`,
+                  border: `1.5px solid ${alpha(OR, 0.3)}`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  boxShadow: `0 8px 32px ${alpha(OR, 0.2)}, inset 0 1px 0 rgba(255,255,255,0.08)`,
+                }}>
+                  <LocationOn sx={{ fontSize: { xs: 32, md: 40 }, color: OR }} />
+                </Box>
               </Box>
 
               <Box sx={{ flex: 1 }}>
                 {/* Zone badge */}
                 <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.8, mb: 1.5,
                   px: 1.4, py: 0.5, borderRadius: '20px',
-                  bgcolor: alpha(OR, 0.1), border: `1px solid ${alpha(OR, 0.22)}` }}>
-                  <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: OR }} />
-                  <Typography sx={{ fontSize: 11.5, fontWeight: 700, color: OR }}>Zone · {city}</Typography>
+                  bgcolor: alpha(OR, 0.12), border: `1px solid ${alpha(OR, 0.3)}` }}>
+                  <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: OR, boxShadow: `0 0 8px ${OR}` }} />
+                  <Typography sx={{ fontSize: 11.5, fontWeight: 700, color: OR, letterSpacing: 0.3 }}>Zone · {city}</Typography>
                 </Box>
 
-                <Typography sx={{ fontSize: { xs: 19, md: 24 }, fontWeight: 900, color: 'white', lineHeight: 1.2, mb: 1, letterSpacing: '-0.5px' }}>
+                <Typography sx={{ fontSize: { xs: 20, md: 26 }, fontWeight: 900, color: 'white', lineHeight: 1.2, mb: 1, letterSpacing: '-0.5px' }}>
                   Aucun vendeur dans votre zone pour l'instant.
                 </Typography>
-                <Typography sx={{ fontSize: { xs: 13, md: 14 }, color: 'rgba(255,255,255,0.42)', mb: 3, maxWidth: 480, lineHeight: 1.75 }}>
-                  Les boutiques de <strong style={{ color: 'rgba(255,255,255,0.7)' }}>{city}</strong> arrivent bientôt. En attendant, explorez tous les produits disponibles partout en Haïti — ou soyez le premier vendeur de votre région.
+                <Typography sx={{ fontSize: { xs: 13, md: 14.5 }, color: 'rgba(255,255,255,0.55)', mb: 3, maxWidth: 480, lineHeight: 1.75 }}>
+                  Les boutiques de <strong style={{ color: 'rgba(255,255,255,0.85)' }}>{city}</strong> arrivent bientôt. En attendant, explorez tous les produits disponibles partout en Haïti — ou soyez le premier vendeur de votre région.
                 </Typography>
 
                 <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', justifyContent: { xs: 'center', md: 'flex-start' } }}>
@@ -1827,11 +1843,11 @@ function NearYouSection({ products, location, onModal, label, level }: {
                     Changer de zone
                   </Button>
                   <Button component={Link} to="/register?role=SELLER" sx={{
-                    color: OR, fontWeight: 700, borderRadius: '12px',
+                    color: 'white', fontWeight: 700, borderRadius: '12px',
                     textTransform: 'none', px: 3, py: 1.1, fontSize: 13.5,
-                    border: `1.5px solid ${alpha(OR, 0.35)}`,
-                    bgcolor: 'transparent',
-                    '&:hover': { bgcolor: alpha(OR, 0.07), borderColor: OR },
+                    border: `1.5px solid ${alpha(OR, 0.4)}`,
+                    bgcolor: alpha(OR, 0.08),
+                    '&:hover': { bgcolor: alpha(OR, 0.16), borderColor: OR },
                     transition: 'all 0.2s',
                   }}>
                     Vendre à {city}

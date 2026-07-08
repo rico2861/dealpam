@@ -7,6 +7,8 @@ import { ArrowBack, Send, AttachFile, PictureAsPdfOutlined, InsertDriveFileOutli
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import api from '../../api/axios';
+import { MessageSkeleton } from '../../components/shared/Skeletons';
+import { useDelayedLoading } from '../../hooks/useDelayedLoading';
 import { useAuthStore } from '../../store/auth.store';
 import ConvListPanel, {
   CHAT_NAVY, CHAT_ORANGE, CHAT_ORANGE_HOV, CHAT_SURFACE_1, CHAT_SURFACE_2, CHAT_BORD, CHAT_SUB2, CHAT_SUB,
@@ -60,6 +62,7 @@ function ChatThread({ sellerUserId }: { sellerUserId: string }) {
     enabled:  !!convId,
     refetchInterval: 4000,
   });
+  const showMsgSkel = useDelayedLoading(!convId || isLoading);
   const messages: any[] = msgData?.data ?? [];
 
   const { data: sellerProfile } = useQuery({
@@ -137,7 +140,7 @@ function ChatThread({ sellerUserId }: { sellerUserId: string }) {
       {/* messages */}
       <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto', px: 2.5, py: 2, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
         {!convId || isLoading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', pt: 6 }}><CircularProgress size={26} sx={{ color: CHAT_ORANGE }} /></Box>
+          showMsgSkel ? <MessageSkeleton /> : null
         ) : messages.length === 0 ? (
           <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
             <ChatBubbleOutline sx={{ fontSize: 30, color: CHAT_SUB }} />

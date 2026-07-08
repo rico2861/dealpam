@@ -8,6 +8,8 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import api from '../../api/axios';
+import { ListSkeleton } from '../../components/shared/Skeletons';
+import { useDelayedLoading } from '../../hooks/useDelayedLoading';
 import { useAuthStore } from '../../store/auth.store';
 
 const ORANGE = '#FF6B00';
@@ -45,6 +47,7 @@ export default function OrdersPage() {
     select: (data) => Array.isArray(data) ? data : [],
   });
 
+  const showSkel = useDelayedLoading(isLoading);
   const filtered = (orders ?? []).filter((o: any) => filter === 'all' || o.status === filter);
 
   return (
@@ -83,11 +86,7 @@ export default function OrdersPage() {
         </Box>
 
         {/* ── Loading ── */}
-        {isLoading && (
-          <Box sx={{ display: 'flex', justifyContent: 'center', py: 12 }}>
-            <CircularProgress size={32} sx={{ color: ORANGE }} />
-          </Box>
-        )}
+        {isLoading && showSkel && <ListSkeleton rows={4} />}
 
         {/* ── Empty state ── */}
         {!isLoading && filtered.length === 0 && (

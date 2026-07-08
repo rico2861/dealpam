@@ -15,6 +15,8 @@ import {
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import api from '../../api/axios';
+import { ListSkeleton } from '../../components/shared/Skeletons';
+import { useDelayedLoading } from '../../hooks/useDelayedLoading';
 import { getEffectiveUnitPrice } from '../../utils/priceTiers';
 import { useCartStore } from '../../store/cart.store';
 
@@ -565,7 +567,8 @@ export default function CheckoutPage() {
   const [couponCode, setCouponCode] = useState('');
 
   // Cart
-  const { data: cart } = useQuery({ queryKey: ['cart'], queryFn: () => api.get('/cart').then(r => r.data) });
+  const { data: cart, isLoading: cartLoading } = useQuery({ queryKey: ['cart'], queryFn: () => api.get('/cart').then(r => r.data) });
+  const showCartSkel = useDelayedLoading(cartLoading);
   const items: any[] = cart?.items ?? [];
 
   // Profile (includes addresses as sub-relation)
@@ -652,6 +655,17 @@ export default function CheckoutPage() {
       enqueueSnackbar(e?.response?.data?.message || 'Erreur lors de la commande', { variant: 'error' });
     } finally { setPlacing(false); }
   };
+
+  // Ne jamais afficher "panier vide" pendant que le panier est encore en
+  // cours de chargement — sinon un panier bien rempli affiche brièvement
+  // cet écran avant que les vraies données n'arrivent.
+  if (cartLoading) return showCartSkel ? (
+    <Box sx={{ bgcolor: BG, minHeight: '100vh' }}>
+      <Container maxWidth="lg" sx={{ pt: 3 }}>
+        <ListSkeleton rows={3} />
+      </Container>
+    </Box>
+  ) : null;
 
   if (items.length === 0) return (
     <Box sx={{ bgcolor: BG, minHeight: '100vh' }}>

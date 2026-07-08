@@ -17,6 +17,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import api from '../../api/axios';
 import { compressImages } from '../../utils/compressImage';
+import { ListSkeleton } from '../../components/shared/Skeletons';
+import { useDelayedLoading } from '../../hooks/useDelayedLoading';
 
 const OR   = '#FF6B00';
 const ORD  = '#E05A00';
@@ -177,6 +179,7 @@ export default function OrderDetailPage() {
     enabled:  !!id,
   });
 
+  const showSkel = useDelayedLoading(isLoading);
   const statusInfo = order ? (STATUS[order.status] ?? STATUS.PENDING) : null;
   const stepIdx    = order ? ORDER_STEPS.indexOf(order.status) : -1;
   const isCancelled = order?.status === 'CANCELLED';
@@ -200,11 +203,11 @@ export default function OrderDetailPage() {
     } finally { setSubmittingTx(false); }
   };
 
-  if (isLoading) return (
-    <Box sx={{ bgcolor: BG, minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-      <CircularProgress sx={{ color: OR }} />
+  if (isLoading) return showSkel ? (
+    <Box sx={{ bgcolor: BG, minHeight: '100vh', maxWidth: 800, mx: 'auto', px: 2, py: 3 }}>
+      <ListSkeleton rows={3} />
     </Box>
-  );
+  ) : null;
   if (error || !order) return (
     <Box sx={{ bgcolor: BG, minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: 2 }}>
       <Typography color="#0F172A">Commande introuvable.</Typography>
