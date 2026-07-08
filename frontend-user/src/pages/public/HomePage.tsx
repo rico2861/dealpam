@@ -590,8 +590,8 @@ function SellerCard({ s }: { s: any }) {
   const dept     = s.store.department;
   const rating   = s.store.avgRating ? Number(s.store.avgRating).toFixed(1) : null;
   const reviews  = s.store.totalReviews ?? 0;
-  const isNew    = !rating && !(s.store.totalSales > 0);
   const hasBanner = !!s.store.bannerUrl && !bannerError;
+  const address  = s.store.address || [city, dept].filter(Boolean).join(', ') || null;
 
   return (
     <Box component={Link} to={`/boutique/${s.store.slug}`}
@@ -606,12 +606,15 @@ function SellerCard({ s }: { s: any }) {
         overflow: 'hidden',
         bgcolor: 'white',
         border: `0.5px solid ${FS_BORDER}`,
-        transition: 'box-shadow 0.2s ease, transform 0.2s ease',
+        transition: 'box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease',
         '&:hover': {
           transform: 'translateY(-4px)',
-          boxShadow: '0 14px 32px rgba(15,27,46,0.1)',
+          boxShadow: '0 14px 32px rgba(15,27,46,0.12)',
+          borderColor: 'rgba(245,113,26,0.35)',
         },
+        '&:hover .sc-avatar': { transform: 'scale(1.06)' },
         '&:hover .sc-visit': { bgcolor: FS_NAVY, color: '#fff' },
+        '&:hover .sc-arrow': { transform: 'translateX(3px)', opacity: 1 },
       }}>
 
       {/* Bannière — vraie photo si dispo, sinon dégradé marine + glow orange */}
@@ -633,12 +636,13 @@ function SellerCard({ s }: { s: any }) {
 
         {/* Avatar + nom en glassmorphism, superposés à la bannière */}
         <Box sx={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: 1.2, minWidth: 0 }}>
-          <Box sx={{
+          <Box className="sc-avatar" sx={{
             width: 44, height: 44, borderRadius: '11px', flexShrink: 0,
             bgcolor: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(4px)',
             border: '1px solid rgba(255,255,255,0.2)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             color: '#fff', fontWeight: 600, fontSize: 15, overflow: 'hidden',
+            transition: 'transform 0.2s ease',
           }}>
             {s.store.logoUrl
               ? <Box component="img" src={s.store.logoUrl} alt={name} sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -664,8 +668,11 @@ function SellerCard({ s }: { s: any }) {
                 {rating} <Typography component="span" fontSize={12} fontWeight={400} color={FS_MUTED}>({reviews})</Typography>
               </Typography>
             </Box>
-          ) : isNew ? (
-            <Typography fontSize={12} color={FS_MUTED}>nouvelle boutique</Typography>
+          ) : address ? (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4, minWidth: 0 }}>
+              <LocationOn sx={{ fontSize: 13, color: FS_MUTED, flexShrink: 0 }} />
+              <Typography fontSize={12} color={FS_MUTED} noWrap sx={{ maxWidth: 150 }}>{address}</Typography>
+            </Box>
           ) : <span />}
 
           {isVerif ? (
@@ -680,11 +687,13 @@ function SellerCard({ s }: { s: any }) {
 
         {/* Bouton visiter — secondaire, jamais orange plein */}
         <Box className="sc-visit" sx={{
-          textAlign: 'center', py: 1.1, borderRadius: '8px', fontSize: 13, fontWeight: 500,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5,
+          py: 1.1, borderRadius: '8px', fontSize: 13, fontWeight: 500,
           bgcolor: FS_SURFACE1, color: FS_NAVY,
           transition: 'background 0.15s ease, color 0.15s ease',
         }}>
           visiter la boutique
+          <KeyboardArrowRight className="sc-arrow" sx={{ fontSize: 16, opacity: 0, transform: 'translateX(-2px)', transition: 'transform 0.2s ease, opacity 0.2s ease' }} />
         </Box>
       </Box>
     </Box>
@@ -698,6 +707,7 @@ function FeaturedSellersSection({ sellers }: { sellers: any[] }) {
   const drag = useRef({ on: false, x0: 0, sl0: 0 });
   const [canPrev, setCanPrev] = useState(false);
   const [canNext, setCanNext] = useState(true);
+  const [hasOverflow, setHasOverflow] = useState(false);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
@@ -706,6 +716,9 @@ function FeaturedSellersSection({ sellers }: { sellers: any[] }) {
     if (!el) return;
     setCanPrev(el.scrollLeft > 4);
     setCanNext(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+    // Rien à faire défiler (peu de boutiques) → pas de flèches du tout,
+    // plutôt que deux flèches grisées qui suggèrent un rendu cassé.
+    setHasOverflow(el.scrollWidth > el.clientWidth + 4);
   }, []);
 
   const scrollTo = (dir: 'prev' | 'next') => {
@@ -722,14 +735,17 @@ function FeaturedSellersSection({ sellers }: { sellers: any[] }) {
     const el = scrollRef.current;
     if (!el) return;
     el.addEventListener('scroll', updateArrows, { passive: true });
-    updateArrows();
+    // Recalcule après que les cartes soient réellement rendues (les données
+    // arrivent souvent après le premier rendu de la section).
+    const raf = requestAnimationFrame(updateArrows);
     const onWheel = (e: WheelEvent) => { e.preventDefault(); el.scrollBy({ left: e.deltaY * 2.5, behavior: 'smooth' }); };
     el.addEventListener('wheel', onWheel, { passive: false });
     return () => {
+      cancelAnimationFrame(raf);
       el.removeEventListener('scroll', updateArrows);
       el.removeEventListener('wheel', onWheel);
     };
-  }, [updateArrows]);
+  }, [updateArrows, sellers.length]);
 
   if (!sellers.length) return null;
 
@@ -750,7 +766,7 @@ function FeaturedSellersSection({ sellers }: { sellers: any[] }) {
 
           {/* Flèches + tout voir */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            {!isMobile && (
+            {!isMobile && hasOverflow && (
               <>
                 <IconButton onClick={() => scrollTo('prev')} aria-label="précédent"
                   sx={{

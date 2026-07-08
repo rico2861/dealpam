@@ -418,7 +418,7 @@ export class SellersService {
           where:   { isActive: true, isPrimary: true, isVerified: true },
           select:  { id: true, name: true, slug: true, logoUrl: true, bannerUrl: true,
                      isVerified: true, avgRating: true, totalReviews: true, totalSales: true,
-                     city: true, department: true, _count: { select: { products: true } } },
+                     address: true, city: true, department: true, _count: { select: { products: true } } },
           take: 1,
         },
         subscriptions: {
@@ -476,6 +476,7 @@ export class SellersService {
           avgRating:    s.stores[0].avgRating,
           totalReviews: s.stores[0].totalReviews,
           totalSales:   s.stores[0].totalSales ?? 0,
+          address:      s.stores[0].address ?? null,
           city:         s.stores[0].city,
           department:   s.stores[0].department,
           productCount: s.stores[0]._count?.products ?? 0,
