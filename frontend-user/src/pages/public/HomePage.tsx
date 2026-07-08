@@ -1306,7 +1306,7 @@ function DealCard({ p, flash = false }: { p: any; flash?: boolean }) {
             )}
           </Box>
 
-          {soldPct !== null ? (
+          {soldPct !== null && soldPct > 0 ? (
             <Box sx={{ mt: '2px' }}>
               <Box sx={{ height: 3, bgcolor: FS_SURFACE1, borderRadius: '2px', overflow: 'hidden', mb: '5px' }}>
                 <Box sx={{ height: '100%', width: `${soldPct}%`, bgcolor: FS_RED, transition: 'width 0.3s ease' }} />
@@ -1468,36 +1468,15 @@ function FlashSection({ products, to }: { products: any[]; to: string }) {
   return (
     <Container maxWidth="xl" sx={{ px: { xs: 1.5, md: 2 }, py: { xs: 2, md: 3 } }}>
       <Box sx={{
-        position: 'relative', overflow: 'hidden',
-        background: `radial-gradient(ellipse 120% 100% at 85% 0%, #1a2d47 0%, ${FS_NAVY} 55%)`,
-        borderRadius: '20px',
-        border: `1px solid ${alpha(FS_ORANGE, 0.18)}`,
-        boxShadow: '0 12px 40px rgba(0,0,0,0.18)',
-        p: { xs: '20px', md: '28px 32px' },
+        position: 'relative',
+        bgcolor: FS_NAVY,
+        borderRadius: '16px',
+        border: `1px solid rgba(255,255,255,0.08)`,
+        p: { xs: '18px', md: '24px 28px' },
       }}>
-        {/* Texture points + halos, cohérent avec les autres bannières de la home */}
-        <Box sx={{
-          position: 'absolute', inset: 0, pointerEvents: 'none', opacity: 0.35,
-          backgroundImage: 'radial-gradient(rgba(255,255,255,0.08) 1px, transparent 1px)',
-          backgroundSize: '20px 20px',
-          maskImage: 'radial-gradient(ellipse 70% 70% at 90% 10%, black 0%, transparent 70%)',
-        }} />
-        <Box sx={{
-          position: 'absolute', top: -100, right: -60, width: 320, height: 320, borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(245,113,26,0.22), transparent 70%)',
-          pointerEvents: 'none',
-        }} />
-        <Box sx={{
-          position: 'absolute', bottom: -80, left: '10%', width: 220, height: 220, borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(99,102,241,0.08), transparent 70%)',
-          pointerEvents: 'none',
-        }} />
-        <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2,
-          background: `linear-gradient(90deg, transparent, ${FS_ORANGE}, transparent)` }} />
-
         {/* Header */}
         <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' },
-          justifyContent: 'space-between', gap: 1.5, mb: { xs: 2, md: 2.5 }, position: 'relative' }}>
+          justifyContent: 'space-between', gap: 1.5, mb: { xs: 2, md: 2.5 } }}>
 
           <Box>
             <Typography sx={{
@@ -1508,7 +1487,7 @@ function FlashSection({ products, to }: { products: any[]; to: string }) {
               <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: FS_ORANGE, animation: 'dp-pulse 1.6s ease-in-out infinite' }} />
               <FlashOn sx={{ fontSize: 13 }} /> offres à durée limitée
             </Typography>
-            <Typography sx={{ fontSize: { xs: 20, md: 26 }, fontWeight: 700, color: '#fff', lineHeight: 1.2, letterSpacing: '-0.3px' }}>
+            <Typography sx={{ fontSize: { xs: 19, md: 24 }, fontWeight: 700, color: '#fff', lineHeight: 1.2, letterSpacing: '-0.3px', textTransform: 'capitalize' }}>
               {title.toLowerCase()}
             </Typography>
           </Box>
@@ -1526,10 +1505,9 @@ function FlashSection({ products, to }: { products: any[]; to: string }) {
             <Button component={Link} to={to} endIcon={<KeyboardArrowRight sx={{ fontSize: 15 }} />}
               sx={{
                 bgcolor: FS_ORANGE, color: '#fff', fontWeight: 700, fontSize: 13.5, textTransform: 'none',
-                borderRadius: '100px', px: 2.6, py: 1.1, flexShrink: 0,
-                boxShadow: `0 4px 16px ${alpha(FS_ORANGE, 0.35)}`,
-                transition: 'background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease',
-                '&:hover': { bgcolor: FS_ORANGE_HOV, transform: 'translateY(-2px)', boxShadow: `0 8px 22px ${alpha(FS_ORANGE, 0.45)}` },
+                borderRadius: '10px', px: 2.4, py: 1, flexShrink: 0,
+                transition: 'background 0.15s ease',
+                '&:hover': { bgcolor: FS_ORANGE_HOV },
               }}>
               tout voir
             </Button>
