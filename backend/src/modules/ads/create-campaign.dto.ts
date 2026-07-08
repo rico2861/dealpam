@@ -7,7 +7,7 @@ export class CreateCampaignDto {
   @IsString() @IsOptional() storeId?: string;
   @IsIn(['AWARENESS', 'TRAFFIC', 'CONVERSIONS']) @IsOptional() objective?: string;
 
-  @Type(() => Number) @IsNumber() @Min(500) totalBudget: number;   // HTG
+  @Type(() => Number) @IsNumber() @Min(25) totalBudget: number;   // HTG
   @Type(() => Number) @IsNumber() @IsOptional() dailyBudget?: number;
 
   @IsDateString() startDate: string;

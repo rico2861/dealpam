@@ -32,12 +32,35 @@ export class AdsService {
     if (dto.storeId) {
       const store = await this.prisma.store.findFirst({ where: { id: dto.storeId, sellerId } });
       if (!store) throw new NotFoundException('Boutique introuvable');
+      // Promouvoir une boutique entière expose potentiellement des produits non
+      // vérifiés à un public plus large — seule une boutique verifiee peut donc
+      // etre la cible d'une campagne "boutique". Promouvoir un seul produit ne
+      // requiert pas cette verification.
+      if (!store.isVerified) {
+        throw new BadRequestException('Seules les boutiques vérifiées peuvent être promues. Demandez la vérification de votre boutique.');
+      }
     }
 
     const start = new Date(dto.startDate);
     const end = new Date(dto.endDate);
     if (end <= start) throw new BadRequestException('La date de fin doit être après la date de début');
     if (start < new Date()) throw new BadRequestException('La date de début ne peut pas être dans le passé');
+
+    // Le budget quotidien est un plafond de depense par jour — si plafond x
+    // duree depasse le budget total, la campagne ne pourrait jamais tenir sa
+    // duree prevue au rythme demande. On le refuse explicitement plutot que
+    // de laisser la campagne s'arreter prematurement sans que le vendeur
+    // comprenne pourquoi.
+    if (dto.dailyBudget) {
+      const days = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / 86_400_000));
+      const maxPossibleSpend = dto.dailyBudget * days;
+      if (maxPossibleSpend > dto.totalBudget) {
+        throw new BadRequestException(
+          `${dto.dailyBudget} HTG/jour × ${days} jour(s) = ${maxPossibleSpend} HTG, ce qui dépasse le budget total de ${dto.totalBudget} HTG. ` +
+          `Augmentez le budget total, réduisez le budget quotidien, ou raccourcissez la durée.`,
+        );
+      }
+    }
 
     return (this.prisma.adCampaign as any).create({
       data: {

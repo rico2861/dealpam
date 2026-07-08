@@ -42,6 +42,7 @@ function Pill({ children, active, onClick, color = OR }: { children: React.React
 
 const DEPTS = ['Ouest', 'Nord', 'Nord-Est', 'Nord-Ouest', 'Artibonite', 'Centre', 'Sud', 'Sud-Est', 'Grande-Anse', 'Nippes'];
 const MAX_PRODUCTS = 10;
+const MIN_BUDGET = 25;
 
 const STATUS_MAP: Record<string, { label: string; color: string }> = {
   ACTIVE:          { label: 'Active',          color: GRN },
@@ -263,6 +264,7 @@ export default function AdsPage() {
   const [open, setOpen]     = useState(false);
   const [statsId, setStatsId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError]   = useState('');
 
   // Form
   const [form, setForm] = useState({
@@ -275,12 +277,15 @@ export default function AdsPage() {
     targetDepts: [] as string[], targetCategories: [] as string[],
     paymentMethod: 'WALLET' as 'WALLET' | 'MONCASH',
   });
-  const resetForm = () => setForm({
-    name: '', targetType: 'PRODUCT', productIds: [], storeId: '',
-    objective: 'TRAFFIC', totalBudget: 1000, dailyBudget: '', startDate: '', endDate: '',
-    targetingMode: 'AUTO', targetGenders: [], targetAgeMin: '', targetAgeMax: '',
-    targetDepts: [], targetCategories: [], paymentMethod: 'WALLET',
-  });
+  const resetForm = () => {
+    setForm({
+      name: '', targetType: 'PRODUCT', productIds: [], storeId: '',
+      objective: 'TRAFFIC', totalBudget: 1000, dailyBudget: '', startDate: '', endDate: '',
+      targetingMode: 'AUTO', targetGenders: [], targetAgeMin: '', targetAgeMax: '',
+      targetDepts: [], targetCategories: [], paymentMethod: 'WALLET',
+    });
+    setFormError('');
+  };
 
   const hasToken = !!localStorage.getItem('accessToken');
 
@@ -353,17 +358,57 @@ export default function AdsPage() {
 
   // ── Submit: create then auto-pay ──────────────────────────────────────────
   const handleSubmit = async () => {
+    setFormError('');
     if (!form.name || !form.startDate || !form.endDate) {
-      enqueueSnackbar('Veuillez remplir tous les champs requis', { variant: 'warning' }); return;
+      setFormError('Remplissez le nom de la campagne et les dates de début/fin.'); return;
     }
     if (form.targetType === 'PRODUCT' && form.productIds.length === 0) {
-      enqueueSnackbar('Sélectionnez au moins un produit à promouvoir', { variant: 'warning' }); return;
+      setFormError('Sélectionnez au moins un produit à promouvoir.'); return;
     }
     if (form.targetType === 'STORE' && !form.storeId) {
-      enqueueSnackbar('Sélectionnez une boutique à promouvoir', { variant: 'warning' }); return;
+      setFormError('Sélectionnez une boutique à promouvoir.'); return;
+    }
+    if (form.targetType === 'STORE' && form.storeId) {
+      const selectedStore = (stores || []).find((s: any) => s.id === form.storeId);
+      if (selectedStore && !selectedStore.isVerified) {
+        setFormError('Seules les boutiques vérifiées peuvent être promues. Demandez la vérification de votre boutique avant de créer cette campagne (la promotion d\'un produit spécifique, elle, ne requiert pas de vérification).');
+        return;
+      }
     }
     if (form.targetType === 'PRODUCT' && form.productIds.length > 1 && form.paymentMethod === 'MONCASH') {
-      enqueueSnackbar('Le paiement MonCash direct ne fonctionne que pour un seul produit à la fois — utilisez le Wallet, ou sélectionnez un seul produit.', { variant: 'warning' });
+      setFormError('Le paiement MonCash direct ne fonctionne que pour un seul produit à la fois — utilisez le Wallet, ou sélectionnez un seul produit.');
+      return;
+    }
+    const start = new Date(form.startDate);
+    const end = new Date(form.endDate);
+    if (end <= start) {
+      setFormError('La date de fin doit être après la date de début.'); return;
+    }
+    const days = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / 86400000));
+    if (form.dailyBudget) {
+      const dailyCap = Number(form.dailyBudget);
+      const maxPossibleSpend = dailyCap * days;
+      if (maxPossibleSpend > form.totalBudget) {
+        setFormError(
+          `Incohérent : ${dailyCap.toLocaleString()} HTG/jour × ${days} jour${days > 1 ? 's' : ''} = ${maxPossibleSpend.toLocaleString()} HTG, ` +
+          `ce qui dépasse votre budget total de ${form.totalBudget.toLocaleString()} HTG. ` +
+          `Augmentez le budget total à au moins ${maxPossibleSpend.toLocaleString()} HTG, réduisez le budget quotidien, ou raccourcissez la durée.`
+        );
+        return;
+      }
+    }
+
+    // Le paiement Wallet doit etre garanti au moment de la creation — un
+    // "brouillon" cree silencieusement quand le solde est insuffisant
+    // s'accumule sans jamais promouvoir le produit, et donne l'impression
+    // d'un bug plutot que d'un choix explicite. On bloque avant meme d'appeler
+    // l'API et on explique clairement les deux options possibles.
+    const totalCostCheck = form.totalBudget * (form.targetType === 'PRODUCT' ? Math.max(1, form.productIds.length) : 1);
+    if (form.paymentMethod === 'WALLET' && walletBalance < totalCostCheck) {
+      setFormError(
+        `Solde insuffisant : ${walletBalance.toLocaleString()} HTG disponibles pour ${totalCostCheck.toLocaleString()} HTG requis. ` +
+        `Rechargez votre Wallet, ou choisissez "MonCash direct" pour payer immédiatement sans passer par le Wallet.`
+      );
       return;
     }
 
@@ -665,9 +710,15 @@ export default function AdsPage() {
           Créer une campagne
         </DialogTitle>
         <DialogContent sx={{ pt: 2.5 }}>
+          {formError && (
+            <Box sx={{ mb: 2.5, p: 1.8, borderRadius: '12px', bgcolor: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)' }}>
+              <Typography fontSize={13} color={RED} fontWeight={600} lineHeight={1.5}>{formError}</Typography>
+            </Box>
+          )}
           <Grid container spacing={3}>
-            {/* Campaign name */}
-            <Grid item xs={12}>
+            {/* Campaign name — scrollMarginTop evite que le clavier mobile fasse
+                remonter ce champ sous le titre fixe du dialog au focus. */}
+            <Grid item xs={12} sx={{ scrollMarginTop: '90px' }}>
               <TextField fullWidth label="Nom de la campagne *" value={form.name}
                 onChange={e => setForm(f => ({ ...f, name: e.target.value }))} sx={fieldSx} />
             </Grid>
@@ -739,9 +790,9 @@ export default function AdsPage() {
             {/* Budget */}
             <Grid item xs={12} md={6}>
               <TextField fullWidth label="Budget total (HTG) *" type="number"
-                value={form.totalBudget} inputProps={{ min: 500, step: 100 }}
+                value={form.totalBudget} inputProps={{ min: MIN_BUDGET, step: 25 }}
                 onChange={e => setForm(f => ({ ...f, totalBudget: Number(e.target.value) }))}
-                helperText="Minimum 500 HTG" sx={fieldSx} />
+                helperText={`Minimum ${MIN_BUDGET} HTG`} sx={fieldSx} />
             </Grid>
             <Grid item xs={12} md={6}>
               <TextField fullWidth label="Budget quotidien — optionnel" type="number"
