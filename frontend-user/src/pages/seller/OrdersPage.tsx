@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box, Typography, Button, Avatar, CircularProgress,
   Dialog, DialogTitle, DialogContent, DialogActions,
@@ -7,7 +8,8 @@ import {
 import {
   LocalShipping, CheckCircle, HourglassEmpty, Cancel,
   ExpandMore, ExpandLess, Phone, TrendingUp, Assignment,
-  Inventory, AccessTime, Warning, ShoppingBag,
+  Inventory, AccessTime, Warning, ShoppingBag, Email, Chat,
+  Payments, LocalShippingOutlined,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
@@ -58,6 +60,7 @@ const TABS = [
 
 /* ── Order card ─────────────────────────────────────────────────────────── */
 function OrderCard({ order, onUpdate }: { order: any; onUpdate: (id: string, status: string) => void }) {
+  const navigate = useNavigate();
   const [expanded, setExpanded] = useState(false);
   const st      = STATUS[order.status] ?? STATUS.PENDING;
   const Icon    = st.icon;
@@ -125,21 +128,66 @@ function OrderCard({ order, onUpdate }: { order: any; onUpdate: (id: string, sta
       {/* Customer + items */}
       <Box sx={{ px: 2.5, py: 1.5, borderTop: `1px solid ${BORD}`, bgcolor: 'rgba(15,23,42,0.09)' }}>
         {/* Customer row */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, mb: order.items?.length > 0 ? 1.5 : 0 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, mb: 0.8, flexWrap: 'wrap' }}>
           <Avatar sx={{ width: 30, height: 30, bgcolor: 'rgba(59,130,246,0.2)', color: BLU, fontSize: 12, fontWeight: 900, border: '1px solid rgba(59,130,246,0.25)' }}>
             {order.user?.firstName?.[0]}
           </Avatar>
-          <Typography fontSize={13} fontWeight={600} color={SUB2} flex={1}>
+          <Typography fontSize={13} fontWeight={600} color={SUB2} flex={1} minWidth={0}>
             {order.user?.firstName} {order.user?.lastName}
           </Typography>
+          <Box sx={{ display: 'flex', gap: 0.6, flexShrink: 0 }}>
+            {order.user?.id && (
+              <Tooltip title="Contacter ce client">
+                <IconButton size="small" onClick={() => navigate(`/seller/chat?userId=${order.user.id}`)}
+                  sx={{ color: BLU, bgcolor: 'rgba(59,130,246,0.1)', borderRadius: '8px',
+                    border: '1px solid rgba(59,130,246,0.2)', '&:hover': { bgcolor: 'rgba(59,130,246,0.2)' } }}>
+                  <Chat sx={{ fontSize: 13 }}/>
+                </IconButton>
+              </Tooltip>
+            )}
+            {order.user?.phone && (
+              <Tooltip title={`Appeler ${order.user.phone}`}>
+                <IconButton size="small" component="a" href={`tel:${order.user.phone}`}
+                  sx={{ color: GRN, bgcolor: 'rgba(16,185,129,0.1)', borderRadius: '8px',
+                    border: '1px solid rgba(16,185,129,0.2)', '&:hover': { bgcolor: 'rgba(16,185,129,0.2)' } }}>
+                  <Phone sx={{ fontSize: 13 }}/>
+                </IconButton>
+              </Tooltip>
+            )}
+          </Box>
+        </Box>
+
+        {/* Contact details row */}
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 1.2 }}>
           {order.user?.phone && (
-            <Tooltip title={`Appeler ${order.user.phone}`}>
-              <IconButton size="small" component="a" href={`tel:${order.user.phone}`}
-                sx={{ color: GRN, bgcolor: 'rgba(16,185,129,0.1)', borderRadius: '8px',
-                  border: '1px solid rgba(16,185,129,0.2)', '&:hover': { bgcolor: 'rgba(16,185,129,0.2)' } }}>
-                <Phone sx={{ fontSize: 13 }}/>
-              </IconButton>
-            </Tooltip>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, px: 1, py: 0.4, borderRadius: '7px',
+              bgcolor: 'rgba(15,23,42,0.09)', border: `1px solid ${BORD}` }}>
+              <Phone sx={{ fontSize: 11, color: SUB }}/>
+              <Typography fontSize={11.5} color={SUB2}>{order.user.phone}</Typography>
+            </Box>
+          )}
+          {order.user?.email && (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, px: 1, py: 0.4, borderRadius: '7px',
+              bgcolor: 'rgba(15,23,42,0.09)', border: `1px solid ${BORD}` }}>
+              <Email sx={{ fontSize: 11, color: SUB }}/>
+              <Typography fontSize={11.5} color={SUB2}>{order.user.email}</Typography>
+            </Box>
+          )}
+          {order.chosenPaymentMethod && (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, px: 1, py: 0.4, borderRadius: '7px',
+              bgcolor: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.2)' }}>
+              <Payments sx={{ fontSize: 11, color: PUR }}/>
+              <Typography fontSize={11.5} fontWeight={600} color={PUR}>{order.chosenPaymentMethod}</Typography>
+            </Box>
+          )}
+          {order.deliveryType && (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, px: 1, py: 0.4, borderRadius: '7px',
+              bgcolor: 'rgba(6,182,212,0.1)', border: '1px solid rgba(6,182,212,0.2)' }}>
+              <LocalShippingOutlined sx={{ fontSize: 11, color: CYN }}/>
+              <Typography fontSize={11.5} fontWeight={600} color={CYN}>
+                {order.deliveryType === 'DELIVERY' ? 'À domicile' : order.deliveryType === 'PICKUP' ? 'Retrait boutique' : 'Contact direct'}
+              </Typography>
+            </Box>
           )}
         </Box>
 

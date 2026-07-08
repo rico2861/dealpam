@@ -567,7 +567,8 @@ export default function SellerStorePage() {
       {/* Tabs */}
       <Box sx={{ borderBottom: `1px solid ${BORD}`, mb: 0, bgcolor: CARD, borderRadius: '16px 16px 0 0', px: 1 }}>
         <Tabs value={tab} onChange={(_, v) => setTab(v)}
-          sx={{ '& .MuiTab-root': { fontWeight: 600, fontSize: 13.5, textTransform: 'none', minHeight: 48, color: SUB },
+          variant="scrollable" scrollButtons="auto" allowScrollButtonsMobile
+          sx={{ '& .MuiTab-root': { fontWeight: 600, fontSize: 13.5, textTransform: 'none', minHeight: 48, color: SUB, whiteSpace: 'nowrap' },
             '& .Mui-selected': { color: OR },
             '& .MuiTabs-indicator': { bgcolor: OR } }}>
           <Tab label="Infos boutique" icon={<Store sx={{ fontSize: 16 }} />} iconPosition="start" />

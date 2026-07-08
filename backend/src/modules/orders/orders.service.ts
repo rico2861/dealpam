@@ -319,7 +319,7 @@ export class OrdersService {
     return this.prisma.order.findMany({
       where:   { store: { sellerId: seller.id } },
       include: {
-        user:    { select: { firstName: true, lastName: true, phone: true, email: true } },
+        user:    { select: { id: true, firstName: true, lastName: true, phone: true, email: true } },
         items:   { include: { product: { select: { name: true, images: { take: 1 } } } } },
         address: true,
       },
