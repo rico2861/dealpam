@@ -334,64 +334,62 @@ function AccountDropdown({ user, isSeller, navigate, onClose, logout }: any) {
     { label: 'Abonnement',   path: '/seller/subscription' },
   ];
 
+  const TXT  = '#0F172A';
+  const SUB  = '#64748B';
+  const BORD = 'rgba(15,23,42,0.08)';
+
   return (
     <Box sx={{
       position: 'absolute', top: 'calc(100% + 10px)', right: 0,
-      width: 300,
-      background: 'rgba(10,16,30,0.97)',
-      backdropFilter: 'blur(20px)',
-      borderRadius: '20px',
-      border: '1px solid rgba(255,255,255,0.08)',
-      boxShadow: '0 24px 64px rgba(0,0,0,0.45), 0 4px 16px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.06)',
+      width: 304,
+      bgcolor: '#FFFFFF',
+      borderRadius: '18px',
+      border: `1px solid ${BORD}`,
+      boxShadow: '0 20px 48px rgba(15,23,42,0.16), 0 4px 16px rgba(15,23,42,0.08)',
       overflow: 'hidden', zIndex: 9999,
       animation: 'dp-slideDown 160ms cubic-bezier(0.4,0,0.2,1) forwards',
     }}>
 
       {/* ── Header ── */}
-      <Box sx={{ px: 2.5, pt: 2.5, pb: 2, position: 'relative' }}>
-        {/* Accent top */}
-        <Box sx={{ position: 'absolute', top: 0, left: '20%', right: '20%', height: '2px',
-          background: `linear-gradient(90deg, transparent, ${ORANGE}, transparent)`, opacity: 0.6 }} />
-
+      <Box sx={{ px: 2.5, pt: 2.5, pb: 2, position: 'relative', bgcolor: alpha(ORANGE, 0.04) }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <Avatar sx={{
             width: 46, height: 46, bgcolor: ORANGE, color: 'white',
             fontSize: 18, fontWeight: 900,
-            border: `2px solid ${alpha(ORANGE, 0.35)}`,
             boxShadow: `0 4px 14px ${alpha(ORANGE, 0.35)}`,
           }}>
             {user?.firstName?.[0]}
           </Avatar>
           <Box sx={{ minWidth: 0, flex: 1 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, mb: 0.25 }}>
-              <Typography fontWeight={800} color="white" fontSize={14.5} noWrap sx={{ flex: 1, letterSpacing: '-0.2px' }}>
+              <Typography fontWeight={800} color={TXT} fontSize={14.5} noWrap sx={{ flex: 1, letterSpacing: '-0.2px' }}>
                 {user?.firstName} {user?.lastName}
               </Typography>
               {isSeller && (
-                <Box sx={{ px: 1, py: 0.25, borderRadius: '8px', bgcolor: alpha(ORANGE, 0.15), border: `1px solid ${alpha(ORANGE, 0.3)}` }}>
+                <Box sx={{ px: 1, py: 0.25, borderRadius: '8px', bgcolor: alpha(ORANGE, 0.12), border: `1px solid ${alpha(ORANGE, 0.3)}` }}>
                   <Typography sx={{ fontSize: 9.5, fontWeight: 800, color: ORANGE, letterSpacing: '0.5px', textTransform: 'uppercase' }}>Vendeur</Typography>
                 </Box>
               )}
             </Box>
-            <Typography fontSize={11.5} color="rgba(255,255,255,0.35)" noWrap>{user?.email}</Typography>
+            <Typography fontSize={11.5} color={SUB} noWrap>{user?.email}</Typography>
           </Box>
         </Box>
       </Box>
 
       {/* ── Buyer menu ── */}
-      <Box sx={{ px: 1.5, pb: 1 }}>
+      <Box sx={{ px: 1.5, py: 1 }}>
         {buyerItems.map(({ label, path, Icon }) => (
           <Box key={path} onClick={() => go(path)} sx={{
             display: 'flex', alignItems: 'center', gap: 1.5, px: 1.5, py: 1.1,
             borderRadius: '12px', cursor: 'pointer',
             transition: 'all 0.15s',
-            '&:hover': { bgcolor: 'rgba(255,255,255,0.06)', '& .dd-icon': { color: ORANGE }, '& .dd-label': { color: 'white' } },
+            '&:hover': { bgcolor: 'rgba(15,23,42,0.04)', '& .dd-icon': { color: ORANGE }, '& .dd-label': { color: TXT } },
           }}>
-            <Icon className="dd-icon" sx={{ fontSize: 17, color: 'rgba(255,255,255,0.3)', transition: 'color 0.15s' }} />
-            <Typography className="dd-label" fontSize={13.5} color="rgba(255,255,255,0.65)" fontWeight={500} sx={{ flex: 1, transition: 'color 0.15s' }}>
+            <Icon className="dd-icon" sx={{ fontSize: 17, color: SUB, transition: 'color 0.15s' }} />
+            <Typography className="dd-label" fontSize={13.5} color={SUB} fontWeight={500} sx={{ flex: 1, transition: 'color 0.15s' }}>
               {label}
             </Typography>
-            <KeyboardArrowRight sx={{ fontSize: 15, color: 'rgba(255,255,255,0.15)' }} />
+            <KeyboardArrowRight sx={{ fontSize: 15, color: 'rgba(15,23,42,0.2)' }} />
           </Box>
         ))}
       </Box>
@@ -399,11 +397,11 @@ function AccountDropdown({ user, isSeller, navigate, onClose, logout }: any) {
       {/* ── Seller section or Upgrade CTA ── */}
       {isSeller ? (
         <>
-          <Box sx={{ mx: 2, height: '1px', bgcolor: 'rgba(255,255,255,0.07)', mb: 1.5 }} />
-          <Box sx={{ px: 1.5, pb: 1.5 }}>
+          <Box sx={{ mx: 2, height: '1px', bgcolor: BORD }} />
+          <Box sx={{ px: 1.5, py: 1.5 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.2, px: 1 }}>
               <StorefrontOutlined sx={{ fontSize: 13, color: ORANGE }} />
-              <Typography sx={{ fontSize: 10, fontWeight: 800, color: alpha(ORANGE, 0.8), textTransform: 'uppercase', letterSpacing: '1px' }}>
+              <Typography sx={{ fontSize: 10, fontWeight: 800, color: ORANGE, textTransform: 'uppercase', letterSpacing: '1px' }}>
                 Espace Vendeur
               </Typography>
             </Box>
@@ -411,12 +409,12 @@ function AccountDropdown({ user, isSeller, navigate, onClose, logout }: any) {
               {sellerItems.map(({ label, path: p }) => (
                 <Box key={p} onClick={() => go(p)} sx={{
                   px: 1.2, py: 0.9, borderRadius: '10px', cursor: 'pointer',
-                  border: '1px solid rgba(255,255,255,0.07)',
-                  bgcolor: 'rgba(255,255,255,0.03)',
+                  border: `1px solid ${BORD}`,
+                  bgcolor: 'rgba(15,23,42,0.02)',
                   transition: 'all 0.15s',
-                  '&:hover': { bgcolor: alpha(ORANGE, 0.12), borderColor: alpha(ORANGE, 0.35), '& .sl-label': { color: ORANGE } },
+                  '&:hover': { bgcolor: alpha(ORANGE, 0.08), borderColor: alpha(ORANGE, 0.35), '& .sl-label': { color: ORANGE } },
                 }}>
-                  <Typography className="sl-label" fontSize={12.5} fontWeight={600} color="rgba(255,255,255,0.5)" sx={{ transition: 'color 0.15s' }}>
+                  <Typography className="sl-label" fontSize={12.5} fontWeight={600} color={SUB} sx={{ transition: 'color 0.15s' }}>
                     {label}
                   </Typography>
                 </Box>
@@ -425,33 +423,35 @@ function AccountDropdown({ user, isSeller, navigate, onClose, logout }: any) {
           </Box>
         </>
       ) : (
-        <Box onClick={() => go('/become-seller')} sx={{
-          mx: 1.5, mb: 1, px: 1.5, py: 1.1, borderRadius: '12px', cursor: 'pointer',
-          display: 'flex', alignItems: 'center', gap: 1.5,
-          border: `1px solid ${alpha(ORANGE, 0.22)}`,
-          bgcolor: alpha(ORANGE, 0.07),
-          transition: 'all 0.15s',
-          '&:hover': { bgcolor: alpha(ORANGE, 0.13), borderColor: alpha(ORANGE, 0.4), '& .bs-icon': { color: ORANGE }, '& .bs-label': { color: 'white' } },
-        }}>
-          <StorefrontOutlined className="bs-icon" sx={{ fontSize: 17, color: alpha(ORANGE, 0.7), transition: 'color 0.15s' }} />
-          <Typography className="bs-label" fontSize={13.5} fontWeight={600} color={alpha(ORANGE, 0.85)} sx={{ flex: 1, transition: 'color 0.15s' }}>
-            Devenir vendeur
-          </Typography>
-          <KeyboardArrowRight sx={{ fontSize: 15, color: alpha(ORANGE, 0.4) }} />
+        <Box sx={{ px: 1.5, pb: 1 }}>
+          <Box onClick={() => go('/become-seller')} sx={{
+            px: 1.5, py: 1.1, borderRadius: '12px', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: 1.5,
+            border: `1px solid ${alpha(ORANGE, 0.25)}`,
+            bgcolor: alpha(ORANGE, 0.06),
+            transition: 'all 0.15s',
+            '&:hover': { bgcolor: alpha(ORANGE, 0.12), borderColor: alpha(ORANGE, 0.4) },
+          }}>
+            <StorefrontOutlined sx={{ fontSize: 17, color: ORANGE }} />
+            <Typography fontSize={13.5} fontWeight={600} color={ORANGE} sx={{ flex: 1 }}>
+              Devenir vendeur
+            </Typography>
+            <KeyboardArrowRight sx={{ fontSize: 15, color: alpha(ORANGE, 0.5) }} />
+          </Box>
         </Box>
       )}
 
       {/* ── Logout ── */}
       <Box sx={{ px: 1.5, pb: 1.5 }}>
-        <Box sx={{ height: '1px', bgcolor: 'rgba(255,255,255,0.07)', mb: 1.5 }} />
+        <Box sx={{ height: '1px', bgcolor: BORD, mb: 1 }} />
         <Box onClick={() => { logout(); onClose(); navigate('/'); }} sx={{
           display: 'flex', alignItems: 'center', gap: 1.5, px: 1.5, py: 1.1,
           borderRadius: '12px', cursor: 'pointer',
           transition: 'all 0.15s',
-          '&:hover': { bgcolor: 'rgba(239,68,68,0.08)' },
+          '&:hover': { bgcolor: 'rgba(239,68,68,0.06)' },
         }}>
-          <Logout sx={{ fontSize: 17, color: '#F87171' }} />
-          <Typography fontSize={13.5} color="#F87171" fontWeight={600} sx={{ flex: 1 }}>Déconnexion</Typography>
+          <Logout sx={{ fontSize: 17, color: '#EF4444' }} />
+          <Typography fontSize={13.5} color="#EF4444" fontWeight={600} sx={{ flex: 1 }}>Déconnexion</Typography>
         </Box>
       </Box>
     </Box>
