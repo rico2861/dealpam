@@ -33,6 +33,15 @@ const useUserLoc  = () => useContext(LocationCtx);
 const OR  = '#FF6B00';
 const ORD = '#E05A00';
 const BG  = '#0F172A';
+/* ─── Boutiques vedettes — palette exacte du spec ───────────────────────── */
+const FS_NAVY    = '#0F1B2E';
+const FS_ORANGE  = '#F5711A';
+const FS_ORANGE_HOV = '#DB5E0F';
+const FS_TEAL    = '#116B57';
+const FS_STAR    = '#F5B301';
+const FS_SURFACE1 = '#F5F5F3';
+const FS_BORDER  = 'rgba(15,27,46,0.08)';
+const FS_MUTED   = '#888780';
 const PRODUCT_TYPE_LABEL: Record<string, string> = {
   SERVICE: 'Service', RENTAL: 'Location', VEHICLE: 'Véhicule', FOOD: 'Alimentation',
   REAL_ESTATE: 'Immobilier', FREELANCE: 'Freelance',
@@ -621,137 +630,111 @@ function StoreAvatar({ name, sz }: { name: string; sz: number }) {
   );
 }
 
-/* ─── Tier config ────────────────────────────────────────────────────────── */
-const CARD_PALETTES = [
-  { banner: 'linear-gradient(135deg,#FF6B00 0%,#FF9F56 100%)', avatarBg: 'linear-gradient(135deg,#FF4500,#FF8C42)' },
-  { banner: 'linear-gradient(135deg,#1565C0 0%,#42A5F5 100%)', avatarBg: 'linear-gradient(135deg,#0D47A1,#1976D2)' },
-  { banner: 'linear-gradient(135deg,#6A1B9A 0%,#CE93D8 100%)', avatarBg: 'linear-gradient(135deg,#4A148C,#8E24AA)' },
-  { banner: 'linear-gradient(135deg,#1B5E20 0%,#66BB6A 100%)', avatarBg: 'linear-gradient(135deg,#1B5E20,#388E3C)' },
-  { banner: 'linear-gradient(135deg,#B71C1C 0%,#EF9A9A 100%)', avatarBg: 'linear-gradient(135deg,#880E4F,#C62828)' },
-  { banner: 'linear-gradient(135deg,#004D40 0%,#4DB6AC 100%)', avatarBg: 'linear-gradient(135deg,#00251A,#00695C)' },
-];
-
 /* ─── Carte vendeur moderne ──────────────────────────────────────────────── */
-function SellerCard({ s, idx }: { s: any; idx: number }) {
-  const palette  = CARD_PALETTES[idx % CARD_PALETTES.length];
+function SellerCard({ s }: { s: any }) {
+  const [bannerError, setBannerError] = useState(false);
   const initials = s.store.name.split(' ').slice(0, 2).map((w: string) => w[0] ?? '').join('').toUpperCase();
   const isVerif  = s.store.isVerified;
   const name     = s.store.name;
   const city     = s.store.city;
   const dept     = s.store.department;
   const rating   = s.store.avgRating ? Number(s.store.avgRating).toFixed(1) : null;
+  const reviews  = s.store.totalReviews ?? 0;
+  const isNew    = !rating && !(s.store.totalSales > 0);
+  const hasBanner = !!s.store.bannerUrl && !bannerError;
 
   return (
     <Box component={Link} to={`/boutique/${s.store.slug}`}
       sx={{
         flexShrink: 0,
-        width: { xs: 160, sm: 180, md: 200 },
+        width: { xs: '78%', sm: 260, md: 'calc(33.333% - 14px)' },
+        minWidth: { xs: '78%', sm: 260, md: 260 },
+        maxWidth: { md: 320 },
+        scrollSnapAlign: { xs: 'start', md: 'none' },
         textDecoration: 'none',
-        borderRadius: '18px',
+        borderRadius: '16px',
         overflow: 'hidden',
         bgcolor: 'white',
-        border: '1px solid rgba(0,0,0,0.06)',
-        boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
-        transition: 'transform 0.22s cubic-bezier(.4,0,.2,1), box-shadow 0.22s',
+        border: `0.5px solid ${FS_BORDER}`,
+        transition: 'box-shadow 0.2s ease, transform 0.2s ease',
         '&:hover': {
-          transform: 'translateY(-5px)',
-          boxShadow: '0 16px 40px rgba(0,0,0,0.13)',
+          transform: 'translateY(-4px)',
+          boxShadow: '0 14px 32px rgba(15,27,46,0.1)',
         },
-        '&:hover .sc-name': { color: OR },
+        '&:hover .sc-visit': { bgcolor: FS_NAVY, color: '#fff' },
       }}>
 
-      {/* Bannière colorée */}
+      {/* Bannière — vraie photo si dispo, sinon dégradé marine + glow orange */}
       <Box sx={{
-        height: { xs: 64, md: 72 },
-        background: palette.banner,
-        position: 'relative',
+        height: 110, position: 'relative', overflow: 'hidden',
+        display: 'flex', alignItems: 'flex-end', p: '14px',
+        background: hasBanner ? undefined : 'linear-gradient(160deg, #1a2d47 0%, #0F1B2E 100%)',
       }}>
-        {/* Motif décoratif */}
+        {hasBanner && (
+          <Box component="img" src={s.store.bannerUrl} alt="" onError={() => setBannerError(true)}
+            sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+        )}
         <Box sx={{
-          position: 'absolute', top: -20, right: -20,
-          width: 90, height: 90, borderRadius: '50%',
-          bgcolor: 'rgba(255,255,255,0.1)',
+          position: 'absolute', inset: 0,
+          background: hasBanner
+            ? 'linear-gradient(to top, rgba(15,27,46,0.7), transparent 60%)'
+            : 'radial-gradient(circle at 80% 20%, rgba(245,113,26,0.25), transparent 60%)',
         }} />
-        <Box sx={{
-          position: 'absolute', bottom: -14, left: -10,
-          width: 60, height: 60, borderRadius: '50%',
-          bgcolor: 'rgba(255,255,255,0.08)',
-        }} />
-      </Box>
 
-      {/* Avatar flottant */}
-      <Box sx={{ px: 2, pb: 0, mt: '-26px', position: 'relative', zIndex: 1 }}>
-        <Box sx={{
-          width: 52, height: 52, borderRadius: '14px',
-          background: palette.avatarBg,
-          border: '3px solid white',
-          boxShadow: '0 4px 14px rgba(0,0,0,0.18)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 17, fontWeight: 900, color: 'white', letterSpacing: '-0.5px',
-          overflow: 'hidden',
-          position: 'relative',
-        }}>
-          {s.store.logoUrl
-            ? <Box component="img" src={s.store.logoUrl} alt={name}
-                sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            : initials
-          }
-          {/* Badge vérifié sur avatar */}
-          {isVerif && (
-            <Box sx={{
-              position: 'absolute', bottom: 0, right: 0,
-              width: 16, height: 16, borderRadius: '50%',
-              bgcolor: '#2563EB',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              border: '2px solid white',
-            }}>
-              <Verified sx={{ fontSize: 9, color: 'white' }} />
-            </Box>
-          )}
+        {/* Avatar + nom en glassmorphism, superposés à la bannière */}
+        <Box sx={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: 1.2, minWidth: 0 }}>
+          <Box sx={{
+            width: 44, height: 44, borderRadius: '11px', flexShrink: 0,
+            bgcolor: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(4px)',
+            border: '1px solid rgba(255,255,255,0.2)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: '#fff', fontWeight: 600, fontSize: 15, overflow: 'hidden',
+          }}>
+            {s.store.logoUrl
+              ? <Box component="img" src={s.store.logoUrl} alt={name} sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              : initials}
+          </Box>
+          <Box sx={{ minWidth: 0 }}>
+            <Typography fontSize={14} fontWeight={500} color="#fff" lineHeight={1.3} noWrap>{name}</Typography>
+            {(city || dept) && (
+              <Typography fontSize={11} color="rgba(255,255,255,0.65)" lineHeight={1.3} noWrap>{city || dept}</Typography>
+            )}
+          </Box>
         </Box>
       </Box>
 
-      {/* Infos */}
-      <Box sx={{ px: 2, pt: 1, pb: 2 }}>
-        <Typography className="sc-name"
-          fontSize={13} fontWeight={800} color={BG} lineHeight={1.3}
-          sx={{
-            transition: 'color 0.18s',
-            display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
-            overflow: 'hidden', mb: 0.5,
-          }}>
-          {name}
-        </Typography>
-
-        {/* Ville + département */}
-        {(city || dept) && (
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3, mb: 1 }}>
-            <Box sx={{ width: 5, height: 5, borderRadius: '50%', bgcolor: OR, flexShrink: 0 }} />
-            <Typography fontSize={10.5} color="#6B7280" noWrap fontWeight={500}>
-              {city || dept}
-            </Typography>
-          </Box>
-        )}
-
-        {/* Footer : rating + badge vérifié */}
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          {rating && (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
-              <Star sx={{ fontSize: 11, color: '#F59E0B' }} />
-              <Typography fontSize={11} fontWeight={700} color="#374151">{rating}</Typography>
+      {/* Corps de carte */}
+      <Box sx={{ px: 2, py: '14px' }}>
+        {/* Ligne d'info : note OU statut, jamais les deux — + badge vérifié honnête */}
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: 22, mb: 1.4 }}>
+          {rating ? (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4 }}>
+              <Star sx={{ fontSize: 13, color: FS_STAR }} />
+              <Typography fontSize={12} fontWeight={600} color={FS_NAVY}>
+                {rating} <Typography component="span" fontSize={12} fontWeight={400} color={FS_MUTED}>({reviews})</Typography>
+              </Typography>
             </Box>
-          )}
-          {isVerif && (
-            <Box sx={{
-              display: 'inline-flex', alignItems: 'center', gap: 0.3,
-              bgcolor: '#EFF6FF', border: '1px solid #BFDBFE',
-              borderRadius: '20px', px: 0.8, py: 0.2,
-              ml: 'auto',
-            }}>
-              <Verified sx={{ fontSize: 9, color: '#2563EB' }} />
-              <Typography fontSize={9} fontWeight={700} color="#1D4ED8">Vérifié</Typography>
+          ) : isNew ? (
+            <Typography fontSize={12} color={FS_MUTED}>nouvelle boutique</Typography>
+          ) : <span />}
+
+          {isVerif ? (
+            <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.4 }}>
+              <Verified sx={{ fontSize: 13, color: FS_TEAL }} />
+              <Typography fontSize={12} color={FS_TEAL} fontWeight={500}>vérifié</Typography>
             </Box>
+          ) : (
+            <Typography fontSize={12} color={FS_MUTED}>non vérifié</Typography>
           )}
+        </Box>
+
+        {/* Bouton visiter — secondaire, jamais orange plein */}
+        <Box className="sc-visit" sx={{
+          textAlign: 'center', py: 1.1, borderRadius: '8px', fontSize: 13, fontWeight: 500,
+          bgcolor: FS_SURFACE1, color: FS_NAVY,
+          transition: 'background 0.15s ease, color 0.15s ease',
+        }}>
+          visiter la boutique
         </Box>
       </Box>
     </Box>
@@ -801,126 +784,70 @@ function FeaturedSellersSection({ sellers }: { sellers: any[] }) {
   if (!sellers.length) return null;
 
   return (
-    <Box sx={{
-      background: 'linear-gradient(180deg, #FFF7ED 0%, #FFFFFF 100%)',
-      borderTop: '1px solid #FED7AA',
-      borderBottom: '1px solid #F3F4F6',
-      py: { xs: 2.5, md: 3.5 },
-    }}>
+    <Box sx={{ bgcolor: '#FFFFFF', borderTop: `1px solid ${FS_BORDER}`, borderBottom: `1px solid ${FS_BORDER}`, py: { xs: 2.5, md: 3.5 } }}>
       <Container maxWidth="xl" sx={{ px: { xs: 1.5, md: 2 } }}>
 
         {/* Header */}
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: { xs: 2, md: 2.5 } }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Box sx={{ width: 4, height: 22, background: `linear-gradient(180deg,${OR},${ORD})`, borderRadius: 2 }} />
-            <Box>
-              <Typography fontSize={{ xs: 15, md: 17 }} fontWeight={900} color={BG} letterSpacing="-0.4px" lineHeight={1.2}>
-                Boutiques vedettes
-              </Typography>
-              <Typography fontSize={11} color="#64748B" fontWeight={400}>
-                Vendeurs certifiés, service de qualité
-              </Typography>
-            </Box>
-            <Box sx={{
-              display: { xs: 'none', sm: 'inline-flex' },
-              alignItems: 'center', gap: 0.4,
-              bgcolor: '#EFF6FF', border: '1px solid #BFDBFE',
-              borderRadius: '20px', px: 1, py: 0.35, ml: 0.5,
-            }}>
-              <Verified sx={{ fontSize: 11, color: '#3B82F6' }} />
-              <Typography fontSize={10} fontWeight={700} color="#1D4ED8">Vérifiés</Typography>
-            </Box>
+        <Box sx={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', mb: { xs: 2, md: 2.5 } }}>
+          <Box>
+            <Typography fontSize={12} fontWeight={600} color={FS_ORANGE} textTransform="uppercase" letterSpacing="0.06em" lineHeight={1.4}>
+              Sélection DealPam
+            </Typography>
+            <Typography fontSize={22} fontWeight={500} color={FS_NAVY} letterSpacing="-0.2px" lineHeight={1.25}>
+              Boutiques vedettes
+            </Typography>
           </Box>
 
-          {/* Right side : voir tout */}
-          <Button component={Link} to="/stores"
-            endIcon={<KeyboardArrowRight sx={{ fontSize: 14 }} />}
-            sx={{
-              color: OR, fontWeight: 700, fontSize: { xs: 11.5, md: 12.5 },
-              textTransform: 'none', borderRadius: '10px', px: 1.4, py: 0.5,
-              border: `1.5px solid ${alpha(OR, 0.25)}`,
-              '&:hover': { bgcolor: alpha(OR, 0.06), borderColor: OR },
-            }}>
-            Voir tout
-          </Button>
+          {/* Flèches + tout voir */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {!isMobile && (
+              <>
+                <IconButton onClick={() => scrollTo('prev')} aria-label="précédent"
+                  sx={{
+                    width: 34, height: 34, borderRadius: '50%',
+                    border: `1px solid ${FS_BORDER}`, color: FS_NAVY,
+                    opacity: canPrev ? 1 : 0.3, pointerEvents: canPrev ? 'auto' : 'none',
+                    transition: 'opacity 0.2s, background 0.15s',
+                    '&:hover': { bgcolor: 'rgba(15,27,46,0.05)' },
+                  }}>
+                  <ArrowBackIos sx={{ fontSize: 13, ml: '3px' }} />
+                </IconButton>
+                <IconButton onClick={() => scrollTo('next')} aria-label="suivant"
+                  sx={{
+                    width: 34, height: 34, borderRadius: '50%',
+                    border: `1px solid ${FS_BORDER}`, color: FS_NAVY,
+                    opacity: canNext ? 1 : 0.3, pointerEvents: canNext ? 'auto' : 'none',
+                    transition: 'opacity 0.2s, background 0.15s',
+                    '&:hover': { bgcolor: 'rgba(15,27,46,0.05)' },
+                  }}>
+                  <ArrowForwardIos sx={{ fontSize: 13 }} />
+                </IconButton>
+                <Box sx={{ width: '1px', height: 20, bgcolor: FS_BORDER, mx: 0.5 }} />
+              </>
+            )}
+            <Button component={Link} to="/stores"
+              endIcon={<KeyboardArrowRight sx={{ fontSize: 14 }} />}
+              sx={{
+                color: FS_NAVY, fontWeight: 500, fontSize: 13,
+                textTransform: 'none', px: 0.5,
+                '&:hover': { color: FS_ORANGE, bgcolor: 'transparent' },
+              }}>
+              Tout voir
+            </Button>
+          </Box>
         </Box>
 
-        {/* Carousel avec boutons flottants sur les côtés */}
-        <Box sx={{ position: 'relative' }}>
-
-          {/* Bouton Précédent — flottant gauche */}
-          {!isMobile && (
-            <Box sx={{
-              position: 'absolute', left: -18, top: '50%',
-              transform: 'translateY(-60%)',
-              zIndex: 10,
-              opacity: canPrev ? 1 : 0,
-              pointerEvents: canPrev ? 'auto' : 'none',
-              transition: 'opacity 0.2s',
-            }}>
-              <IconButton
-                onClick={() => scrollTo('prev')}
-                sx={{
-                  width: 38, height: 38, borderRadius: '12px',
-                  bgcolor: 'white',
-                  border: `1.5px solid ${alpha(OR, 0.25)}`,
-                  color: OR,
-                  boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
-                  transition: 'all 0.18s',
-                  '&:hover': {
-                    bgcolor: OR, color: 'white',
-                    borderColor: OR,
-                    boxShadow: `0 6px 20px ${alpha(OR, 0.4)}`,
-                    transform: 'scale(1.08)',
-                  },
-                }}>
-                <ArrowBackIos sx={{ fontSize: 14, ml: '3px' }} />
-              </IconButton>
-            </Box>
-          )}
-
-          {/* Bouton Suivant — flottant droite */}
-          {!isMobile && (
-            <Box sx={{
-              position: 'absolute', right: -18, top: '50%',
-              transform: 'translateY(-60%)',
-              zIndex: 10,
-              opacity: canNext ? 1 : 0,
-              pointerEvents: canNext ? 'auto' : 'none',
-              transition: 'opacity 0.2s',
-            }}>
-              <IconButton
-                onClick={() => scrollTo('next')}
-                sx={{
-                  width: 38, height: 38, borderRadius: '12px',
-                  bgcolor: OR,
-                  border: `1.5px solid ${OR}`,
-                  color: 'white',
-                  boxShadow: `0 4px 16px ${alpha(OR, 0.4)}`,
-                  transition: 'all 0.18s',
-                  '&:hover': {
-                    bgcolor: ORD,
-                    boxShadow: `0 6px 20px ${alpha(OR, 0.55)}`,
-                    transform: 'scale(1.08)',
-                  },
-                }}>
-                <ArrowForwardIos sx={{ fontSize: 14 }} />
-              </IconButton>
-            </Box>
-          )}
-
-          {/* Cartes scrollables */}
-          <Box ref={scrollRef}
-            onMouseDown={onDown} onMouseMove={onMove} onMouseUp={onUp} onMouseLeave={onUp}
-            onScroll={updateArrows}
-            sx={{
-              display: 'flex', gap: { xs: '12px', md: '16px' }, alignItems: 'stretch',
-              overflowX: 'auto', scrollbarWidth: 'none', '&::-webkit-scrollbar': { display: 'none' },
-              pb: 1, cursor: 'grab', '&:active': { cursor: 'grabbing' }, userSelect: 'none',
-              px: 0.5,
-            }}>
-            {sellers.map((s: any, idx: number) => <SellerCard key={s.id} s={s} idx={idx} />)}
-          </Box>
+        {/* Cartes — carousel scrollable (desktop et mobile) */}
+        <Box ref={scrollRef}
+          onMouseDown={onDown} onMouseMove={onMove} onMouseUp={onUp} onMouseLeave={onUp}
+          onScroll={updateArrows}
+          sx={{
+            display: 'flex', gap: { xs: '14px', md: '20px' }, alignItems: 'stretch',
+            overflowX: 'auto', scrollbarWidth: 'none', '&::-webkit-scrollbar': { display: 'none' },
+            scrollSnapType: { xs: 'x mandatory', md: 'none' },
+            pb: 1, cursor: 'grab', '&:active': { cursor: 'grabbing' }, userSelect: 'none',
+          }}>
+          {sellers.map((s: any) => <SellerCard key={s.id} s={s} />)}
         </Box>
       </Container>
     </Box>
