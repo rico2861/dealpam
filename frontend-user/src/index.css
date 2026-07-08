@@ -14,6 +14,12 @@ body {
 
 a { text-decoration: none; }
 
+/* Les notifications (notistack) doivent toujours passer au-dessus des Dialog
+   MUI ouverts (z-index modal = 1300) — sinon une erreur déclenchée depuis un
+   formulaire en modal (ex: création de campagne) est rendue invisible,
+   masquée derrière le fond assombri du dialog. */
+.notistack-SnackbarContainer { z-index: 999999 !important; }
+
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: #F1F5F9; }
 ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 99px; }

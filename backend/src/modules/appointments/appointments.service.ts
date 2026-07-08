@@ -3,10 +3,12 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
 import { NotificationsService } from '../notifications/notifications.service';
 
+// Aligné sur l'enum Prisma AppointmentStatus (PENDING/CONFIRMED/CANCELLED/
+// COMPLETED) — 'REFUSED'/'DONE' n'existent pas dans l'enum et faisaient
+// échouer updateMany silencieusement (PrismaClientValidationError).
 const STATUS_LABEL: Record<string, string> = {
   CONFIRMED: 'confirmé',
-  REFUSED:   'refusé',
-  DONE:      'marqué comme terminé',
+  COMPLETED: 'marqué comme terminé',
   CANCELLED: 'annulé',
 };
 
@@ -110,6 +112,10 @@ export class AppointmentsService {
   // ── Seller: update status ─────────────────────────────────────────────────
 
   async updateStatus(userId: string, id: string, status: string, sellerNote?: string) {
+    const ALLOWED = ['CONFIRMED', 'CANCELLED', 'COMPLETED'];
+    if (!ALLOWED.includes(status)) {
+      throw new BadRequestException(`Statut invalide. Valeurs permises: ${ALLOWED.join(', ')}`);
+    }
     const seller = await this.prisma.seller.findUnique({ where: { userId }, select: { id: true } });
     if (!seller) throw new ForbiddenException('Rendez-vous introuvable');
     const stores = await this.prisma.store.findMany({ where: { sellerId: seller.id }, select: { id: true } });
@@ -125,7 +131,7 @@ export class AppointmentsService {
       where: { id },
       include: { product: true, store: true, user: { select: { email: true } } },
     });
-    if (['CONFIRMED', 'REFUSED', 'DONE'].includes(status)) {
+    if (['CONFIRMED', 'CANCELLED', 'COMPLETED'].includes(status)) {
       await this.notifyClient(appt, status);
     }
     return appt;

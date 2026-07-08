@@ -9,6 +9,7 @@ import {
   CheckCircle, Cancel, Schedule, Done, Search, FilterList, ChatBubbleOutline,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSnackbar } from 'notistack';
 import api from '../../api/axios';
 import { ListSkeleton } from '../../components/shared/Skeletons';
 import { useDelayedLoading } from '../../hooks/useDelayedLoading';
@@ -25,12 +26,15 @@ const RED  = '#EF4444';
 const YLW  = '#F59E0B';
 const BLU  = '#3B82F6';
 
+// Valeurs alignées sur l'enum Prisma AppointmentStatus (PENDING/CONFIRMED/
+// CANCELLED/COMPLETED) — 'REFUSED'/'DONE' n'existent pas dans l'enum et
+// faisaient echouer la mise a jour en base sans jamais remonter d'erreur
+// visible (Prisma rejette la valeur, le mutation n'avait pas de onError).
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
   PENDING:   { label: 'En attente',  color: YLW, icon: Schedule },
   CONFIRMED: { label: 'Confirmé',    color: GRN, icon: CheckCircle },
-  DONE:      { label: 'Terminé',     color: BLU, icon: Done },
+  COMPLETED: { label: 'Terminé',     color: BLU, icon: Done },
   CANCELLED: { label: 'Annulé',      color: RED, icon: Cancel },
-  REFUSED:   { label: 'Refusé',      color: RED, icon: Cancel },
 };
 
 const darkMenu = {
@@ -73,10 +77,12 @@ function ApptDialog({ appt, onClose }: { appt: any; onClose: () => void }) {
   const clientPhone = appt.user?.phone ?? appt.clientPhone;
   const clientEmail = appt.user?.email ?? appt.clientEmail;
 
+  const { enqueueSnackbar } = useSnackbar();
   const mut = useMutation({
     mutationFn: ({ status, sellerNote }: { status: string; sellerNote?: string }) =>
       api.patch(`/appointments/${appt.id}/status`, { status, sellerNote }).then(r => r.data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['sellerAppointments'] }); onClose(); },
+    onError: (e: any) => enqueueSnackbar(e?.response?.data?.message || 'Erreur lors de la mise à jour', { variant: 'error' }),
   });
 
   const cfg = STATUS_CONFIG[appt.status] ?? STATUS_CONFIG['PENDING'];
@@ -182,7 +188,7 @@ function ApptDialog({ appt, onClose }: { appt: any; onClose: () => void }) {
                 sx={{ py: 1.2, borderRadius: '10px', fontWeight: 700, fontSize: 13, bgcolor: GRN, color: '#fff', textTransform: 'none', '&:hover': { bgcolor: '#059669' } }}>
                 <CheckCircle sx={{ fontSize: 16, mr: 0.8 }} />Confirmer
               </Button>
-              <Button fullWidth onClick={() => mut.mutate({ status: 'REFUSED', sellerNote: note })}
+              <Button fullWidth onClick={() => mut.mutate({ status: 'CANCELLED', sellerNote: note })}
                 disabled={mut.isPending}
                 sx={{ py: 1.2, borderRadius: '10px', fontWeight: 700, fontSize: 13, bgcolor: 'rgba(239,68,68,0.12)', color: RED, border: `1px solid ${RED}30`, textTransform: 'none', '&:hover': { bgcolor: 'rgba(239,68,68,0.2)' } }}>
                 <Cancel sx={{ fontSize: 16, mr: 0.8 }} />Refuser
@@ -190,7 +196,7 @@ function ApptDialog({ appt, onClose }: { appt: any; onClose: () => void }) {
             </Box>
           )}
           {appt.status === 'CONFIRMED' && (
-            <Button fullWidth onClick={() => mut.mutate({ status: 'DONE', sellerNote: note })}
+            <Button fullWidth onClick={() => mut.mutate({ status: 'COMPLETED', sellerNote: note })}
               disabled={mut.isPending}
               sx={{ py: 1.2, borderRadius: '10px', fontWeight: 700, fontSize: 13, bgcolor: BLU, color: '#fff', textTransform: 'none', '&:hover': { bgcolor: '#2563EB' } }}>
               <Done sx={{ fontSize: 16, mr: 0.8 }} />Marquer comme terminé

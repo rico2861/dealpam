@@ -41,13 +41,7 @@ function Pill({ children, active, onClick, color = OR }: { children: React.React
 }
 
 const DEPTS = ['Ouest', 'Nord', 'Nord-Est', 'Nord-Ouest', 'Artibonite', 'Centre', 'Sud', 'Sud-Est', 'Grande-Anse', 'Nippes'];
-const CATEGORIES = [
-  { slug: 'mode', name: 'Mode' }, { slug: 'electronique', name: 'Électronique' },
-  { slug: 'maison', name: 'Maison' }, { slug: 'beaute', name: 'Beauté' },
-  { slug: 'bijoux', name: 'Bijoux' }, { slug: 'sport', name: 'Sport' },
-  { slug: 'alimentaire', name: 'Alimentation' }, { slug: 'chaussures', name: 'Chaussures' },
-  { slug: 'vehicules', name: 'Véhicules' }, { slug: 'smartphones', name: 'Smartphones' },
-];
+const MAX_PRODUCTS = 10;
 
 const STATUS_MAP: Record<string, { label: string; color: string }> = {
   ACTIVE:          { label: 'Active',          color: GRN },
@@ -151,6 +145,91 @@ function SearchableSelector({
   );
 }
 
+// ── Multi-select searchable selector (produits — jusqu'à MAX_PRODUCTS) ──────
+
+function MultiSearchableSelector({
+  items, value, onChange, placeholder, max,
+}: { items: SelectorItem[]; value: string[]; onChange: (ids: string[]) => void; placeholder: string; max: number }) {
+  const [q, setQ] = useState('');
+  const [open, setOpen] = useState(false);
+
+  const filtered = useMemo(() =>
+    q.trim() ? items.filter(i => i.name.toLowerCase().includes(q.toLowerCase()) || (i.sub ?? '').toLowerCase().includes(q.toLowerCase())) : items,
+    [q, items]);
+
+  const selectedItems = items.filter(i => value.includes(i.id));
+  const atMax = value.length >= max;
+
+  const toggle = (id: string) => {
+    if (value.includes(id)) onChange(value.filter(x => x !== id));
+    else if (!atMax) onChange([...value, id]);
+  };
+
+  return (
+    <Box sx={{ position: 'relative' }}>
+      {/* Selected chips */}
+      {selectedItems.length > 0 && (
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.7, mb: 1 }}>
+          {selectedItems.map(item => (
+            <Box key={item.id} sx={{ display: 'flex', alignItems: 'center', gap: 0.6, pl: 0.8, pr: 1, py: 0.4, borderRadius: '20px', bgcolor: `${OR}14`, border: `1px solid ${OR}40` }}>
+              {item.img
+                ? <Avatar src={item.img} variant="rounded" sx={{ width: 20, height: 20, borderRadius: '5px' }} />
+                : <Box sx={{ width: 20, height: 20, borderRadius: '5px', bgcolor: `${OR}20`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Inventory sx={{ fontSize: 11, color: OR }} /></Box>}
+              <Typography fontSize={12} fontWeight={600} color={OR} noWrap sx={{ maxWidth: 140 }}>{item.name}</Typography>
+              <Box onClick={() => toggle(item.id)} sx={{ cursor: 'pointer', display: 'flex', color: OR, opacity: 0.7, '&:hover': { opacity: 1 } }}>✕</Box>
+            </Box>
+          ))}
+        </Box>
+      )}
+
+      <Box onClick={() => setOpen(p => !p)}
+        sx={{ p: '10px 14px', borderRadius: '12px', cursor: 'pointer', bgcolor: 'rgba(15,23,42,0.09)', border: `1px solid ${open ? OR : BORD}`, display: 'flex', alignItems: 'center', gap: 1.2, transition: 'all 0.15s', '&:hover': { borderColor: 'rgba(15,23,42,0.09)' } }}>
+        <Search sx={{ fontSize: 16, color: SUB, flexShrink: 0 }} />
+        <Typography fontSize={13} color={SUB}>
+          {selectedItems.length > 0 ? `${selectedItems.length}/${max} sélectionné${selectedItems.length > 1 ? 's' : ''} — ajouter…` : placeholder}
+        </Typography>
+      </Box>
+
+      <Collapse in={open}>
+        <Box sx={{ mt: 0.5, borderRadius: '12px', bgcolor: '#F7F8FA', border: `1px solid ${BORD}`, overflow: 'hidden', boxShadow: '0 8px 30px rgba(15,23,42,0.15)' }}>
+          <Box sx={{ p: 1.2, borderBottom: `1px solid ${BORD}`, display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Search sx={{ fontSize: 15, color: SUB, flexShrink: 0 }} />
+            <input value={q} onChange={e => setQ(e.target.value)}
+              placeholder="Rechercher…" autoFocus
+              style={{ flex: 1, background: 'none', border: 'none', outline: 'none', fontSize: 13, color: TXT, padding: '2px 0' }} />
+          </Box>
+          {atMax && (
+            <Box sx={{ px: 1.5, py: 0.8, bgcolor: `${YLW}14`, borderBottom: `1px solid ${BORD}` }}>
+              <Typography fontSize={11.5} color={YLW} fontWeight={600}>Maximum {max} produits atteint — désélectionnez-en un pour en ajouter un autre.</Typography>
+            </Box>
+          )}
+          <Box sx={{ maxHeight: 220, overflowY: 'auto', '&::-webkit-scrollbar': { width: 4 }, '&::-webkit-scrollbar-thumb': { bgcolor: 'rgba(15,23,42,0.09)', borderRadius: 2 } }}>
+            {filtered.length === 0 ? (
+              <Box sx={{ py: 3, textAlign: 'center' }}><Typography fontSize={13} color={SUB}>Aucun résultat</Typography></Box>
+            ) : filtered.map(item => {
+              const sel = value.includes(item.id);
+              const disabled = !sel && atMax;
+              return (
+                <Box key={item.id} onClick={() => !disabled && toggle(item.id)}
+                  sx={{ display: 'flex', alignItems: 'center', gap: 1.2, px: 1.5, py: 1, cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.4 : 1, transition: 'all 0.1s', bgcolor: sel ? `${OR}12` : 'transparent', '&:hover': disabled ? {} : { bgcolor: 'rgba(15,23,42,0.04)' } }}>
+                  {item.img
+                    ? <Avatar src={item.img} variant="rounded" sx={{ width: 32, height: 32, borderRadius: '7px', flexShrink: 0 }} />
+                    : <Box sx={{ width: 32, height: 32, borderRadius: '7px', bgcolor: `${OR}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Inventory sx={{ fontSize: 15, color: OR }} /></Box>}
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography fontSize={13} fontWeight={600} color={TXT} noWrap>{item.name}</Typography>
+                    {item.sub && <Typography fontSize={11} color={SUB} noWrap>{item.sub}</Typography>}
+                  </Box>
+                  {sel && <CheckCircle sx={{ fontSize: 14, color: GRN, flexShrink: 0 }} />}
+                </Box>
+              );
+            })}
+          </Box>
+        </Box>
+      </Collapse>
+    </Box>
+  );
+}
+
 // ── Payment method card ─────────────────────────────────────────────────────
 
 function PayMethodCard({ method, selected, onClick, balance, budget }: { method: 'WALLET' | 'MONCASH'; selected: boolean; onClick: () => void; balance?: number; budget: number }) {
@@ -159,7 +238,7 @@ function PayMethodCard({ method, selected, onClick, balance, budget }: { method:
   const color = selected ? (insufficient ? RED : OR) : BORD;
 
   return (
-    <Box onClick={onClick} sx={{ flex: 1, p: 2, borderRadius: '14px', cursor: 'pointer', border: `1.5px solid ${color}`, bgcolor: selected ? `${color}10` : 'rgba(15,23,42,0.09)', transition: 'all 0.15s', '&:hover': { borderColor: selected ? color : 'rgba(15,23,42,0.09)' } }}>
+    <Box onClick={onClick} sx={{ flex: '1 1 180px', p: 2, borderRadius: '14px', cursor: 'pointer', border: `1.5px solid ${color}`, bgcolor: selected ? `${color}10` : 'rgba(15,23,42,0.09)', transition: 'all 0.15s', '&:hover': { borderColor: selected ? color : 'rgba(15,23,42,0.09)' } }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.8 }}>
         {isWallet ? <AccountBalanceWallet sx={{ fontSize: 20, color: selected ? (insufficient ? RED : OR) : SUB }} /> : <OpenInNew sx={{ fontSize: 20, color: selected ? OR : SUB }} />}
         <Typography fontWeight={700} fontSize={13.5} color={selected ? (insufficient ? RED : OR) : SUB2}>
@@ -171,7 +250,7 @@ function PayMethodCard({ method, selected, onClick, balance, budget }: { method:
           Solde: {balance.toLocaleString()} HTG {insufficient ? '— insuffisant' : '✓'}
         </Typography>
       )}
-      {!isWallet && <Typography fontSize={12} color={SUB}>Redirigé vers MonCash pour payer le budget total</Typography>}
+      {!isWallet && <Typography fontSize={12} color={SUB}>Vous serez redirigé vers MonCash pour payer {budget.toLocaleString()} HTG</Typography>}
     </Box>
   );
 }
@@ -188,7 +267,7 @@ export default function AdsPage() {
   // Form
   const [form, setForm] = useState({
     name: '', targetType: 'PRODUCT' as 'PRODUCT' | 'STORE',
-    productId: '', storeId: '',
+    productIds: [] as string[], storeId: '',
     objective: 'TRAFFIC', totalBudget: 1000,
     dailyBudget: '', startDate: '', endDate: '',
     targetingMode: 'AUTO' as 'AUTO' | 'MANUAL',
@@ -197,7 +276,7 @@ export default function AdsPage() {
     paymentMethod: 'WALLET' as 'WALLET' | 'MONCASH',
   });
   const resetForm = () => setForm({
-    name: '', targetType: 'PRODUCT', productId: '', storeId: '',
+    name: '', targetType: 'PRODUCT', productIds: [], storeId: '',
     objective: 'TRAFFIC', totalBudget: 1000, dailyBudget: '', startDate: '', endDate: '',
     targetingMode: 'AUTO', targetGenders: [], targetAgeMin: '', targetAgeMax: '',
     targetDepts: [], targetCategories: [], paymentMethod: 'WALLET',
@@ -217,7 +296,7 @@ export default function AdsPage() {
   });
   const { data: stores } = useQuery({
     queryKey: ['seller-stores-simple'],
-    queryFn: () => api.get('/sellers/my-stores').then(r => r.data || []),
+    queryFn: () => api.get('/stores/me/all').then(r => r.data?.stores || []),
     enabled: hasToken,
   });
   const { data: stats } = useQuery({
@@ -230,6 +309,12 @@ export default function AdsPage() {
     queryFn: () => api.get('/wallet').then(r => r.data),
     enabled: hasToken,
   });
+  const { data: categoriesData } = useQuery({
+    queryKey: ['categories'],
+    queryFn: () => api.get('/categories').then(r => r.data),
+    enabled: hasToken,
+  });
+  const categoryList: { slug: string; name: string }[] = categoriesData ?? [];
 
   const pauseMut  = useMutation({ mutationFn: (id: string) => api.patch(`/ads/my/${id}/pause`),  onSuccess: () => qc.invalidateQueries({ queryKey: ['my-campaigns'] }) });
   const resumeMut = useMutation({ mutationFn: (id: string) => api.patch(`/ads/my/${id}/resume`), onSuccess: () => qc.invalidateQueries({ queryKey: ['my-campaigns'] }) });
@@ -271,56 +356,67 @@ export default function AdsPage() {
     if (!form.name || !form.startDate || !form.endDate) {
       enqueueSnackbar('Veuillez remplir tous les champs requis', { variant: 'warning' }); return;
     }
-    if (form.targetType === 'PRODUCT' && !form.productId) {
-      enqueueSnackbar('Sélectionnez un produit à promouvoir', { variant: 'warning' }); return;
+    if (form.targetType === 'PRODUCT' && form.productIds.length === 0) {
+      enqueueSnackbar('Sélectionnez au moins un produit à promouvoir', { variant: 'warning' }); return;
     }
     if (form.targetType === 'STORE' && !form.storeId) {
       enqueueSnackbar('Sélectionnez une boutique à promouvoir', { variant: 'warning' }); return;
+    }
+    if (form.targetType === 'PRODUCT' && form.productIds.length > 1 && form.paymentMethod === 'MONCASH') {
+      enqueueSnackbar('Le paiement MonCash direct ne fonctionne que pour un seul produit à la fois — utilisez le Wallet, ou sélectionnez un seul produit.', { variant: 'warning' });
+      return;
     }
 
     setSubmitting(true);
     try {
       const isAuto = form.targetingMode === 'AUTO';
-      const { data: campaign } = await api.post('/ads', {
-        name: form.name,
-        productId: form.targetType === 'PRODUCT' ? form.productId : undefined,
-        storeId:   form.targetType === 'STORE'   ? form.storeId   : undefined,
-        objective: form.objective,
-        totalBudget: form.totalBudget,
-        dailyBudget: form.dailyBudget ? Number(form.dailyBudget) : undefined,
-        startDate: form.startDate,
-        endDate: form.endDate,
-        targetingMode: form.targetingMode,
-        targetGenders: isAuto ? [] : form.targetGenders,
-        targetDepts: isAuto ? [] : form.targetDepts,
-        targetCategories: isAuto ? [] : form.targetCategories,
-        targetAgeMin: isAuto ? undefined : (form.targetAgeMin ? Number(form.targetAgeMin) : undefined),
-        targetAgeMax: isAuto ? undefined : (form.targetAgeMax ? Number(form.targetAgeMax) : undefined),
-      });
+      const targetIds = form.targetType === 'PRODUCT' ? form.productIds : [null];
+      const createdIds: string[] = [];
 
-      const campaignId = campaign.id;
+      for (const productId of targetIds) {
+        const { data: campaign } = await api.post('/ads', {
+          name: targetIds.length > 1 ? `${form.name} (${createdIds.length + 1}/${targetIds.length})` : form.name,
+          productId: productId ?? undefined,
+          storeId:   form.targetType === 'STORE' ? form.storeId : undefined,
+          objective: form.objective,
+          totalBudget: form.totalBudget,
+          dailyBudget: form.dailyBudget ? Number(form.dailyBudget) : undefined,
+          startDate: form.startDate,
+          endDate: form.endDate,
+          targetingMode: form.targetingMode,
+          targetGenders: isAuto ? [] : form.targetGenders,
+          targetDepts: isAuto ? [] : form.targetDepts,
+          targetCategories: isAuto ? [] : form.targetCategories,
+          targetAgeMin: isAuto ? undefined : (form.targetAgeMin ? Number(form.targetAgeMin) : undefined),
+          targetAgeMax: isAuto ? undefined : (form.targetAgeMax ? Number(form.targetAgeMax) : undefined),
+        });
+        createdIds.push(campaign.id);
+      }
+
       qc.invalidateQueries({ queryKey: ['my-campaigns'] });
+      const totalCost = form.totalBudget * createdIds.length;
 
       if (form.paymentMethod === 'WALLET') {
-        if (walletBalance >= form.totalBudget) {
-          // Auto-pay with wallet
-          try {
-            await api.post(`/ads/my/${campaignId}/pay`, { method: 'WALLET' });
-            qc.invalidateQueries({ queryKey: ['seller-wallet'] });
-            enqueueSnackbar('Campagne créée et payée via Wallet — en cours de révision', { variant: 'success' });
-          } catch {
-            enqueueSnackbar('Campagne créée. Paiement wallet échoué — payez depuis la liste', { variant: 'warning' });
+        if (walletBalance >= totalCost) {
+          let paid = 0;
+          for (const id of createdIds) {
+            try { await api.post(`/ads/my/${id}/pay`, { method: 'WALLET' }); paid++; } catch { /* left as PENDING_PAYMENT */ }
           }
+          qc.invalidateQueries({ queryKey: ['seller-wallet'] });
+          enqueueSnackbar(paid === createdIds.length
+            ? `${paid} campagne${paid > 1 ? 's' : ''} créée${paid > 1 ? 's' : ''} et payée${paid > 1 ? 's' : ''} via Wallet — en cours de révision`
+            : `${paid}/${createdIds.length} campagnes payées — les autres restent en brouillon, payez-les depuis la liste`,
+            { variant: paid === createdIds.length ? 'success' : 'warning' });
         } else {
-          enqueueSnackbar('Campagne créée en brouillon — solde wallet insuffisant, rechargez puis payez', { variant: 'warning' });
+          enqueueSnackbar(`Campagne${createdIds.length > 1 ? 's' : ''} créée${createdIds.length > 1 ? 's' : ''} en brouillon — solde wallet insuffisant, rechargez puis payez`, { variant: 'warning' });
         }
         setOpen(false); resetForm();
       } else {
-        // MonCash redirect
+        // MonCash redirect — un seul produit/boutique, donc une seule campagne créée
         setOpen(false); resetForm();
         try {
-          const { data: pay } = await api.post('/payments/ad-campaign/initiate', { campaignId });
-          localStorage.setItem('adCampaignPay', campaignId);
+          const { data: pay } = await api.post('/payments/ad-campaign/initiate', { campaignId: createdIds[0] });
+          localStorage.setItem('adCampaignPay', createdIds[0]);
           window.location.href = pay.redirect_url;
         } catch (e: any) {
           enqueueSnackbar(e?.response?.data?.message || 'Impossible d\'initier MonCash', { variant: 'error' });
@@ -360,6 +456,7 @@ export default function AdsPage() {
   const toggleGender = (g: string) => setForm(f => ({ ...f, targetGenders: f.targetGenders.includes(g) ? f.targetGenders.filter(x => x !== g) : [...f.targetGenders, g] }));
   const toggleDept   = (d: string) => setForm(f => ({ ...f, targetDepts: f.targetDepts.includes(d) ? f.targetDepts.filter(x => x !== d) : [...f.targetDepts, d] }));
   const toggleCat    = (c: string) => setForm(f => ({ ...f, targetCategories: f.targetCategories.includes(c) ? f.targetCategories.filter(x => x !== c) : [...f.targetCategories, c] }));
+  const toggleAllCats = () => setForm(f => ({ ...f, targetCategories: f.targetCategories.length === categoryList.length ? [] : categoryList.map(c => c.slug) }));
 
   return (
     <Box sx={{ p: { xs: 2, md: 3 }, bgcolor: BG, minHeight: '100vh' }}>
@@ -554,15 +651,21 @@ export default function AdsPage() {
 
       {/* ── Create Campaign Dialog ── */}
       <Dialog open={open} onClose={() => !submitting && setOpen(false)} maxWidth="md" fullWidth
-        PaperProps={{ sx: { bgcolor: CARD, border: `1px solid ${BORD}`, borderRadius: '20px', color: TXT } }}>
+        PaperProps={{ sx: {
+          bgcolor: CARD, border: `1px solid ${BORD}`, color: TXT,
+          borderRadius: { xs: 0, sm: '20px' },
+          m: { xs: 0, sm: 3 },
+          width: { xs: '100%', sm: 'calc(100% - 48px)' },
+          maxHeight: { xs: '100%', sm: 'calc(100% - 48px)' },
+        } }}>
         <DialogTitle sx={{ color: TXT, fontWeight: 900, fontSize: 18, display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <Box sx={{ width: 36, height: 36, borderRadius: '10px', bgcolor: 'rgba(255,107,0,0.14)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Campaign sx={{ fontSize: 18, color: OR }} />
           </Box>
           Créer une campagne
         </DialogTitle>
-        <DialogContent sx={{ pt: 1 }}>
-          <Grid container spacing={2}>
+        <DialogContent sx={{ pt: 2.5 }}>
+          <Grid container spacing={3}>
             {/* Campaign name */}
             <Grid item xs={12}>
               <TextField fullWidth label="Nom de la campagne *" value={form.name}
@@ -574,15 +677,15 @@ export default function AdsPage() {
               <Typography fontSize={12} fontWeight={700} color={SUB} mb={1.2} sx={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                 Promouvoir
               </Typography>
-              <Box sx={{ display: 'flex', gap: 1.2, mb: 1.5 }}>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.2, mb: 1.5 }}>
                 {([
-                  { type: 'PRODUCT', icon: Inventory, label: 'Un produit', desc: 'Promouvoir un article spécifique' },
-                  { type: 'STORE',   icon: Store,     label: 'Une boutique', desc: 'Promouvoir toute votre boutique' },
+                  { type: 'PRODUCT', icon: Inventory, label: 'Un ou plusieurs produits', desc: `Promouvoir jusqu'à ${MAX_PRODUCTS} articles` },
+                  { type: 'STORE',   icon: Store,     label: 'Une boutique', desc: 'Promouvoir toute votre boutique (une seule)' },
                 ] as const).map(({ type, icon: Icon, label, desc }) => {
                   const sel = form.targetType === type;
                   return (
-                    <Box key={type} onClick={() => setForm(f => ({ ...f, targetType: type, productId: '', storeId: '' }))}
-                      sx={{ flex: 1, cursor: 'pointer', p: 1.8, borderRadius: '12px', transition: 'all 0.15s', border: `1.5px solid ${sel ? OR : BORD}`, bgcolor: sel ? 'rgba(255,107,0,0.08)' : 'rgba(15,23,42,0.09)', '&:hover': { borderColor: sel ? OR : 'rgba(15,23,42,0.09)' } }}>
+                    <Box key={type} onClick={() => setForm(f => ({ ...f, targetType: type, productIds: [], storeId: '' }))}
+                      sx={{ flex: '1 1 200px', cursor: 'pointer', p: 1.8, borderRadius: '12px', transition: 'all 0.15s', border: `1.5px solid ${sel ? OR : BORD}`, bgcolor: sel ? 'rgba(255,107,0,0.08)' : 'rgba(15,23,42,0.09)', '&:hover': { borderColor: sel ? OR : 'rgba(15,23,42,0.09)' } }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.3 }}>
                         <Icon sx={{ fontSize: 17, color: sel ? OR : SUB }} />
                         <Typography fontWeight={700} fontSize={13} color={sel ? OR : TXT}>{label}</Typography>
@@ -595,11 +698,12 @@ export default function AdsPage() {
 
               {/* Searchable selector */}
               {form.targetType === 'PRODUCT' ? (
-                <SearchableSelector
+                <MultiSearchableSelector
                   items={productItems}
-                  value={form.productId}
-                  onChange={id => setForm(f => ({ ...f, productId: id }))}
-                  placeholder="Rechercher un produit à promouvoir *"
+                  value={form.productIds}
+                  onChange={ids => setForm(f => ({ ...f, productIds: ids }))}
+                  placeholder={`Rechercher des produits à promouvoir * (max ${MAX_PRODUCTS})`}
+                  max={MAX_PRODUCTS}
                 />
               ) : (
                 <SearchableSelector
@@ -648,7 +752,7 @@ export default function AdsPage() {
               <TextField fullWidth label="Date de début *" type="date" value={form.startDate}
                 InputLabelProps={{ shrink: true }} onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))} sx={fieldSx} />
             </Grid>
-            <Grid item xs={6}>
+            <Grid item xs={12} md={6}>
               <TextField fullWidth label="Date de fin *" type="date" value={form.endDate}
                 InputLabelProps={{ shrink: true }} onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))} sx={fieldSx} />
             </Grid>
@@ -656,7 +760,7 @@ export default function AdsPage() {
             {/* Targeting */}
             <Grid item xs={12}>
               <Typography fontSize={12} fontWeight={700} color={SUB} mb={1.5} sx={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}>Ciblage de l'audience</Typography>
-              <Box sx={{ display: 'flex', gap: 1.5, mb: 2 }}>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, mb: 2 }}>
                 {[
                   { mode: 'AUTO', icon: <AutoAwesome sx={{ fontSize: 16 }} />, label: 'Automatique', desc: "L'algorithme optimise votre audience" },
                   { mode: 'MANUAL', icon: <Tune sx={{ fontSize: 16 }} />, label: 'Manuel', desc: 'Définissez genre, âge et zone' },
@@ -664,7 +768,7 @@ export default function AdsPage() {
                   const sel = form.targetingMode === mode;
                   return (
                     <Box key={mode} onClick={() => setForm(f => ({ ...f, targetingMode: mode as any }))}
-                      sx={{ flex: 1, cursor: 'pointer', p: 1.8, borderRadius: '12px', transition: 'all 0.15s', border: `1.5px solid ${sel ? OR : BORD}`, bgcolor: sel ? 'rgba(255,107,0,0.08)' : 'rgba(15,23,42,0.09)', '&:hover': { borderColor: sel ? OR : 'rgba(15,23,42,0.09)' } }}>
+                      sx={{ flex: '1 1 200px', cursor: 'pointer', p: 1.8, borderRadius: '12px', transition: 'all 0.15s', border: `1.5px solid ${sel ? OR : BORD}`, bgcolor: sel ? 'rgba(255,107,0,0.08)' : 'rgba(15,23,42,0.09)', '&:hover': { borderColor: sel ? OR : 'rgba(15,23,42,0.09)' } }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.4, color: sel ? OR : SUB }}>{icon}
                         <Typography fontWeight={700} fontSize={13} color={sel ? OR : TXT}>{label}</Typography>
                       </Box>
@@ -706,7 +810,8 @@ export default function AdsPage() {
                   <Box>
                     <Typography fontSize={11} fontWeight={700} color={SUB} mb={1} sx={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}>Catégories d'intérêt</Typography>
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.7 }}>
-                      {CATEGORIES.map(c => <Pill key={c.slug} active={form.targetCategories.includes(c.slug)} onClick={() => toggleCat(c.slug)} color={GRN}>{c.name}</Pill>)}
+                      <Pill active={form.targetCategories.length === categoryList.length && categoryList.length > 0} onClick={toggleAllCats} color={OR}>Tout</Pill>
+                      {categoryList.map(c => <Pill key={c.slug} active={form.targetCategories.includes(c.slug)} onClick={() => toggleCat(c.slug)} color={GRN}>{c.name}</Pill>)}
                     </Box>
                   </Box>
                 </Box>
@@ -735,7 +840,7 @@ export default function AdsPage() {
             {/* Payment method */}
             <Grid item xs={12}>
               <Typography fontSize={12} fontWeight={700} color={SUB} mb={1.2} sx={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}>Méthode de paiement</Typography>
-              <Box sx={{ display: 'flex', gap: 1.5 }}>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
                 <PayMethodCard method="WALLET"  selected={form.paymentMethod === 'WALLET'}  onClick={() => setForm(f => ({ ...f, paymentMethod: 'WALLET' }))}  balance={walletBalance} budget={form.totalBudget} />
                 <PayMethodCard method="MONCASH" selected={form.paymentMethod === 'MONCASH'} onClick={() => setForm(f => ({ ...f, paymentMethod: 'MONCASH' }))} budget={form.totalBudget} />
               </Box>
@@ -770,7 +875,7 @@ export default function AdsPage() {
               <Typography fontSize={13} color={OR} fontWeight={800}>{Number(payingCampaign.totalBudget).toLocaleString()} HTG</Typography>
             </Box>
           )}
-          <Box sx={{ display: 'flex', gap: 1.5, mb: 1 }}>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, mb: 1 }}>
             <PayMethodCard method="WALLET"  selected={payMethod === 'WALLET'}  onClick={() => setPayMethod('WALLET')}  balance={walletBalance} budget={payingCampaign?.totalBudget ?? 0} />
             <PayMethodCard method="MONCASH" selected={payMethod === 'MONCASH'} onClick={() => setPayMethod('MONCASH')} budget={payingCampaign?.totalBudget ?? 0} />
           </Box>
