@@ -582,118 +582,37 @@ function StoreAvatar({ name, sz }: { name: string; sz: number }) {
 
 /* ─── Carte vendeur moderne ──────────────────────────────────────────────── */
 function SellerCard({ s }: { s: any }) {
-  const [bannerError, setBannerError] = useState(false);
+  const [imgError, setImgError] = useState(false);
   const initials = s.store.name.split(' ').slice(0, 2).map((w: string) => w[0] ?? '').join('').toUpperCase();
-  const isVerif  = s.store.isVerified;
-  const name     = s.store.name;
-  const city     = s.store.city;
-  const dept     = s.store.department;
-  const rating   = s.store.avgRating ? Number(s.store.avgRating).toFixed(1) : null;
-  const reviews  = s.store.totalReviews ?? 0;
-  const hasBanner = !!s.store.bannerUrl && !bannerError;
-  const address  = s.store.address || [city, dept].filter(Boolean).join(', ') || null;
+  const name = s.store.name;
+  const img  = s.store.logoUrl || s.store.bannerUrl;
+  const hasImg = !!img && !imgError;
 
   return (
     <Box component={Link} to={`/boutique/${s.store.slug}`}
       sx={{
         flexShrink: 0,
-        width: { xs: '72%', sm: 240, md: 'calc(25% - 15px)' },
-        minWidth: { xs: '72%', sm: 240, md: 220 },
-        maxWidth: { md: 264 },
+        width: { xs: 108, sm: 128, md: 140 },
         scrollSnapAlign: { xs: 'start', md: 'none' },
         textDecoration: 'none',
-        borderRadius: '18px',
-        overflow: 'hidden',
-        bgcolor: '#fff',
-        border: `1px solid ${FS_BORDER}`,
-        boxShadow: '0 2px 10px rgba(15,27,46,0.05)',
-        transition: 'box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease',
-        '&:hover': {
-          transform: 'translateY(-3px)',
-          boxShadow: '0 14px 32px rgba(15,27,46,0.12)',
-          borderColor: 'rgba(245,113,26,0.4)',
-        },
-        '&:hover .sc-visit': { bgcolor: FS_ORANGE, color: '#fff', borderColor: FS_ORANGE },
-        '&:hover .sc-arrow': { transform: 'translateX(3px)', opacity: 1 },
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        '&:hover .sc-avatar': { transform: 'scale(1.04)' },
       }}>
-
-      {/* Bandeau de tête — clair, teinté marque, jamais un bloc marine plein */}
-      <Box sx={{
-        height: 64, position: 'relative', overflow: 'hidden',
-        background: hasBanner ? undefined : `linear-gradient(135deg, ${alpha(FS_ORANGE, 0.14)} 0%, ${alpha(FS_NAVY, 0.06)} 100%)`,
+      <Box className="sc-avatar" sx={{
+        width: '100%', aspectRatio: '1 / 1', borderRadius: '28px',
+        bgcolor: '#F1F5F9', overflow: 'hidden', flexShrink: 0,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        transition: 'transform 0.2s ease',
+        color: FS_ORANGE, fontWeight: 800, fontSize: 22,
       }}>
-        {hasBanner && (
-          <Box component="img" src={s.store.bannerUrl} alt="" onError={() => setBannerError(true)}
-            sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
-        )}
-        {hasBanner && (
-          <Box sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15,27,46,0.35), transparent 55%)' }} />
-        )}
-        {/* Boutiques mises en avant = vérifiées + plan payant (règle métier) — le
-            badge reflète honnêtement ce statut, pas un "vedette" arbitraire. */}
-        {isVerif && (
-          <Box sx={{
-            position: 'absolute', top: 9, right: 9, zIndex: 1,
-            display: 'flex', alignItems: 'center', gap: 0.35,
-            px: 1, py: 0.35, borderRadius: '100px',
-            bgcolor: hasBanner ? 'rgba(0,0,0,0.35)' : '#fff',
-            border: `1px solid ${hasBanner ? 'rgba(255,255,255,0.25)' : FS_BORDER}`,
-            boxShadow: hasBanner ? 'none' : '0 2px 6px rgba(15,27,46,0.08)',
-          }}>
-            <Verified sx={{ fontSize: 11, color: '#16A34A' }} />
-            <Typography fontSize={9} fontWeight={700} color={hasBanner ? '#fff' : FS_NAVY} letterSpacing="0.03em">Vérifié</Typography>
-          </Box>
-        )}
+        {hasImg
+          ? <Box component="img" src={img} alt={name} onError={() => setImgError(true)}
+              sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          : initials}
       </Box>
-
-      {/* Avatar superposé au bandeau — logo carré blanc, ombre nette */}
-      <Box sx={{ px: 1.8, mt: '-24px', position: 'relative', zIndex: 1 }}>
-        <Box className="sc-avatar" sx={{
-          width: 52, height: 52, borderRadius: '14px', flexShrink: 0,
-          bgcolor: '#fff', border: '3px solid #fff',
-          boxShadow: '0 4px 14px rgba(15,27,46,0.18)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: FS_ORANGE, fontWeight: 800, fontSize: 17, overflow: 'hidden',
-        }}>
-          {s.store.logoUrl
-            ? <Box component="img" src={s.store.logoUrl} alt={name} sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            : initials}
-        </Box>
-      </Box>
-
-      {/* Corps de carte */}
-      <Box sx={{ px: 1.8, pt: 1.2, pb: 1.6 }}>
-        <Typography fontSize={14.5} fontWeight={700} color={FS_NAVY} lineHeight={1.3} noWrap mb={0.3}>
-          {name}
-        </Typography>
-
-        <Box sx={{ display: 'flex', alignItems: 'center', minHeight: 18, mb: 1.4 }}>
-          {rating ? (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4 }}>
-              <Star sx={{ fontSize: 13, color: FS_STAR }} />
-              <Typography fontSize={12} fontWeight={600} color={FS_NAVY}>
-                {rating} <Typography component="span" fontSize={12} fontWeight={400} color={FS_MUTED}>({reviews})</Typography>
-              </Typography>
-            </Box>
-          ) : address ? (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4, minWidth: 0 }}>
-              <LocationOn sx={{ fontSize: 13, color: FS_MUTED, flexShrink: 0 }} />
-              <Typography fontSize={12} color={FS_MUTED} noWrap>{address}</Typography>
-            </Box>
-          ) : <span />}
-        </Box>
-
-        {/* Bouton visiter */}
-        <Box className="sc-visit" sx={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5,
-          py: 0.95, borderRadius: '10px', fontSize: 12.5, fontWeight: 700,
-          bgcolor: 'transparent', color: FS_NAVY, border: `1.5px solid ${FS_BORDER}`,
-          transition: 'background 0.18s ease, color 0.18s ease, border-color 0.18s ease',
-        }}>
-          Visiter la boutique
-          <KeyboardArrowRight className="sc-arrow" sx={{ fontSize: 14, opacity: 0, transform: 'translateX(-2px)', transition: 'transform 0.2s ease, opacity 0.2s ease' }} />
-        </Box>
-      </Box>
+      <Typography fontSize={13.5} fontWeight={600} color={FS_NAVY} textAlign="center" lineHeight={1.3} mt={1.2} noWrap sx={{ maxWidth: '100%' }}>
+        {name}
+      </Typography>
     </Box>
   );
 }
