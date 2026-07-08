@@ -1,15 +1,18 @@
 ﻿import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Container, Typography, Card, CardContent, TextField, Button, Grid, Box, Alert, CircularProgress, FormControl, InputLabel, Select, MenuItem, Chip } from '@mui/material';
+import { Container, Typography, Card, CardContent, TextField, Button, Grid, Box, Alert, CircularProgress, FormControl, InputLabel, Select, MenuItem, Chip, IconButton } from '@mui/material';
+import { Add, Close } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import api from '../../api/axios';
+import { parsePriceTiers } from '../../utils/priceTiers';
 
 export default function EditProductPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
   const [form, setForm] = useState<any>(null);
+  const [priceTiers, setPriceTiers] = useState<{ minQty: string; price: string }[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -32,7 +35,11 @@ export default function EditProductPage() {
         salePrice: product.salePrice || '',
         stock: product.stock || 0,
         sku: product.sku || '',
+        minOrderQty: product.minOrderQty || 1,
       });
+      setPriceTiers(
+        parsePriceTiers(product.priceTiers).map(t => ({ minQty: String(t.minQty), price: String(t.price) })),
+      );
     }
   }, [product]);
 
@@ -47,6 +54,9 @@ export default function EditProductPage() {
       // @IsOptional() de class-validator ne traite que `undefined` comme absent —
       // une chaîne vide ('') échoue encore la validation (@IsUUID/@IsNumber).
       // On nettoie donc le payload avant envoi au lieu de forwarder le form tel quel.
+      const cleanTiers = priceTiers
+        .filter(t => t.minQty !== '' && t.price !== '')
+        .map(t => ({ minQty: Number(t.minQty), price: Number(t.price) }));
       const payload = {
         name: form.name,
         description: form.description,
@@ -56,6 +66,8 @@ export default function EditProductPage() {
         salePrice: form.salePrice !== '' ? Number(form.salePrice) : undefined,
         stock: form.stock !== '' ? Number(form.stock) : undefined,
         sku: form.sku || undefined,
+        minOrderQty: form.minOrderQty !== '' ? Number(form.minOrderQty) : undefined,
+        priceTiers: cleanTiers.length ? JSON.stringify(cleanTiers) : undefined,
       };
       await api.patch(`/products/${id}`, payload);
       enqueueSnackbar(
@@ -108,8 +120,38 @@ export default function EditProductPage() {
                 <TextField fullWidth label="Prix (HTG)" type="number" value={form.price} onChange={f('price')} margin="dense" />
                 <TextField fullWidth label="Prix promo (HTG)" type="number" value={form.salePrice} onChange={f('salePrice')} margin="dense" />
                 <TextField fullWidth label="Stock" type="number" value={form.stock} onChange={f('stock')} margin="dense" />
+                <TextField fullWidth label="Quantité minimum de commande" type="number" value={form.minOrderQty}
+                  onChange={f('minOrderQty')} margin="dense" inputProps={{ min: 1 }} />
               </CardContent>
             </Card>
+
+            <Card sx={{ mb: 2 }}>
+              <CardContent>
+                <Typography fontSize={13} fontWeight={700} mb={0.5}>Prix dégressifs par quantité (optionnel)</Typography>
+                <Typography fontSize={12} color="text.secondary" mb={1.2}>
+                  Ex: 1 unité = 500 HTG, à partir de 3 = 650 HTG chacune, à partir de 12 = 2345 HTG chacune.
+                </Typography>
+                {priceTiers.map((t, i) => (
+                  <Box key={i} sx={{ display: 'flex', gap: 1, mb: 1, alignItems: 'center' }}>
+                    <TextField size="small" label="À partir de (qté)" type="number" value={t.minQty}
+                      onChange={e => setPriceTiers(p => p.map((x, j) => j === i ? { ...x, minQty: e.target.value } : x))}
+                      inputProps={{ min: 1 }} sx={{ flex: 1 }} />
+                    <TextField size="small" label="Prix unitaire (HTG)" type="number" value={t.price}
+                      onChange={e => setPriceTiers(p => p.map((x, j) => j === i ? { ...x, price: e.target.value } : x))}
+                      inputProps={{ min: 0 }} sx={{ flex: 1 }} />
+                    <IconButton size="small" onClick={() => setPriceTiers(p => p.filter((_, j) => j !== i))}>
+                      <Close fontSize="small" />
+                    </IconButton>
+                  </Box>
+                ))}
+                <Button size="small" startIcon={<Add />}
+                  onClick={() => setPriceTiers(p => [...p, { minQty: '', price: '' }])}
+                  sx={{ textTransform: 'none', fontWeight: 700 }}>
+                  Ajouter un palier
+                </Button>
+              </CardContent>
+            </Card>
+
             <Button fullWidth variant="contained" type="submit" size="large" disabled={loading} sx={{ py: 1.5, fontWeight: 700 }}>
               {loading ? <CircularProgress size={22} color="inherit" /> : '💾 Enregistrer'}
             </Button>

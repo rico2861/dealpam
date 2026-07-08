@@ -17,6 +17,7 @@ import {
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import api from '../../api/axios';
+import { parsePriceTiers, getEffectiveUnitPrice } from '../../utils/priceTiers';
 import { useAuthStore } from '../../store/auth.store';
 import { useCartStore } from '../../store/cart.store';
 
@@ -279,6 +280,14 @@ export default function ProductDetailPage() {
   const sale   = cur < orig;
   const disc   = sale ? Math.round((1-cur/orig)*100) : 0;
   const save   = sale ? orig-cur : 0;
+
+  // Prix dégressifs par quantité (bundles) — jamais inventés, uniquement ceux
+  // configurés par le vendeur. Le prix affiché/facturé suit la quantité choisie.
+  const priceTiers  = parsePriceTiers(product?.priceTiers);
+  const minOrderQty = product?.minOrderQty || 1;
+  const effUnit     = getEffectiveUnitPrice(orig, product?.salePrice, product?.priceTiers, qty);
+
+  useEffect(() => { if (product) setQty(minOrderQty); }, [product?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Devise d'affichage — les prix sont toujours stockés en HTG en base ;
   // la conversion se fait uniquement à l'affichage, via le taux du vendeur.
@@ -809,7 +818,7 @@ export default function ProductDetailPage() {
                 <Box sx={{ display:'flex', alignItems:'center', gap:1.2, mb:1.5, flexWrap:{ xs:'wrap', sm:'nowrap' } }}>
                   <Typography fontSize={12} fontWeight={600} color={SUB} textTransform="uppercase" letterSpacing="0.8px" sx={{ flexShrink:0, width:{ xs:'100%', sm:'auto' } }}>Quantité</Typography>
                   <Box sx={{ display:'flex', alignItems:'center', bgcolor:'rgba(15,23,42,0.06)', border:`1.5px solid ${BORD}`, borderRadius:'10px', overflow:'hidden', height:44, flexShrink:0 }}>
-                    <IconButton size="small" onClick={()=>setQty(q=>Math.max(1,q-1))}
+                    <IconButton size="small" onClick={()=>setQty(q=>Math.max(minOrderQty,q-1))}
                       sx={{ borderRadius:0, px:2, height:'100%', color:TXT, '&:hover':{ bgcolor:'rgba(255,107,0,0.1)' } }}>
                       <Typography fontWeight={600} fontSize={20} lineHeight={1}>−</Typography>
                     </IconButton>
@@ -831,6 +840,40 @@ export default function ProductDetailPage() {
                     {loading ? 'un instant…' : needsColor ? 'choisissez' : 'acheter maintenant'}
                   </Button>
                 </Box>
+
+                {minOrderQty>1 && (
+                  <Typography fontSize={12} color={SUB2} mb={1.5}>
+                    Quantité minimum de commande pour ce produit : {minOrderQty}
+                  </Typography>
+                )}
+
+                {priceTiers.length>0 && (
+                  <Box sx={{ mb:1.5, borderRadius:'10px', border:`1px solid ${BORD}`, overflow:'hidden' }}>
+                    <Box sx={{ px:1.6, py:1, bgcolor:'rgba(15,27,46,0.04)' }}>
+                      <Typography fontSize={12} fontWeight={600} color={TXT}>Prix par quantité</Typography>
+                    </Box>
+                    {priceTiers.map((t,i)=>{
+                      const next = priceTiers[i+1];
+                      const rangeLabel = next ? `${t.minQty} - ${next.minQty-1}` : `${t.minQty}+`;
+                      const active = qty>=t.minQty && (!next || qty<next.minQty);
+                      return (
+                        <Box key={i} sx={{ display:'flex', justifyContent:'space-between', alignItems:'center',
+                          px:1.6, py:0.9, bgcolor: active?'rgba(245,113,26,0.08)':'transparent',
+                          borderTop: i>0 ? `1px solid ${BORD}` : 'none' }}>
+                          <Typography fontSize={13} color={active?OR:TXT} fontWeight={active?600:400}>{rangeLabel} unités</Typography>
+                          <Typography fontSize={13} color={active?OR:TXT} fontWeight={active?600:400}>{fmtDisplay(t.price)} / unité</Typography>
+                        </Box>
+                      );
+                    })}
+                  </Box>
+                )}
+
+                {(priceTiers.length>0 || qty>1) && (
+                  <Box sx={{ display:'flex', justifyContent:'space-between', alignItems:'center', mb:1.5, px:0.2 }}>
+                    <Typography fontSize={13} color={SUB2}>Total pour {qty} unité{qty>1?'s':''}</Typography>
+                    <Typography fontSize={16} fontWeight={700} color={TXT}>{fmtDisplay(effUnit*qty)}</Typography>
+                  </Box>
+                )}
 
                 <Button fullWidth onClick={addToCart} disabled={ctaDisabled}
                   startIcon={loading ? <CircularProgress size={16} color="inherit"/> : <ShoppingCart sx={{ fontSize:18 }}/>}
