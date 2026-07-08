@@ -21,13 +21,13 @@ class VerifyDto {
 
 @ApiTags('Payments')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller('payments')
 export class PaymentsController {
   constructor(private ps: PaymentsService) {}
 
   // ── Abonnement : initier le paiement MonCash ──────────────────────────────
   @Post('subscription/initiate')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Vendeur — initie le paiement MonCash pour un abonnement' })
   initiateSubscription(@CurrentUser() u: any, @Body() dto: InitiateSubDto) {
     return this.ps.initiateSubscriptionPayment(u.id, dto.planId, dto.billingCycle || 'MONTHLY');
@@ -35,25 +35,33 @@ export class PaymentsController {
 
   // ── Pub : initier le paiement MonCash pour une campagne ───────────────────
   @Post('ad-campaign/initiate')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Vendeur — initie le paiement MonCash pour une campagne pub' })
   initiateAdCampaign(@CurrentUser() u: any, @Body() dto: InitiateAdDto) {
     return this.ps.initiateAdCampaignPayment(u.id, dto.campaignId);
   }
 
   // ── Vérification retour MonCash (vendeur) ─────────────────────────────────
+  // Volontairement PUBLIC (pas de JwtAuthGuard) : MonCash déconnecte parfois
+  // le navigateur au retour (session/JWT expiré), et l'ancrage de sécurité
+  // ici n'est de toute façon jamais le JWT de l'appelant — c'est la
+  // confirmation server-to-server auprès de MonCash (transaction_id/reference)
+  // qui fait foi. Exiger un JWT valide ne faisait que bloquer la vérification
+  // et empêcher tout crédit après une session expirée.
   @Post('verify')
   @ApiOperation({
     summary: 'Vérifier un paiement MonCash vendeur après retour',
     description: 'Envoyer transaction_id (URL MonCash) OU order_id interne. Active automatiquement l\'abonnement ou la campagne.',
   })
-  verify(@CurrentUser() u: any, @Body() dto: VerifyDto) {
-    if (dto.transaction_id) return this.ps.verifySellerPayment(dto.transaction_id, u.id);
-    if (dto.order_id)       return this.ps.verifyByOrderId(dto.order_id, u.id);
+  verify(@Body() dto: VerifyDto) {
+    if (dto.transaction_id) return this.ps.verifySellerPayment(dto.transaction_id);
+    if (dto.order_id)       return this.ps.verifyByOrderId(dto.order_id);
     throw new BadRequestException('Fournir transaction_id ou order_id');
   }
 
   // ── Historique paiements du vendeur ──────────────────────────────────────
   @Get('mine')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Historique des paiements du vendeur connecté' })
   findMine(@CurrentUser() u: any, @Query('page') page: number) {
     return this.ps.findMine(u.id, page);
@@ -61,7 +69,7 @@ export class PaymentsController {
 
   // ── Admin : tous les paiements ────────────────────────────────────────────
   @Get()
-  @UseGuards(RolesGuard) @Roles('ADMIN', 'SUPER_ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard) @Roles('ADMIN', 'SUPER_ADMIN')
   @ApiOperation({ summary: 'Liste tous les paiements (admin)' })
   findAll(@Query('page') page: number) {
     return this.ps.findAll(page);

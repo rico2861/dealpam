@@ -8,6 +8,7 @@ import {
 import { PrismaService }   from '../../prisma/prisma.service';
 import { MoncashService }  from '../moncash/moncash.service';
 import { CouponsService }  from '../coupons/coupons.service';
+import { MoncashTransactionsService } from '../moncash-transactions/moncash-transactions.service';
 import { Decimal }         from '@prisma/client/runtime/library';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -20,9 +21,10 @@ import { Decimal }         from '@prisma/client/runtime/library';
 @Injectable()
 export class PaymentsService {
   constructor(
-    private prisma:  PrismaService,
-    private moncash: MoncashService,
-    private coupons: CouponsService,
+    private prisma:    PrismaService,
+    private moncash:   MoncashService,
+    private coupons:   CouponsService,
+    private moncashTx: MoncashTransactionsService,
   ) {}
 
   // ── Admin : tous les paiements ────────────────────────────────────────────
@@ -300,8 +302,13 @@ export class PaymentsService {
   //  MonCash retourne dans "reference" notre orderId interne (sub-xxx ou ad-xxx)
   // ══════════════════════════════════════════════════════════════════════════
 
-  async verifySellerPayment(moncashTransactionId: string, userId: string) {
-    // Anti-replay : déjà traité ?
+  // Note : plus de paramètre userId — MonCash peut déconnecter le navigateur
+  // au retour (session/JWT expiré), donc cette vérification ne doit JAMAIS
+  // dépendre de l'identité de l'appelant. L'ancrage de sécurité est la
+  // confirmation server-to-server auprès de MonCash + le rattachement au
+  // Payment PENDING via moncashOrderId (jamais fourni par le client).
+  async verifySellerPayment(moncashTransactionId: string) {
+    // Anti-replay (verrou historique sur la table Payment elle-même)
     const alreadyDone = await this.prisma.payment.findUnique({
       where: { moncashTransactionId },
     });
@@ -310,9 +317,27 @@ export class PaymentsService {
     }
 
     // Appel MonCash pour confirmation
-    const mc = await this.moncash.verifyByTransactionId(moncashTransactionId);
+    let mc;
+    try {
+      mc = await this.moncash.verifyByTransactionId(moncashTransactionId);
+    } catch (err: any) {
+      await this.moncashTx.record({
+        scenario: 'subscription', status: 'FAILED', mc: null,
+        failReason: err?.message ?? 'not_found',
+      });
+      throw err;
+    }
+
     if (mc.message !== 'successful') {
+      await this.moncashTx.record({ scenario: 'subscription', status: 'FAILED', mc, failReason: mc.message });
       throw new BadRequestException(`Pèman echwe: ${mc.message}`);
+    }
+
+    // Verrou anti-double-crédit centralisé : le premier appelant "gagne" le droit de créditer.
+    const alreadyCredited = await this.moncashTx.isAlreadyCredited(mc.transaction_id);
+    if (alreadyCredited) {
+      await this.moncashTx.record({ scenario: 'subscription', status: 'SUCCESS', mc, failReason: null });
+      throw new ConflictException('Transaksyon deja konfime — double crédit bloqué');
     }
 
     // mc.reference = l'orderId qu'on a envoyé à MonCash = notre ref interne (sub-xxx ou ad-xxx)
@@ -323,7 +348,16 @@ export class PaymentsService {
       where:   { moncashOrderId: moncashRef, status: 'PENDING' },
       include: { subscription: true, adCampaign: true },
     });
-    if (!payment) throw new NotFoundException(`Paiement pending introuvable pour ref ${moncashRef}`);
+    if (!payment) {
+      await this.moncashTx.record({ scenario: 'subscription', status: 'FAILED', mc, failReason: `pending_payment_not_found:${moncashRef}` });
+      throw new NotFoundException(`Paiement pending introuvable pour ref ${moncashRef}`);
+    }
+
+    await this.moncashTx.record({ scenario: payment.adCampaign ? 'ad_campaign' : 'subscription', status: 'SUCCESS', mc, orderId: moncashRef });
+    const claimed = await this.moncashTx.claimCredit(mc.transaction_id);
+    if (!claimed) {
+      throw new ConflictException('Transaksyon deja konfime — double crédit bloqué');
+    }
 
     const confirmedAmount = new Decimal(mc.cost); // montant vient de MonCash, jamais du client
 
@@ -364,11 +398,12 @@ export class PaymentsService {
         }
 
         // Enregistrer l'utilisation du coupon (si un coupon avait été appliqué à l'initiation)
+        // userId dérivé de la relation seller→user (jamais du client, cf. commentaire ci-dessus).
         if (payment.couponId) {
           await tx.coupon.update({ where: { id: payment.couponId }, data: { usedCount: { increment: 1 } } });
           await tx.couponRedemption.create({
             data: {
-              couponId: payment.couponId, userId, context: 'SUBSCRIPTION',
+              couponId: payment.couponId, userId: sub.seller.userId, context: 'SUBSCRIPTION',
               referenceId: sub.id, amountDiscounted: payment.couponDiscountHTG ?? 0,
             },
           });
@@ -403,10 +438,10 @@ export class PaymentsService {
   }
 
   // ── Vérifier par orderId MonCash (fallback — si transactionId pas dispo) ─
-  async verifyByOrderId(moncashOrderId: string, userId: string) {
+  async verifyByOrderId(moncashOrderId: string) {
     const mc = await this.moncash.verifyByOrderId(moncashOrderId);
     if (mc.message !== 'successful') throw new BadRequestException(`Pèman echwe: ${mc.message}`);
-    return this.verifySellerPayment(mc.transaction_id, userId);
+    return this.verifySellerPayment(mc.transaction_id);
   }
 
   // ── Historique paiements du vendeur ──────────────────────────────────────

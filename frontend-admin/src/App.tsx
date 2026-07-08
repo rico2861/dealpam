@@ -14,6 +14,7 @@ import SellerDetailPage from './pages/sellers/SellerDetailPage';
 import ProductsPage from './pages/products/ProductsPage';
 import OrdersPage from './pages/orders/OrdersPage';
 import PaymentsPage from './pages/payments/PaymentsPage';
+import MoncashTransactionsPage from './pages/payments/MoncashTransactionsPage';
 import SubscriptionsPage from './pages/subscriptions/SubscriptionsPage';
 import PlansPage from './pages/subscriptions/PlansPage';
 import CouponsPage from './pages/coupons/CouponsPage';
@@ -68,6 +69,7 @@ const ROUTE_ROLES: Record<string, string[]> = {
   '/users':        ADMIN_ONLY,
   '/staff':        ADMIN_ONLY,
   '/payments':     [...ADMIN_ONLY, 'ACCOUNTANT'],
+  '/moncash-transactions': [...ADMIN_ONLY, 'ACCOUNTANT'],
   '/subscriptions':[...ADMIN_ONLY, 'ACCOUNTANT'],
   '/plans':        ADMIN_ONLY,
   '/coupons':      ADMIN_ONLY,
@@ -166,6 +168,7 @@ export default function App() {
             <Route path="products"      element={<RoleGuard path="/products">     <ProductsPage /></RoleGuard>} />
             <Route path="orders"        element={<RoleGuard path="/orders">       <OrdersPage /></RoleGuard>} />
             <Route path="payments"      element={<RoleGuard path="/payments">     <PaymentsPage /></RoleGuard>} />
+            <Route path="moncash-transactions" element={<RoleGuard path="/moncash-transactions"><MoncashTransactionsPage /></RoleGuard>} />
             <Route path="subscriptions" element={<RoleGuard path="/subscriptions"><SubscriptionsPage /></RoleGuard>} />
             <Route path="plans" element={<RoleGuard path="/plans"><PlansPage /></RoleGuard>} />
             <Route path="coupons" element={<RoleGuard path="/coupons"><CouponsPage /></RoleGuard>} />

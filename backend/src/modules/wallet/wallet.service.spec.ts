@@ -3,11 +3,13 @@ import { BadRequestException, ConflictException } from '@nestjs/common';
 import { WalletService } from './wallet.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MoncashService } from '../moncash/moncash.service';
+import { MoncashTransactionsService } from '../moncash-transactions/moncash-transactions.service';
 
 describe('WalletService', () => {
   let service: WalletService;
   let prisma: any;
   let moncash: any;
+  let moncashTx: any;
 
   beforeEach(async () => {
     prisma = {
@@ -25,12 +27,18 @@ describe('WalletService', () => {
       },
     };
     moncash = { verifyByTransactionId: jest.fn() };
+    moncashTx = {
+      record: jest.fn().mockResolvedValue({}),
+      isAlreadyCredited: jest.fn().mockResolvedValue(false),
+      claimCredit: jest.fn().mockResolvedValue(true),
+    };
 
     const moduleRef = await Test.createTestingModule({
       providers: [
         WalletService,
         { provide: PrismaService, useValue: prisma },
         { provide: MoncashService, useValue: moncash },
+        { provide: MoncashTransactionsService, useValue: moncashTx },
       ],
     }).compile();
 
@@ -80,37 +88,34 @@ describe('WalletService', () => {
   });
 
   describe('confirmRecharge — anti-double-crédit', () => {
-    const wallet = { id: 'w1', sellerId: 's1', balance: 0 };
+    const pending = { id: 'pending1', walletId: 'w1' };
 
     it('rejette si la référence a déjà été créditée', async () => {
       prisma.walletTransaction.findFirst.mockResolvedValueOnce({ id: 'tx1' }); // already credited
-      await expect(service.confirmRecharge('s1', 'TX123')).rejects.toThrow(ConflictException);
+      await expect(service.confirmRecharge('TX123')).rejects.toThrow(ConflictException);
     });
 
     it('rejette si la demande pending a déjà été consommée par une autre requête concurrente', async () => {
       prisma.walletTransaction.findFirst
         .mockResolvedValueOnce(null) // pas déjà créditée
-        .mockResolvedValueOnce({ id: 'pending1' }); // pending trouvé
-      moncash.verifyByTransactionId.mockResolvedValue({ cost: 500, reference: 'ORDER1', message: 'successful' });
-      prisma.sellerWallet.findUnique.mockResolvedValue(wallet);
-      prisma.sellerWallet.create.mockResolvedValue(wallet);
+        .mockResolvedValueOnce(pending); // pending trouvé
+      moncash.verifyByTransactionId.mockResolvedValue({ cost: 500, reference: 'ORDER1', message: 'successful', transaction_id: 'TX123' });
       prisma.walletTransaction.updateMany.mockResolvedValue({ count: 0 }); // déjà consommé par une autre requête
 
-      await expect(service.confirmRecharge('s1', 'TX123')).rejects.toThrow(ConflictException);
+      await expect(service.confirmRecharge('TX123')).rejects.toThrow(ConflictException);
       expect(prisma.sellerWallet.update).not.toHaveBeenCalled();
     });
 
     it('crédite atomiquement (increment) quand tout est valide', async () => {
       prisma.walletTransaction.findFirst
         .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce({ id: 'pending1' });
-      moncash.verifyByTransactionId.mockResolvedValue({ cost: 500, reference: 'ORDER1', message: 'successful' });
-      prisma.sellerWallet.findUnique.mockResolvedValue(wallet);
+        .mockResolvedValueOnce(pending);
+      moncash.verifyByTransactionId.mockResolvedValue({ cost: 500, reference: 'ORDER1', message: 'successful', transaction_id: 'TX123' });
       prisma.walletTransaction.updateMany.mockResolvedValue({ count: 1 });
       prisma.sellerWallet.update.mockResolvedValue({ id: 'w1', balance: 500 });
       prisma.walletTransaction.create.mockResolvedValue({});
 
-      const result = await service.confirmRecharge('s1', 'TX123');
+      const result = await service.confirmRecharge('TX123');
 
       expect(prisma.sellerWallet.update).toHaveBeenCalledWith({
         where: { id: 'w1' },

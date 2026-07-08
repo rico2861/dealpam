@@ -17,8 +17,6 @@ class ConfirmRechargeDto {
 }
 
 @Controller('wallet')
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('SELLER')
 export class WalletController {
   constructor(
     private readonly walletService: WalletService,
@@ -32,6 +30,7 @@ export class WalletController {
   }
 
   @Get()
+  @UseGuards(JwtAuthGuard, RolesGuard) @Roles('SELLER')
   async getWallet(@Req() req: any) {
     const sellerId = await this.getSellerId(req.user.id);
     return this.walletService.getWallet(sellerId);
@@ -39,16 +38,23 @@ export class WalletController {
 
   /** Initie une recharge MonCash — retourne l'URL de redirection */
   @Post('recharge/init')
+  @UseGuards(JwtAuthGuard, RolesGuard) @Roles('SELLER')
   async initRecharge(@Req() req: any, @Body() body: InitRechargeDto) {
     const sellerId = await this.getSellerId(req.user.id);
     return this.walletService.initRecharge(sellerId, body.amount);
   }
 
-  /** Confirme la recharge après retour MonCash — vérifie via l'API MonCash */
+  /**
+   * Confirme la recharge après retour MonCash — vérifie via l'API MonCash.
+   * Volontairement PUBLIC : MonCash déconnecte parfois le navigateur au
+   * retour (session/JWT expiré). L'ancrage de sécurité est la confirmation
+   * server-to-server auprès de MonCash + le rattachement à la recharge
+   * PENDING via payment.reference (jamais fourni par le client) — voir
+   * wallet.service.ts confirmRecharge().
+   */
   @Post('recharge/confirm')
   @HttpCode(HttpStatus.OK)
-  async confirmRecharge(@Req() req: any, @Body() body: ConfirmRechargeDto) {
-    const sellerId = await this.getSellerId(req.user.id);
-    return this.walletService.confirmRecharge(sellerId, body.transactionId);
+  async confirmRecharge(@Body() body: ConfirmRechargeDto) {
+    return this.walletService.confirmRecharge(body.transactionId);
   }
 }

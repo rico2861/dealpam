@@ -549,6 +549,30 @@ model Payment {
   @@map("payments")
 }
 
+// Journal exhaustif de chaque vérification MonCash effectuée (succès ou échec),
+// tous scénarios confondus (wallet, abonnement, campagne pub). Sert à la fois
+// de verrou anti-double-crédit et de piste d'audit pour la page admin.
+model MoncashTransaction {
+  id                   String   @id @default(uuid())
+  orderId              String?  @map("order_id")
+  moncashTransactionId String?  @unique @map("moncash_transaction_id")
+  reference            String?
+  amount               Float?
+  payer                String?
+  status               String   @default("PENDING")
+  failReason           String?  @map("fail_reason")
+  credited             Boolean  @default(false)
+  scenario             String
+  rawResponse          String?  @map("raw_response")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  @@index([orderId])
+  @@index([status])
+  @@index([scenario])
+  @@map("moncash_transactions")
+}
+
 model Review {
   id         String   @id @default(uuid())
   userId     String   @map("user_id")

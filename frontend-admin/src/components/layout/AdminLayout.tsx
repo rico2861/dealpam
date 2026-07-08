@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { Box, Drawer, List, ListItem, ListItemIcon, ListItemText, Typography, AppBar, Toolbar, IconButton, Avatar, Chip, Divider, useMediaQuery, useTheme, Badge, Tooltip, alpha } from '@mui/material';
-import { Dashboard, People, Store, Inventory, ShoppingBag, Payment, Subscriptions, Category, BrandingWatermark, Reviews, Settings, Menu as MenuIcon, Logout, Notifications, FlashOn, Campaign, Tag, Label, Timer, ViewCarousel, SupportAgent, Storefront, AdminPanelSettings, Handshake, WorkspacePremium, LocalOffer } from '@mui/icons-material';
+import { Dashboard, People, Store, Inventory, ShoppingBag, Payment, Subscriptions, Category, BrandingWatermark, Reviews, Settings, Menu as MenuIcon, Logout, Notifications, FlashOn, Campaign, Tag, Label, Timer, ViewCarousel, SupportAgent, Storefront, AdminPanelSettings, Handshake, WorkspacePremium, LocalOffer, TravelExplore } from '@mui/icons-material';
 import { useAdminStore } from '../../store/admin.store';
 
 // Roles that each menu item is visible to (empty = all staff roles allowed)
@@ -23,6 +23,7 @@ const MENU: MenuItem[] = [
   { path: '/users',         label: 'Utilisateurs',     icon: People,             roles: ADMIN_ONLY },
   { path: '/staff',         label: 'Équipe',           icon: AdminPanelSettings, roles: ADMIN_ONLY },
   { path: '/payments',      label: 'Paiements',        icon: Payment,            roles: [...ADMIN_ONLY, 'ACCOUNTANT'] },
+  { path: '/moncash-transactions', label: 'Transactions MonCash', icon: TravelExplore, roles: [...ADMIN_ONLY, 'ACCOUNTANT'] },
   { path: '/subscriptions', label: 'Abonnements',      icon: Subscriptions,      roles: [...ADMIN_ONLY, 'ACCOUNTANT'] },
   { path: '/plans',         label: 'Plans',            icon: WorkspacePremium,   roles: ADMIN_ONLY },
   { path: '/coupons',       label: 'Coupons',          icon: LocalOffer,         roles: ADMIN_ONLY },
