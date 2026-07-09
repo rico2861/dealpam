@@ -6,9 +6,10 @@ import { MoncashTransactionsModule } from '../moncash-transactions/moncash-trans
 import { PrismaModule }       from '../../prisma/prisma.module';
 import { CouponsModule }      from '../coupons/coupons.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { WalletModule } from '../wallet/wallet.module';
 
 @Module({
-  imports:     [PrismaModule, MoncashModule, MoncashTransactionsModule, CouponsModule, NotificationsModule],
+  imports:     [PrismaModule, MoncashModule, MoncashTransactionsModule, CouponsModule, NotificationsModule, WalletModule],
   providers:   [PaymentsService],
   controllers: [PaymentsController],
   exports:     [PaymentsService],

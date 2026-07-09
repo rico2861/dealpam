@@ -2,7 +2,7 @@ import {
   Injectable, NotFoundException, BadRequestException, ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { MoncashService } from '../moncash/moncash.service';
+import { MoncashService, MoncashPayment } from '../moncash/moncash.service';
 import { MoncashTransactionsService } from '../moncash-transactions/moncash-transactions.service';
 import { randomUUID } from 'crypto';
 
@@ -83,6 +83,18 @@ export class WalletService {
       throw new BadRequestException(`Pèman echwe: ${payment.message}`);
     }
 
+    return this.creditFromMc(payment);
+  }
+
+  /**
+   * Crédite le wallet à partir d'un paiement MonCash déjà vérifié (message === 'successful').
+   * Extrait de confirmRecharge() pour être réutilisable par PaymentsService.verifySellerPayment,
+   * qui route ici dès que mc.reference commence par "WALLET-" (au lieu de dépendre d'un flag
+   * localStorage côté client pour savoir quel endpoint appeler — ce flag pouvait être perdu si
+   * le retour MonCash atterrissait sur un autre host/origine (www vs non-www par ex.), puisque
+   * localStorage est scopé par origine.
+   */
+  async creditFromMc(payment: MoncashPayment) {
     const amount = Number(payment.cost);
     if (!amount || amount < 25) throw new BadRequestException('Montant invalide');
 
@@ -124,12 +136,12 @@ export class WalletService {
         amount,
         balanceAfter: updated.balance,
         description: `Recharge MonCash confirmée`,
-        reference: transactionId,
+        reference: payment.transaction_id,
         status: 'COMPLETED',
       },
     });
 
-    return { balance: updated.balance, amount, message: 'Recharge effectuée avec succès' };
+    return { type: 'wallet', balance: updated.balance, amount, message: 'Recharge effectuée avec succès' };
   }
 
   async deductForCampaign(sellerId: string, campaignId: string, amount: number) {

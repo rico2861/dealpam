@@ -5,8 +5,15 @@ const API = import.meta.env.VITE_API_URL;
 
 /**
  * Intercepte ?transactionId=xxx injecté par MonCash après paiement.
- * Si localStorage.walletRecharge=1 → confirme une recharge wallet via API MonCash côté backend.
- * Sinon → vérifie un paiement de commande classique.
+ *
+ * Un seul endpoint (/payments/verify) est appelé pour tous les scénarios
+ * (recharge wallet, abonnement, campagne pub) : le backend détermine lui-même
+ * le type via le préfixe de la référence que MONCASH renvoie (WALLET-/sub-/ad-),
+ * jamais via un flag côté client. On NE dépend plus de localStorage.walletRecharge
+ * / adCampaignPay pour router — ces flags sont scopés par origine (host) et
+ * pouvaient être perdus si le retour MonCash atterrissait sur un host différent
+ * de celui où le paiement a été initié (www vs non-www par ex.), ce qui envoyait
+ * la vérification vers le mauvais flux et affichait "Paiement pending introuvable".
  */
 export default function MoncashReturnHandler() {
   const location = useLocation();
@@ -22,60 +29,12 @@ export default function MoncashReturnHandler() {
     const cleanUrl    = location.pathname + (cleanSearch ? `?${cleanSearch}` : '');
     window.history.replaceState({}, '', cleanUrl);
 
-    const token            = localStorage.getItem('accessToken') ?? sessionStorage.getItem('accessToken');
-    const isWalletRecharge = localStorage.getItem('walletRecharge') === '1';
-    const adCampaignId     = localStorage.getItem('adCampaignPay');
+    const token = localStorage.getItem('accessToken') ?? sessionStorage.getItem('accessToken');
+    // Nettoyage défensif — plus utilisés pour le routage mais on évite qu'ils traînent.
+    localStorage.removeItem('walletRecharge');
+    localStorage.removeItem('adCampaignPay');
 
     (async () => {
-      if (adCampaignId) {
-        localStorage.removeItem('adCampaignPay');
-        try {
-          const res  = await fetch(`${API}/payments/verify`, {
-            method:  'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: token ? `Bearer ${token}` : '' },
-            body:    JSON.stringify({ transaction_id: txId }),
-          });
-          const data = await res.json();
-          if (res.status === 409) { navigate('/seller/ads'); return; }
-          if (!res.ok) {
-            showToast(`Paiement campagne échoué : ${data.message ?? 'Erreur inconnue'}`, 'error');
-            navigate('/seller/ads');
-            return;
-          }
-          showToast('✅ Paiement confirmé — campagne en cours de révision', 'success');
-          navigate('/seller/ads');
-        } catch {
-          showToast('Erreur de connexion lors de la confirmation', 'error');
-          navigate('/seller/ads');
-        }
-        return;
-      }
-
-      if (isWalletRecharge) {
-        localStorage.removeItem('walletRecharge');
-        try {
-          const res  = await fetch(`${API}/wallet/recharge/confirm`, {
-            method:  'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: token ? `Bearer ${token}` : '' },
-            body:    JSON.stringify({ transactionId: txId }),
-          });
-          const data = await res.json();
-          if (res.status === 409) return;
-          if (!res.ok) {
-            showToast(`Recharge échouée : ${data.message ?? 'Erreur inconnue'}`, 'error');
-            navigate('/seller/wallet');
-            return;
-          }
-          showToast(`✅ Recharge confirmée — ${data.amount} HTG crédités`, 'success');
-          navigate('/seller/wallet');
-        } catch {
-          showToast('Erreur de connexion lors de la confirmation', 'error');
-          navigate('/seller/wallet');
-        }
-        return;
-      }
-
-      // Paiement d'abonnement vendeur (seul type restant vérifié par /payments/verify)
       try {
         const res = await fetch(`${API}/payments/verify`, {
           method:  'POST',
@@ -89,6 +48,13 @@ export default function MoncashReturnHandler() {
           showToast(`Pèman echwe: ${data.message ?? 'Erè enkoni'}`, 'error');
           return;
         }
+
+        if (data.type === 'wallet') {
+          showToast(`✅ Recharge confirmée — ${data.amount} HTG crédités`, 'success');
+          navigate('/seller/wallet');
+          return;
+        }
+
         if (data.type === 'subscription' || data.type === 'subscription_scheduled') {
           navigate('/order-received/thank-you', {
             replace: true,
@@ -101,6 +67,18 @@ export default function MoncashReturnHandler() {
           });
           return;
         }
+
+        if (data.type === 'payment_review') {
+          showToast(data.message ?? 'Paiement reçu — vérification admin en cours', 'success');
+          return;
+        }
+
+        if (data.type === 'ad_campaign') {
+          showToast('✅ Paiement confirmé — campagne en cours de révision', 'success');
+          navigate('/seller/ads');
+          return;
+        }
+
         showToast(`✅ Pèman konfime — ${data.amount_htg} HTG`, 'success');
       } catch {
         showToast('Erè koneksyon pandan verifikasyon pèman', 'error');

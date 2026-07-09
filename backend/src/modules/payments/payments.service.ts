@@ -10,6 +10,7 @@ import { MoncashService }  from '../moncash/moncash.service';
 import { CouponsService }  from '../coupons/coupons.service';
 import { MoncashTransactionsService } from '../moncash-transactions/moncash-transactions.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { WalletService }   from '../wallet/wallet.service';
 import { Decimal }         from '@prisma/client/runtime/library';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -27,6 +28,7 @@ export class PaymentsService {
     private coupons:   CouponsService,
     private moncashTx: MoncashTransactionsService,
     private notifications: NotificationsService,
+    private wallet:    WalletService,
   ) {}
 
   // ── Avertit tous les admins qu'un paiement a un montant qui ne correspond
@@ -364,8 +366,17 @@ export class PaymentsService {
       throw new ConflictException('Transaksyon deja konfime — double crédit bloqué');
     }
 
-    // mc.reference = l'orderId qu'on a envoyé à MonCash = notre ref interne (sub-xxx ou ad-xxx)
+    // mc.reference = l'orderId qu'on a envoyé à MonCash = notre ref interne (sub-xxx, ad-xxx ou WALLET-xxx)
     const moncashRef = mc.reference;
+
+    // Recharge wallet : déterminé ici via le préfixe de la référence renvoyée par MonCash
+    // lui-même (jamais fourni par le client), et non via un flag localStorage côté front —
+    // ce flag est scopé par origine et peut être perdu si le retour MonCash atterrit sur un
+    // autre host (www vs non-www, session/onglet différent, etc.), ce qui envoyait alors la
+    // vérification vers ce flux abonnement/campagne par erreur ("Paiement pending introuvable").
+    if (moncashRef?.startsWith('WALLET-')) {
+      return this.wallet.creditFromMc(mc);
+    }
 
     // Trouver le paiement en DB par moncashOrderId = notre référence interne
     const payment = await this.prisma.payment.findFirst({
