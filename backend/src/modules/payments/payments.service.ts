@@ -9,6 +9,7 @@ import { PrismaService }   from '../../prisma/prisma.service';
 import { MoncashService }  from '../moncash/moncash.service';
 import { CouponsService }  from '../coupons/coupons.service';
 import { MoncashTransactionsService } from '../moncash-transactions/moncash-transactions.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { Decimal }         from '@prisma/client/runtime/library';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -25,7 +26,30 @@ export class PaymentsService {
     private moncash:   MoncashService,
     private coupons:   CouponsService,
     private moncashTx: MoncashTransactionsService,
+    private notifications: NotificationsService,
   ) {}
+
+  // ── Avertit tous les admins qu'un paiement a un montant qui ne correspond
+  // pas au plan/campagne demandé — nécessite une activation manuelle. ───────
+  private async notifyAdminsOfMismatch(payment: any, expected: number, received: number, moncashTransactionId: string) {
+    const admins = await this.prisma.user.findMany({
+      where: { role: { in: ['ADMIN', 'SUPER_ADMIN'] } },
+      select: { id: true },
+    });
+    const label = payment.subscriptionId ? 'abonnement' : 'campagne pub';
+    const body = `Paiement MonCash (${moncashTransactionId}) pour un(e) ${label} : attendu ${expected} HTG, reçu ${received} HTG. Vérifiez et activez manuellement le bon plan/campagne si le paiement est légitime.`;
+    await Promise.all(admins.map(a =>
+      this.notifications.create(a.id, 'Écart de montant — activation manuelle requise', body, 'PAYMENT_AMOUNT_MISMATCH').catch(() => null),
+    ));
+    await this.prisma.auditLog.create({
+      data: {
+        action: 'PAYMENT_AMOUNT_MISMATCH',
+        entity: payment.subscriptionId ? 'SellerSubscription' : 'AdCampaign',
+        entityId: payment.subscriptionId ?? payment.adCampaign?.id ?? undefined,
+        newValues: { expected, received, moncashTransactionId, paymentId: payment.id } as any,
+      },
+    }).catch(() => null);
+  }
 
   // ── Admin : tous les paiements ────────────────────────────────────────────
   findAll(page = 1) {
@@ -360,6 +384,35 @@ export class PaymentsService {
     }
 
     const confirmedAmount = new Decimal(mc.cost); // montant vient de MonCash, jamais du client
+    const expectedAmount = Number(payment.amountHTG);
+    // Tolérance de 2% pour d'éventuels arrondis MonCash — au-delà, le montant
+    // réellement reçu ne correspond pas au plan/campagne demandé : on encaisse
+    // le paiement (il a bien été reçu) mais on N'ACTIVE PAS automatiquement,
+    // le temps qu'un admin vérifie et active manuellement le bon plan.
+    const amountMismatch = Number(confirmedAmount) < expectedAmount * 0.98;
+
+    if (amountMismatch) {
+      await this.prisma.payment.update({
+        where: { id: payment.id },
+        data: {
+          status: 'COMPLETED',
+          amountHTG: confirmedAmount,
+          moncashTransactionId,
+          paidAt: new Date(),
+          gatewayData: mc as any,
+          failureReason: `AMOUNT_MISMATCH: attendu ${expectedAmount} HTG, reçu ${Number(confirmedAmount)} HTG — activation en attente de vérification admin`,
+        },
+      });
+      await this.notifyAdminsOfMismatch(payment, expectedAmount, Number(confirmedAmount), moncashTransactionId);
+      return {
+        type: 'payment_review',
+        amount_htg: Number(confirmedAmount),
+        expected_htg: expectedAmount,
+        transaction_id: moncashTransactionId,
+        payer: mc.payer,
+        message: "Paiement reçu mais le montant ne correspond pas exactement au plan demandé — un administrateur va vérifier et activer votre abonnement sous peu.",
+      };
+    }
 
     return this.prisma.$transaction(async (tx) => {
       // Marquer le paiement comme complété

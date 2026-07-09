@@ -150,6 +150,59 @@ export class SubscriptionsService {
     });
   }
 
+  // ── Admin : activer un plan manuellement pour un vendeur ─────────────────
+  // Utilisé quand un paiement a été reçu mais avec un montant qui ne
+  // correspond pas exactement au plan (cf. PaymentsService.notifyAdminsOfMismatch),
+  // ou pour tout geste commercial exceptionnel. Toujours tracé (AuditLog +
+  // Payment MANUAL) avec le motif fourni par l'admin.
+  async adminActivatePlan(adminUserId: string, sellerId: string, planId: string, reason: string, billingCycle: 'MONTHLY' | 'ANNUAL' = 'MONTHLY') {
+    if (!reason?.trim()) throw new BadRequestException('Un motif est requis pour activer un plan manuellement.');
+
+    const seller = await this.prisma.seller.findUnique({ where: { id: sellerId } });
+    if (!seller) throw new NotFoundException('Vendeur introuvable');
+    const plan = await this.prisma.subscriptionPlan.findUnique({ where: { id: planId } });
+    if (!plan) throw new NotFoundException('Plan introuvable');
+
+    const startDate = new Date();
+    const endDate = new Date(startDate);
+    if (billingCycle === 'ANNUAL') endDate.setFullYear(endDate.getFullYear() + 1);
+    else endDate.setMonth(endDate.getMonth() + 1);
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      await tx.sellerSubscription.updateMany({
+        where: { sellerId, isActive: true },
+        data:  { isActive: false },
+      });
+      const sub = await tx.sellerSubscription.create({
+        data: { sellerId, planId, startDate, endDate, isActive: true, billingCycle },
+        include: { plan: true },
+      });
+      await tx.payment.create({
+        data: {
+          subscriptionId: sub.id,
+          method: 'MANUAL',
+          status: 'COMPLETED',
+          amountHTG: plan.priceHTG,
+          transactionId: `admin-activate-${sub.id}`,
+          paidAt: new Date(),
+          gatewayData: { activatedByAdminUserId: adminUserId, reason } as any,
+        },
+      });
+      await tx.auditLog.create({
+        data: {
+          userId: adminUserId,
+          action: 'ADMIN_ACTIVATE_SUBSCRIPTION',
+          entity: 'SellerSubscription',
+          entityId: sub.id,
+          newValues: { sellerId, planId, planName: plan.name, billingCycle, reason } as any,
+        },
+      });
+      return sub;
+    });
+
+    return result;
+  }
+
   // Abonnement actif du vendeur — inclut le changement de plan programmé
   // (payé mais pas encore démarré) s'il y en a un, pour affichage côté vendeur.
   async getMySubscription(userId: string) {
@@ -163,11 +216,16 @@ export class SubscriptionsService {
 
     const scheduled = await this.prisma.sellerSubscription.findFirst({
       where:   { sellerId: seller.id, isActive: false, startDate: { gte: current.endDate } },
-      include: { plan: true },
+      include: { plan: true, payment: true },
       orderBy: { startDate: 'asc' },
     });
+    // N'afficher "changement programmé" que si le paiement est réellement
+    // confirmé (COMPLETED) — sinon un changement jamais payé (redirection
+    // MonCash abandonnée, onglet fermé…) apparaissait comme "programmé" alors
+    // que rien n'avait été payé.
+    const scheduledPaid = scheduled?.payment?.status === 'COMPLETED' ? scheduled : null;
 
-    return { ...current, scheduledPlan: scheduled ? scheduled.plan : null, scheduledStartDate: scheduled ? scheduled.startDate : null };
+    return { ...current, scheduledPlan: scheduledPaid ? scheduledPaid.plan : null, scheduledStartDate: scheduledPaid ? scheduledPaid.startDate : null };
   }
 
   // ── Annulation : reste actif jusqu'à endDate, puis n'est pas renouvelé ────

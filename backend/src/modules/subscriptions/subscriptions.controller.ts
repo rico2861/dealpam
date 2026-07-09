@@ -40,6 +40,17 @@ export class SubscriptionsController {
   @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('ADMIN', 'SUPER_ADMIN')
   getAll(@Query('page') p: number) { return this.ss.getAll(p); }
 
+  // ── Admin : activer un plan manuellement pour un vendeur (toujours motivé, tracé) ──
+  @Post('admin/:sellerId/activate')
+  @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('ADMIN', 'SUPER_ADMIN')
+  adminActivatePlan(
+    @CurrentUser() admin: any,
+    @Param('sellerId') sellerId: string,
+    @Body() dto: { planId: string; reason: string; billingCycle?: 'MONTHLY' | 'ANNUAL' },
+  ) {
+    return this.ss.adminActivatePlan(admin.id, sellerId, dto.planId, dto.reason, dto.billingCycle || 'MONTHLY');
+  }
+
   // ── Admin : gestion des plans ────────────────────────────────────────────
   @Get('plans/admin')
   @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('ADMIN', 'SUPER_ADMIN')

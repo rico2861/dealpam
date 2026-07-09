@@ -47,6 +47,9 @@ export default function SellerDetailPage() {
   const [viewingDoc, setViewingDoc] = useState<string | null>(null);
   const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
+  const [activateOpen, setActivateOpen] = useState(false);
+  const [activatePlanId, setActivatePlanId] = useState('');
+  const [activateReason, setActivateReason] = useState('');
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['seller-detail-full', id],
@@ -73,6 +76,19 @@ export default function SellerDetailPage() {
   const validateDocMut = useMutation({
     mutationFn: ({ docId, isValid }: any) => api.patch(`/sellers/${id}/documents/${docId}/validate`, { isValid }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['seller-detail-full', id] }); enqueueSnackbar('Document mis à jour', { variant: 'success' }); },
+  });
+  const { data: plansData } = useQuery({
+    queryKey: ['subscription-plans-admin'],
+    queryFn: () => api.get('/subscriptions/plans/admin').then(r => r.data),
+  });
+  const activateMut = useMutation({
+    mutationFn: () => api.post(`/subscriptions/admin/${id}/activate`, { planId: activatePlanId, reason: activateReason }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['seller-detail-full', id] });
+      setActivateOpen(false); setActivatePlanId(''); setActivateReason('');
+      enqueueSnackbar('Plan activé', { variant: 'success' });
+    },
+    onError: (e: any) => enqueueSnackbar(e?.response?.data?.message || 'Erreur', { variant: 'error' }),
   });
 
   const viewDocument = async (docId: string) => {
@@ -171,8 +187,38 @@ export default function SellerDetailPage() {
           <StatBox label="Total dépensé" value={`${Number(data.totalSpentHTG ?? 0).toLocaleString()} HTG`} color="#10B981" />
           {activeSub && <StatBox label="Expire le" value={activeSub.endDate ? new Date(activeSub.endDate).toLocaleDateString('fr-FR') : '—'} />}
         </Box>
-        <Typography fontSize={10.5} color="#999">Inclut abonnements + campagnes publicitaires. Vérifications de boutique payantes à venir (Étape 7).</Typography>
+        <Typography fontSize={10.5} color="#999" mb={1.5}>Inclut abonnements + campagnes publicitaires. Vérifications de boutique payantes à venir (Étape 7).</Typography>
+        <Button size="small" variant="outlined" onClick={() => setActivateOpen(true)} sx={{ borderRadius: 2 }}>
+          Activer un plan manuellement
+        </Button>
       </SectionCard>
+
+      {/* Activer un plan manuellement — toujours motivé, tracé côté serveur (AuditLog + Payment MANUAL) */}
+      <Dialog open={activateOpen} onClose={() => setActivateOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Activer un plan manuellement</DialogTitle>
+        <DialogContent>
+          <Typography fontSize={12.5} color="#666" mb={2}>
+            Utilisez ceci uniquement pour régulariser une situation (ex. paiement reçu avec un montant qui ne correspond pas exactement au plan). Le motif sera enregistré dans les logs.
+          </Typography>
+          <TextField select fullWidth label="Plan" value={activatePlanId} onChange={e => setActivatePlanId(e.target.value)}
+            SelectProps={{ native: true }} sx={{ mb: 2 }}>
+            <option value="" />
+            {(plansData ?? []).map((p: any) => (
+              <option key={p.id} value={p.id}>{p.name} — {Number(p.priceHTG).toLocaleString()} HTG/mois</option>
+            ))}
+          </TextField>
+          <TextField fullWidth multiline minRows={2} label="Motif (obligatoire)" value={activateReason}
+            onChange={e => setActivateReason(e.target.value)}
+            placeholder="Ex : paiement MonCash reçu (450 HTG) pour le plan Business (500 HTG) — écart accepté, activation manuelle." />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setActivateOpen(false)}>Annuler</Button>
+          <Button variant="contained" disabled={!activatePlanId || !activateReason.trim() || activateMut.isPending}
+            onClick={() => activateMut.mutate()}>
+            {activateMut.isPending ? <CircularProgress size={16} /> : 'Activer'}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Boutiques */}
       <SectionCard title={`Boutiques (${data.stores?.length ?? 0})`} icon={<Store sx={{ fontSize: 16, color: '#059669' }} />}>
