@@ -322,8 +322,31 @@ export class ChatService {
 
   // ── Admin: all conversations ──────────────────────────────────────────────
 
-  async getAdminConversations(page = 1, limit = 30, supportOnly = false) {
-    const where = supportOnly ? { isSupport: true } : {};
+  async getAdminConversations(
+    page = 1, limit = 30, supportOnly = false,
+    search?: string, dateFrom?: string, dateTo?: string,
+  ) {
+    const where: any = supportOnly ? { isSupport: true } : {};
+
+    if (dateFrom || dateTo) {
+      where.lastMessageAt = {
+        ...(dateFrom ? { gte: new Date(dateFrom) } : {}),
+        ...(dateTo   ? { lte: new Date(`${dateTo}T23:59:59`) } : {}),
+      };
+    }
+
+    if (search?.trim()) {
+      const q = search.trim();
+      where.OR = [
+        { ticketNumber: { contains: q, mode: 'insensitive' } },
+        { topic:        { contains: q, mode: 'insensitive' } },
+        { participants: { some: { user: { firstName: { contains: q, mode: 'insensitive' } } } } },
+        { participants: { some: { user: { lastName:  { contains: q, mode: 'insensitive' } } } } },
+        { participants: { some: { user: { email:     { contains: q, mode: 'insensitive' } } } } },
+        { participants: { some: { user: { seller: { stores: { some: { name: { contains: q, mode: 'insensitive' } } } } } } } },
+      ];
+    }
+
     const [data, total] = await Promise.all([
       this.prisma.conversation.findMany({
         where,
@@ -349,6 +372,14 @@ export class ChatService {
       _sum: { unreadCount: true },
     });
     return result._sum.unreadCount ?? 0;
+  }
+
+  /** Nombre de conversations support actuellement ouvertes — utilisé pour le badge de
+   * notification admin (avant : valeur codée en dur "3" sans lien avec les vraies données). */
+  async getAdminUnreadCount() {
+    return this.prisma.conversation.count({
+      where: { isSupport: true, status: 'OPEN' },
+    });
   }
 
   private async assertParticipant(userId: string, conversationId: string, allowAgents = false) {

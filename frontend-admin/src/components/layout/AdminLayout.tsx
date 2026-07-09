@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { Box, Drawer, List, ListItem, ListItemIcon, ListItemText, Typography, AppBar, Toolbar, IconButton, Avatar, Chip, Divider, useMediaQuery, useTheme, Badge, Tooltip, alpha } from '@mui/material';
 import { Dashboard, People, Store, Inventory, ShoppingBag, Payment, Subscriptions, Category, BrandingWatermark, Reviews, Settings, Menu as MenuIcon, Logout, Notifications, FlashOn, Campaign, Tag, Label, Timer, ViewCarousel, SupportAgent, Storefront, AdminPanelSettings, Handshake, WorkspacePremium, LocalOffer, TravelExplore } from '@mui/icons-material';
+import { useQuery } from '@tanstack/react-query';
 import { useAdminStore } from '../../store/admin.store';
+import api from '../../api/axios';
 
 // Roles that each menu item is visible to (empty = all staff roles allowed)
 type MenuItem = { path: string; label: string; icon: any; exact?: boolean; roles?: string[] };
@@ -50,6 +52,14 @@ export default function AdminLayout() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [open, setOpen] = useState(false);
+
+  // Badge notifications = vraies conversations support ouvertes (avant : "3" codé en dur, sans lien avec les données réelles).
+  const { data: unreadCount = 0 } = useQuery({
+    queryKey: ['admin-chat-unread'],
+    queryFn: () => api.get('/chat/admin/unread-count').then(r => r.data),
+    enabled: !!admin,
+    refetchInterval: 30_000,
+  });
 
   const isActive = (path: string, exact?: boolean) =>
     exact ? location.pathname === path : location.pathname === path || location.pathname.startsWith(path + '/');
@@ -133,8 +143,8 @@ export default function AdminLayout() {
             <IconButton color="inherit" onClick={() => setOpen(true)}><MenuIcon /></IconButton>
             <Typography variant="h6" fontWeight={800} sx={{ ml: 1.5, color: 'white' }}>Admin Panel</Typography>
             <Box sx={{ ml: 'auto' }}>
-              <IconButton color="inherit">
-                <Badge badgeContent={3} color="error"><Notifications sx={{ fontSize: 22 }} /></Badge>
+              <IconButton color="inherit" onClick={() => navigate('/chat')}>
+                <Badge badgeContent={unreadCount} color="error"><Notifications sx={{ fontSize: 22 }} /></Badge>
               </IconButton>
             </Box>
           </Toolbar>
@@ -149,8 +159,8 @@ export default function AdminLayout() {
       <Box sx={{ flex: 1, ml: isMobile ? 0 : `${W}px`, pt: isMobile ? 8 : 0, minHeight: '100vh' }}>
         {!isMobile && (
           <Box sx={{ bgcolor: 'white', borderBottom: '1px solid rgba(0,0,0,0.06)', px: 3, py: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1 }}>
-            <IconButton size="small" sx={{ color: 'text.secondary' }}>
-              <Badge badgeContent={3} color="error"><Notifications fontSize="small" /></Badge>
+            <IconButton size="small" sx={{ color: 'text.secondary' }} onClick={() => navigate('/chat')}>
+              <Badge badgeContent={unreadCount} color="error"><Notifications fontSize="small" /></Badge>
             </IconButton>
             <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', fontSize: 13, fontWeight: 700 }}>
               {admin?.firstName?.[0]?.toUpperCase()}

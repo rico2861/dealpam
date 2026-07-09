@@ -1,6 +1,8 @@
 import { Controller, Get, Post, Body, Param, Query, UseGuards, Req, ParseIntPipe, DefaultValuePipe } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
+import { RolesGuard } from '../../shared/guards/roles.guard';
+import { Roles } from '../../shared/decorators/roles.decorator';
 import { ChatService } from './chat.service';
 
 @ApiTags('Chat')
@@ -66,5 +68,37 @@ export class ChatController {
   @ApiOperation({ summary: 'Marquer les messages comme lus' })
   markRead(@Req() req: any, @Param('id') conversationId: string) {
     return this.chatService.markRead(req.user.id, conversationId);
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  ADMIN — Moniteur de conversations
+  // ══════════════════════════════════════════════════════════════════════════
+
+  @Get('admin/conversations')
+  @UseGuards(RolesGuard) @Roles('ADMIN', 'SUPER_ADMIN', 'MODERATOR')
+  @ApiOperation({ summary: 'Admin — liste toutes les conversations (filtrable par période/recherche)' })
+  getAdminConversations(
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(30), ParseIntPipe) limit: number,
+    @Query('supportOnly') supportOnly?: string,
+    @Query('search') search?: string,
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string,
+  ) {
+    return this.chatService.getAdminConversations(page, limit, supportOnly === 'true', search, dateFrom, dateTo);
+  }
+
+  @Post('admin/conversations/:id/status')
+  @UseGuards(RolesGuard) @Roles('ADMIN', 'SUPER_ADMIN', 'MODERATOR')
+  @ApiOperation({ summary: 'Admin — change le statut d\'une conversation (OPEN/RESOLVED/CLOSED)' })
+  setConversationStatus(@Param('id') conversationId: string, @Body('status') status: 'OPEN' | 'RESOLVED' | 'CLOSED') {
+    return this.chatService.resolveConversation(conversationId, status);
+  }
+
+  @Get('admin/unread-count')
+  @UseGuards(RolesGuard) @Roles('ADMIN', 'SUPER_ADMIN', 'MODERATOR')
+  @ApiOperation({ summary: 'Admin — nombre de conversations support ouvertes (badge de notification)' })
+  getAdminUnreadCount() {
+    return this.chatService.getAdminUnreadCount();
   }
 }

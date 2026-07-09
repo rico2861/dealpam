@@ -2,11 +2,11 @@ import { useState, useEffect, useRef } from 'react';
 import {
   Box, Typography, Avatar, TextField, IconButton, Chip, CircularProgress,
   ToggleButton, ToggleButtonGroup, alpha, Tooltip, Badge, Card,
-  Button, Divider,
+  Button, Divider, InputAdornment,
 } from '@mui/material';
 import {
   Send, FiberManualRecord, SupportAgent, Person, Store as StoreIcon,
-  CheckCircle, Cancel, Refresh, FilterList,
+  CheckCircle, Cancel, Refresh, FilterList, Search,
   PictureAsPdfOutlined, InsertDriveFileOutlined,
 } from '@mui/icons-material';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -66,6 +66,10 @@ export default function ChatMonitorPage() {
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const [filter, setFilter] = useState<'all' | 'support' | 'p2p'>('support');
+  const [search, setSearch] = useState('');
+  const [searchDebounced, setSearchDebounced] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const [loadingMsgs, setLoadingMsgs] = useState(false);
   const [liveConvIds, setLiveConvIds] = useState<Set<string>>(new Set());
   // Map of conversationId → agentName (another agent is writing there)
@@ -73,9 +77,21 @@ export default function ChatMonitorPage() {
   const agentOccupyTimers = useRef<Record<string, any>>({});
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  // Debounce la recherche texte pour éviter une requête à chaque frappe.
+  useEffect(() => {
+    const t = setTimeout(() => setSearchDebounced(search.trim()), 350);
+    return () => clearTimeout(t);
+  }, [search]);
+
   const { data, isLoading, refetch } = useQuery<{ data: Conv[]; total: number }>({
-    queryKey: ['admin-convs', filter],
-    queryFn: () => api.get(`/chat/admin/conversations?limit=50&supportOnly=${filter === 'support'}`).then(r => r.data),
+    queryKey: ['admin-convs', filter, searchDebounced, dateFrom, dateTo],
+    queryFn: () => {
+      const params = new URLSearchParams({ limit: '50', supportOnly: String(filter === 'support') });
+      if (searchDebounced) params.set('search', searchDebounced);
+      if (dateFrom) params.set('dateFrom', dateFrom);
+      if (dateTo) params.set('dateTo', dateTo);
+      return api.get(`/chat/admin/conversations?${params.toString()}`).then(r => r.data);
+    },
     enabled: !!token,
     refetchInterval: 20_000,
   });
@@ -196,6 +212,28 @@ export default function ChatMonitorPage() {
             <ToggleButton value="p2p">Vendeur↔Client</ToggleButton>
             <ToggleButton value="all">Tous</ToggleButton>
           </ToggleButtonGroup>
+
+          <TextField
+            size="small" fullWidth value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="Nom, email, boutique, ticket…"
+            sx={{ mt: 1.2, '& .MuiOutlinedInput-root': { fontSize: 12.5, borderRadius: '10px' } }}
+            InputProps={{ startAdornment: <InputAdornment position="start"><Search sx={{ fontSize: 16, color: '#9CA3AF' }} /></InputAdornment> }}
+          />
+
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6, mt: 1 }}>
+            <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
+              style={{ flex: 1, fontSize: 11.5, color: '#111827', border: '1px solid #E5E7EB', borderRadius: 8, padding: '5px 6px', background: '#F9FAFB', minWidth: 0 }} />
+            <Typography fontSize={11} color="#9CA3AF">à</Typography>
+            <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
+              style={{ flex: 1, fontSize: 11.5, color: '#111827', border: '1px solid #E5E7EB', borderRadius: 8, padding: '5px 6px', background: '#F9FAFB', minWidth: 0 }} />
+            {(dateFrom || dateTo || search) && (
+              <Tooltip title="Réinitialiser les filtres">
+                <IconButton size="small" onClick={() => { setSearch(''); setDateFrom(''); setDateTo(''); }}>
+                  <FilterList sx={{ fontSize: 15, color: '#9CA3AF' }} />
+                </IconButton>
+              </Tooltip>
+            )}
+          </Box>
         </Box>
 
         <Box sx={{ flex: 1, overflowY: 'auto' }}>
