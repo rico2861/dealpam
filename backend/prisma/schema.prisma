@@ -448,6 +448,12 @@ model Product {
   hasDelivery     Boolean    @default(false) @map("has_delivery")
   deliveryPriceHTG Decimal?  @map("delivery_price_htg") @db.Decimal(10, 2)
   deliveryDepts   String[]   @map("delivery_depts")  // List of departments where delivery is available
+  // Sous-ensemble des points de retrait de la boutique (Store.pickupPoints) où ce
+  // produit est disponible, stocké en JSON.stringify(string[]) (les `name` des
+  // points sélectionnés). null ou "[]" = aucune restriction => disponible à TOUS
+  // les points de retrait de la boutique (comportement par défaut, pour ne pas
+  // casser les produits existants qui n'ont jamais eu ce champ).
+  pickupPointNames String?   @map("pickup_point_names")
 
   // Vehicle / Rental specific
   year            Int?

@@ -85,6 +85,10 @@ export class CreateProductDto {
   @IsOptional() @IsString()
   attributes?: string;
 
+  /** JSON string — noms des points de retrait de la boutique où ce produit est disponible: ["Nom du point A","Nom du point B"]. Absent/vide = disponible à tous les points de retrait. */
+  @IsOptional() @IsString()
+  pickupPointNames?: string;
+
   /** JSON string — variant array: [{color,colorHex,size,stock,priceOverride?,sku?,imageFileIndex?}] */
   @IsOptional() @IsString()
   variants?: string;

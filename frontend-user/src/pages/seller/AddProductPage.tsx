@@ -264,6 +264,7 @@ export default function AddProductPage() {
   const [deliveryZones, setDeliveryZones] = useState<{ city: string; dept: string }[]>([]);
   const [zoneInput, setZoneInput]         = useState({ city: '', dept: 'Ouest' });
   const [attrs, setAttrs]       = useState<Record<string, string>>({});
+  const [pickupPointNames, setPickupPointNames] = useState<string[]>([]);
   const [variants, setVariants] = useState<Variant[]>([]);
   const [mainImages, setMainImages]   = useState<File[]>([]);
   const [mainPreviews, setMainPreviews] = useState<string[]>([]);
@@ -287,6 +288,9 @@ export default function AddProductPage() {
     try { const p = JSON.parse(selectedStore.pickupPoints); return Array.isArray(p) ? p : []; } catch { return []; }
   })();
   const needsPickupPoint = !form.hasDelivery && storePickupPoints.length === 0;
+  const togglePickupPoint = (name: string) => setPickupPointNames(p => p.includes(name) ? p.filter(n => n !== name) : [...p, name]);
+  const showCurrencyPanel = selectedStore?.currency === 'USD' && Number(selectedStore?.exchangeRate) > 0;
+  const usdEquivalent = showCurrencyPanel && form.price ? (Number(form.price) / Number(selectedStore.exchangeRate)).toFixed(2) : null;
   const selectedCatName = (categories ?? []).find((c: any) => c.id === form.categoryId)?.name ?? '';
   const catType = detectCategoryType(selectedCatName);
   const condOpts = conditionOptions(catType === 'electronics' ? 'phone' : catType);
@@ -373,6 +377,7 @@ export default function AddProductPage() {
       // deliveryDepts: send each zone as "Ville, Département" or just "Département"
       deliveryZones.forEach(z => fd.append('deliveryDepts', z.city ? `${z.city}, ${z.dept}` : z.dept));
       if (form.storeId) fd.append('storeId', form.storeId);
+      if (pickupPointNames.length) fd.append('pickupPointNames', JSON.stringify(pickupPointNames));
       if (Object.keys(attrs).length) fd.append('attributes', JSON.stringify(attrs));
       if (catType === 'vehicle' && vehicleAppt) {
         fd.append('productType', 'VEHICLE');
@@ -501,6 +506,21 @@ export default function AddProductPage() {
                 <TextField fullWidth label="Prix promo (optionnel)" type="number" value={form.salePrice}
                   onChange={set('salePrice')} inputProps={{ min: 0 }} sx={{ ...fieldSx, '& .MuiInputLabel-root.Mui-focused': { color: '#F59E0B' }, '& .MuiOutlinedInput-root.Mui-focused fieldset': { borderColor: '#F59E0B' } }} />
               </Box>
+
+              {showCurrencyPanel && (
+                <Box sx={{ p: 1.6, borderRadius: '10px', bgcolor: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.2)' }}>
+                  <Typography fontSize={12.5} color="#3B82F6" fontWeight={600}>
+                    {usdEquivalent ? `≈ ${usdEquivalent} USD` : 'Aperçu en devise boutique'} (taux de change de la boutique : {Number(selectedStore.exchangeRate).toFixed(2)} HTG/USD)
+                  </Typography>
+                  <Typography fontSize={11.5} color={SUB} mt={0.3}>
+                    Le prix est toujours enregistré et facturé en HTG — cette conversion est juste un aperçu d'affichage.
+                  </Typography>
+                  <Button component={Link} to="/seller/store" size="small"
+                    sx={{ mt: 0.5, color: '#3B82F6', fontWeight: 700, fontSize: 12, textTransform: 'none', px: 0 }}>
+                    Modifier la devise / le taux →
+                  </Button>
+                </Box>
+              )}
 
               <TextField fullWidth label="Quantité minimum de commande" type="number" value={form.minOrderQty}
                 onChange={set('minOrderQty')} inputProps={{ min: 1 }} sx={fieldSx}
@@ -642,6 +662,41 @@ export default function AddProductPage() {
                   </Button>
                 </Box>
               )}
+
+              {/* Points de retrait spécifiques au produit */}
+              <Box>
+                <Typography fontSize={13} fontWeight={600} color={TXT} mb={0.4}>
+                  Points de retrait pour ce produit (optionnel)
+                </Typography>
+                {storePickupPoints.length > 0 ? (
+                  <>
+                    <Typography fontSize={12} color={SUB} mb={1.2}>
+                      Aucune sélection = disponible à tous les points de retrait de votre boutique.
+                    </Typography>
+                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                      {storePickupPoints.map((pt: any) => {
+                        const active = pickupPointNames.includes(pt.name);
+                        return (
+                          <Box key={pt.name} onClick={() => togglePickupPoint(pt.name)}
+                            sx={{ px: 1.5, py: 0.7, borderRadius: '8px', cursor: 'pointer', fontSize: 12.5, fontWeight: 600, bgcolor: active ? 'rgba(255,107,0,0.12)' : 'rgba(15,23,42,0.09)', color: active ? OR : SUB2, border: `1px solid ${active ? `${OR}40` : BORD}` }}>
+                            {pt.name}{pt.city ? ` — ${pt.city}` : ''}
+                          </Box>
+                        );
+                      })}
+                    </Box>
+                  </>
+                ) : (
+                  <Box sx={{ p: 1.6, borderRadius: '10px', bgcolor: 'rgba(15,23,42,0.04)', border: `1px solid ${BORD}` }}>
+                    <Typography fontSize={12.5} color={SUB}>
+                      Configurez des points de retrait dans les paramètres de votre boutique pour les associer à vos produits.
+                    </Typography>
+                    <Button component={Link} to="/seller/store" size="small"
+                      sx={{ mt: 0.5, color: OR, fontWeight: 700, fontSize: 12, textTransform: 'none', px: 0 }}>
+                      Configurer mes points de retrait →
+                    </Button>
+                  </Box>
+                )}
+              </Box>
 
               <Collapse in={form.hasDelivery}>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 0.5 }}>

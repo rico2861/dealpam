@@ -1,11 +1,84 @@
-﻿import { useEffect, useRef, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Container, Typography, Card, CardContent, TextField, Button, Grid, Box, Alert, CircularProgress, FormControl, InputLabel, Select, MenuItem, Chip, IconButton, Switch, FormControlLabel, Collapse } from '@mui/material';
-import { Add, Close, PhotoCamera, Delete as DeleteIcon } from '@mui/icons-material';
+import { useEffect, useRef, useState } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import {
+  Box, Typography, TextField, Button, Alert, CircularProgress, FormControl,
+  InputLabel, Select, MenuItem, Chip, IconButton, Collapse,
+} from '@mui/material';
+import { Add, Close, PhotoCamera, Delete as DeleteIcon, ArrowBack, Inventory } from '@mui/icons-material';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import api from '../../api/axios';
 import { parsePriceTiers } from '../../utils/priceTiers';
+
+// ── Palette (identique aux autres pages vendeur redesignées) ────────────────
+
+const OR   = '#FF6B00';
+const BG   = '#F7F8FA';
+const CARD = '#FFFFFF';
+const BORD = 'rgba(15,23,42,0.06)';
+const TXT  = '#0F172A';
+const SUB  = '#64748B';
+const SUB2 = '#64748B';
+const RED  = '#EF4444';
+
+const darkMenu = {
+  PaperProps: {
+    sx: {
+      bgcolor: '#FFFFFF', border: `1px solid ${BORD}`, borderRadius: '12px', boxShadow: '0 8px 24px rgba(15,23,42,0.12)',
+      '& .MuiMenuItem-root': {
+        fontSize: 13, color: TXT, py: 1,
+        '&:hover': { bgcolor: 'rgba(15,23,42,0.04)' },
+        '&.Mui-selected': { bgcolor: 'rgba(255,107,0,0.14)', color: OR, fontWeight: 700 },
+      },
+    },
+  },
+};
+
+const fieldSx = {
+  '& .MuiOutlinedInput-root': {
+    bgcolor: '#F7F8FA', borderRadius: '10px', fontSize: 13.5, color: TXT,
+    '& fieldset': { borderColor: BORD },
+    '&:hover fieldset': { borderColor: 'rgba(15,23,42,0.09)' },
+    '&.Mui-focused fieldset': { borderColor: OR },
+  },
+  '& .MuiInputLabel-root': { color: SUB, fontSize: 13 },
+  '& .MuiInputLabel-root.Mui-focused': { color: OR },
+  '& .MuiFormHelperText-root': { color: SUB, fontSize: 11 },
+};
+
+function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <Box sx={{ bgcolor: CARD, border: `1px solid ${BORD}`, borderRadius: '16px', overflow: 'hidden', mb: 2 }}>
+      <Box sx={{ px: 3, py: 2, borderBottom: `1px solid ${BORD}` }}>
+        <Typography fontSize={13} fontWeight={700} color={TXT} sx={{ textTransform: 'uppercase', letterSpacing: '0.6px' }}>{title}</Typography>
+      </Box>
+      <Box sx={{ p: 3 }}>{children}</Box>
+    </Box>
+  );
+}
+
+function DarkToggle({ checked, onChange, label, sub }: { checked: boolean; onChange: (v: boolean) => void; label: string; sub?: string }) {
+  return (
+    <Box onClick={() => onChange(!checked)}
+      sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', py: 0.5 }}>
+      <Box>
+        <Typography fontSize={13.5} fontWeight={500} color={TXT}>{label}</Typography>
+        {sub && <Typography fontSize={12} color={SUB} mt={0.2}>{sub}</Typography>}
+      </Box>
+      <Box sx={{
+        width: 44, height: 24, borderRadius: '12px', flexShrink: 0, ml: 2,
+        bgcolor: checked ? OR : 'rgba(15,23,42,0.12)', border: `1.5px solid ${checked ? OR : BORD}`,
+        position: 'relative', transition: 'all 0.2s',
+      }}>
+        <Box sx={{
+          width: 18, height: 18, borderRadius: '50%', bgcolor: '#fff', position: 'absolute',
+          top: '50%', transform: `translateY(-50%) translateX(${checked ? 22 : 2}px)`,
+          transition: 'transform 0.2s', boxShadow: '0 1px 4px rgba(15,23,42,0.15)',
+        }} />
+      </Box>
+    </Box>
+  );
+}
 
 const DEPTS_HT = ['Ouest','Nord','Nord-Est','Nord-Ouest','Sud','Sud-Est','Grand-Anse','Nippes','Centre','Artibonite'];
 
@@ -23,6 +96,7 @@ export default function EditProductPage() {
   const [deletingImageId, setDeletingImageId] = useState<string | null>(null);
   const [zoneInput, setZoneInput] = useState({ city: '', dept: 'Ouest' });
   const [deliveryZones, setDeliveryZones] = useState<{ city: string; dept: string }[]>([]);
+  const [pickupPointNames, setPickupPointNames] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: product, isLoading, isError } = useQuery({
@@ -36,6 +110,16 @@ export default function EditProductPage() {
   });
   const { data: categories } = useQuery({ queryKey: ['categories'], queryFn: () => api.get('/categories').then(r => r.data) });
   const { data: brands } = useQuery({ queryKey: ['brands'], queryFn: () => api.get('/brands').then(r => r.data) });
+  const { data: storesData } = useQuery({ queryKey: ['myStores'], queryFn: () => api.get('/stores/me/all').then(r => r.data) });
+
+  const storeList: any[] = storesData?.stores ?? [];
+  const productStore = storeList.find((s: any) => s.id === product?.storeId);
+  const storePickupPoints: any[] = (() => {
+    if (!productStore?.pickupPoints) return [];
+    try { const p = JSON.parse(productStore.pickupPoints); return Array.isArray(p) ? p : []; } catch { return []; }
+  })();
+  const showCurrencyPanel = productStore?.currency === 'USD' && Number(productStore?.exchangeRate) > 0;
+  const usdEquivalent = showCurrencyPanel && form?.price ? (Number(form.price) / Number(productStore.exchangeRate)).toFixed(2) : null;
 
   useEffect(() => {
     if (product) {
@@ -67,6 +151,10 @@ export default function EditProductPage() {
           return { city, dept };
         }));
       } catch { setDeliveryZones([]); }
+      try {
+        const names = JSON.parse(product.pickupPointNames || '[]');
+        setPickupPointNames(Array.isArray(names) ? names : []);
+      } catch { setPickupPointNames([]); }
     }
   }, [product]);
 
@@ -79,6 +167,7 @@ export default function EditProductPage() {
     setZoneInput(z => ({ ...z, city: '' }));
   };
   const removeZone = (i: number) => setDeliveryZones(p => p.filter((_, j) => j !== i));
+  const togglePickupPoint = (name: string) => setPickupPointNames(p => p.includes(name) ? p.filter(n => n !== name) : [...p, name]);
 
   const handleAddImages = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -130,6 +219,7 @@ export default function EditProductPage() {
       fd.append('allowOffers', String(form.allowOffers));
       if (form.allowOffers && form.minOfferPriceHTG !== '') fd.append('minOfferPriceHTG', String(Number(form.minOfferPriceHTG)));
       deliveryZones.forEach(z => fd.append('deliveryDepts', z.city ? `${z.city}, ${z.dept}` : z.dept));
+      fd.append('pickupPointNames', JSON.stringify(pickupPointNames));
       newImages.forEach(img => fd.append('images', img));
       await api.patch(`/products/${id}`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
       qc.invalidateQueries({ queryKey: ['sellerProducts'] });
@@ -147,181 +237,149 @@ export default function EditProductPage() {
 
   if (isError) {
     return (
-      <Container maxWidth="sm" sx={{ py: 6 }}>
-        <Alert severity="error">
-          Impossible de charger ce produit (introuvable ou vous n'y avez pas accès).
-        </Alert>
-        <Button sx={{ mt: 2 }} onClick={() => navigate('/seller/products')}>Retour</Button>
-      </Container>
+      <Box sx={{ bgcolor: BG, minHeight: '100vh', py: 6, px: 2 }}>
+        <Box sx={{ maxWidth: 480, mx: 'auto' }}>
+          <Alert severity="error" sx={{ mb: 2, borderRadius: '12px' }}>
+            Impossible de charger ce produit (introuvable ou vous n'y avez pas accès).
+          </Alert>
+          <Button onClick={() => navigate('/seller/products')}>Retour</Button>
+        </Box>
+      </Box>
     );
   }
-  if (isLoading || !form) return <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}><CircularProgress /></Box>;
+  if (isLoading || !form) return <Box sx={{ display: 'flex', justifyContent: 'center', py: 8, bgcolor: BG, minHeight: '100vh' }}><CircularProgress sx={{ color: OR }} /></Box>;
 
   const f = (k: string) => (e: any) => setForm({ ...form, [k]: e.target.value });
 
   return (
-    <Container maxWidth="lg" sx={{ py: 3 }}>
-      <Typography variant="h4" fontWeight={800} mb={3}>Modifier le produit</Typography>
-      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-      <form onSubmit={handleSubmit}>
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={8}>
-            <Card>
-              <CardContent>
-                <TextField fullWidth label="Nom du produit *" value={form.name} onChange={f('name')} margin="dense" required />
-                <TextField fullWidth label="Description *" value={form.description} onChange={f('description')} margin="dense" multiline rows={5} required />
-                <TextField fullWidth label="SKU" value={form.sku} onChange={f('sku')} margin="dense" />
-              </CardContent>
-            </Card>
+    <Box sx={{ bgcolor: BG, minHeight: '100vh', pb: 6 }}>
 
-            <Card sx={{ mt: 2 }}>
-              <CardContent>
-                <Typography fontSize={14} fontWeight={700} mb={1.5}>Photos</Typography>
-                <input type="file" ref={fileInputRef} accept="image/*" multiple style={{ display: 'none' }} onChange={handleAddImages} />
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
-                  {images.map(img => (
-                    <Box key={img.id} sx={{ position: 'relative', width: 88, height: 88, borderRadius: 2, overflow: 'hidden', border: '1px solid rgba(15,23,42,0.09)' }}>
-                      <Box component="img" src={img.urlThumb || img.urlMedium} sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      <IconButton size="small" onClick={() => handleDeleteExistingImage(img.id)}
-                        disabled={deletingImageId === img.id}
-                        sx={{ position: 'absolute', top: 2, right: 2, bgcolor: 'rgba(0,0,0,0.55)', color: '#fff', width: 22, height: 22, '&:hover': { bgcolor: 'rgba(220,38,38,0.85)' } }}>
-                        {deletingImageId === img.id ? <CircularProgress size={12} color="inherit" /> : <DeleteIcon sx={{ fontSize: 13 }} />}
-                      </IconButton>
-                    </Box>
-                  ))}
-                  {newImages.map((file, i) => (
-                    <Box key={i} sx={{ position: 'relative', width: 88, height: 88, borderRadius: 2, overflow: 'hidden', border: '1px solid rgba(16,185,129,0.4)' }}>
-                      <Box component="img" src={URL.createObjectURL(file)} sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      <IconButton size="small" onClick={() => removeNewImage(i)}
-                        sx={{ position: 'absolute', top: 2, right: 2, bgcolor: 'rgba(0,0,0,0.55)', color: '#fff', width: 22, height: 22, '&:hover': { bgcolor: 'rgba(220,38,38,0.85)' } }}>
-                        <Close sx={{ fontSize: 13 }} />
-                      </IconButton>
-                    </Box>
-                  ))}
-                  <Box onClick={() => fileInputRef.current?.click()}
-                    sx={{ width: 88, height: 88, borderRadius: 2, border: '2px dashed rgba(15,23,42,0.2)', cursor: 'pointer',
-                      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#64748B',
-                      '&:hover': { borderColor: '#FF6B00', color: '#FF6B00' } }}>
-                    <PhotoCamera sx={{ fontSize: 20 }} />
-                    <Typography fontSize={10.5} mt={0.5}>Ajouter</Typography>
-                  </Box>
+      {/* ── Sticky header ── */}
+      <Box sx={{ position: 'sticky', top: 0, zIndex: 100, bgcolor: '#FFFFFF', borderBottom: `1px solid ${BORD}`, px: { xs: 2, md: 3 }, py: 1.5, display: 'flex', alignItems: 'center', gap: 1.5, backdropFilter: 'blur(10px)' }}>
+        <Box component={Link} to="/seller/products"
+          sx={{ width: 36, height: 36, borderRadius: '10px', bgcolor: CARD, border: `1px solid ${BORD}`, display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', '&:hover': { bgcolor: 'rgba(15,23,42,0.09)' } }}>
+          <ArrowBack sx={{ fontSize: 18, color: SUB }} />
+        </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, flex: 1 }}>
+          <Box sx={{ width: 32, height: 32, borderRadius: '9px', bgcolor: `${OR}18`, border: `1px solid ${OR}28`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Inventory sx={{ fontSize: 17, color: OR }} />
+          </Box>
+          <Typography fontWeight={800} fontSize={16} color={TXT}>Modifier le produit</Typography>
+        </Box>
+        <Button type="submit" form="edit-product-form" disabled={loading}
+          sx={{ bgcolor: OR, color: '#fff', borderRadius: '10px', fontWeight: 700, fontSize: 13.5, px: 3, py: 1, textTransform: 'none', '&:hover': { bgcolor: '#E05A00' }, '&.Mui-disabled': { bgcolor: 'rgba(255,107,0,0.3)', color: '#64748B' } }}>
+          {loading ? <CircularProgress size={16} sx={{ color: '#fff' }} /> : 'Enregistrer'}
+        </Button>
+      </Box>
+
+      <form id="edit-product-form" onSubmit={handleSubmit}>
+        <Box sx={{ maxWidth: 780, mx: 'auto', px: { xs: 2, md: 3 }, pt: 3 }}>
+
+          {error && (
+            <Alert severity="error" onClose={() => setError('')} sx={{ mb: 2.5, borderRadius: '12px' }}>
+              {error}
+            </Alert>
+          )}
+
+          {/* ── PHOTOS ── */}
+          <SectionCard title="Photos">
+            <input type="file" ref={fileInputRef} accept="image/*" multiple style={{ display: 'none' }} onChange={handleAddImages} />
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
+              {images.map(img => (
+                <Box key={img.id} sx={{ position: 'relative', width: 88, height: 88, borderRadius: '12px', overflow: 'hidden', border: `1px solid ${BORD}` }}>
+                  <Box component="img" src={img.urlThumb || img.urlMedium} sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <IconButton size="small" onClick={() => handleDeleteExistingImage(img.id)}
+                    disabled={deletingImageId === img.id}
+                    sx={{ position: 'absolute', top: 2, right: 2, bgcolor: 'rgba(0,0,0,0.55)', color: '#fff', width: 22, height: 22, '&:hover': { bgcolor: 'rgba(220,38,38,0.85)' } }}>
+                    {deletingImageId === img.id ? <CircularProgress size={12} color="inherit" /> : <DeleteIcon sx={{ fontSize: 13 }} />}
+                  </IconButton>
                 </Box>
-              </CardContent>
-            </Card>
+              ))}
+              {newImages.map((file, i) => (
+                <Box key={i} sx={{ position: 'relative', width: 88, height: 88, borderRadius: '12px', overflow: 'hidden', border: '1px solid rgba(16,185,129,0.4)' }}>
+                  <Box component="img" src={URL.createObjectURL(file)} sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <IconButton size="small" onClick={() => removeNewImage(i)}
+                    sx={{ position: 'absolute', top: 2, right: 2, bgcolor: 'rgba(0,0,0,0.55)', color: '#fff', width: 22, height: 22, '&:hover': { bgcolor: 'rgba(220,38,38,0.85)' } }}>
+                    <Close sx={{ fontSize: 13 }} />
+                  </IconButton>
+                </Box>
+              ))}
+              <Box onClick={() => fileInputRef.current?.click()}
+                sx={{ width: 88, height: 88, borderRadius: '12px', border: `2px dashed ${BORD}`, cursor: 'pointer',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: SUB,
+                  '&:hover': { borderColor: OR, color: OR, bgcolor: `${OR}08` } }}>
+                <PhotoCamera sx={{ fontSize: 20 }} />
+                <Typography fontSize={10.5} mt={0.5}>Ajouter</Typography>
+              </Box>
+            </Box>
+          </SectionCard>
 
-            <Card sx={{ mt: 2 }}>
-              <CardContent>
-                <Typography fontSize={14} fontWeight={700} mb={1.5}>Localisation</Typography>
-                <Grid container spacing={2}>
-                  <Grid item xs={12} sm={6}>
-                    <FormControl fullWidth margin="dense">
-                      <InputLabel shrink>Département</InputLabel>
-                      <Select value={form.department} label="Département" onChange={f('department')}>
-                        {DEPTS_HT.map(d => <MenuItem key={d} value={d}>{d}</MenuItem>)}
-                      </Select>
-                    </FormControl>
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <TextField fullWidth label="Ville / Quartier" value={form.city} onChange={f('city')} margin="dense" />
-                  </Grid>
-                </Grid>
-              </CardContent>
-            </Card>
+          {/* ── INFORMATIONS ── */}
+          <SectionCard title="Informations">
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+              <TextField fullWidth label="Nom du produit *" value={form.name} onChange={f('name')} required sx={fieldSx} />
+              <TextField fullWidth label="Description *" value={form.description} onChange={f('description')} multiline rows={5} required sx={fieldSx} />
+              <TextField fullWidth label="SKU" value={form.sku} onChange={f('sku')} sx={fieldSx} />
+            </Box>
+          </SectionCard>
 
-            <Card sx={{ mt: 2 }}>
-              <CardContent>
-                <FormControlLabel
-                  control={<Switch checked={form.hasDelivery} onChange={e => setForm({ ...form, hasDelivery: e.target.checked })} />}
-                  label={<Typography fontSize={14} fontWeight={700}>Livraison disponible</Typography>} />
-                <Collapse in={form.hasDelivery}>
-                  <Box sx={{ pt: 1.5 }}>
-                    <TextField fullWidth label="Frais de livraison (HTG — laisser vide si gratuit)" type="number"
-                      value={form.deliveryPriceHTG} onChange={f('deliveryPriceHTG')} margin="dense" inputProps={{ min: 0 }} />
-                    <Typography fontSize={12.5} fontWeight={600} color="text.secondary" mt={1} mb={1}>
-                      Zones de livraison (ville + département)
-                    </Typography>
-                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                      <TextField size="small" label="Ville (optionnel)" value={zoneInput.city}
-                        onChange={e => setZoneInput(z => ({ ...z, city: e.target.value }))}
-                        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addZone(); } }}
-                        sx={{ flex: '1 1 160px' }} />
-                      <FormControl size="small" sx={{ flex: '1 1 130px' }}>
-                        <InputLabel shrink>Département</InputLabel>
-                        <Select value={zoneInput.dept} label="Département"
-                          onChange={e => setZoneInput(z => ({ ...z, dept: e.target.value }))}>
-                          {DEPTS_HT.map(d => <MenuItem key={d} value={d}>{d}</MenuItem>)}
-                        </Select>
-                      </FormControl>
-                      <Button variant="contained" onClick={addZone} sx={{ minWidth: 44 }}><Add sx={{ fontSize: 18 }} /></Button>
-                    </Box>
-                    {deliveryZones.length > 0 && (
-                      <Box sx={{ mt: 1.5, display: 'flex', flexWrap: 'wrap', gap: 0.8 }}>
-                        {deliveryZones.map((z, i) => (
-                          <Chip key={i} label={z.city ? `${z.city}, ${z.dept}` : z.dept}
-                            onDelete={() => removeZone(i)} size="small" />
-                        ))}
-                      </Box>
-                    )}
-                  </Box>
-                </Collapse>
-              </CardContent>
-            </Card>
+          {/* ── PRIX & CATÉGORIE ── */}
+          <SectionCard title="Prix & Catégorie">
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+              <FormControl fullWidth sx={fieldSx}>
+                <InputLabel shrink>Catégorie</InputLabel>
+                <Select value={form.categoryId} label="Catégorie" MenuProps={darkMenu} onChange={f('categoryId')}>
+                  {(categories || []).map((c: any) => <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>)}
+                </Select>
+              </FormControl>
+              <FormControl fullWidth sx={fieldSx}>
+                <InputLabel shrink>Marque</InputLabel>
+                <Select value={form.brandId} label="Marque" MenuProps={darkMenu} onChange={f('brandId')}>
+                  <MenuItem value="">Aucune</MenuItem>
+                  {(brands || []).map((b: any) => <MenuItem key={b.id} value={b.id}>{b.name}</MenuItem>)}
+                </Select>
+              </FormControl>
 
-            <Card sx={{ mt: 2 }}>
-              <CardContent>
-                <FormControlLabel
-                  control={<Switch checked={form.allowOffers} onChange={e => setForm({ ...form, allowOffers: e.target.checked })} />}
-                  label={<Typography fontSize={14} fontWeight={700}>Accepter les offres de prix</Typography>} />
-                <Typography fontSize={12.5} color="text.secondary" mb={0.5}>
-                  Les clients pourront vous proposer leur propre prix
-                </Typography>
-                <Collapse in={form.allowOffers}>
-                  <Box sx={{ pt: 1.5 }}>
-                    <TextField fullWidth label="Prix minimum accepté (HTG) — laisser vide pour accepter toute offre" type="number"
-                      value={form.minOfferPriceHTG} onChange={f('minOfferPriceHTG')} margin="dense" inputProps={{ min: 0 }} />
-                  </Box>
-                </Collapse>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} md={4}>
-            <Card sx={{ mb: 2 }}>
-              <CardContent>
-                <FormControl fullWidth margin="dense">
-                  <InputLabel shrink>Catégorie</InputLabel>
-                  <Select value={form.categoryId} label="Catégorie" onChange={f('categoryId')}>
-                    {(categories || []).map((c: any) => <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>)}
-                  </Select>
-                </FormControl>
-                <FormControl fullWidth margin="dense">
-                  <InputLabel shrink>Marque</InputLabel>
-                  <Select value={form.brandId} label="Marque" onChange={f('brandId')}>
-                    <MenuItem value="">Aucune</MenuItem>
-                    {(brands || []).map((b: any) => <MenuItem key={b.id} value={b.id}>{b.name}</MenuItem>)}
-                  </Select>
-                </FormControl>
-                <TextField fullWidth label="Prix (HTG)" type="number" value={form.price} onChange={f('price')} margin="dense" />
-                <TextField fullWidth label="Prix promo (HTG)" type="number" value={form.salePrice} onChange={f('salePrice')} margin="dense" />
-                <TextField fullWidth label="Stock" type="number" value={form.stock} onChange={f('stock')} margin="dense" />
+              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
+                <TextField fullWidth label="Prix (HTG)" type="number" value={form.price} onChange={f('price')} sx={fieldSx} />
+                <TextField fullWidth label="Prix promo (HTG)" type="number" value={form.salePrice} onChange={f('salePrice')} sx={fieldSx} />
+              </Box>
+
+              {showCurrencyPanel && (
+                <Box sx={{ p: 1.6, borderRadius: '10px', bgcolor: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.2)' }}>
+                  <Typography fontSize={12.5} color="#3B82F6" fontWeight={600}>
+                    {usdEquivalent ? `≈ ${usdEquivalent} USD` : 'Aperçu en devise boutique'} (taux de change de la boutique : {Number(productStore.exchangeRate).toFixed(2)} HTG/USD)
+                  </Typography>
+                  <Typography fontSize={11.5} color={SUB} mt={0.3}>
+                    Le prix est toujours enregistré et facturé en HTG — cette conversion est juste un aperçu d'affichage.
+                  </Typography>
+                  <Button component={Link} to="/seller/store" size="small"
+                    sx={{ mt: 0.5, color: '#3B82F6', fontWeight: 700, fontSize: 12, textTransform: 'none', px: 0 }}>
+                    Modifier la devise / le taux →
+                  </Button>
+                </Box>
+              )}
+
+              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
+                <TextField fullWidth label="Stock" type="number" value={form.stock} onChange={f('stock')} sx={fieldSx} />
                 <TextField fullWidth label="Quantité minimum de commande" type="number" value={form.minOrderQty}
-                  onChange={f('minOrderQty')} margin="dense" inputProps={{ min: 1 }} />
-              </CardContent>
-            </Card>
+                  onChange={f('minOrderQty')} inputProps={{ min: 1 }} sx={fieldSx} />
+              </Box>
 
-            <Card sx={{ mb: 2 }}>
-              <CardContent>
-                <Typography fontSize={13} fontWeight={700} mb={0.5}>Prix dégressifs par quantité (optionnel)</Typography>
-                <Typography fontSize={12} color="text.secondary" mb={1.2}>
+              {/* Paliers de prix dégressifs (bundles) */}
+              <Box>
+                <Typography fontSize={13} fontWeight={600} color={TXT} mb={0.8}>Prix dégressifs par quantité (optionnel)</Typography>
+                <Typography fontSize={12} color={SUB} mb={1.2}>
                   Ex: si le produit coûte 1000 HTG l'unité, un lot de 3 peut être vendu 2500 HTG au total (au lieu de 3000), un lot de 6 pour 4500 HTG, etc. — le prix indiqué est le total du lot, pas un prix unitaire.
                 </Typography>
                 {priceTiers.map((t, i) => (
                   <Box key={i} sx={{ display: 'flex', gap: 1, mb: 1, alignItems: 'center' }}>
                     <TextField size="small" label="À partir de (qté)" type="number" value={t.minQty}
                       onChange={e => setPriceTiers(p => p.map((x, j) => j === i ? { ...x, minQty: e.target.value } : x))}
-                      inputProps={{ min: 1 }} sx={{ flex: 1 }} />
+                      inputProps={{ min: 1 }} sx={{ ...fieldSx, flex: 1 }} />
                     <TextField size="small" label="Prix total du lot (HTG)" type="number" value={t.price}
                       onChange={e => setPriceTiers(p => p.map((x, j) => j === i ? { ...x, price: e.target.value } : x))}
-                      inputProps={{ min: 0 }} sx={{ flex: 1 }} />
+                      inputProps={{ min: 0 }} sx={{ ...fieldSx, flex: 1 }} />
                     <IconButton size="small" onClick={() => setPriceTiers(p => p.filter((_, j) => j !== i))}>
                       <Close fontSize="small" />
                     </IconButton>
@@ -332,16 +390,127 @@ export default function EditProductPage() {
                   sx={{ textTransform: 'none', fontWeight: 700 }}>
                   Ajouter un palier
                 </Button>
-              </CardContent>
-            </Card>
+              </Box>
+            </Box>
+          </SectionCard>
 
-            <Button fullWidth variant="contained" type="submit" size="large" disabled={loading} sx={{ py: 1.5, fontWeight: 700 }}>
-              {loading ? <CircularProgress size={22} color="inherit" /> : 'Enregistrer'}
+          {/* ── LOCALISATION ── */}
+          <SectionCard title="Localisation">
+            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
+              <FormControl fullWidth sx={fieldSx}>
+                <InputLabel shrink>Département</InputLabel>
+                <Select value={form.department} label="Département" MenuProps={darkMenu} onChange={f('department')}>
+                  {DEPTS_HT.map(d => <MenuItem key={d} value={d}>{d}</MenuItem>)}
+                </Select>
+              </FormControl>
+              <TextField fullWidth label="Ville / Quartier" value={form.city} onChange={f('city')} sx={fieldSx} />
+            </Box>
+          </SectionCard>
+
+          {/* ── OPTIONS DE VENTE ── */}
+          <SectionCard title="Options de vente">
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+              <DarkToggle checked={form.hasDelivery} onChange={v => setForm({ ...form, hasDelivery: v })}
+                label="Livraison disponible" sub="Proposer la livraison aux acheteurs" />
+
+              <Collapse in={form.hasDelivery}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 0.5 }}>
+                  <TextField fullWidth label="Frais de livraison (HTG — laisser vide si gratuit)" type="number"
+                    value={form.deliveryPriceHTG} onChange={f('deliveryPriceHTG')} inputProps={{ min: 0 }} sx={fieldSx} />
+                  <Box>
+                    <Typography fontSize={12.5} fontWeight={600} color={SUB2} mb={1.2}>
+                      Zones de livraison <Typography component="span" fontSize={11} color={SUB}>(ville + département)</Typography>
+                    </Typography>
+                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                      <TextField size="small" label="Ville (optionnel)" value={zoneInput.city}
+                        onChange={e => setZoneInput(z => ({ ...z, city: e.target.value }))}
+                        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addZone(); } }}
+                        sx={{ ...fieldSx, flex: '1 1 160px' }} />
+                      <FormControl size="small" sx={{ ...fieldSx, flex: '1 1 130px' }}>
+                        <InputLabel shrink>Département</InputLabel>
+                        <Select value={zoneInput.dept} label="Département" MenuProps={darkMenu}
+                          onChange={e => setZoneInput(z => ({ ...z, dept: e.target.value }))}>
+                          {DEPTS_HT.map(d => <MenuItem key={d} value={d}>{d}</MenuItem>)}
+                        </Select>
+                      </FormControl>
+                      <Box onClick={addZone}
+                        sx={{ height: 40, px: 1.8, borderRadius: '10px', bgcolor: OR, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, '&:hover': { bgcolor: '#E05A00' } }}>
+                        <Add sx={{ fontSize: 18, color: '#fff' }} />
+                      </Box>
+                    </Box>
+                    {deliveryZones.length > 0 && (
+                      <Box sx={{ mt: 1.5, display: 'flex', flexWrap: 'wrap', gap: 0.8 }}>
+                        {deliveryZones.map((z, i) => (
+                          <Chip key={i} label={z.city ? `${z.city}, ${z.dept}` : z.dept}
+                            onDelete={() => removeZone(i)} size="small" />
+                        ))}
+                      </Box>
+                    )}
+                  </Box>
+                </Box>
+              </Collapse>
+
+              {/* Points de retrait spécifiques au produit */}
+              <Box>
+                <Typography fontSize={13} fontWeight={600} color={TXT} mb={0.4}>
+                  Points de retrait pour ce produit (optionnel)
+                </Typography>
+                {storePickupPoints.length > 0 ? (
+                  <>
+                    <Typography fontSize={12} color={SUB} mb={1.2}>
+                      Aucune sélection = disponible à tous les points de retrait de votre boutique.
+                    </Typography>
+                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                      {storePickupPoints.map((pt: any) => {
+                        const active = pickupPointNames.includes(pt.name);
+                        return (
+                          <Box key={pt.name} onClick={() => togglePickupPoint(pt.name)}
+                            sx={{ px: 1.5, py: 0.7, borderRadius: '8px', cursor: 'pointer', fontSize: 12.5, fontWeight: 600, bgcolor: active ? 'rgba(255,107,0,0.12)' : 'rgba(15,23,42,0.09)', color: active ? OR : SUB2, border: `1px solid ${active ? `${OR}40` : BORD}` }}>
+                            {pt.name}{pt.city ? ` — ${pt.city}` : ''}
+                          </Box>
+                        );
+                      })}
+                    </Box>
+                  </>
+                ) : (
+                  <Box sx={{ p: 1.6, borderRadius: '10px', bgcolor: 'rgba(15,23,42,0.04)', border: `1px solid ${BORD}` }}>
+                    <Typography fontSize={12.5} color={SUB}>
+                      Configurez des points de retrait dans les paramètres de votre boutique pour les associer à vos produits.
+                    </Typography>
+                    <Button component={Link} to="/seller/store" size="small"
+                      sx={{ mt: 0.5, color: OR, fontWeight: 700, fontSize: 12, textTransform: 'none', px: 0 }}>
+                      Configurer mes points de retrait →
+                    </Button>
+                  </Box>
+                )}
+              </Box>
+
+              <DarkToggle checked={form.allowOffers} onChange={v => setForm({ ...form, allowOffers: v })}
+                label="Accepter les offres de prix" sub="Les clients pourront vous proposer leur propre prix" />
+
+              <Collapse in={form.allowOffers}>
+                <Box sx={{ pt: 0.5 }}>
+                  <TextField fullWidth label="Prix minimum accepté (HTG) — laisser vide pour accepter toute offre" type="number"
+                    value={form.minOfferPriceHTG} onChange={f('minOfferPriceHTG')} inputProps={{ min: 0 }} sx={fieldSx} />
+                </Box>
+              </Collapse>
+            </Box>
+          </SectionCard>
+
+          {/* Bottom submit */}
+          <Box sx={{ display: 'flex', gap: 1.5 }}>
+            <Button fullWidth type="submit" disabled={loading}
+              sx={{ py: 1.6, borderRadius: '14px', fontWeight: 800, fontSize: 15, bgcolor: OR, color: '#fff', textTransform: 'none', '&:hover': { bgcolor: '#E05A00' }, '&.Mui-disabled': { bgcolor: 'rgba(255,107,0,0.3)', color: '#64748B' } }}>
+              {loading ? <CircularProgress size={20} sx={{ color: '#fff' }} /> : 'Enregistrer'}
             </Button>
-            <Button fullWidth variant="outlined" sx={{ mt: 1 }} onClick={() => navigate('/seller/products')}>Annuler</Button>
-          </Grid>
-        </Grid>
+            <Button fullWidth variant="outlined" onClick={() => navigate('/seller/products')}
+              sx={{ py: 1.6, borderRadius: '14px', fontWeight: 700, fontSize: 15, textTransform: 'none', borderColor: BORD, color: SUB2 }}>
+              Annuler
+            </Button>
+          </Box>
+
+        </Box>
       </form>
-    </Container>
+    </Box>
   );
 }

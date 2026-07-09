@@ -336,6 +336,9 @@ export class ProductsService {
         address:     (dto as any).address || null,
         attributes:  attributes,
         priceTiers,
+        // Stocké tel quel (JSON string déjà sérialisé côté client) — comportement
+        // identique à priceTiers/serviceConfig, pas de re-parse nécessaire ici.
+        pickupPointNames: dto.pickupPointNames || null,
         minOrderQty: dto.minOrderQty || 1,
         productType: (dto as any).productType || 'PHYSICAL',
         requiresAppointment: (dto as any).requiresAppointment ?? false,
