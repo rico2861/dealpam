@@ -409,6 +409,16 @@ export class ProductsService {
       await this.prisma.productVariant.createMany({ data: variantCreateData });
     }
 
+    await this.prisma.auditLog.create({
+      data: {
+        userId,
+        action: 'PRODUCT_CREATED',
+        entity: 'Product',
+        entityId: product.id,
+        newValues: { name: product.name, price: Number(product.price), status: product.status, flagged: moderation.isFlagged, flagReason: moderation.reason } as any,
+      },
+    }).catch(() => {});
+
     return this.prisma.product.findUnique({
       where: { id: product.id },
       include: PRODUCT_INCLUDE,
@@ -421,13 +431,11 @@ export class ProductsService {
     });
     if (!product) throw new NotFoundException('Produit introuvable');
 
-    // Produit déjà PUBLISHED → la version en ligne reste visible et intacte
-    // pendant la validation. On stocke seulement les changements proposés ;
-    // rien n'est appliqué (ni prix, ni stock, ni images/variants) tant que
-    // l'admin n'a pas approuvé — voir approveEdit()/rejectEdit().
-    if (product.status === 'PUBLISHED') {
-      return this.savePendingEdit(product, userId, dto, files);
-    }
+    // Toute modification s'applique desormais immediatement (visible tout de
+    // suite sur la plateforme), y compris sur un produit deja PUBLISHED — voir
+    // plus bas : seul un contenu detecte comme suspect (armes, drogue, organes,
+    // autre contenu illicite) repasse le produit en PENDING_REVIEW le temps
+    // qu'un admin tranche. Un produit deja publie et non suspect RESTE publie.
 
     // Record price history + notify wishlist users if price dropped
     const newPrice     = dto.price     != null ? Number(dto.price)     : null;
@@ -494,6 +502,13 @@ export class ProductsService {
       (dto as any).description ?? product.description,
     );
 
+    // Un produit deja PUBLISHED et non suspect reste PUBLISHED (visible tout de
+    // suite) ; sinon (nouveau contenu suspect, ou produit qui n'etait pas encore
+    // publie) il passe/repasse en PENDING_REVIEW pour verification.
+    const nextStatus = moderation.isFlagged
+      ? 'PENDING_REVIEW'
+      : (product.status === 'PUBLISHED' ? 'PUBLISHED' : 'PENDING_REVIEW');
+
     await this.prisma.product.update({
       where: { id: productId },
       data: {
@@ -501,11 +516,22 @@ export class ProductsService {
         attributes: attributes !== undefined ? attributes : undefined,
         priceTiers,
         variants: undefined,
-        status: 'PENDING_REVIEW',
+        status: nextStatus,
         isFlagged: moderation.isFlagged,
         flagReason: moderation.reason,
       } as any,
     });
+
+    await this.prisma.auditLog.create({
+      data: {
+        userId,
+        action: 'PRODUCT_EDITED',
+        entity: 'Product',
+        entityId: productId,
+        oldValues: { name: product.name, price: Number(product.price), status: product.status } as any,
+        newValues: { ...safeDto, resultingStatus: nextStatus, flagged: moderation.isFlagged, flagReason: moderation.reason } as any,
+      },
+    }).catch(() => {});
 
     // Replace variants if sent
     if (variantInput.length > 0) {
@@ -529,15 +555,17 @@ export class ProductsService {
       await this.prisma.productVariant.createMany({ data: variantCreateData });
     }
 
-    // La modification repasse le produit en file de modération — le vendeur
-    // doit le savoir immédiatement, pas seulement constater sa disparition.
-    await this.notifications.create(
-      userId,
-      `🔍 "${(dto as any).name ?? product.name}" en cours de vérification`,
-      `Votre modification a bien été enregistrée. Le produit repasse en file de modération et sera republié après validation.`,
-      'PRODUCT_MODERATION',
-      { productId, result: 'PENDING' },
-    ).catch(() => {});
+    if (nextStatus === 'PENDING_REVIEW') {
+      await this.notifications.create(
+        userId,
+        `"${(dto as any).name ?? product.name}" en cours de vérification`,
+        moderation.isFlagged
+          ? `Votre modification a été enregistrée mais nécessite une vérification avant d'être visible — un administrateur va l'examiner sous peu.`
+          : `Votre modification a bien été enregistrée. Le produit sera republié après validation.`,
+        'PRODUCT_MODERATION',
+        { productId, result: 'PENDING' },
+      ).catch(() => {});
+    }
 
     return this.prisma.product.findUnique({ where: { id: productId }, include: PRODUCT_INCLUDE });
   }
@@ -652,22 +680,38 @@ export class ProductsService {
     return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
-  async approve(productId: string) {
+  async approve(productId: string, adminUserId?: string) {
     const product = await this.prisma.product.update({
-      where: { id: productId }, data: { status: 'PUBLISHED', rejectionReason: null },
+      where: { id: productId }, data: { status: 'PUBLISHED', rejectionReason: null, isFlagged: false, flagReason: null },
       include: { store: { select: { name: true, seller: { select: { userId: true } } } } },
     });
+    await this.prisma.auditLog.create({
+      data: { userId: adminUserId, action: 'PRODUCT_APPROVED', entity: 'Product', entityId: productId, newValues: { status: 'PUBLISHED' } as any },
+    }).catch(() => {});
     await this.notifyModerationResult(product, 'APPROVED');
     return product;
   }
 
-  async reject(productId: string, reason: string) {
+  async reject(productId: string, reason: string, adminUserId?: string) {
     const product = await this.prisma.product.update({
       where: { id: productId }, data: { status: 'REJECTED', rejectionReason: reason },
       include: { store: { select: { name: true, seller: { select: { userId: true } } } } },
     });
+    await this.prisma.auditLog.create({
+      data: { userId: adminUserId, action: 'PRODUCT_REJECTED', entity: 'Product', entityId: productId, newValues: { status: 'REJECTED', reason } as any },
+    }).catch(() => {});
     await this.notifyModerationResult(product, 'REJECTED', reason);
     return product;
+  }
+
+  // ── Admin : historique complet des actions sur ce produit (creation, edits,
+  // approbations/rejets) — qui a fait quoi et quand. ─────────────────────────
+  async getAuditLog(productId: string) {
+    return this.prisma.auditLog.findMany({
+      where: { entity: 'Product', entityId: productId },
+      include: { user: { select: { firstName: true, lastName: true, email: true, role: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
   }
 
   // ── Notifie le vendeur du résultat de la modération (approbation/rejet) ────

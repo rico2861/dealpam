@@ -347,7 +347,7 @@ export default function EditProductPage() {
             </Card>
 
             <Button fullWidth variant="contained" type="submit" size="large" disabled={loading} sx={{ py: 1.5, fontWeight: 700 }}>
-              {loading ? <CircularProgress size={22} color="inherit" /> : '💾 Enregistrer'}
+              {loading ? <CircularProgress size={22} color="inherit" /> : 'Enregistrer'}
             </Button>
             <Button fullWidth variant="outlined" sx={{ mt: 1 }} onClick={() => navigate('/seller/products')}>Annuler</Button>
           </Grid>

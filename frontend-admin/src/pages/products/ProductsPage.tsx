@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Container, Typography, Card, Box, Chip, Button, Tab, Tabs, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Avatar, CircularProgress, Tooltip } from '@mui/material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
-import { CheckCircle, Cancel, Visibility, Flag, RateReview } from '@mui/icons-material';
+import { CheckCircle, Cancel, Visibility, Flag, RateReview, History } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import api from '../../api/axios';
@@ -20,6 +20,16 @@ export default function ProductsPage() {
   const [rejectDialog, setRejectDialog] = useState<{ open: boolean; id: string; isEdit: boolean }>({ open: false, id: '', isEdit: false });
   const [reason, setReason] = useState('');
   const [diffDialog, setDiffDialog] = useState<any>(null);
+  const [historyProductId, setHistoryProductId] = useState<string | null>(null);
+
+  const { data: history, isLoading: historyLoading } = useQuery({
+    queryKey: ['product-audit-log', historyProductId],
+    queryFn: () => api.get(`/products/${historyProductId}/audit-log`).then(r => r.data || []),
+    enabled: !!historyProductId,
+  });
+  const ACTION_LABEL: Record<string, string> = {
+    PRODUCT_CREATED: 'Créé', PRODUCT_EDITED: 'Modifié', PRODUCT_APPROVED: 'Approuvé', PRODUCT_REJECTED: 'Rejeté',
+  };
 
   const isPendingEditTab = tab === 'PENDING_EDIT';
 
@@ -88,6 +98,7 @@ export default function ProductsPage() {
             <Button size="small" variant="outlined" href={`https://dealpam.com/products/${p.row.slug}`} target="_blank" startIcon={<Visibility />} sx={{ fontSize: 11 }}>Voir</Button>
           </>
         )}
+        <Button size="small" variant="text" startIcon={<History />} onClick={() => setHistoryProductId(p.row.id)} sx={{ fontSize: 11 }}>Historique</Button>
       </Box>
     )},
   ];
@@ -159,6 +170,43 @@ export default function ProductsPage() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDiffDialog(null)}>Fermer</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Historique complet du produit — qui a fait quoi, quand (creation, edits, approbation/rejet) */}
+      <Dialog open={!!historyProductId} onClose={() => setHistoryProductId(null)} maxWidth="sm" fullWidth>
+        <DialogTitle>Historique du produit</DialogTitle>
+        <DialogContent dividers>
+          {historyLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}><CircularProgress size={22} /></Box>
+          ) : !history?.length ? (
+            <Typography fontSize={13} color="text.secondary">Aucun historique disponible.</Typography>
+          ) : (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              {history.map((h: any) => (
+                <Box key={h.id} sx={{ borderBottom: '1px solid rgba(0,0,0,0.08)', pb: 1.2 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.3 }}>
+                    <Chip size="small" label={ACTION_LABEL[h.action] || h.action} />
+                    <Typography fontSize={11} color="text.secondary">{new Date(h.createdAt).toLocaleString('fr-FR')}</Typography>
+                  </Box>
+                  <Typography fontSize={12} color="text.secondary">
+                    Par : {h.user ? `${h.user.firstName} ${h.user.lastName} (${h.user.role})` : 'Vendeur'}
+                  </Typography>
+                  {h.newValues?.flagged && (
+                    <Typography fontSize={12} color="error.main" fontWeight={600} mt={0.3}>
+                      Suspect : {h.newValues.flagReason}
+                    </Typography>
+                  )}
+                  {h.newValues?.reason && (
+                    <Typography fontSize={12} color="text.secondary" mt={0.3}>Motif : {h.newValues.reason}</Typography>
+                  )}
+                </Box>
+              ))}
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setHistoryProductId(null)}>Fermer</Button>
         </DialogActions>
       </Dialog>
     </Container>

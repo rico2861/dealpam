@@ -176,11 +176,16 @@ export class ProductsController {
 
   @Post(':id/approve')
   @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('ADMIN', 'SUPER_ADMIN', 'MODERATOR')
-  approve(@Param('id') id: string) { return this.productsService.approve(id); }
+  approve(@Param('id') id: string, @CurrentUser() admin: any) { return this.productsService.approve(id, admin.id); }
 
   @Post(':id/reject')
   @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('ADMIN', 'SUPER_ADMIN', 'MODERATOR')
-  reject(@Param('id') id: string, @Body('reason') reason: string) { return this.productsService.reject(id, reason); }
+  reject(@Param('id') id: string, @Body('reason') reason: string, @CurrentUser() admin: any) { return this.productsService.reject(id, reason, admin.id); }
+
+  // ── Admin : historique complet des actions sur ce produit ─────────────────
+  @Get(':id/audit-log')
+  @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('ADMIN', 'SUPER_ADMIN', 'MODERATOR')
+  getAuditLog(@Param('id') id: string) { return this.productsService.getAuditLog(id); }
 
   @Post(':id/approve-edit')
   @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('ADMIN', 'SUPER_ADMIN', 'MODERATOR')
