@@ -6,7 +6,7 @@ import {
 } from '@mui/material';
 import {
   CalendarMonth, Person, Phone, Email, AccessTime, Store,
-  CheckCircle, Cancel, Schedule, Done, Search, FilterList, ChatBubbleOutline,
+  CheckCircle, Cancel, Schedule, Done, Search, ChatBubbleOutline,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
@@ -217,60 +217,61 @@ function ApptCard({ appt, onClick }: { appt: any; onClick: () => void }) {
   const cfg = STATUS_CONFIG[appt.status] ?? STATUS_CONFIG['PENDING'];
   const StatusIcon = cfg.icon;
   const isPending = appt.status === 'PENDING';
+  const name = appt.user ? `${appt.user.firstName ?? ''} ${appt.user.lastName ?? ''}`.trim() : appt.clientName;
+  const initial = (name || 'C')[0]?.toUpperCase();
+  const scheduled = new Date(appt.scheduledAt);
+  const dayLabel = scheduled.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
 
   return (
     <Box onClick={onClick}
       sx={{
-        p: 2.5, borderRadius: '14px', cursor: 'pointer', transition: 'all 0.15s',
-        bgcolor: isPending ? `${YLW}08` : CARD,
-        border: `1px solid ${isPending ? `${YLW}25` : BORD}`,
-        '&:hover': { border: `1px solid rgba(15,23,42,0.09)`, transform: 'translateY(-1px)' },
+        display: 'flex', alignItems: 'center', gap: 2, p: 2, borderRadius: '16px', cursor: 'pointer', transition: 'all 0.16s',
+        bgcolor: CARD, border: `1px solid ${isPending ? `${YLW}35` : BORD}`,
+        '&:hover': { borderColor: 'rgba(15,23,42,0.14)', boxShadow: '0 6px 20px rgba(15,23,42,0.06)', transform: 'translateY(-1px)' },
       }}>
 
-      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1.5 }}>
-        <Box sx={{ flex: 1, minWidth: 0, mr: 1 }}>
-          <Typography fontSize={14} fontWeight={700} color={TXT} noWrap>{appt.product?.name ?? '—'}</Typography>
-          {appt.serviceType && (
-            <Typography fontSize={12} color={SUB} mt={0.2}>{appt.serviceType}</Typography>
-          )}
-        </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6, px: 1.2, py: 0.4, borderRadius: '8px', bgcolor: `${cfg.color}15`, border: `1px solid ${cfg.color}25`, flexShrink: 0 }}>
-          <StatusIcon sx={{ fontSize: 12, color: cfg.color }} />
-          <Typography fontSize={11} fontWeight={700} color={cfg.color}>{cfg.label}</Typography>
-        </Box>
+      {/* Date block */}
+      <Box sx={{ flexShrink: 0, width: 56, height: 56, borderRadius: '13px', bgcolor: `${OR}12`, border: `1px solid ${OR}25`,
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+        <Typography fontSize={10.5} fontWeight={800} color={OR} sx={{ textTransform: 'uppercase' }}>{dayLabel.split(' ')[1]}</Typography>
+        <Typography fontSize={17} fontWeight={900} color={OR} lineHeight={1}>{dayLabel.split(' ')[0]}</Typography>
       </Box>
 
-      <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
-          <CalendarMonth sx={{ fontSize: 13, color: OR }} />
-          <Typography fontSize={12} color={SUB2}>{formatDate(appt.scheduledAt)} à {formatTime(appt.scheduledAt)}</Typography>
+      {/* Info */}
+      <Box sx={{ flex: 1, minWidth: 0 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.4, flexWrap: 'wrap' }}>
+          <Typography fontSize={14} fontWeight={800} color={TXT} noWrap>{appt.product?.name ?? '—'}</Typography>
+          {appt.serviceType && <Typography fontSize={12} color={SUB} noWrap>· {appt.serviceType}</Typography>}
         </Box>
-        {(() => {
-          const name = appt.user ? `${appt.user.firstName ?? ''} ${appt.user.lastName ?? ''}`.trim() : appt.clientName;
-          return (name || appt.userId) && (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
-              <Person sx={{ fontSize: 13, color: SUB }} />
-              <Typography fontSize={12} color={SUB2}>{name || 'Compte enregistré'}</Typography>
-            </Box>
-          );
-        })()}
-        {(appt.user?.phone ?? appt.clientPhone) && (
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
-            <Phone sx={{ fontSize: 13, color: SUB }} />
-            <Typography fontSize={12} color={SUB2}>{appt.user?.phone ?? appt.clientPhone}</Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
+            <AccessTime sx={{ fontSize: 13, color: SUB }} />
+            <Typography fontSize={12.5} color={SUB2}>{formatTime(appt.scheduledAt)}</Typography>
           </Box>
-        )}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
-          <Store sx={{ fontSize: 13, color: SUB }} />
-          <Typography fontSize={12} color={SUB}>{appt.store?.name}</Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
+            <Box sx={{ width: 18, height: 18, borderRadius: '50%', bgcolor: 'rgba(15,23,42,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <Typography fontSize={9} fontWeight={800} color={SUB2}>{initial}</Typography>
+            </Box>
+            <Typography fontSize={12.5} color={SUB2} noWrap>{name || 'Compte enregistré'}</Typography>
+          </Box>
+          {(appt.user?.phone ?? appt.clientPhone) && (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
+              <Phone sx={{ fontSize: 12, color: SUB }} />
+              <Typography fontSize={12.5} color={SUB2}>{appt.user?.phone ?? appt.clientPhone}</Typography>
+            </Box>
+          )}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
+            <Store sx={{ fontSize: 12, color: SUB }} />
+            <Typography fontSize={12.5} color={SUB}>{appt.store?.name}</Typography>
+          </Box>
         </Box>
       </Box>
 
-      {isPending && (
-        <Box sx={{ mt: 1.5, px: 1.5, py: 0.7, borderRadius: '8px', bgcolor: `${YLW}15`, border: `1px solid ${YLW}25`, display: 'inline-block' }}>
-          <Typography fontSize={11} fontWeight={600} color={YLW}>⏳ Action requise — Confirmez ou refusez ce rendez-vous</Typography>
-        </Box>
-      )}
+      {/* Status */}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6, px: 1.3, py: 0.6, borderRadius: '9px', bgcolor: `${cfg.color}12`, border: `1px solid ${cfg.color}30`, flexShrink: 0 }}>
+        <StatusIcon sx={{ fontSize: 13, color: cfg.color }} />
+        <Typography fontSize={11.5} fontWeight={700} color={cfg.color}>{cfg.label}</Typography>
+      </Box>
     </Box>
   );
 }
@@ -281,6 +282,10 @@ export default function AppointmentsPage() {
   const [selectedAppt, setSelectedAppt] = useState<any>(null);
   const [filterStatus, setFilterStatus] = useState('ALL');
   const [search, setSearch] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 8;
 
   const { data: appts = [], isLoading } = useQuery({
     queryKey: ['sellerAppointments'],
@@ -293,6 +298,8 @@ export default function AppointmentsPage() {
 
   const filtered = appts.filter((a: any) => {
     if (filterStatus !== 'ALL' && a.status !== filterStatus) return false;
+    if (dateFrom && new Date(a.scheduledAt) < new Date(dateFrom)) return false;
+    if (dateTo && new Date(a.scheduledAt) > new Date(`${dateTo}T23:59:59`)) return false;
     if (search) {
       const q = search.toLowerCase();
       const registeredName = a.user ? `${a.user.firstName ?? ''} ${a.user.lastName ?? ''}` : '';
@@ -307,69 +314,96 @@ export default function AppointmentsPage() {
     return true;
   });
 
+  const pageCount   = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Math.min(page, pageCount);
+  const paged       = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const hasFilters  = filterStatus !== 'ALL' || !!search || !!dateFrom || !!dateTo;
+
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: BG, p: { xs: 2, md: 3 } }}>
-      <Box sx={{ maxWidth: 900, mx: 'auto' }}>
+      <Box sx={{ maxWidth: 960, mx: 'auto' }}>
 
-        {/* Header */}
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2, mb: 3 }}>
-          <Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Box sx={{ width: 40, height: 40, borderRadius: '12px', bgcolor: `${OR}18`, border: `1px solid ${OR}30`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <CalendarMonth sx={{ fontSize: 22, color: OR }} />
-              </Box>
-              <Box>
-                <Typography fontSize={20} fontWeight={800} color={TXT}>Rendez-vous</Typography>
-                <Typography fontSize={12} color={SUB}>Gérez les demandes de vos clients</Typography>
-              </Box>
+        {/* Hero header */}
+        <Box sx={{
+          mb: 3, p: { xs: 2.5, md: 3 }, borderRadius: '20px', position: 'relative', overflow: 'hidden',
+          background: 'linear-gradient(135deg,#0F172A 0%,#1E293B 55%,#1E293B 100%)',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2,
+        }}>
+          <Box sx={{ position: 'absolute', right: -60, top: -60, width: 220, height: 220, borderRadius: '50%',
+            background: `radial-gradient(circle,${OR}33,transparent 70%)` }} />
+          <Box sx={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Box sx={{ width: 52, height: 52, borderRadius: '14px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              bgcolor: `${OR}22`, border: `1px solid ${OR}44` }}>
+              <CalendarMonth sx={{ color: OR, fontSize: 26 }} />
+            </Box>
+            <Box>
+              <Typography fontWeight={900} fontSize={{ xs: 19, md: 23 }} color="#fff" letterSpacing="-0.4px">Rendez-vous</Typography>
+              <Typography fontSize={12.5} color="rgba(255,255,255,0.55)">Gérez les demandes de vos clients</Typography>
             </Box>
           </Box>
           {pending > 0 && (
-            <Box sx={{ px: 2, py: 0.8, borderRadius: '10px', bgcolor: `${YLW}15`, border: `1px solid ${YLW}30` }}>
-              <Typography fontSize={13} fontWeight={700} color={YLW}>{pending} en attente de confirmation</Typography>
+            <Box sx={{ position: 'relative', px: 2, py: 0.9, borderRadius: '11px', bgcolor: `${YLW}20`, border: `1px solid ${YLW}45` }}>
+              <Typography fontSize={12.5} fontWeight={700} color={YLW}>{pending} en attente de confirmation</Typography>
             </Box>
           )}
         </Box>
 
         {/* Stats bar */}
-        <Box sx={{ display: 'flex', gap: 1.5, mb: 3, flexWrap: 'wrap' }}>
+        <Box sx={{ display: 'flex', gap: 1.2, mb: 2, flexWrap: 'wrap' }}>
           {Object.entries(STATUS_CONFIG).map(([key, cfg]) => {
             const count = appts.filter((a: any) => a.status === key).length;
             if (count === 0) return null;
             const SIcon = cfg.icon;
+            const active = filterStatus === key;
             return (
-              <Box key={key} onClick={() => setFilterStatus(filterStatus === key ? 'ALL' : key)}
-                sx={{ px: 1.5, py: 0.8, borderRadius: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 0.8, bgcolor: filterStatus === key ? `${cfg.color}15` : CARD, border: `1px solid ${filterStatus === key ? cfg.color + '40' : BORD}`, '&:hover': { border: `1px solid ${cfg.color}30` } }}>
+              <Box key={key} onClick={() => { setFilterStatus(active ? 'ALL' : key); setPage(1); }}
+                sx={{ px: 1.6, py: 0.9, borderRadius: '12px', cursor: 'pointer', transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: 0.8,
+                  bgcolor: active ? `${cfg.color}12` : CARD, border: `1px solid ${active ? cfg.color + '45' : BORD}`,
+                  '&:hover': { borderColor: `${cfg.color}45` } }}>
                 <SIcon sx={{ fontSize: 14, color: cfg.color }} />
-                <Typography fontSize={12} fontWeight={600} color={cfg.color}>{cfg.label}</Typography>
-                <Typography fontSize={12} fontWeight={700} color={TXT}>{count}</Typography>
+                <Typography fontSize={12.5} fontWeight={600} color={cfg.color}>{cfg.label}</Typography>
+                <Typography fontSize={12.5} fontWeight={800} color={TXT}>{count}</Typography>
               </Box>
             );
           })}
         </Box>
 
-        {/* Search + filter */}
-        <Box sx={{ display: 'flex', gap: 1.5, mb: 3 }}>
-          <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', gap: 1, px: 1.5, py: 0, borderRadius: '10px', bgcolor: CARD, border: `1px solid ${BORD}` }}>
+        {/* Search + status + date range */}
+        <Box sx={{ p: 1.8, borderRadius: '16px', bgcolor: CARD, border: `1px solid ${BORD}`, mb: 2.5,
+          display: 'flex', flexWrap: 'wrap', gap: 1.2, alignItems: 'center' }}>
+          <Box sx={{ flex: 1, minWidth: 220, display: 'flex', alignItems: 'center', gap: 1, px: 1.5, py: 0.2, borderRadius: '10px', bgcolor: 'rgba(15,23,42,0.03)', border: `1px solid ${BORD}` }}>
             <Search sx={{ fontSize: 16, color: SUB, flexShrink: 0 }} />
-            <input value={search} onChange={e => setSearch(e.target.value)}
+            <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}
               placeholder="Rechercher par nom, téléphone, service…"
-              style={{ flex: 1, background: 'none', border: 'none', outline: 'none', fontSize: 13, color: TXT, padding: '10px 0' }} />
+              style={{ flex: 1, background: 'none', border: 'none', outline: 'none', fontSize: 13, color: TXT, padding: '9px 0' }} />
           </Box>
           <FormControl sx={{ minWidth: 150 }}>
-            <Select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} MenuProps={darkMenu}
-              sx={{ height: 42, bgcolor: CARD, borderRadius: '10px', fontSize: 13, color: TXT, '& .MuiOutlinedInput-notchedOutline': { borderColor: BORD }, '& .MuiSelect-icon': { color: SUB } }}>
-              <MenuItem value="ALL">Tous</MenuItem>
+            <Select value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setPage(1); }} MenuProps={darkMenu}
+              sx={{ height: 40, bgcolor: 'rgba(15,23,42,0.03)', borderRadius: '10px', fontSize: 13, color: TXT, '& .MuiOutlinedInput-notchedOutline': { borderColor: BORD }, '& .MuiSelect-icon': { color: SUB } }}>
+              <MenuItem value="ALL">Tous les statuts</MenuItem>
               {Object.entries(STATUS_CONFIG).map(([k, c]) => <MenuItem key={k} value={k}>{c.label}</MenuItem>)}
             </Select>
           </FormControl>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
+            <input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setPage(1); }}
+              style={{ fontSize: 12.5, color: TXT, border: `1px solid ${BORD}`, borderRadius: 10, padding: '9px 10px', background: 'rgba(15,23,42,0.03)' }} />
+            <Typography fontSize={12} color={SUB}>à</Typography>
+            <input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setPage(1); }}
+              style={{ fontSize: 12.5, color: TXT, border: `1px solid ${BORD}`, borderRadius: 10, padding: '9px 10px', background: 'rgba(15,23,42,0.03)' }} />
+          </Box>
+          {hasFilters && (
+            <Typography onClick={() => { setFilterStatus('ALL'); setSearch(''); setDateFrom(''); setDateTo(''); setPage(1); }}
+              sx={{ fontSize: 12, color: SUB, cursor: 'pointer', textDecoration: 'underline', '&:hover': { color: TXT } }}>
+              Réinitialiser
+            </Typography>
+          )}
         </Box>
 
         {/* List */}
         {isLoading ? (
           showSkel ? <ListSkeleton rows={5} /> : null
         ) : filtered.length === 0 ? (
-          <Box sx={{ py: 10, textAlign: 'center' }}>
+          <Box sx={{ py: 10, textAlign: 'center', borderRadius: '16px', bgcolor: CARD, border: `1px solid ${BORD}` }}>
             <CalendarMonth sx={{ fontSize: 48, color: BORD, mb: 1.5 }} />
             <Typography fontSize={16} fontWeight={700} color={SUB2} mb={0.5}>
               {appts.length === 0 ? 'Aucun rendez-vous pour l\'instant' : 'Aucun résultat'}
@@ -379,11 +413,29 @@ export default function AppointmentsPage() {
             </Typography>
           </Box>
         ) : (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-            {filtered.map((appt: any) => (
-              <ApptCard key={appt.id} appt={appt} onClick={() => setSelectedAppt(appt)} />
-            ))}
-          </Box>
+          <>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.2 }}>
+              {paged.map((appt: any) => (
+                <ApptCard key={appt.id} appt={appt} onClick={() => setSelectedAppt(appt)} />
+              ))}
+            </Box>
+
+            {filtered.length > PAGE_SIZE && (
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 2, px: 0.5 }}>
+                <Typography fontSize={12} color={SUB}>Page {currentPage} / {pageCount}</Typography>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <Button size="small" disabled={currentPage <= 1} onClick={() => setPage(p => Math.max(1, p - 1))}
+                    sx={{ textTransform: 'none', fontWeight: 700, fontSize: 12.5, color: TXT, border: `1px solid ${BORD}`, borderRadius: '9px', px: 1.6, bgcolor: CARD, '&.Mui-disabled': { color: SUB, opacity: 0.5 } }}>
+                    Précédent
+                  </Button>
+                  <Button size="small" disabled={currentPage >= pageCount} onClick={() => setPage(p => Math.min(pageCount, p + 1))}
+                    sx={{ textTransform: 'none', fontWeight: 700, fontSize: 12.5, color: TXT, border: `1px solid ${BORD}`, borderRadius: '9px', px: 1.6, bgcolor: CARD, '&.Mui-disabled': { color: SUB, opacity: 0.5 } }}>
+                    Suivant
+                  </Button>
+                </Box>
+              </Box>
+            )}
+          </>
         )}
       </Box>
 
