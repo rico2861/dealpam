@@ -82,14 +82,26 @@ export class ProductsController {
 
   @Get('me')
   @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('SELLER')
-  getMyProducts(@CurrentUser() user: any, @Query('page') page = 1, @Query('limit') limit = 20) {
-    return this.productsService.getMyProducts(user.id, Number(page), Number(limit));
+  getMyProducts(
+    @CurrentUser() user: any,
+    @Query('page') page = 1,
+    @Query('limit') limit = 20,
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string,
+  ) {
+    return this.productsService.getMyProducts(user.id, Number(page), Number(limit), dateFrom, dateTo);
   }
 
   @Get('admin-list')
   @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('ADMIN', 'SUPER_ADMIN')
-  findAllAdmin(@Query('page') page = 1, @Query('limit') limit = 50) {
-    return this.productsService.findAllAdmin(Number(page), Number(limit));
+  findAllAdmin(
+    @Query('page') page = 1,
+    @Query('limit') limit = 50,
+    @Query('status') status?: string,
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string,
+  ) {
+    return this.productsService.findAllAdmin(Number(page), Number(limit), status, dateFrom, dateTo);
   }
 
   // Doit rester avant @Get(':slug') plus bas, sinon "me" serait capturé

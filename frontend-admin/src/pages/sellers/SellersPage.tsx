@@ -130,12 +130,16 @@ export default function SellersPage() {
   const [rejectReason, setRejectReason] = useState('');
   const [detailId, setDetailId] = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState(new Date());
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo]     = useState('');
 
   const params = new URLSearchParams({ status: tab, page: String(page + 1), limit: String(pageSize) });
   if (search) params.set('search', search);
+  if (dateFrom) params.set('dateFrom', dateFrom);
+  if (dateTo)   params.set('dateTo', dateTo);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['sellers', tab, page, pageSize, search],
+    queryKey: ['sellers', tab, page, pageSize, search, dateFrom, dateTo],
     queryFn: () => api.get(`/sellers?${params}`).then(r => { setLastRefresh(new Date()); return r.data; }),
     refetchInterval: 20000, // refresh every 20s — real-time
   });
@@ -270,12 +274,25 @@ export default function SellersPage() {
             </Typography>
           </Box>
         </Box>
-        <TextField
-          size="small" placeholder="Nom, email, boutique…" value={search}
-          onChange={e => { setSearch(e.target.value); setPage(0); }}
-          InputProps={{ startAdornment: <InputAdornment position="start"><Search fontSize="small" sx={{ color: '#999' }} /></InputAdornment> }}
-          sx={{ width: 260, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-        />
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+          <TextField
+            size="small" placeholder="Nom, email, boutique…" value={search}
+            onChange={e => { setSearch(e.target.value); setPage(0); }}
+            InputProps={{ startAdornment: <InputAdornment position="start"><Search fontSize="small" sx={{ color: '#999' }} /></InputAdornment> }}
+            sx={{ width: 260, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+          />
+          <input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setPage(0); }}
+            style={{ fontSize: 12.5, color: '#111', border: '1px solid #E5E7EB', borderRadius: 8, padding: '5px 8px', background: '#F9FAFB' }} />
+          <Typography fontSize={12} color="#888">à</Typography>
+          <input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setPage(0); }}
+            style={{ fontSize: 12.5, color: '#111', border: '1px solid #E5E7EB', borderRadius: 8, padding: '5px 8px', background: '#F9FAFB' }} />
+          {(dateFrom || dateTo) && (
+            <Typography onClick={() => { setDateFrom(''); setDateTo(''); setPage(0); }}
+              sx={{ fontSize: 11.5, color: '#888', cursor: 'pointer', textDecoration: 'underline', '&:hover': { color: '#111' } }}>
+              Réinitialiser
+            </Typography>
+          )}
+        </Box>
       </Box>
 
       {/* Tabs */}

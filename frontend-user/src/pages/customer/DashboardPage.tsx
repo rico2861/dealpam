@@ -94,8 +94,8 @@ export default function DashboardPage() {
   const { user } = useAuthStore();
 
   const { data: orders, isLoading: ordersLoading } = useQuery({
-    queryKey: ['myOrders'],
-    queryFn: () => api.get('/orders/me').then(r => r.data),
+    queryKey: ['myOrders', 'dashboard'],
+    queryFn: () => api.get('/orders/me', { params: { limit: 100 } }).then(r => Array.isArray(r.data) ? r.data : (r.data?.data ?? [])),
   });
   const showOrdersSkel = useDelayedLoading(ordersLoading);
 

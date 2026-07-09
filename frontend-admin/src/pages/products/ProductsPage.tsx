@@ -15,6 +15,8 @@ export default function ProductsPage() {
   const [rejectDialog, setRejectDialog] = useState<{ open: boolean; id: string }>({ open: false, id: '' });
   const [reason, setReason] = useState('');
   const [historyProductId, setHistoryProductId] = useState<string | null>(null);
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo]     = useState('');
 
   const { data: history, isLoading: historyLoading } = useQuery({
     queryKey: ['product-audit-log', historyProductId],
@@ -26,8 +28,8 @@ export default function ProductsPage() {
   };
 
   const { data, isLoading } = useQuery({
-    queryKey: ['adminProducts', tab],
-    queryFn: () => api.get(`/products/admin-list?status=${tab}&limit=100`).then(r => r.data?.data || []),
+    queryKey: ['adminProducts', tab, dateFrom, dateTo],
+    queryFn: () => api.get('/products/admin-list', { params: { status: tab, limit: 100, dateFrom: dateFrom || undefined, dateTo: dateTo || undefined } }).then(r => r.data?.data || []),
   });
 
   const approveMutation = useMutation({
@@ -86,6 +88,20 @@ export default function ProductsPage() {
           <Tab key={s} value={s} label={s.replace('_', ' ')} />
         ))}
       </Tabs>
+
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, mb: 2, flexWrap: 'wrap' }}>
+        <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
+          style={{ fontSize: 12.5, color: '#0F172A', border: '1px solid rgba(15,23,42,0.12)', borderRadius: 8, padding: '5px 8px', background: '#F7F8FA' }} />
+        <Typography fontSize={12} color="text.secondary">à</Typography>
+        <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
+          style={{ fontSize: 12.5, color: '#0F172A', border: '1px solid rgba(15,23,42,0.12)', borderRadius: 8, padding: '5px 8px', background: '#F7F8FA' }} />
+        {(dateFrom || dateTo) && (
+          <Typography onClick={() => { setDateFrom(''); setDateTo(''); }}
+            sx={{ fontSize: 11.5, color: 'text.secondary', cursor: 'pointer', textDecoration: 'underline', '&:hover': { color: 'text.primary' } }}>
+            Réinitialiser
+          </Typography>
+        )}
+      </Box>
 
       <Card>
         <DataGrid

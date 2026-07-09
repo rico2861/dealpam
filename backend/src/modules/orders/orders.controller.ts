@@ -16,7 +16,13 @@ export class OrdersController {
   @Post() create(@CurrentUser() u: any, @Body() b: any) {
     return this.os.create(u.id, b);
   }
-  @Get('me') getMyOrders(@CurrentUser() u: any, @Query('page') p: number) { return this.os.findMyOrders(u.id, p); }
+  @Get('me') getMyOrders(
+    @CurrentUser() u: any,
+    @Query('page') p: number,
+    @Query('limit') limit: number,
+    @Query('dateFrom') dateFrom: string,
+    @Query('dateTo') dateTo: string,
+  ) { return this.os.findMyOrders(u.id, p, limit, dateFrom, dateTo); }
   @Get('me/:id') getOne(@CurrentUser() u: any, @Param('id') id: string) { return this.os.findOne(id, u.id); }
 
   @Post('me/:id/payment-tx')
@@ -35,7 +41,13 @@ export class OrdersController {
   }
 
   @Get('seller') @UseGuards(RolesGuard) @Roles('SELLER')
-  getSellerOrders(@CurrentUser() u: any, @Query('page') p: number) { return this.os.findSellerOrders(u.id, p); }
+  getSellerOrders(
+    @CurrentUser() u: any,
+    @Query('page') p: number,
+    @Query('limit') limit: number,
+    @Query('dateFrom') dateFrom: string,
+    @Query('dateTo') dateTo: string,
+  ) { return this.os.findSellerOrders(u.id, p, limit, dateFrom, dateTo); }
 
   @Patch('seller/:id/status') @UseGuards(RolesGuard) @Roles('SELLER')
   updateSellerOrder(@Param('id') id: string, @CurrentUser() u: any, @Body('status') s: string, @Body('cancelReason') reason: string) { return this.os.updateStatus(id, s, u.id, reason); }
@@ -52,7 +64,12 @@ export class OrdersController {
   }
 
   @Get() @UseGuards(RolesGuard) @Roles('ADMIN','SUPER_ADMIN')
-  findAll(@Query('page') p: number) { return this.os.findAll(p); }
+  findAll(
+    @Query('page') p: number,
+    @Query('limit') limit: number,
+    @Query('dateFrom') dateFrom: string,
+    @Query('dateTo') dateTo: string,
+  ) { return this.os.findAll(p, limit, dateFrom, dateTo); }
 
   @Patch(':id/status') @UseGuards(RolesGuard) @Roles('ADMIN','SUPER_ADMIN')
   updateStatus(@Param('id') id: string, @Body('status') s: string) { return this.os.updateStatus(id, s); }

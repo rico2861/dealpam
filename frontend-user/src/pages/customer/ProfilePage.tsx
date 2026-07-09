@@ -81,7 +81,7 @@ export default function ProfilePage() {
 
   const { data: ordersCount } = useQuery({
     queryKey: ['my-orders-count'],
-    queryFn: () => api.get('/orders/me').then(r => Array.isArray(r.data) ? r.data.length : 0).catch(() => 0),
+    queryFn: () => api.get('/orders/me', { params: { limit: 1 } }).then(r => Array.isArray(r.data) ? r.data.length : (r.data?.total ?? 0)).catch(() => 0),
     enabled: !!user,
   });
   const { data: wishCount } = useQuery({

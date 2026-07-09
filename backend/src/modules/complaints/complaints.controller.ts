@@ -29,8 +29,14 @@ export class ComplaintsController {
   @UseGuards(RolesGuard)
   @Roles('ADMIN', 'SUPER_ADMIN', 'MODERATOR')
   @ApiOperation({ summary: 'Toutes les plaintes (admin)' })
-  findAll(@Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number, @Query('status') status?: string) {
-    return this.svc.findAll(page, status);
+  findAll(
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('status') status?: string,
+    @Query('limit') limit?: number,
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string,
+  ) {
+    return this.svc.findAll(page, status, limit ? Number(limit) : undefined, dateFrom, dateTo);
   }
 
   @Patch(':id/resolve')

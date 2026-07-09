@@ -138,11 +138,13 @@ export class SellersController {
   @Get()
   @Roles('ADMIN', 'SUPER_ADMIN', 'MODERATOR') @UseGuards(RolesGuard)
   findAll(
-    @Query('status') status: string,
-    @Query('page')   page = 1,
-    @Query('limit')  limit = 20,
-    @Query('search') search?: string,
-  ) { return this.sellersService.findAll(status, +page, +limit, search); }
+    @Query('status')   status: string,
+    @Query('page')     page = 1,
+    @Query('limit')    limit = 20,
+    @Query('search')   search?: string,
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo')   dateTo?: string,
+  ) { return this.sellersService.findAll(status, +page, +limit, search, dateFrom, dateTo); }
 
   @Post(':id/approve') @Roles('ADMIN', 'SUPER_ADMIN') @UseGuards(RolesGuard)
   approve(@Param('id') id: string, @CurrentUser() u: any) { return this.sellersService.approve(id, u.id); }

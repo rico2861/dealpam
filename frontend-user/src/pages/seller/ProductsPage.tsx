@@ -44,6 +44,10 @@ export default function SellerProductsPage({ mode = 'products' }: { mode?: 'prod
   const [filter, setFilter]   = useState('ALL');
   const [del, setDel]         = useState<{ open: boolean; id: string; name: string }>({ open: false, id: '', name: '' });
   const [deleting, setDeleting] = useState(false);
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo]     = useState('');
+  const [page, setPage]         = useState(1);
+  const PAGE_SIZE = 12;
 
   const { data: allProducts, isLoading } = useQuery({
     queryKey: ['sellerProducts'],
@@ -80,8 +84,14 @@ export default function SellerProductsPage({ mode = 'products' }: { mode?: 'prod
   const filtered = list.filter(p => {
     const matchStatus = filter === 'ALL' || p.status === filter;
     const matchSearch = !search || p.name?.toLowerCase().includes(search.toLowerCase());
+    if (dateFrom && new Date(p.createdAt) < new Date(dateFrom)) return false;
+    if (dateTo   && new Date(p.createdAt) > new Date(`${dateTo}T23:59:59`)) return false;
     return matchStatus && matchSearch;
   });
+
+  const pageCount   = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Math.min(page, pageCount);
+  const paged       = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   const FILTERS = [
     { key: 'ALL',            label: 'Tous',       count: counts.ALL },
@@ -116,7 +126,7 @@ export default function SellerProductsPage({ mode = 'products' }: { mode?: 'prod
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, mb: 2.5, alignItems: 'center' }}>
         <Box sx={{ display: 'flex', gap: 0.8, flexWrap: 'wrap' }}>
           {FILTERS.map(f => (
-            <Box key={f.key} onClick={() => setFilter(f.key)}
+            <Box key={f.key} onClick={() => { setFilter(f.key); setPage(1); }}
               sx={{ px: 1.5, py: 0.7, borderRadius: '8px', cursor: 'pointer', transition: 'all 0.15s',
                 bgcolor: filter === f.key ? 'rgba(255,107,0,0.15)' : '#FFFFFF',
                 border: '1px solid', borderColor: filter === f.key ? 'rgba(255,107,0,0.4)' : BORD,
@@ -133,7 +143,7 @@ export default function SellerProductsPage({ mode = 'products' }: { mode?: 'prod
         <Box sx={{ ml: { xs: 0, sm: 'auto' }, width: { xs: '100%', sm: 240 } }}>
           <TextField
             size="small" placeholder="Rechercher…" value={search}
-            onChange={e => setSearch(e.target.value)}
+            onChange={e => { setSearch(e.target.value); setPage(1); }}
             InputProps={{ startAdornment: <InputAdornment position="start"><Search sx={{ fontSize: 16, color: SUB }}/></InputAdornment> }}
             sx={{ width: '100%',
               '& .MuiOutlinedInput-root': { bgcolor: 'rgba(15,23,42,0.09)', borderRadius: '10px', color: TXT, fontSize: 13,
@@ -141,6 +151,19 @@ export default function SellerProductsPage({ mode = 'products' }: { mode?: 'prod
                 '&.Mui-focused fieldset': { borderColor: OR } },
               '& input::placeholder': { color: SUB } }}
           />
+        </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
+          <input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setPage(1); }}
+            style={{ fontSize: 12.5, color: TXT, border: `1px solid ${BORD}`, borderRadius: 8, padding: '5px 8px', background: '#F7F8FA' }} />
+          <Typography fontSize={12} color={SUB}>à</Typography>
+          <input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setPage(1); }}
+            style={{ fontSize: 12.5, color: TXT, border: `1px solid ${BORD}`, borderRadius: 8, padding: '5px 8px', background: '#F7F8FA' }} />
+          {(dateFrom || dateTo) && (
+            <Typography onClick={() => { setDateFrom(''); setDateTo(''); setPage(1); }}
+              sx={{ fontSize: 11.5, color: SUB, cursor: 'pointer', textDecoration: 'underline', '&:hover': { color: TXT } }}>
+              Réinitialiser
+            </Typography>
+          )}
         </Box>
       </Box>
 
@@ -165,8 +188,9 @@ export default function SellerProductsPage({ mode = 'products' }: { mode?: 'prod
           )}
         </Box>
       ) : (
+        <>
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2,1fr)', lg: 'repeat(3,1fr)' }, gap: 2 }}>
-          {filtered.map((p: any) => {
+          {paged.map((p: any) => {
             const st = STATUS[p.status] || STATUS.DRAFT;
             const StIcon = st.icon;
             const isLowStock = p.stock <= 5 && p.stock > 0;
@@ -241,6 +265,22 @@ export default function SellerProductsPage({ mode = 'products' }: { mode?: 'prod
             );
           })}
         </Box>
+        {filtered.length > PAGE_SIZE && (
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 2 }}>
+            <Typography fontSize={12} color={SUB}>Page {currentPage} / {pageCount}</Typography>
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Button size="small" disabled={currentPage <= 1} onClick={() => setPage(p => Math.max(1, p - 1))}
+                sx={{ textTransform: 'none', fontWeight: 700, fontSize: 12.5, color: TXT, border: `1px solid ${BORD}`, borderRadius: '8px', px: 1.5, '&.Mui-disabled': { color: SUB, opacity: 0.5 } }}>
+                Précédent
+              </Button>
+              <Button size="small" disabled={currentPage >= pageCount} onClick={() => setPage(p => Math.min(pageCount, p + 1))}
+                sx={{ textTransform: 'none', fontWeight: 700, fontSize: 12.5, color: TXT, border: `1px solid ${BORD}`, borderRadius: '8px', px: 1.5, '&.Mui-disabled': { color: SUB, opacity: 0.5 } }}>
+                Suivant
+              </Button>
+            </Box>
+          </Box>
+        )}
+        </>
       )}
 
       {/* Delete dialog */}

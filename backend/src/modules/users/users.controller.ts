@@ -122,17 +122,23 @@ export class UsersController {
   @ApiQuery({ name: 'role',     required: false })
   @ApiQuery({ name: 'active',   required: false })
   @ApiQuery({ name: 'search',   required: false })
+  @ApiQuery({ name: 'dateFrom', required: false })
+  @ApiQuery({ name: 'dateTo',   required: false })
   findAll(
-    @Query('page')   page   = 1,
-    @Query('limit')  limit  = 20,
-    @Query('role')   role?: string,
-    @Query('active') active?: string,
-    @Query('search') search?: string,
+    @Query('page')     page   = 1,
+    @Query('limit')    limit  = 20,
+    @Query('role')     role?: string,
+    @Query('active')   active?: string,
+    @Query('search')   search?: string,
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo')   dateTo?: string,
   ) {
     return this.us.findAll(+page, +limit, {
       role,
       isActive: active === undefined ? undefined : active === 'true',
       search,
+      dateFrom,
+      dateTo,
     });
   }
 

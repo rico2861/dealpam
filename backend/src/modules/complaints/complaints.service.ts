@@ -20,19 +20,24 @@ export class ComplaintsService {
     });
   }
 
-  async findAll(page = 1, status?: string) {
-    const where = status ? { status: status as any } : {};
+  async findAll(page = 1, status?: string, limit = 20, dateFrom?: string, dateTo?: string) {
+    const where: any = status ? { status: status as any } : {};
+    if (dateFrom || dateTo) {
+      where.createdAt = {};
+      if (dateFrom) where.createdAt.gte = new Date(dateFrom);
+      if (dateTo)   where.createdAt.lte = new Date(`${dateTo}T23:59:59.999Z`);
+    }
     const [data, total] = await Promise.all([
       this.prisma.complaint.findMany({
         where,
         include: { user: { select: { id: true, firstName: true, lastName: true, email: true } } },
         orderBy: { createdAt: 'desc' },
-        skip: (page - 1) * 20,
-        take: 20,
+        skip: (page - 1) * limit,
+        take: limit,
       }),
       this.prisma.complaint.count({ where }),
     ]);
-    return { data, total, page, totalPages: Math.ceil(total / 20) };
+    return { data, total, page, totalPages: Math.ceil(total / limit) };
   }
 
   async resolve(adminId: string, id: string, status: string, adminNote: string) {

@@ -80,7 +80,12 @@ export class PaymentsController {
   @Get()
   @UseGuards(JwtAuthGuard, RolesGuard) @Roles('ADMIN', 'SUPER_ADMIN')
   @ApiOperation({ summary: 'Liste tous les paiements (admin)' })
-  findAll(@Query('page') page: number) {
-    return this.ps.findAll(page);
+  findAll(
+    @Query('page') page: number,
+    @Query('limit') limit: number,
+    @Query('dateFrom') dateFrom: string,
+    @Query('dateTo') dateTo: string,
+  ) {
+    return this.ps.findAll(page, limit, dateFrom, dateTo);
   }
 }

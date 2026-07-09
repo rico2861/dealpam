@@ -103,9 +103,14 @@ export class SellersService {
 
   // ── Admin: list sellers ───────────────────────────────────────────────────
 
-  async findAll(status?: string, page = 1, limit = 20, search?: string) {
+  async findAll(status?: string, page = 1, limit = 20, search?: string, dateFrom?: string, dateTo?: string) {
     const where: any = {};
     if (status) where.status = status;
+    if (dateFrom || dateTo) {
+      where.createdAt = {};
+      if (dateFrom) where.createdAt.gte = new Date(dateFrom);
+      if (dateTo)   where.createdAt.lte = new Date(`${dateTo}T23:59:59.999Z`);
+    }
     if (search) {
       const s = search.trim();
       where.OR = [

@@ -172,16 +172,26 @@ export class OrdersService {
   }
 
   // ── Client : mes commandes ────────────────────────────────────────────────
-  findMyOrders(userId: string, page = 1, limit = 10) {
-    return this.prisma.order.findMany({
-      where:   { userId },
-      include: {
-        items: true,
-        store: { select: { name: true, slug: true, logoUrl: true, phone: true, whatsapp: true, moncashPhone: true } },
-      },
-      skip: (page - 1) * limit, take: limit,
-      orderBy: { createdAt: 'desc' },
-    });
+  async findMyOrders(userId: string, page = 1, limit = 10, dateFrom?: string, dateTo?: string) {
+    const where: any = { userId };
+    if (dateFrom || dateTo) {
+      where.createdAt = {};
+      if (dateFrom) where.createdAt.gte = new Date(dateFrom);
+      if (dateTo)   where.createdAt.lte = new Date(`${dateTo}T23:59:59.999Z`);
+    }
+    const [data, total] = await Promise.all([
+      this.prisma.order.findMany({
+        where,
+        include: {
+          items: true,
+          store: { select: { name: true, slug: true, logoUrl: true, phone: true, whatsapp: true, moncashPhone: true } },
+        },
+        skip: (page - 1) * limit, take: limit,
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.order.count({ where }),
+    ]);
+    return { data, total, page, limit };
   }
 
   async findOne(id: string, userId: string) {
@@ -395,34 +405,55 @@ export class OrdersService {
   }
 
   // ── Vendeur : ses commandes ───────────────────────────────────────────────
-  async findSellerOrders(userId: string, page = 1) {
+  async findSellerOrders(userId: string, page = 1, limit = 20, dateFrom?: string, dateTo?: string) {
     // Store.sellerId référence Seller.id, pas User.id (JWT) — sans cette
     // résolution le filtre ne matchait jamais aucune commande et la liste
     // restait vide en production, sans erreur visible.
     const seller = await this.prisma.seller.findUnique({ where: { userId }, select: { id: true } });
     if (!seller) throw new NotFoundException('Vendeur introuvable');
-    return this.prisma.order.findMany({
-      where:   { store: { sellerId: seller.id } },
-      include: {
-        user:    { select: { id: true, firstName: true, lastName: true, phone: true, email: true } },
-        items:   { include: { product: { select: { name: true, images: { take: 1 } } } } },
-        address: true,
-      },
-      skip: (page - 1) * 20, take: 20,
-      orderBy: { createdAt: 'desc' },
-    });
+    const where: any = { store: { sellerId: seller.id } };
+    if (dateFrom || dateTo) {
+      where.createdAt = {};
+      if (dateFrom) where.createdAt.gte = new Date(dateFrom);
+      if (dateTo)   where.createdAt.lte = new Date(`${dateTo}T23:59:59.999Z`);
+    }
+    const [data, total] = await Promise.all([
+      this.prisma.order.findMany({
+        where,
+        include: {
+          user:    { select: { id: true, firstName: true, lastName: true, phone: true, email: true } },
+          items:   { include: { product: { select: { name: true, images: { take: 1 } } } } },
+          address: true,
+        },
+        skip: (page - 1) * limit, take: limit,
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.order.count({ where }),
+    ]);
+    return { data, total, page, limit };
   }
 
   // ── Admin ─────────────────────────────────────────────────────────────────
-  findAll(page = 1, limit = 20) {
-    return this.prisma.order.findMany({
-      include: {
-        user:  { select: { firstName: true, lastName: true, email: true } },
-        store: { select: { name: true } },
-      },
-      skip: (page - 1) * limit, take: limit,
-      orderBy: { createdAt: 'desc' },
-    });
+  async findAll(page = 1, limit = 20, dateFrom?: string, dateTo?: string) {
+    const where: any = {};
+    if (dateFrom || dateTo) {
+      where.createdAt = {};
+      if (dateFrom) where.createdAt.gte = new Date(dateFrom);
+      if (dateTo)   where.createdAt.lte = new Date(`${dateTo}T23:59:59.999Z`);
+    }
+    const [data, total] = await Promise.all([
+      this.prisma.order.findMany({
+        where,
+        include: {
+          user:  { select: { firstName: true, lastName: true, email: true } },
+          store: { select: { name: true } },
+        },
+        skip: (page - 1) * limit, take: limit,
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.order.count({ where }),
+    ]);
+    return { data, total, page, limit };
   }
 
   // ── Client: soumettre une référence de transaction (MonCash/NatCash) ──────

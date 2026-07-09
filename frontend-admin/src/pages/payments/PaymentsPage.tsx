@@ -42,10 +42,13 @@ export default function PaymentsPage() {
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [methodFilter, setMethodFilter] = useState('ALL');
   const [detail, setDetail] = useState<any>(null);
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo]     = useState('');
 
   const { data = [], isLoading } = useQuery({
-    queryKey: ['admin-payments'],
-    queryFn: () => api.get('/payments?limit=200').then(r => Array.isArray(r.data) ? r.data : r.data?.data || []).catch(() => []),
+    queryKey: ['admin-payments', dateFrom, dateTo],
+    queryFn: () => api.get('/payments', { params: { limit: 200, dateFrom: dateFrom || undefined, dateTo: dateTo || undefined } })
+      .then(r => Array.isArray(r.data) ? r.data : r.data?.data || []).catch(() => []),
   });
 
   const filtered = data.filter((p: any) => {
@@ -163,6 +166,19 @@ export default function PaymentsPage() {
             {['MONCASH', 'NATCASH', 'STRIPE', 'PAYPAL', 'MANUAL'].map(m => <MenuItem key={m} value={m}>{m}</MenuItem>)}
           </Select>
         </FormControl>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
+          <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
+            style={{ fontSize: 12.5, color: '#0F172A', border: '1px solid rgba(15,23,42,0.12)', borderRadius: 8, padding: '5px 8px', background: '#F7F8FA' }} />
+          <Typography fontSize={12} color="text.secondary">à</Typography>
+          <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
+            style={{ fontSize: 12.5, color: '#0F172A', border: '1px solid rgba(15,23,42,0.12)', borderRadius: 8, padding: '5px 8px', background: '#F7F8FA' }} />
+          {(dateFrom || dateTo) && (
+            <Typography onClick={() => { setDateFrom(''); setDateTo(''); }}
+              sx={{ fontSize: 11.5, color: 'text.secondary', cursor: 'pointer', textDecoration: 'underline', '&:hover': { color: 'text.primary' } }}>
+              Réinitialiser
+            </Typography>
+          )}
+        </Box>
       </Box>
 
       <Card>

@@ -629,15 +629,21 @@ export class ProductsService {
     return this.prisma.productVariant.delete({ where: { id: variantId } });
   }
 
-  async getMyProducts(userId: string, page = 1, limit = 20) {
+  async getMyProducts(userId: string, page = 1, limit = 20, dateFrom?: string, dateTo?: string) {
     const seller = await this.prisma.seller.findUnique({ where: { userId }, include: { stores: true } });
     if (!seller || seller.stores.length === 0) throw new NotFoundException('Boutique introuvable');
 
     const storeIds = seller.stores.map(s => s.id);
+    const where: any = { storeId: { in: storeIds } };
+    if (dateFrom || dateTo) {
+      where.createdAt = {};
+      if (dateFrom) where.createdAt.gte = new Date(dateFrom);
+      if (dateTo)   where.createdAt.lte = new Date(`${dateTo}T23:59:59.999Z`);
+    }
 
     const [data, total] = await Promise.all([
       this.prisma.product.findMany({
-        where: { storeId: { in: storeIds } },
+        where,
         include: {
           images: { where: { isPrimary: true }, take: 1 },
           variants: { where: { isActive: true }, take: 10, orderBy: { sortOrder: 'asc' } },
@@ -648,7 +654,7 @@ export class ProductsService {
         take: limit,
         orderBy: { createdAt: 'desc' },
       }),
-      this.prisma.product.count({ where: { storeId: { in: storeIds } } }),
+      this.prisma.product.count({ where }),
     ]);
 
     return { data, total, page, limit };
@@ -669,9 +675,14 @@ export class ProductsService {
     });
   }
 
-  async findAllAdmin(page = 1, limit = 50, status?: string) {
-    const where: { status?: any } = {};
+  async findAllAdmin(page = 1, limit = 50, status?: string, dateFrom?: string, dateTo?: string) {
+    const where: { status?: any; createdAt?: any } = {};
     if (status) where.status = status;
+    if (dateFrom || dateTo) {
+      where.createdAt = {};
+      if (dateFrom) where.createdAt.gte = new Date(dateFrom);
+      if (dateTo)   where.createdAt.lte = new Date(`${dateTo}T23:59:59.999Z`);
+    }
 
     const [data, total] = await Promise.all([
       this.prisma.product.findMany({

@@ -38,17 +38,31 @@ const FILTERS = [
 
 export default function OrdersPage() {
   const [filter, setFilter] = useState('all');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo]     = useState('');
+  const [page, setPage]         = useState(1);
+  const PAGE_SIZE = 10;
   const { user } = useAuthStore();
 
+  // Le backend pagine désormais /orders/me (limit=100 ici pour permettre le filtre
+  // par statut + date côté client sans requête supplémentaire par filtre).
   const { data: orders, isLoading } = useQuery({
     queryKey: ['myOrders'],
-    queryFn: () => api.get('/orders/me').then(r => r.data),
+    queryFn: () => api.get('/orders/me', { params: { limit: 100 } }).then(r => r.data),
     enabled: !!user,
-    select: (data) => Array.isArray(data) ? data : [],
+    select: (data) => Array.isArray(data) ? data : (data?.data ?? []),
   });
 
   const showSkel = useDelayedLoading(isLoading);
-  const filtered = (orders ?? []).filter((o: any) => filter === 'all' || o.status === filter);
+  const filtered = (orders ?? []).filter((o: any) => {
+    if (filter !== 'all' && o.status !== filter) return false;
+    if (dateFrom && new Date(o.createdAt) < new Date(dateFrom)) return false;
+    if (dateTo   && new Date(o.createdAt) > new Date(`${dateTo}T23:59:59`)) return false;
+    return true;
+  });
+  const pageCount   = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Math.min(page, pageCount);
+  const paged       = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#F7F8FA', py: { xs: 3, sm: 4 }, px: { xs: 2, sm: 3, lg: 4 } }}>
@@ -83,6 +97,21 @@ export default function OrdersPage() {
               </Box>
             );
           })}
+        </Box>
+
+        {/* ── Date range filter ── */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, mb: 3, flexWrap: 'wrap' }}>
+          <input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setPage(1); }}
+            style={{ fontSize: 12.5, color: '#0F172A', border: '1px solid rgba(15,23,42,0.09)', borderRadius: 8, padding: '5px 8px', background: '#F7F8FA' }} />
+          <Typography sx={{ fontSize: 12, color: '#64748B' }}>à</Typography>
+          <input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setPage(1); }}
+            style={{ fontSize: 12.5, color: '#0F172A', border: '1px solid rgba(15,23,42,0.09)', borderRadius: 8, padding: '5px 8px', background: '#F7F8FA' }} />
+          {(dateFrom || dateTo) && (
+            <Typography onClick={() => { setDateFrom(''); setDateTo(''); setPage(1); }}
+              sx={{ fontSize: 11.5, color: '#64748B', cursor: 'pointer', textDecoration: 'underline', '&:hover': { color: '#0F172A' } }}>
+              Réinitialiser
+            </Typography>
+          )}
         </Box>
 
         {/* ── Loading ── */}
@@ -135,7 +164,7 @@ export default function OrdersPage() {
         {/* ── Orders list ── */}
         {!isLoading && filtered.length > 0 && (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-            {filtered.map((order: any) => {
+            {paged.map((order: any) => {
               const meta = STATUS_META[order.status] ?? STATUS_META.PENDING;
               const StatusIcon = meta.Icon;
               const firstItem = order.items?.[0];
@@ -217,6 +246,23 @@ export default function OrdersPage() {
                 </Box>
               );
             })}
+          </Box>
+        )}
+
+        {/* ── Pagination ── */}
+        {!isLoading && filtered.length > PAGE_SIZE && (
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 2.5 }}>
+            <Typography sx={{ fontSize: 12, color: '#64748B' }}>Page {currentPage} / {pageCount}</Typography>
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Box component="button" disabled={currentPage <= 1} onClick={() => setPage(p => Math.max(1, p - 1))}
+                sx={{ cursor: 'pointer', fontWeight: 700, fontSize: 12.5, color: '#0F172A', border: '1px solid rgba(15,23,42,0.09)', borderRadius: '8px', px: 1.5, py: 0.7, bgcolor: 'transparent', '&:disabled': { color: '#64748B', opacity: 0.5, cursor: 'default' } }}>
+                Précédent
+              </Box>
+              <Box component="button" disabled={currentPage >= pageCount} onClick={() => setPage(p => Math.min(pageCount, p + 1))}
+                sx={{ cursor: 'pointer', fontWeight: 700, fontSize: 12.5, color: '#0F172A', border: '1px solid rgba(15,23,42,0.09)', borderRadius: '8px', px: 1.5, py: 0.7, bgcolor: 'transparent', '&:disabled': { color: '#64748B', opacity: 0.5, cursor: 'default' } }}>
+                Suivant
+              </Box>
+            </Box>
           </Box>
         )}
 

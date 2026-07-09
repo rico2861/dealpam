@@ -28,14 +28,18 @@ export default function UsersPage() {
   const [detailUser, setDetailUser]   = useState<any>(null);
   const [page, setPage]       = useState(0);
   const [pageSize, setPageSize] = useState(25);
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo]     = useState('');
 
   const params = new URLSearchParams({ page: String(page + 1), limit: String(pageSize) });
   if (search)      params.set('search', search);
   if (roleFilter)  params.set('role', roleFilter);
   if (activeFilter !== '') params.set('active', activeFilter);
+  if (dateFrom)    params.set('dateFrom', dateFrom);
+  if (dateTo)      params.set('dateTo', dateTo);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['admin-users', page, pageSize, search, roleFilter, activeFilter],
+    queryKey: ['admin-users', page, pageSize, search, roleFilter, activeFilter, dateFrom, dateTo],
     queryFn: () => api.get(`/users?${params}`).then(r => r.data),
   });
 
@@ -189,6 +193,19 @@ export default function UsersPage() {
               <MenuItem value="false">Bloqués</MenuItem>
             </Select>
           </FormControl>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
+            <input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setPage(0); }}
+              style={{ fontSize: 12.5, color: '#111', border: '1px solid #E5E7EB', borderRadius: 8, padding: '5px 8px', background: '#F9FAFB' }} />
+            <Typography fontSize={12} color="#888">à</Typography>
+            <input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setPage(0); }}
+              style={{ fontSize: 12.5, color: '#111', border: '1px solid #E5E7EB', borderRadius: 8, padding: '5px 8px', background: '#F9FAFB' }} />
+            {(dateFrom || dateTo) && (
+              <Typography onClick={() => { setDateFrom(''); setDateTo(''); setPage(0); }}
+                sx={{ fontSize: 11.5, color: '#888', cursor: 'pointer', textDecoration: 'underline', '&:hover': { color: '#111' } }}>
+                Réinitialiser
+              </Typography>
+            )}
+          </Box>
         </Box>
       </Box>
 

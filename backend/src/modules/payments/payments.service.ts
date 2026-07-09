@@ -54,8 +54,15 @@ export class PaymentsService {
   }
 
   // ── Admin : tous les paiements ────────────────────────────────────────────
-  findAll(page = 1) {
+  findAll(page = 1, limit = 20, dateFrom?: string, dateTo?: string) {
+    const where: any = {};
+    if (dateFrom || dateTo) {
+      where.createdAt = {};
+      if (dateFrom) where.createdAt.gte = new Date(dateFrom);
+      if (dateTo)   where.createdAt.lte = new Date(`${dateTo}T23:59:59.999Z`);
+    }
     return this.prisma.payment.findMany({
+      where,
       include: {
         subscription: {
           include: {
@@ -70,7 +77,7 @@ export class PaymentsService {
           },
         },
       },
-      skip: (page - 1) * 20, take: 20, orderBy: { createdAt: 'desc' },
+      skip: (page - 1) * limit, take: limit, orderBy: { createdAt: 'desc' },
     });
   }
 

@@ -16,13 +16,18 @@ export class UsersService {
 
   // ── Admin: list all users ─────────────────────────────────────────────────
 
-  async findAll(page = 1, limit = 20, filters?: { role?: string; isActive?: boolean; search?: string }) {
+  async findAll(page = 1, limit = 20, filters?: { role?: string; isActive?: boolean; search?: string; dateFrom?: string; dateTo?: string }) {
     const where: any = {
       // Always hide admin/moderator accounts from the user list for discretion
       role: { notIn: ['ADMIN', 'SUPER_ADMIN', 'MODERATOR'] },
     };
     if (filters?.role)          where.role     = filters.role;
     if (filters?.isActive !== undefined) where.isActive = filters.isActive;
+    if (filters?.dateFrom || filters?.dateTo) {
+      where.createdAt = {};
+      if (filters.dateFrom) where.createdAt.gte = new Date(filters.dateFrom);
+      if (filters.dateTo)   where.createdAt.lte = new Date(`${filters.dateTo}T23:59:59.999Z`);
+    }
     if (filters?.search) {
       const s = filters.search.trim();
       where.OR = [

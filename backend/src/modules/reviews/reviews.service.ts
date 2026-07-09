@@ -64,5 +64,13 @@ export class ReviewsService {
   }
   approve(id: string) { return this.prisma.review.update({ where: { id }, data: { isApproved: true } }); }
   delete(id: string) { return this.prisma.review.delete({ where: { id } }); }
-  findAll(page = 1) { return this.prisma.review.findMany({ include: { user: { select: { firstName: true, lastName: true } }, product: { select: { name: true } } }, skip: (page-1)*20, take: 20, orderBy: { createdAt: 'desc' } }); }
+  findAll(page = 1, limit = 20, dateFrom?: string, dateTo?: string) {
+    const where: any = {};
+    if (dateFrom || dateTo) {
+      where.createdAt = {};
+      if (dateFrom) where.createdAt.gte = new Date(dateFrom);
+      if (dateTo)   where.createdAt.lte = new Date(`${dateTo}T23:59:59.999Z`);
+    }
+    return this.prisma.review.findMany({ where, include: { user: { select: { firstName: true, lastName: true } }, product: { select: { name: true } } }, skip: (page-1)*limit, take: limit, orderBy: { createdAt: 'desc' } });
+  }
 }

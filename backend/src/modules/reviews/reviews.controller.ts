@@ -14,5 +14,11 @@ export class ReviewsController {
   @Post() @ApiBearerAuth() @UseGuards(JwtAuthGuard) create(@CurrentUser() u: any, @Body() b: CreateReviewDto) { return this.rs.create(u.id, b); }
   @Post(':id/approve') @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('ADMIN','SUPER_ADMIN','MODERATOR') approve(@Param('id') id: string) { return this.rs.approve(id); }
   @Delete(':id') @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('ADMIN','SUPER_ADMIN') delete(@Param('id') id: string) { return this.rs.delete(id); }
-  @Get() @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('ADMIN','SUPER_ADMIN','MODERATOR') findAll(@Query('page') p: number) { return this.rs.findAll(p); }
+  @Get() @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('ADMIN','SUPER_ADMIN','MODERATOR')
+  findAll(
+    @Query('page') p: number,
+    @Query('limit') limit: number,
+    @Query('dateFrom') dateFrom: string,
+    @Query('dateTo') dateTo: string,
+  ) { return this.rs.findAll(p, limit, dateFrom, dateTo); }
 }

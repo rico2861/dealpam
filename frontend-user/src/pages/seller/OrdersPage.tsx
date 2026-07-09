@@ -357,10 +357,17 @@ export default function SellerOrdersPage() {
   const { enqueueSnackbar } = useSnackbar();
   const [tab, setTab]         = useState('');
   const [cancelDlg, setCancelDlg] = useState<{ open: boolean; id: string } | null>(null);
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo]     = useState('');
+  const [page, setPage]         = useState(1);
+  const PAGE_SIZE = 10;
 
+  // Récupère jusqu'à 100 commandes en une fois (volume typique d'un vendeur) — le filtre
+  // date/pagination ci-dessous s'applique côté client sur ce lot, les stats KPI restant
+  // calculées sur la liste complète non filtrée.
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ['sellerOrders'],
-    queryFn: () => api.get('/orders/seller?limit=100').then(r => r.data),
+    queryFn: () => api.get('/orders/seller?limit=100').then(r => Array.isArray(r.data) ? r.data : (r.data?.data ?? [])),
     enabled: !!localStorage.getItem('accessToken'),
     refetchInterval: 30000,
   });
@@ -392,10 +399,18 @@ export default function SellerOrdersPage() {
   };
 
   const filtered = list.filter(o => {
-    if (!tab) return true;
-    if (tab === 'ACTIVE') return ['CONFIRMED','PREPARING','SHIPPED'].includes(o.status);
-    return o.status === tab;
+    if (tab) {
+      if (tab === 'ACTIVE') { if (!['CONFIRMED','PREPARING','SHIPPED'].includes(o.status)) return false; }
+      else if (o.status !== tab) return false;
+    }
+    if (dateFrom && new Date(o.createdAt) < new Date(dateFrom)) return false;
+    if (dateTo   && new Date(o.createdAt) > new Date(`${dateTo}T23:59:59`)) return false;
+    return true;
   });
+
+  const pageCount   = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Math.min(page, pageCount);
+  const paged       = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   const tabCount = (v: string) =>
     v === '' ? list.length : v === 'ACTIVE' ? stats.active : list.filter(o => o.status === v).length;
@@ -475,6 +490,21 @@ export default function SellerOrdersPage() {
         })}
       </Box>
 
+      {/* Date range filter */}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, mb: 2, flexWrap: 'wrap' }}>
+        <input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setPage(1); }}
+          style={{ fontSize: 12.5, color: TXT, border: `1px solid ${BORD}`, borderRadius: 8, padding: '5px 8px', background: '#F7F8FA' }} />
+        <Typography fontSize={12} color={SUB}>à</Typography>
+        <input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setPage(1); }}
+          style={{ fontSize: 12.5, color: TXT, border: `1px solid ${BORD}`, borderRadius: 8, padding: '5px 8px', background: '#F7F8FA' }} />
+        {(dateFrom || dateTo) && (
+          <Typography onClick={() => { setDateFrom(''); setDateTo(''); setPage(1); }}
+            sx={{ fontSize: 11.5, color: SUB, cursor: 'pointer', textDecoration: 'underline', '&:hover': { color: TXT } }}>
+            Réinitialiser
+          </Typography>
+        )}
+      </Box>
+
       {/* Orders */}
       {isLoading ? (
         showSkel ? <ListSkeleton rows={5} /> : null
@@ -487,11 +517,28 @@ export default function SellerOrdersPage() {
           </Typography>
         </Box>
       ) : (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-          {filtered.map((order: any) => (
-            <OrderCard key={order.id} order={order} onUpdate={handleUpdate}/>
-          ))}
-        </Box>
+        <>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+            {paged.map((order: any) => (
+              <OrderCard key={order.id} order={order} onUpdate={handleUpdate}/>
+            ))}
+          </Box>
+          {filtered.length > PAGE_SIZE && (
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 2 }}>
+              <Typography fontSize={12} color={SUB}>Page {currentPage} / {pageCount}</Typography>
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <Button size="small" disabled={currentPage <= 1} onClick={() => setPage(p => Math.max(1, p - 1))}
+                  sx={{ textTransform: 'none', fontWeight: 700, fontSize: 12.5, color: TXT, border: `1px solid ${BORD}`, borderRadius: '8px', px: 1.5, '&.Mui-disabled': { color: SUB, opacity: 0.5 } }}>
+                  Précédent
+                </Button>
+                <Button size="small" disabled={currentPage >= pageCount} onClick={() => setPage(p => Math.min(pageCount, p + 1))}
+                  sx={{ textTransform: 'none', fontWeight: 700, fontSize: 12.5, color: TXT, border: `1px solid ${BORD}`, borderRadius: '8px', px: 1.5, '&.Mui-disabled': { color: SUB, opacity: 0.5 } }}>
+                  Suivant
+                </Button>
+              </Box>
+            </Box>
+          )}
+        </>
       )}
 
       {/* Cancel confirmation */}
