@@ -44,16 +44,25 @@ const DOC_TYPES = [
 ];
 
 const BUSINESS_TYPES = [
-  { value: 'FOOD',        label: 'Alimentation' },
-  { value: 'COSMETICS',   label: 'Cosmétiques' },
-  { value: 'CLOTHING',    label: 'Vêtements' },
-  { value: 'HOUSING',     label: 'Maison & Déco' },
-  { value: 'VEHICLE',     label: 'Véhicules' },
-  { value: 'SERVICES',    label: 'Services' },
-  { value: 'ELECTRONICS', label: 'Électronique' },
-  { value: 'RESTAURANT',  label: 'Restaurant' },
-  { value: 'CLINIC',      label: 'Clinique / Santé' },
-  { value: 'OTHER',       label: 'Autre' },
+  { value: 'FOOD',         label: 'Alimentation' },
+  { value: 'COSMETICS',    label: 'Cosmétiques' },
+  { value: 'CLOTHING',     label: 'Vêtements' },
+  { value: 'HOUSING',      label: 'Maison & Déco' },
+  { value: 'VEHICLE',      label: 'Véhicules' },
+  { value: 'SERVICES',     label: 'Services' },
+  { value: 'ELECTRONICS',  label: 'Électronique' },
+  { value: 'RESTAURANT',   label: 'Restaurant' },
+  { value: 'CLINIC',       label: 'Clinique / Santé' },
+  { value: 'AGRICULTURE',  label: 'Agriculture' },
+  { value: 'CONSTRUCTION', label: 'Construction & BTP' },
+  { value: 'EDUCATION',    label: 'Éducation & Formation' },
+  { value: 'TRANSPORT',    label: 'Transport & Logistique' },
+  { value: 'TECHNOLOGY',   label: 'Technologie & Informatique' },
+  { value: 'EVENTS',       label: 'Événementiel' },
+  { value: 'REAL_ESTATE',  label: 'Immobilier' },
+  { value: 'BEAUTY',       label: 'Beauté & Bien-être' },
+  { value: 'ARTISANAT',    label: 'Artisanat' },
+  { value: 'OTHER',        label: 'Autre' },
 ];
 
 const DEPTS = ['Ouest','Nord','Nord-Est','Nord-Ouest','Sud','Sud-Est','Grand-Anse','Nippes','Centre','Artibonite'];
@@ -184,7 +193,9 @@ export default function SellerProfilePage() {
   const [uploadType, setUploadType] = useState('PATENTE');
   const [uploading, setUploading] = useState(false);
   const [viewingDoc, setViewingDoc] = useState<string | null>(null);
-  const [profile, setProfile] = useState({ businessType: '', businessCity: '', businessDept: '', businessAddress: '' });
+  const [profile, setProfile] = useState({
+    businessType: '', businessTypeOther: '', businessCity: '', businessDept: '', businessAddress: '', cin: '', nif: '',
+  });
   const [profileTouched, setProfileTouched] = useState(false);
 
   const hasToken = !!localStorage.getItem('accessToken');
@@ -193,7 +204,11 @@ export default function SellerProfilePage() {
     queryKey: ['sellerMe'],
     queryFn: () => api.get('/sellers/me').then(r => {
       const s = r.data;
-      setProfile({ businessType: s.businessType ?? '', businessCity: s.businessCity ?? '', businessDept: s.businessDept ?? '', businessAddress: s.businessAddress ?? '' });
+      setProfile({
+        businessType: s.businessType ?? '', businessTypeOther: s.businessTypeOther ?? '',
+        businessCity: s.businessCity ?? '', businessDept: s.businessDept ?? '', businessAddress: s.businessAddress ?? '',
+        cin: s.cin ?? '', nif: s.nif ?? '',
+      });
       return s;
     }),
     enabled: hasToken,
@@ -247,7 +262,6 @@ export default function SellerProfilePage() {
   };
 
   const pf = (k: string) => (e: any) => { setProfile(p => ({ ...p, [k]: e.target.value })); setProfileTouched(true); };
-  const getDocLabel = (type: string) => DOC_TYPES.find(d => d.value === type)?.label ?? type;
 
   if (isLoading) return <Box sx={{ display: 'flex', justifyContent: 'center', py: 12 }}><CircularProgress sx={{ color: OR }} /></Box>;
 
@@ -350,12 +364,20 @@ export default function SellerProfilePage() {
               <option value="">-- Choisir --</option>
               {BUSINESS_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
             </TextField>
+            {profile.businessType === 'OTHER' && (
+              <TextField label="Précisez votre activité *" value={profile.businessTypeOther} onChange={pf('businessTypeOther')}
+                placeholder="Ex: Location de matériel événementiel" InputLabelProps={{ shrink: true }} fullWidth sx={fieldSx} />
+            )}
             <TextField label="Ville principale" value={profile.businessCity} onChange={pf('businessCity')} InputLabelProps={{ shrink: true }} fullWidth sx={fieldSx} />
             <TextField select label="Département" value={profile.businessDept} onChange={pf('businessDept')} SelectProps={{ native: true }} InputLabelProps={{ shrink: true }} fullWidth sx={fieldSx}>
               <option value="">-- Choisir --</option>
               {DEPTS.map(d => <option key={d} value={d}>{d}</option>)}
             </TextField>
             <TextField label="Adresse professionnelle" value={profile.businessAddress} onChange={pf('businessAddress')} multiline rows={2} InputLabelProps={{ shrink: true }} fullWidth sx={fieldSx} />
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
+              <TextField label="CIN (numéro d'identité)" value={profile.cin} onChange={pf('cin')} InputLabelProps={{ shrink: true }} fullWidth sx={fieldSx} />
+              <TextField label="NIF (numéro fiscal)" value={profile.nif} onChange={pf('nif')} InputLabelProps={{ shrink: true }} fullWidth sx={fieldSx} />
+            </Box>
           </Box>
           {profileTouched && (
             <Button fullWidth onClick={() => profileMut.mutate(profile)} disabled={profileMut.isPending}
@@ -396,94 +418,74 @@ export default function SellerProfilePage() {
       {/* Documents */}
       <Box sx={{ borderRadius: '16px', bgcolor: CARD, border: `1px solid ${BORD}`, p: 2.5, mb: 1.5 }}>
         <SectionHead icon={Description} label="Documents officiels" color={YLW} />
+        <Typography fontSize={11.5} color={SUB} mb={2}>
+          Vos documents sont strictement confidentiels — consultables uniquement par vous et notre équipe de vérification.
+          Vous pouvez renvoyer un document à tout moment ; l'historique de vos envois précédents reste conservé pour audit.
+        </Typography>
 
-        {/* Upload zone */}
-        <Box sx={{ p: 2, borderRadius: '12px', border: `1.5px dashed rgba(15,23,42,0.09)`, bgcolor: 'rgba(15,23,42,0.09)', mb: 2.5 }}>
-          <Typography fontSize={13} fontWeight={700} color={TXT} mb={0.5}>Envoyer un document</Typography>
-          <Typography fontSize={11.5} color={SUB} mb={1.5}>
-            Vos documents sont strictement confidentiels — consultables uniquement par vous et notre équipe de vérification.
-          </Typography>
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr auto' }, gap: 1.5, alignItems: 'center' }}>
-            <TextField size="small" select label="Type de document" value={uploadType} onChange={e => setUploadType(e.target.value)}
-              SelectProps={{ native: true }} InputLabelProps={{ shrink: true }} sx={fieldSx}>
-              {DOC_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}{t.required ? ' *' : ''}</option>)}
-            </TextField>
-            <Box>
-              <input type="file" ref={fileRef} style={{ display: 'none' }}
-                accept={uploadType === 'SELFIE' ? 'image/*' : '.pdf,.jpg,.jpeg,.png,.webp'}
-                capture={uploadType === 'SELFIE' ? 'user' : undefined}
-                onChange={handleUpload} />
-              <Button onClick={() => fileRef.current?.click()} disabled={uploading}
-                startIcon={uploading ? <CircularProgress size={14} color="inherit" /> : <Upload sx={{ fontSize: 16 }} />}
-                sx={{ bgcolor: OR, color: '#fff', borderRadius: '10px', fontWeight: 700, whiteSpace: 'nowrap',
-                  '&:hover': { bgcolor: '#E05A00' }, '&:disabled': { bgcolor: 'rgba(15,23,42,0.04)', color: SUB } }}>
-                {uploading ? 'Envoi…' : uploadType === 'SELFIE' ? 'Prendre un selfie' : 'Choisir un fichier'}
-              </Button>
-              <Typography fontSize={10} color={SUB} mt={0.5} textAlign="center">PDF, JPG, PNG — max 10 MB</Typography>
-            </Box>
-          </Box>
-        </Box>
+        <input type="file" ref={fileRef} style={{ display: 'none' }}
+          accept={uploadType === 'SELFIE' ? 'image/*' : '.pdf,.jpg,.jpeg,.png,.webp'}
+          capture={uploadType === 'SELFIE' ? 'user' : undefined}
+          onChange={handleUpload} />
 
-        {/* Doc list */}
-        {(docs as any[]).length === 0 ? (
-          <Box sx={{ textAlign: 'center', py: 5 }}>
-            <Description sx={{ fontSize: 44, color: BORD, mb: 1.5 }} />
-            <Typography fontSize={13} color={SUB}>Aucun document envoyé</Typography>
-          </Box>
-        ) : (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-            {(docs as any[]).map((doc: any) => {
-              const fileName = doc.fileName?.replace(/^(PUBLIC:|PRIVATE:)/, '') ?? 'Document';
-              return (
-                <Box key={doc.id} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, p: 1.5, borderRadius: '12px',
-                  bgcolor: 'rgba(15,23,42,0.09)', border: `1px solid ${BORD}` }}>
-                  <Description sx={{ fontSize: 20, flexShrink: 0,
-                    color: doc.isValid === true ? GRN : doc.isValid === false ? RED : YLW }} />
-                  <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', mb: 0.3 }}>
-                      <Typography fontSize={13} fontWeight={600} color={TXT}>{getDocLabel(doc.type)}</Typography>
-                      <DocStatus isValid={doc.isValid} />
+        {/* Une ligne par type de document (requis puis optionnels), chacune avec son propre bouton d'envoi.
+            Un vendeur peut envoyer plusieurs fois le même type de document (ex: après un rejet) — l'historique
+            complet est conservé côté backend, on affiche ici uniquement le plus récent par type. */}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+          {DOC_TYPES.map(t => {
+            const docsOfType = (docs as any[]).filter((d: any) => d.type === t.value);
+            const doc = docsOfType.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+            const fileName = doc?.fileName?.replace(/^(PUBLIC:|PRIVATE:)/, '');
+            const isUploadingThis = uploading && uploadType === t.value;
+            return (
+              <Box key={t.value} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, p: 1.6, borderRadius: '12px',
+                bgcolor: 'rgba(15,23,42,0.03)', border: `1px solid ${BORD}`, flexWrap: 'wrap' }}>
+                <Description sx={{ fontSize: 19, flexShrink: 0,
+                  color: !doc ? SUB : doc.isValid === true ? GRN : doc.isValid === false ? RED : YLW }} />
+                <Box sx={{ flex: 1, minWidth: 160 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, flexWrap: 'wrap' }}>
+                    <Typography fontSize={13} fontWeight={700} color={TXT}>{t.label}</Typography>
+                    <Box sx={{ px: 0.7, py: 0.1, borderRadius: '5px', bgcolor: t.required ? 'rgba(255,107,0,0.1)' : 'rgba(100,116,139,0.1)' }}>
+                      <Typography fontSize={9.5} fontWeight={700} color={t.required ? OR : SUB}>{t.required ? 'Requis' : 'Optionnel'}</Typography>
                     </Box>
-                    <Typography fontSize={11} color={SUB} noWrap>{fileName}</Typography>
+                    {doc ? <DocStatus isValid={doc.isValid} /> : (
+                      <Box sx={{ px: 0.9, py: 0.2, borderRadius: '6px', bgcolor: 'rgba(100,116,139,0.08)', border: '1px solid rgba(100,116,139,0.2)' }}>
+                        <Typography fontSize={10} fontWeight={700} color={SUB}>Non fourni</Typography>
+                      </Box>
+                    )}
                   </Box>
-                  <Box sx={{ display: 'flex', gap: 0.8, flexShrink: 0 }}>
+                  {fileName && <Typography fontSize={11} color={SUB} noWrap mt={0.2}>{fileName}</Typography>}
+                </Box>
+                <Box sx={{ display: 'flex', gap: 0.8, flexShrink: 0 }}>
+                  {doc && (
                     <Box onClick={() => viewDocument(doc.id)}
-                      sx={{ width: 28, height: 28, borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      sx={{ width: 30, height: 30, borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
                         border: `1px solid ${BORD}`, '&:hover': { bgcolor: 'rgba(59,130,246,0.1)' } }}>
-                      {viewingDoc === doc.id ? <CircularProgress size={12} sx={{ color: BLU }} /> : <Visibility sx={{ fontSize: 14, color: BLU }} />}
+                      {viewingDoc === doc.id ? <CircularProgress size={12} sx={{ color: BLU }} /> : <Visibility sx={{ fontSize: 15, color: BLU }} />}
                     </Box>
-                  </Box>
+                  )}
+                  <Button size="small" onClick={() => { setUploadType(t.value); setTimeout(() => fileRef.current?.click(), 0); }}
+                    disabled={uploading}
+                    startIcon={isUploadingThis ? <CircularProgress size={13} color="inherit" /> : <Upload sx={{ fontSize: 14 }} />}
+                    sx={{ borderRadius: '8px', fontWeight: 700, fontSize: 12, whiteSpace: 'nowrap', textTransform: 'none',
+                      bgcolor: doc ? 'rgba(15,23,42,0.06)' : OR, color: doc ? TXT : '#fff',
+                      '&:hover': { bgcolor: doc ? 'rgba(15,23,42,0.1)' : '#E05A00' },
+                      '&:disabled': { bgcolor: 'rgba(15,23,42,0.04)', color: SUB } }}>
+                    {isUploadingThis ? 'Envoi…' : doc ? 'Remplacer' : t.value === 'SELFIE' ? 'Prendre un selfie' : 'Envoyer'}
+                  </Button>
                 </Box>
-              );
-            })}
-          </Box>
-        )}
+              </Box>
+            );
+          })}
+        </Box>
+        <Typography fontSize={10.5} color={SUB} mt={1.2}>PDF, JPG, PNG — max 10 MB par fichier</Typography>
 
-        {/* Required checklist */}
-        <Box sx={{ mt: 2.5, pt: 2, borderTop: `1px solid ${BORD}` }}>
-          <Typography fontSize={12} fontWeight={700} color={SUB} mb={1.2} sx={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-            Documents requis pour la vérification
+        <Box sx={{ mt: 2, p: 1.5, borderRadius: '10px', bgcolor: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.2)' }}>
+          <Typography fontSize={12} color={SUB2}>
+            💡 La <strong style={{ color: TXT }}>patente commerciale</strong> reste optionnelle pour le badge "Vérifié", mais si vous
+            la fournissez et qu'elle est validée, un badge <strong style={{ color: TXT }}>"Patente vérifiée"</strong> distinct
+            s'affiche publiquement sur votre boutique — un vrai plus de crédibilité auprès des clients.
           </Typography>
-          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-            {required.map(d => {
-              const done = (docs as any[]).some((doc: any) => doc.type === d.value);
-              return (
-                <Box key={d.value} sx={{ display: 'flex', alignItems: 'center', gap: 0.7, px: 1.2, py: 0.6, borderRadius: '8px',
-                  bgcolor: done ? 'rgba(16,185,129,0.08)' : 'rgba(245,158,11,0.08)',
-                  border: `1px solid ${done ? 'rgba(16,185,129,0.25)' : 'rgba(245,158,11,0.25)'}` }}>
-                  {done ? <CheckCircle sx={{ fontSize: 12, color: GRN }} /> : <PendingOutlined sx={{ fontSize: 12, color: YLW }} />}
-                  <Typography fontSize={11.5} fontWeight={600} color={done ? GRN : YLW}>{d.label}</Typography>
-                </Box>
-              );
-            })}
-          </Box>
-          <Box sx={{ mt: 1.5, p: 1.5, borderRadius: '10px', bgcolor: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.2)' }}>
-            <Typography fontSize={12} color={SUB2}>
-              💡 La <strong style={{ color: TXT }}>patente commerciale</strong> reste optionnelle pour le badge "Vérifié", mais si vous
-              la fournissez et qu'elle est validée, un badge <strong style={{ color: TXT }}>"Patente vérifiée"</strong> distinct
-              s'affiche publiquement sur votre boutique — un vrai plus de crédibilité auprès des clients.
-            </Typography>
-          </Box>
         </Box>
       </Box>
 

@@ -124,7 +124,10 @@ export class SellersController {
   @ApiOperation({ summary: 'Mettre à jour le profil vendeur (info métier)' })
   updateProfile(
     @CurrentUser() u: any,
-    @Body() data: { businessType?: string; businessCity?: string; businessDept?: string; businessAddress?: string },
+    @Body() data: {
+      businessType?: string; businessTypeOther?: string; businessCity?: string;
+      businessDept?: string; businessAddress?: string; cin?: string; nif?: string;
+    },
   ) {
     return this.sellersService.updateProfile(u.id, data);
   }

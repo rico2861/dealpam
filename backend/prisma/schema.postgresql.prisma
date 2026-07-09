@@ -38,6 +38,15 @@ enum BusinessType {
   ELECTRONICS
   RESTAURANT
   CLINIC
+  AGRICULTURE
+  CONSTRUCTION
+  EDUCATION
+  TRANSPORT
+  TECHNOLOGY
+  EVENTS
+  REAL_ESTATE
+  BEAUTY
+  ARTISANAT
   OTHER
 }
 
@@ -210,9 +219,11 @@ model Seller {
   user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   status           SellerStatus  @default(PENDING)
   businessType     BusinessType? @map("business_type")
+  businessTypeOther String?      @map("business_type_other")
   businessCity     String?       @map("business_city")
   businessDept     String?       @map("business_dept")
   businessAddress  String?       @map("business_address")
+  cin              String?       @map("cin")
   nif              String?       @unique
   idDocumentUrl    String?       @map("id_document_url")
   businessDocUrl   String?       @map("business_doc_url")

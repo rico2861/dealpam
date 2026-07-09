@@ -396,10 +396,17 @@ export class SellersService {
 
   // ── Profile update ────────────────────────────────────────────────────────
 
-  async updateProfile(userId: string, data: { businessType?: string; businessCity?: string; businessDept?: string; businessAddress?: string }) {
+  async updateProfile(userId: string, data: {
+    businessType?: string; businessTypeOther?: string; businessCity?: string;
+    businessDept?: string; businessAddress?: string; cin?: string; nif?: string;
+  }) {
     const seller = await this.prisma.seller.findUnique({ where: { userId } });
     if (!seller) throw new NotFoundException('Vendeur introuvable');
-    return this.prisma.seller.update({ where: { userId }, data });
+    // businessTypeOther n'a de sens que si businessType === 'OTHER' — on l'efface
+    // sinon pour éviter un texte orphelin qui ne s'affiche nulle part.
+    const cleaned = { ...data };
+    if (cleaned.businessType && cleaned.businessType !== 'OTHER') cleaned.businessTypeOther = null as any;
+    return this.prisma.seller.update({ where: { userId }, data: cleaned as any });
   }
 
   // ── Public: featured sellers — vérifiées d'abord, puis meilleure note, puis
