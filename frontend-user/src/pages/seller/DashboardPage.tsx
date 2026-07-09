@@ -123,10 +123,14 @@ export default function SellerDashboard() {
     enabled: !!localStorage.getItem('accessToken'),
   });
 
-  const sub       = stats?.subscription;
-  const daysLeft  = sub ? Math.max(0, Math.ceil((new Date(sub.endDate).getTime() - Date.now()) / 86400000)) : 0;
-  const progress  = Math.min(100, Math.round((daysLeft / 30) * 100));
-  const expiring  = daysLeft < 7;
+  const sub          = stats?.subscription;
+  const daysLeft     = sub ? Math.max(0, Math.ceil((new Date(sub.endDate).getTime() - Date.now()) / 86400000)) : 0;
+  // Durée réelle du cycle (mensuel/annuel) plutôt qu'un 30 jours codé en dur —
+  // sinon un plan annuel affichait une barre pleine à 100% pendant 11 mois
+  // puis ne bougeait qu'au dernier mois.
+  const cycleDays    = sub ? Math.max(1, Math.round((new Date(sub.endDate).getTime() - new Date(sub.startDate).getTime()) / 86400000)) : 30;
+  const progress     = Math.min(100, Math.round((daysLeft / cycleDays) * 100));
+  const expiring     = daysLeft < 7;
   const showSkel  = useDelayedLoading(isLoading);
 
   const avgOrderValue = stats?.orders ? Math.round((stats?.revenue ?? 0) / stats.orders) : 0;
@@ -213,21 +217,32 @@ export default function SellerDashboard() {
 
       {/* ── Subscription banner ─────────────────────────────────────────────── */}
       {sub ? (
-        <Box sx={{ mb:3, p:2.5, borderRadius:'16px',
+        <Box sx={{
+          mb:3, p:{ xs:2.2, md:2.8 }, borderRadius:'18px', position:'relative', overflow:'hidden',
           background: expiring
-            ? 'linear-gradient(135deg,rgba(245,158,11,0.12),rgba(239,68,68,0.08))'
+            ? 'linear-gradient(135deg,#1E1610 0%,#2A1A0D 100%)'
             : sub.isTrial
-              ? 'linear-gradient(135deg,rgba(255,107,0,0.10),rgba(255,107,0,0.03))'
-              : 'linear-gradient(135deg,rgba(37,99,235,0.10),rgba(37,99,235,0.03))',
-          border: expiring ? '1px solid rgba(245,158,11,0.3)' : sub.isTrial ? `1px solid rgba(255,107,0,0.35)` : `1px solid rgba(37,99,235,0.3)` }}>
-          <Box sx={{ display:'flex', justifyContent:'space-between', alignItems:'center', mb:1.5, flexWrap:'wrap', gap:1 }}>
-            <Box sx={{ display:'flex', alignItems:'center', gap:1.5 }}>
-              {expiring ? <WarningAmber sx={{ color:GLD, fontSize:22 }}/> : sub.isTrial ? <Typography fontSize={13} fontWeight={800} color={OR}>ESSAI</Typography> : <CheckCircle sx={{ color:'#0F172A', fontSize:22 }}/>}
+              ? 'linear-gradient(135deg,#1A140F 0%,#241B10 100%)'
+              : 'linear-gradient(135deg,#0F172A 0%,#16213A 100%)',
+          border: `1px solid ${expiring ? 'rgba(245,158,11,0.3)' : sub.isTrial ? 'rgba(255,107,0,0.3)' : 'rgba(59,130,246,0.25)'}`,
+        }}>
+          <Box sx={{ position:'absolute', right:-30, top:-30, width:140, height:140, borderRadius:'50%',
+            background: `radial-gradient(circle,${expiring?GLD:sub.isTrial?OR:BLU}22,transparent 70%)` }}/>
+
+          <Box sx={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', flexWrap:'wrap', gap:1.5, position:'relative' }}>
+            <Box sx={{ display:'flex', alignItems:'center', gap:1.6 }}>
+              <Box sx={{ width:42, height:42, borderRadius:'12px', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center',
+                bgcolor:`${expiring?GLD:sub.isTrial?OR:BLU}20`, border:`1px solid ${expiring?GLD:sub.isTrial?OR:BLU}40` }}>
+                {expiring ? <WarningAmber sx={{ color:GLD, fontSize:22 }}/> : sub.isTrial ? <Bolt sx={{ color:OR, fontSize:22 }}/> : <CheckCircle sx={{ color:BLU, fontSize:22 }}/>}
+              </Box>
               <Box>
-                <Typography fontWeight={800} fontSize={15} color={expiring?GLD:sub.isTrial?OR:TXT}>
-                  {sub.isTrial ? 'Période d\'essai — Plan Business' : (sub.plan?.name ?? 'Plan actif')}
-                </Typography>
-                <Typography fontSize={12} color={SUB}>
+                <Box sx={{ display:'flex', alignItems:'center', gap:1 }}>
+                  <Typography fontWeight={800} fontSize={15.5} color="#fff">
+                    {sub.isTrial ? 'Période d\'essai — Plan Business' : (sub.plan?.name ?? 'Plan actif')}
+                  </Typography>
+                  {sub.isTrial && <Chip label="ESSAI" size="small" sx={{ height:18, fontSize:9.5, fontWeight:800, bgcolor:`${OR}25`, color:OR }}/>}
+                </Box>
+                <Typography fontSize={12} color="rgba(255,255,255,0.55)">
                   {sub.isTrial
                     ? `Accès complet aux fonctionnalités ${sub.plan?.name ?? 'Business'}`
                     : (sub.plan?.maxProducts ? `${sub.plan.maxProducts} produits max` : 'Produits illimités')}
@@ -235,37 +250,45 @@ export default function SellerDashboard() {
                 </Typography>
               </Box>
             </Box>
-            <Chip label={expiring?`${daysLeft} jour(s) restant(s)`:`${daysLeft} jour(s) restant(s)`}
-              sx={{ bgcolor: expiring ? 'rgba(245,158,11,0.15)' : sub.isTrial ? 'rgba(255,107,0,0.15)' : '#FFFFFF',
-                color: expiring ? GLD : sub.isTrial ? OR : TXT, fontWeight:700, fontSize:12 }}/>
+            <Box sx={{ textAlign:'right', flexShrink:0 }}>
+              <Typography fontWeight={900} fontSize={20} color={expiring?GLD:'#fff'} letterSpacing="-0.5px">{daysLeft}</Typography>
+              <Typography fontSize={10.5} color="rgba(255,255,255,0.5)" textTransform="uppercase" letterSpacing="0.5px">jour{daysLeft>1?'s':''} restant{daysLeft>1?'s':''}</Typography>
+            </Box>
           </Box>
+
           <LinearProgress variant="determinate" value={progress}
-            sx={{ height:5, borderRadius:3,
-              bgcolor: expiring ? 'rgba(245,158,11,0.15)' : '#FFFFFF',
-              '& .MuiLinearProgress-bar':{ bgcolor: expiring ? GLD : sub.isTrial ? OR : '#3B82F6', borderRadius:3 } }}/>
-          {sub.isTrial && (
-            <Box sx={{ display:'flex', justifyContent:'space-between', alignItems:'center', mt:1.5 }}>
-              <Typography fontSize={12} color={SUB}>
+            sx={{ height:6, borderRadius:3, mt:2, position:'relative',
+              bgcolor:'rgba(255,255,255,0.1)',
+              '& .MuiLinearProgress-bar':{ bgcolor: expiring ? GLD : sub.isTrial ? OR : BLU, borderRadius:3 } }}/>
+
+          {(sub.isTrial || expiring) && (
+            <Box sx={{ display:'flex', justifyContent:'space-between', alignItems:'center', mt:1.8, flexWrap:'wrap', gap:1, position:'relative' }}>
+              <Typography fontSize={12} color="rgba(255,255,255,0.6)">
                 {expiring
                   ? 'Sélectionnez un plan pour éviter toute interruption de visibilité de vos produits.'
                   : 'Aucun moyen de paiement requis pendant la période d\'essai. Choisissez un plan à tout moment.'}
               </Typography>
               <Button component={Link} to="/seller/subscription" size="small" endIcon={<ArrowForward sx={{ fontSize:14 }}/>}
-                sx={{ borderRadius:'8px', bgcolor:OR, color:'#fff', fontWeight:700, fontSize:12, px:1.5, flexShrink:0,
-                  '&:hover':{ bgcolor:'#E05A00' } }}>
+                sx={{ borderRadius:'9px', bgcolor: expiring ? GLD : OR, color: expiring ? '#000' : '#fff', fontWeight:700, fontSize:12, px:1.6, flexShrink:0,
+                  '&:hover':{ bgcolor: expiring ? '#D97706' : '#E05A00' } }}>
                 Voir les plans
               </Button>
             </Box>
           )}
         </Box>
       ) : (
-        <Box sx={{ mb:3, p:2.5, borderRadius:'16px', border:'1.5px dashed rgba(245,158,11,0.4)', bgcolor:'rgba(245,158,11,0.05)',
+        <Box sx={{
+          mb:3, p:{ xs:2.2, md:2.8 }, borderRadius:'18px', position:'relative', overflow:'hidden',
+          background:'linear-gradient(135deg,#1E1610 0%,#2A1A0D 100%)', border:'1px solid rgba(245,158,11,0.3)',
           display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:2 }}>
-          <Box sx={{ display:'flex', alignItems:'center', gap:1.5 }}>
-            <WarningAmber sx={{ color:GLD, fontSize:22 }}/>
+          <Box sx={{ display:'flex', alignItems:'center', gap:1.6 }}>
+            <Box sx={{ width:42, height:42, borderRadius:'12px', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center',
+              bgcolor:`${GLD}20`, border:`1px solid ${GLD}40` }}>
+              <WarningAmber sx={{ color:GLD, fontSize:22 }}/>
+            </Box>
             <Box>
-              <Typography fontWeight={800} color={GLD} fontSize={14}>Aucun abonnement actif</Typography>
-              <Typography fontSize={12} color={SUB}>Abonnez-vous pour publier vos produits</Typography>
+              <Typography fontWeight={800} color="#fff" fontSize={15}>Aucun abonnement actif</Typography>
+              <Typography fontSize={12} color="rgba(255,255,255,0.55)">Abonnez-vous pour publier vos produits</Typography>
             </Box>
           </Box>
           <Button component={Link} to="/seller/subscription" endIcon={<ArrowForward/>}

@@ -105,7 +105,17 @@ async function bootstrap() {
   SwaggerModule.setup('api/docs', app, SwaggerModule.createDocument(app, config));
 
   // ── Health check ──────────────────────────────────────────────────────────
+  // "/" (GET et HEAD) est ping par le health-check de Render sur l'URL racine
+  // du service — sans handler dédié, chaque ping loggait une 404 "Cannot GET /"
+  // / "Cannot HEAD /" en boucle dans les logs de production, noyant les vraies
+  // erreurs. Répond 200 sur les deux méthodes, sans exposer d'info sensible.
   const httpAdapter = app.getHttpAdapter();
+  httpAdapter.get('/', (_req: any, res: any) => {
+    res.status(200).json({ status: 'ok', service: 'Dealpam API' });
+  });
+  httpAdapter.head('/', (_req: any, res: any) => {
+    res.status(200).end();
+  });
   httpAdapter.get('/health', (_req: any, res: any) => {
     res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
   });
