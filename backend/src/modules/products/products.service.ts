@@ -80,6 +80,9 @@ export class ProductsService {
       brand: { select: { name: true } },
     };
 
+    // TODO: intégration du boost de campagne pub (adBoostedUntil) pas encore
+    // appliquée à ce chemin géo-local — scope volontairement limité au chemin
+    // standard ci-dessous dans cette passe (voir aussi getNearProducts/getFeatured).
     // Quand un département (et/ou ville) est spécifié : locaux en premier, complétés national
     if (department || city) {
       // Filtre ville (précis) : produit ou boutique dans la même ville
@@ -133,11 +136,42 @@ export class ProductsService {
       return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
     }
 
-    // Sans département : comportement standard
-    const [data, total] = await Promise.all([
-      this.prisma.product.findMany({ where: baseWhere, orderBy, skip: (page - 1) * limit, take: limit, include: productInclude }),
-      this.prisma.product.count({ where: baseWhere }),
+    // Sans département : comportement standard, avec priorité aux produits
+    // actuellement boostés par une campagne pub active (adBoostedUntil > now).
+    // Un adBoostedUntil expiré (dans le passé) ne compte plus comme "boosté" —
+    // d'où le AND explicite plutôt qu'un simple orderBy desc sur ce champ
+    // nullable (qui classerait un boost expiré depuis des mois avant un
+    // produit jamais boosté).
+    const now = new Date();
+    const boostedWhere = { AND: [baseWhere, { adBoostedUntil: { gt: now } }] };
+    const restWhere = { AND: [baseWhere, { OR: [{ adBoostedUntil: null }, { adBoostedUntil: { lte: now } }] }] };
+    const skip = (page - 1) * limit;
+    const boostedOrderBy = [{ adBoostedUntil: 'desc' as const }, ...(Array.isArray(orderBy) ? orderBy : [orderBy])];
+
+    const [boostedPool, boostedCount, restCount] = await Promise.all([
+      // Pool borné à 500 — au-delà, la pagination des pages profondes retombe
+      // sur le pool "rest" (limitation acceptée, campagnes boostées simultanées
+      // très improbables en si grand nombre).
+      this.prisma.product.findMany({ where: boostedWhere, orderBy: boostedOrderBy, take: 500, include: productInclude }),
+      this.prisma.product.count({ where: boostedWhere }),
+      this.prisma.product.count({ where: restWhere }),
     ]);
+
+    const total = boostedCount + restCount;
+    let data: any[];
+    if (skip < boostedPool.length) {
+      const boostedSlice = boostedPool.slice(skip, skip + limit);
+      if (boostedSlice.length === limit) {
+        data = boostedSlice;
+      } else {
+        const restNeeded = limit - boostedSlice.length;
+        const rest = await this.prisma.product.findMany({ where: restWhere, orderBy, take: restNeeded, include: productInclude });
+        data = [...boostedSlice, ...rest];
+      }
+    } else {
+      const restSkip = skip - boostedPool.length;
+      data = await this.prisma.product.findMany({ where: restWhere, orderBy, skip: restSkip, take: limit, include: productInclude });
+    }
 
     return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
@@ -582,6 +616,8 @@ export class ProductsService {
     return { data, total, page, limit };
   }
 
+  // TODO: intégration du boost de campagne pub (adBoostedUntil) pas encore
+  // appliquée ici — scope volontairement limité à findAll() dans cette passe.
   async getFeatured() {
     return this.prisma.product.findMany({
       where: { status: 'PUBLISHED', isFeatured: true, stock: { gt: 0 } },
@@ -894,6 +930,8 @@ export class ProductsService {
   }
 
   // ── Produits près de l'utilisateur — fallback progressif ─────────────────
+  // TODO: intégration du boost de campagne pub (adBoostedUntil) pas encore
+  // appliquée ici — scope volontairement limité à findAll() dans cette passe.
   async getNearProducts(department: string, city: string, limit = 20): Promise<{
     products: any[]; level: 'city' | 'department' | 'national'; label: string; hasLocalVendor: boolean;
   }> {

@@ -75,6 +75,13 @@ export class AdsController {
     return this.ads.resumeCampaign(id, seller);
   }
 
+  @Patch('my/:id/publish')
+  @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('SELLER')
+  async publish(@CurrentUser() user: any, @Param('id') id: string, @Body() body: { publishAt: string }) {
+    const seller = await this.getSellerId(user.id);
+    return this.ads.publishCampaign(seller, id, body.publishAt);
+  }
+
   @Patch('my/:id/cancel')
   @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('SELLER')
   async cancel(@CurrentUser() user: any, @Param('id') id: string) {

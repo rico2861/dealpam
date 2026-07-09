@@ -157,4 +157,38 @@ export class WalletService {
     });
     return { balance: updated.balance };
   }
+
+  /** Débit quotidien partiel d'une campagne (facturation au jour le jour par le cron ads) —
+   * même schéma transactionnel/ledger que deductForCampaign, paramétré sur un montant
+   * arbitraire au lieu du budget total de la campagne. */
+  async deductDailyForCampaign(sellerId: string, campaignId: string, amount: number) {
+    const wallet = await this.ensureWallet(sellerId);
+
+    const result = await this.prisma.sellerWallet.updateMany({
+      where: { id: wallet.id, balance: { gte: amount } },
+      data: { balance: { decrement: amount } },
+    });
+    if (result.count === 0) throw new BadRequestException('Solde insuffisant');
+
+    const updated = await this.prisma.sellerWallet.findUniqueOrThrow({ where: { id: wallet.id } });
+    await this.prisma.walletTransaction.create({
+      data: {
+        walletId: wallet.id,
+        type: 'CAMPAIGN_PAYMENT',
+        amount: -amount,
+        balanceAfter: updated.balance,
+        description: `Facturation quotidienne campagne`,
+        reference: campaignId,
+        status: 'COMPLETED',
+      },
+    });
+    return { balance: updated.balance };
+  }
+
+  /** Solde actuel du wallet (créé si inexistant) — utilisé par le cron pour vérifier
+   * les fonds disponibles avant de facturer une campagne. */
+  async getBalance(sellerId: string): Promise<number> {
+    const w = await this.ensureWallet(sellerId);
+    return Number(w.balance);
+  }
 }

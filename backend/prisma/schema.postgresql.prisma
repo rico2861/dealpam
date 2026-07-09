@@ -287,6 +287,9 @@ model Store {
   reputationScore  Float     @default(100) @map("reputation_score")
   avgResponseTime  Int?      @map("avg_response_time") // minutes
   lastBadgeUpdate  DateTime? @map("last_badge_update")
+  // Booste par une campagne pub "boutique" active tant que cette date est dans le futur —
+  // s'auto-expire sans cron : les requêtes de classement vérifient juste adBoostedUntil > now.
+  adBoostedUntil   DateTime? @map("ad_boosted_until")
   products     Product[]
   reviews      Review[]
   orders       Order[]
@@ -298,6 +301,7 @@ model Store {
   @@index([slug])
   @@index([storeCode])
   @@index([department])
+  @@index([adBoostedUntil])
   @@map("stores")
 }
 
@@ -455,6 +459,9 @@ model Product {
   status          ProductStatus @default(DRAFT)
   isFeatured      Boolean   @default(false) @map("is_featured")
   isSponsored     Boolean   @default(false) @map("is_sponsored")
+  // Booste par une campagne pub active tant que cette date est dans le futur — s'auto-expire
+  // sans intervention de cron : les requêtes de classement vérifient juste adBoostedUntil > now.
+  adBoostedUntil  DateTime? @map("ad_boosted_until")
   avgRating       Float     @default(0) @map("avg_rating")
   totalReviews    Int       @default(0) @map("total_reviews")
   totalSold       Int       @default(0) @map("total_sold")
@@ -500,6 +507,7 @@ model Product {
   @@index([hasDelivery])
   @@index([productType])
   @@index([isFeatured])
+  @@index([adBoostedUntil])
   // Combinaisons réellement filtrées ensemble dans products.service.ts —
   // un index composite évite un scan supplémentaire par rapport à deux index
   // simples croisés.
@@ -956,6 +964,12 @@ model AdCampaign {
   // Durée
   startDate      DateTime    @map("start_date")
   endDate        DateTime    @map("end_date")
+  // Instant choisi par le vendeur pour démarrer réellement la diffusion — null = approuvée
+  // mais pas encore publiée manuellement. Non-null = campagne "live" à partir de cette date.
+  publishedAt    DateTime?   @map("published_at")
+  // Dernier jour calendaire (granularité date, pas heure) où cette campagne a été débitée
+  // par le cron de facturation quotidienne — empêche un double-débit si le cron tourne deux fois le même jour.
+  lastBilledDate DateTime?   @map("last_billed_date")
 
   // Ciblage
   targetGenders    String[]  @default([]) @map("target_genders")   // ["MALE","FEMALE","ALL"]

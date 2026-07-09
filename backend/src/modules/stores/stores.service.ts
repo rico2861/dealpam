@@ -21,14 +21,41 @@ export class StoresService {
 
   // ── Public ────────────────────────────────────────────────────────────────
 
-  findAll(page = 1, limit = 20) {
+  async findAll(page = 1, limit = 20) {
+    // Priorité aux boutiques actuellement boostées par une campagne pub "boutique"
+    // active (adBoostedUntil > now). Un adBoostedUntil expiré (dans le passé) ne
+    // doit plus compter — d'où le filtre explicite plutôt qu'un simple orderBy
+    // desc sur ce champ nullable (qui classerait un boost expiré avant une
+    // boutique jamais boostée).
+    const now = new Date();
+    const include = {
+      seller: { include: { subscriptions: { where: { isActive: true }, include: { plan: true }, take: 1 } } },
+      _count: { select: { products: true } },
+    };
+    const skip = (page - 1) * limit;
+
+    const boostedPool = await this.prisma.store.findMany({
+      where:   { isActive: true, adBoostedUntil: { gt: now } },
+      include,
+      orderBy: { adBoostedUntil: 'desc' },
+      take:    500, // pool borné — limitation acceptée pour les pages très profondes
+    });
+
+    if (skip < boostedPool.length) {
+      const boostedSlice = boostedPool.slice(skip, skip + limit);
+      if (boostedSlice.length === limit) return boostedSlice;
+      const rest = await this.prisma.store.findMany({
+        where: { isActive: true, OR: [{ adBoostedUntil: null }, { adBoostedUntil: { lte: now } }] },
+        include,
+        take: limit - boostedSlice.length,
+      });
+      return [...boostedSlice, ...rest];
+    }
+
     return this.prisma.store.findMany({
-      where:   { isActive: true },
-      include: {
-        seller: { include: { subscriptions: { where: { isActive: true }, include: { plan: true }, take: 1 } } },
-        _count:  { select: { products: true } },
-      },
-      skip: (page - 1) * limit, take: limit,
+      where: { isActive: true, OR: [{ adBoostedUntil: null }, { adBoostedUntil: { lte: now } }] },
+      include,
+      skip: skip - boostedPool.length, take: limit,
     });
   }
 

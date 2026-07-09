@@ -325,6 +325,30 @@ export default function AdsPage() {
   const resumeMut = useMutation({ mutationFn: (id: string) => api.patch(`/ads/my/${id}/resume`), onSuccess: () => qc.invalidateQueries({ queryKey: ['my-campaigns'] }) });
   const cancelMut = useMutation({ mutationFn: (id: string) => api.patch(`/ads/my/${id}/cancel`), onSuccess: () => qc.invalidateQueries({ queryKey: ['my-campaigns'] }) });
 
+  // ── Publish (manual go-live) ──────────────────────────────────────────────
+  const [publishId, setPublishId] = useState<string | null>(null);
+  const [publishAt, setPublishAt] = useState('');
+  const [publishLoading, setPublishLoading] = useState(false);
+  const toLocalInputValue = (d: Date) => {
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+  const openPublish = (id: string) => { setPublishId(id); setPublishAt(toLocalInputValue(new Date())); };
+  const handlePublish = async () => {
+    if (!publishId || !publishAt) return;
+    setPublishLoading(true);
+    try {
+      await api.patch(`/ads/my/${publishId}/publish`, { publishAt: new Date(publishAt).toISOString() });
+      qc.invalidateQueries({ queryKey: ['my-campaigns'] });
+      setPublishId(null);
+      enqueueSnackbar('Campagne publiée', { variant: 'success' });
+    } catch (e: any) {
+      enqueueSnackbar(e?.response?.data?.message || 'Erreur lors de la publication', { variant: 'error' });
+    } finally {
+      setPublishLoading(false);
+    }
+  };
+
   // Payment state (for existing PENDING_PAYMENT campaigns)
   const [payOpen, setPayOpen]   = useState(false);
   const [payId, setPayId]       = useState<string | null>(null);
@@ -607,6 +631,11 @@ export default function AdsPage() {
                         <Box sx={{ px: 1, py: 0.3, borderRadius: '6px', bgcolor: 'rgba(255,107,0,0.1)', border: '1px solid rgba(255,107,0,0.25)' }}>
                           <Typography fontSize={10.5} color={OR} fontWeight={700}>{daysLeft}j restants</Typography>
                         </Box>
+                        {c.publishedAt && (
+                          <Box sx={{ px: 1, py: 0.3, borderRadius: '6px', bgcolor: `${GRN}14`, border: `1px solid ${GRN}30` }}>
+                            <Typography fontSize={10.5} color={GRN} fontWeight={700}>Publiée le {new Date(c.publishedAt).toLocaleDateString('fr-FR')}</Typography>
+                          </Box>
+                        )}
                       </Box>
                     </Box>
 
@@ -629,6 +658,13 @@ export default function AdsPage() {
                         sx={{ width: 32, height: 32, borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid', borderColor: expanded ? `${PUR}55` : BORD, bgcolor: expanded ? `${PUR}14` : 'transparent', '&:hover': { borderColor: `${PUR}44`, bgcolor: `${PUR}10` } }}>
                         <BarChart sx={{ fontSize: 15, color: expanded ? PUR : SUB }} />
                       </Box>
+                      {c.status === 'ACTIVE' && !c.publishedAt && (
+                        <Box onClick={() => openPublish(c.id)}
+                          sx={{ px: 1.3, py: 0.6, borderRadius: '8px', cursor: 'pointer', bgcolor: GRN, display: 'flex', alignItems: 'center', gap: 0.4, '&:hover': { bgcolor: '#0EA271' } }}>
+                          <PlayArrow sx={{ fontSize: 14, color: '#fff' }} />
+                          <Typography fontSize={12} fontWeight={700} color="#fff">Publier</Typography>
+                        </Box>
+                      )}
                       {c.status === 'ACTIVE' && (
                         <Box onClick={() => pauseMut.mutate(c.id)}
                           sx={{ width: 32, height: 32, borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid ${BORD}`, '&:hover': { borderColor: `${YLW}55`, bgcolor: `${YLW}10` } }}>
@@ -730,7 +766,7 @@ export default function AdsPage() {
               </Typography>
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.2, mb: 1.5 }}>
                 {([
-                  { type: 'PRODUCT', icon: Inventory, label: 'Un ou plusieurs produits', desc: `Promouvoir jusqu'à ${MAX_PRODUCTS} articles` },
+                  { type: 'PRODUCT', icon: Inventory, label: 'Un ou plusieurs produits / services', desc: `Promouvoir jusqu'à ${MAX_PRODUCTS} articles, services ou annonces restaurant` },
                   { type: 'STORE',   icon: Store,     label: 'Une boutique', desc: 'Promouvoir toute votre boutique (une seule)' },
                 ] as const).map(({ type, icon: Icon, label, desc }) => {
                   const sel = form.targetType === type;
@@ -753,7 +789,7 @@ export default function AdsPage() {
                   items={productItems}
                   value={form.productIds}
                   onChange={ids => setForm(f => ({ ...f, productIds: ids }))}
-                  placeholder={`Rechercher des produits à promouvoir * (max ${MAX_PRODUCTS})`}
+                  placeholder={`Rechercher des produits / services à promouvoir * (max ${MAX_PRODUCTS})`}
                   max={MAX_PRODUCTS}
                 />
               ) : (
@@ -942,6 +978,27 @@ export default function AdsPage() {
             endIcon={payLoading ? <CircularProgress size={14} color="inherit" /> : (payMethod === 'MONCASH' ? <OpenInNew sx={{ fontSize: 15 }} /> : undefined)}
             sx={{ bgcolor: OR, color: '#fff', fontWeight: 700, borderRadius: '10px', px: 2.5, textTransform: 'none', '&:hover': { bgcolor: '#E05A00' }, '&:disabled': { bgcolor: 'rgba(15,23,42,0.09)', color: SUB } }}>
             {payLoading ? 'En cours…' : payMethod === 'MONCASH' ? 'Payer via MonCash →' : 'Confirmer le paiement Wallet'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* ── Publish Dialog (manual go-live) ── */}
+      <Dialog open={!!publishId} onClose={() => !publishLoading && setPublishId(null)} maxWidth="xs" fullWidth
+        PaperProps={{ sx: { bgcolor: CARD, border: `1px solid ${BORD}`, borderRadius: '20px', color: TXT } }}>
+        <DialogTitle sx={{ color: TXT, fontWeight: 900, fontSize: 17 }}>Publier la campagne</DialogTitle>
+        <DialogContent>
+          <Typography fontSize={13} color={SUB} mb={2}>
+            Choisissez la date et l'heure de démarrage de la diffusion. Par défaut : maintenant.
+          </Typography>
+          <TextField fullWidth type="datetime-local" label="Démarrer le" value={publishAt}
+            onChange={e => setPublishAt(e.target.value)} sx={fieldSx} InputLabelProps={{ shrink: true }} />
+        </DialogContent>
+        <DialogActions sx={{ px: 2.5, pb: 2.5, gap: 1 }}>
+          <Button onClick={() => setPublishId(null)} disabled={publishLoading} sx={{ color: SUB2, borderRadius: '10px', textTransform: 'none' }}>Annuler</Button>
+          <Button onClick={handlePublish} disabled={publishLoading || !publishAt}
+            endIcon={publishLoading ? <CircularProgress size={14} color="inherit" /> : undefined}
+            sx={{ bgcolor: GRN, color: '#fff', fontWeight: 700, borderRadius: '10px', px: 2.5, textTransform: 'none', '&:hover': { bgcolor: '#0EA271' }, '&:disabled': { bgcolor: 'rgba(15,23,42,0.09)', color: SUB } }}>
+            {publishLoading ? 'En cours…' : 'Publier maintenant'}
           </Button>
         </DialogActions>
       </Dialog>

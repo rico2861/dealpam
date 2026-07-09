@@ -62,6 +62,34 @@ export class AdsService {
       }
     }
 
+    // Garde-fou multi-campagnes : protège contre le sur-engagement du wallet.
+    // Toutes les campagnes actives/en attente du vendeur tirent quotidiennement
+    // sur le même wallet — on vérifie donc la somme de tous les engagements
+    // quotidiens (existants + celui-ci) contre le solde actuel, quel que soit
+    // le moyen de paiement choisi pour CETTE campagne (les autres campagnes
+    // continueront de tirer sur le wallet chaque jour).
+    const otherCampaigns = await this.prisma.adCampaign.findMany({
+      where: { sellerId, status: { in: ['ACTIVE', 'PENDING_PAYMENT', 'PENDING_REVIEW'] } },
+      select: { totalBudget: true, dailyBudget: true, startDate: true, endDate: true },
+    });
+    const dailyRateOf = (c: { totalBudget: any; dailyBudget: any; startDate: Date; endDate: Date }) => {
+      if (c.dailyBudget) return Number(c.dailyBudget);
+      const d = Math.max(1, Math.ceil((c.endDate.getTime() - c.startDate.getTime()) / 86_400_000));
+      return Number(c.totalBudget) / d;
+    };
+    const otherDailyTotal = otherCampaigns.reduce((sum, c) => sum + dailyRateOf(c), 0);
+    const thisDays = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / 86_400_000));
+    const thisDailyRate = dto.dailyBudget ? Number(dto.dailyBudget) : Number(dto.totalBudget) / thisDays;
+    const totalDailyCommitment = otherDailyTotal + thisDailyRate;
+
+    const walletBalance = await this.walletService.getBalance(sellerId);
+    if (totalDailyCommitment > walletBalance) {
+      throw new BadRequestException(
+        `Votre engagement quotidien total (${totalDailyCommitment.toFixed(2)} HTG/jour sur toutes vos campagnes actives) dépasserait votre solde Wallet (${walletBalance} HTG). ` +
+        `Rechargez votre wallet ou réduisez le budget quotidien de cette campagne.`,
+      );
+    }
+
     return (this.prisma.adCampaign as any).create({
       data: {
         sellerId,
@@ -145,6 +173,34 @@ export class AdsService {
     if (!c) throw new NotFoundException('Campagne introuvable');
     if (c.status !== 'PAUSED') throw new BadRequestException('Seules les campagnes en pause peuvent être relancées');
     return this.prisma.adCampaign.update({ where: { id: campaignId }, data: { status: 'ACTIVE' } });
+  }
+
+  async publishCampaign(sellerId: string, campaignId: string, publishAt: string) {
+    const c = await this.prisma.adCampaign.findFirst({ where: { id: campaignId, sellerId } });
+    if (!c) throw new NotFoundException('Campagne introuvable');
+    if (c.status !== 'ACTIVE') throw new BadRequestException('Seules les campagnes actives (approuvées et payées) peuvent être publiées');
+    if (c.publishedAt) throw new BadRequestException('Cette campagne a déjà été publiée');
+
+    const when = new Date(publishAt);
+    if (isNaN(when.getTime())) throw new BadRequestException('Date de publication invalide');
+    const now = new Date();
+    if (when < now) throw new BadRequestException('L\'heure de publication ne peut pas être dans le passé');
+
+    const updated = await this.prisma.adCampaign.update({ where: { id: campaignId }, data: { publishedAt: when } });
+
+    // Si la publication est immédiate (ou déjà passée au moment de l'appel), on
+    // applique le boost tout de suite plutôt que d'attendre jusqu'à 1h le prochain
+    // passage du cron — meilleure expérience pour un vendeur qui publie "maintenant".
+    if (when <= now) {
+      if (c.productId) {
+        await this.prisma.product.update({ where: { id: c.productId }, data: { adBoostedUntil: c.endDate } });
+      }
+      if (c.storeId) {
+        await this.prisma.store.update({ where: { id: c.storeId }, data: { adBoostedUntil: c.endDate } });
+      }
+    }
+
+    return updated;
   }
 
   async cancelCampaign(campaignId: string, sellerId: string) {
