@@ -1,11 +1,41 @@
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, BadRequestException } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const compression = require('compression');
 import { AppModule } from './app.module';
+
+// ── Traduction des messages de validation class-validator (par défaut en anglais,
+// destinés aux devs) vers un français compréhensible par un vendeur/client. Couvre
+// les formulations les plus fréquentes générées par les décorateurs du projet ;
+// tout message non reconnu passe tel quel plutôt que de bloquer la requête.
+function translateValidationMessage(msg: string): string {
+  const m = msg.match(/^(\w+) (.+)$/);
+  if (!m) return msg;
+  const [, field, rest] = m;
+  const label = field.replace(/([A-Z])/g, ' $1').toLowerCase().trim();
+  const rules: [RegExp, (r: string) => string][] = [
+    [/^should not be empty$/,        () => `Le champ "${label}" est requis.`],
+    [/^must be an email$/,           () => `L'adresse email n'est pas valide.`],
+    [/^must be a string$/,           () => `Le champ "${label}" doit être du texte.`],
+    [/^must be a number.*$/,         () => `Le champ "${label}" doit être un nombre.`],
+    [/^must be a boolean value$/,    () => `Le champ "${label}" est invalide.`],
+    [/^must not be less than (\d+)/, (r) => `Le champ "${label}" doit être d'au moins ${r.match(/\d+/)?.[0]}.`],
+    [/^must not be greater than (\d+)/, (r) => `Le champ "${label}" doit être d'au plus ${r.match(/\d+/)?.[0]}.`],
+    [/^must be a valid ISO 8601 date string$/, () => `La date fournie pour "${label}" n'est pas valide.`],
+    [/^must be one of the following values.*$/, () => `La valeur choisie pour "${label}" n'est pas valide.`],
+    [/^must be an array$/,           () => `Le champ "${label}" est invalide.`],
+    [/^must be a UUID$/,             () => `Identifiant invalide pour "${label}".`],
+    [/^must be longer than or equal to (\d+) characters$/, (r) => `Le champ "${label}" doit contenir au moins ${r.match(/\d+/)?.[0]} caractères.`],
+    [/^must be shorter than or equal to (\d+) characters$/, (r) => `Le champ "${label}" ne peut pas dépasser ${r.match(/\d+/)?.[0]} caractères.`],
+  ];
+  for (const [re, fn] of rules) {
+    if (re.test(rest)) return fn(rest);
+  }
+  return msg;
+}
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
@@ -86,12 +116,27 @@ async function bootstrap() {
   });
 
   // ── Validation ────────────────────────────────────────────────────────────
+  // `whitelist: true` retire déjà silencieusement toute propriété non déclarée
+  // dans le DTO avant validation — c'est la vraie protection contre le mass
+  // assignment. `forbidNonWhitelisted: true` faisait EN PLUS échouer toute la
+  // requête avec un message brut de class-validator ("property X should not
+  // exist"), en anglais, illisible pour un vendeur — pour un simple champ
+  // superflu envoyé par le frontend (ex: un champ purement UI jamais censé
+  // atteindre le backend). Retiré : les champs superflus sont juste ignorés.
+  // `exceptionFactory` traduit les erreurs de validation restantes (champ
+  // manquant/invalide) en français au lieu du texte technique par défaut.
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist:            true,
-      forbidNonWhitelisted: true,
-      transform:            true,
-      transformOptions:     { enableImplicitConversion: true },
+      whitelist:        true,
+      transform:        true,
+      transformOptions: { enableImplicitConversion: true },
+      exceptionFactory: (errors) => {
+        const messages = errors.flatMap(e => Object.values(e.constraints ?? {}));
+        const translated = messages.map(translateValidationMessage);
+        return new BadRequestException(
+          translated.length ? translated : ['Données invalides — vérifiez les champs et réessayez.'],
+        );
+      },
     }),
   );
 
