@@ -34,6 +34,14 @@ export class PaymentsController {
     return this.ps.initiateSubscriptionPayment(u.id, dto.planId, dto.billingCycle || 'MONTHLY', dto.couponCode);
   }
 
+  // ── Abonnement : payer directement avec le solde wallet ───────────────────
+  @Post('subscription/pay-with-wallet')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Vendeur — paie un abonnement avec son solde wallet (sans MonCash)' })
+  paySubscriptionWithWallet(@CurrentUser() u: any, @Body() dto: InitiateSubDto) {
+    return this.ps.paySubscriptionWithWallet(u.id, dto.planId, dto.billingCycle || 'MONTHLY', dto.couponCode);
+  }
+
   // ── Pub : initier le paiement MonCash pour une campagne ───────────────────
   @Post('ad-campaign/initiate')
   @UseGuards(JwtAuthGuard)

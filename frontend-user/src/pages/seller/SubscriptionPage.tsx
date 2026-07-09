@@ -1,6 +1,9 @@
 import { useState } from 'react';
-import { Box, Typography, CircularProgress, TextField, InputAdornment } from '@mui/material';
-import { CheckCircle, Store, Star, WorkspacePremium, Diamond, CreditCard } from '@mui/icons-material';
+import {
+  Box, Typography, CircularProgress, TextField, InputAdornment,
+  Dialog, DialogContent, Button,
+} from '@mui/material';
+import { CheckCircle, Store, Star, WorkspacePremium, Diamond, CreditCard, AccountBalanceWallet, OpenInNew } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import { useNavigate } from 'react-router-dom';
@@ -68,28 +71,40 @@ export default function SellerSubscriptionPage() {
   const hasToken = !!localStorage.getItem('accessToken');
   const { data: plans, isLoading }  = useQuery({ queryKey: ['plans'],     queryFn: () => api.get('/subscriptions/plans').then(r => r.data) });
   const { data: currentSub }        = useQuery({ queryKey: ['sellerSub'], queryFn: () => api.get('/subscriptions/me').then(r => r.data).catch(() => null), enabled: hasToken });
+  const { data: wallet }            = useQuery({ queryKey: ['seller-wallet'], queryFn: () => api.get('/wallet').then(r => r.data), enabled: hasToken });
 
   const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
   const [couponCode, setCouponCode] = useState('');
+  const [paymentPlan, setPaymentPlan] = useState<any | null>(null);
 
   const qc = useQueryClient();
+  const walletBalance = Number(wallet?.balance ?? 0);
+
+  const handlePaymentResult = (data: any) => {
+    if (data?.redirect_url) {
+      enqueueSnackbar(`Redirection MonCash pour ${data.plan}…`, { variant: 'info' });
+      window.location.href = data.redirect_url;
+    } else if (data?.type === 'subscription_scheduled') {
+      const date = data.effective_date ? new Date(data.effective_date).toLocaleDateString('fr-FR') : '';
+      enqueueSnackbar(`Changement de plan programmé — effectif le ${date}`, { variant: 'success' });
+      qc.invalidateQueries({ queryKey: ['sellerSub'] });
+    } else {
+      enqueueSnackbar('Abonnement activé !', { variant: 'success' });
+      qc.invalidateQueries({ queryKey: ['seller-wallet'] });
+      navigate('/seller');
+    }
+  };
 
   const subscribeMut = useMutation({
     mutationFn: (planId: string) => api.post('/payments/subscription/initiate', { planId, couponCode: couponCode || undefined }).then(r => r.data),
     onSettled: () => setLoadingPlanId(null),
-    onSuccess: (data: any) => {
-      if (data?.redirect_url) {
-        enqueueSnackbar(`Redirection MonCash pour ${data.plan}…`, { variant: 'info' });
-        window.location.href = data.redirect_url;
-      } else if (data?.type === 'subscription_scheduled') {
-        const date = data.effective_date ? new Date(data.effective_date).toLocaleDateString('fr-FR') : '';
-        enqueueSnackbar(`Changement de plan programmé — effectif le ${date}`, { variant: 'success' });
-        qc.invalidateQueries({ queryKey: ['sellerSub'] });
-      } else {
-        enqueueSnackbar('Abonnement activé !', { variant: 'success' });
-        navigate('/seller');
-      }
-    },
+    onSuccess: handlePaymentResult,
+    onError: (e: any) => enqueueSnackbar(e.response?.data?.message || 'Erreur', { variant: 'error' }),
+  });
+
+  const payWithWalletMut = useMutation({
+    mutationFn: (planId: string) => api.post('/payments/subscription/pay-with-wallet', { planId, couponCode: couponCode || undefined }).then(r => r.data),
+    onSuccess: (data: any) => { setPaymentPlan(null); handlePaymentResult(data); },
     onError: (e: any) => enqueueSnackbar(e.response?.data?.message || 'Erreur', { variant: 'error' }),
   });
 
@@ -281,8 +296,8 @@ export default function SellerSubscriptionPage() {
                 {/* CTA */}
                 <Box onClick={() => {
                     if (isCurrent || isScheduled || subscribeMut.isPending) return;
-                    setLoadingPlanId(plan.id);
-                    subscribeMut.mutate(plan.id);
+                    if (Number(plan.priceHTG) === 0) { setLoadingPlanId(plan.id); subscribeMut.mutate(plan.id); return; }
+                    setPaymentPlan(plan);
                   }}
                   sx={{
                     textAlign: 'center', py: 1.2, borderRadius: '11px', cursor: (isCurrent || isScheduled) ? 'default' : 'pointer',
@@ -319,6 +334,56 @@ export default function SellerSubscriptionPage() {
           )}
         </Box>
       </Box>
+
+      {/* Choix du mode de paiement */}
+      <Dialog open={!!paymentPlan} onClose={() => !subscribeMut.isPending && !payWithWalletMut.isPending && setPaymentPlan(null)}
+        maxWidth="xs" fullWidth PaperProps={{ sx: { bgcolor: '#F7F8FA', border: `1px solid ${BORD}`, borderRadius: '20px' } }}>
+        <DialogContent sx={{ p: 3 }}>
+          {paymentPlan && (
+            <>
+              <Typography fontWeight={900} fontSize={16} color={TXT} mb={0.3}>Payer {paymentPlan.name}</Typography>
+              <Typography fontSize={13} color={SUB} mb={2.5}>
+                {Number(paymentPlan.priceHTG).toLocaleString()} HTG — comment souhaitez-vous payer ?
+              </Typography>
+
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.2 }}>
+                <Button
+                  fullWidth
+                  onClick={() => payWithWalletMut.mutate(paymentPlan.id)}
+                  disabled={payWithWalletMut.isPending || subscribeMut.isPending || walletBalance < Number(paymentPlan.priceHTG)}
+                  startIcon={payWithWalletMut.isPending ? <CircularProgress size={16} color="inherit" /> : <AccountBalanceWallet sx={{ fontSize: 17 }} />}
+                  sx={{ py: 1.3, borderRadius: '11px', fontWeight: 700, textTransform: 'none', justifyContent: 'flex-start', px: 2,
+                    bgcolor: walletBalance >= Number(paymentPlan.priceHTG) ? OR : 'rgba(15,23,42,0.06)',
+                    color: walletBalance >= Number(paymentPlan.priceHTG) ? '#fff' : SUB,
+                    '&:hover': { bgcolor: walletBalance >= Number(paymentPlan.priceHTG) ? '#E05A00' : 'rgba(15,23,42,0.06)' } }}>
+                  <Box sx={{ textAlign: 'left' }}>
+                    <Typography fontSize={13.5} fontWeight={700} color="inherit">Payer avec le wallet</Typography>
+                    <Typography fontSize={11} color="inherit" sx={{ opacity: 0.85 }}>
+                      Solde disponible : {walletBalance.toLocaleString('fr-HT')} HTG
+                      {walletBalance < Number(paymentPlan.priceHTG) ? ' — insuffisant' : ''}
+                    </Typography>
+                  </Box>
+                </Button>
+
+                <Button
+                  fullWidth
+                  onClick={() => { setLoadingPlanId(paymentPlan.id); subscribeMut.mutate(paymentPlan.id); }}
+                  disabled={subscribeMut.isPending || payWithWalletMut.isPending}
+                  startIcon={subscribeMut.isPending ? <CircularProgress size={16} color="inherit" /> : <OpenInNew sx={{ fontSize: 16 }} />}
+                  sx={{ py: 1.3, borderRadius: '11px', fontWeight: 700, textTransform: 'none', justifyContent: 'flex-start', px: 2,
+                    bgcolor: 'rgba(15,23,42,0.06)', color: TXT, '&:hover': { bgcolor: 'rgba(15,23,42,0.09)' } }}>
+                  Payer avec MonCash
+                </Button>
+
+                <Button onClick={() => setPaymentPlan(null)} disabled={subscribeMut.isPending || payWithWalletMut.isPending}
+                  sx={{ color: SUB, textTransform: 'none', fontWeight: 600 }}>
+                  Annuler
+                </Button>
+              </Box>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </Box>
   );
 }

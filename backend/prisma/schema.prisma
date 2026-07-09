@@ -89,6 +89,7 @@ enum PaymentMethod {
   STRIPE
   PAYPAL
   MANUAL
+  WALLET
 }
 
 enum AppointmentStatus {

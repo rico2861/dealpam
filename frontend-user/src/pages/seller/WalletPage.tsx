@@ -196,6 +196,10 @@ export default function WalletPage() {
   const [loading, setLoading] = useState(false);
   const [search, setSearch]  = useState('');
   const [filter, setFilter]  = useState<'ALL' | 'CREDIT' | 'DEBIT'>('ALL');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo]     = useState('');
+  const [page, setPage]      = useState(1);
+  const PAGE_SIZE = 10;
 
   const { data: wallet, isLoading } = useQuery({
     queryKey: ['seller-wallet'],
@@ -231,6 +235,8 @@ export default function WalletPage() {
   const filteredTxs = completed.filter((t: any) => {
     if (filter === 'CREDIT' && t.amount <= 0) return false;
     if (filter === 'DEBIT'  && t.amount >= 0) return false;
+    if (dateFrom && new Date(t.createdAt) < new Date(dateFrom)) return false;
+    if (dateTo   && new Date(t.createdAt) > new Date(`${dateTo}T23:59:59`)) return false;
     if (search) {
       const q = search.toLowerCase();
       return (t.description ?? '').toLowerCase().includes(q)
@@ -239,6 +245,10 @@ export default function WalletPage() {
     }
     return true;
   });
+
+  const pageCount = Math.max(1, Math.ceil(filteredTxs.length / PAGE_SIZE));
+  const currentPage = Math.min(page, pageCount);
+  const pagedTxs = filteredTxs.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   const FILTER_TABS = [
     { key: 'ALL',    label: 'Tous' },
@@ -318,25 +328,6 @@ export default function WalletPage() {
               <StatCard label="Nb. recharges"   value={`${nbRecharge} recharge${nbRecharge > 1 ? 's' : ''}`} color={BLU} icon={Receipt} />
             </Box>
 
-            {/* ── How it works ── */}
-            <Box sx={{ mb: 2.5, p: { xs: 2, md: 2.5 }, borderRadius: '16px', bgcolor: CARD, border: `1px solid ${BORD}` }}>
-              <Typography fontWeight={800} fontSize={14} color={TXT} mb={1.5}>Comment recharger ?</Typography>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                {[
-                  `Cliquez "Recharger via MonCash" et entrez un montant (min. ${MIN_RECHARGE} HTG)`,
-                  'Vous êtes redirigé vers MonCash pour effectuer le paiement en sécurité',
-                  'Après confirmation, vous revenez automatiquement — le solde est crédité',
-                ].map((txt, i) => (
-                  <Box key={i} sx={{ display: 'flex', gap: 1.2, alignItems: 'flex-start' }}>
-                    <Box sx={{ width: 20, height: 20, borderRadius: '6px', bgcolor: `${OR}20`, border: `1px solid ${OR}35`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, mt: 0.1 }}>
-                      <Typography fontSize={10} fontWeight={900} color={OR}>{i + 1}</Typography>
-                    </Box>
-                    <Typography fontSize={13} color={SUB2} lineHeight={1.5}>{txt}</Typography>
-                  </Box>
-                ))}
-              </Box>
-            </Box>
-
             {/* ── Transaction history ── */}
             <Box sx={{ borderRadius: '16px', bgcolor: CARD, border: `1px solid ${BORD}`, overflow: 'hidden' }}>
 
@@ -350,7 +341,7 @@ export default function WalletPage() {
                 {/* Filter tabs */}
                 <Box sx={{ display: 'flex', gap: 0.5, bgcolor: 'rgba(15,23,42,0.09)', borderRadius: '10px', p: 0.5 }}>
                   {FILTER_TABS.map(tab => (
-                    <Box key={tab.key} onClick={() => setFilter(tab.key as any)}
+                    <Box key={tab.key} onClick={() => { setFilter(tab.key as any); setPage(1); }}
                       sx={{ px: 1.5, py: 0.6, borderRadius: '7px', cursor: 'pointer', transition: 'all 0.15s', bgcolor: filter === tab.key ? OR : 'transparent', '&:hover': { bgcolor: filter === tab.key ? '#E05A00' : 'rgba(15,23,42,0.09)' } }}>
                       <Typography fontSize={12} fontWeight={600} color={filter === tab.key ? '#fff' : SUB2}>{tab.label}</Typography>
                     </Box>
@@ -358,17 +349,32 @@ export default function WalletPage() {
                 </Box>
               </Box>
 
-              {/* Search */}
-              <Box sx={{ px: { xs: 1.5, md: 2.5 }, py: 1.2, borderBottom: `1px solid ${BORD}`, display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Search sx={{ fontSize: 16, color: SUB, flexShrink: 0 }} />
-                <input value={search} onChange={e => setSearch(e.target.value)}
-                  placeholder="Rechercher par description, référence…"
-                  style={{ flex: 1, background: 'none', border: 'none', outline: 'none', fontSize: 13, color: TXT, padding: '4px 0' }} />
+              {/* Search + date range */}
+              <Box sx={{ px: { xs: 1.5, md: 2.5 }, py: 1.2, borderBottom: `1px solid ${BORD}`, display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1, minWidth: 200 }}>
+                  <Search sx={{ fontSize: 16, color: SUB, flexShrink: 0 }} />
+                  <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}
+                    placeholder="Rechercher par description, référence…"
+                    style={{ flex: 1, background: 'none', border: 'none', outline: 'none', fontSize: 13, color: TXT, padding: '4px 0' }} />
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
+                  <input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setPage(1); }}
+                    style={{ fontSize: 12.5, color: TXT, border: `1px solid ${BORD}`, borderRadius: 8, padding: '5px 8px', background: '#F7F8FA' }} />
+                  <Typography fontSize={12} color={SUB}>à</Typography>
+                  <input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setPage(1); }}
+                    style={{ fontSize: 12.5, color: TXT, border: `1px solid ${BORD}`, borderRadius: 8, padding: '5px 8px', background: '#F7F8FA' }} />
+                  {(dateFrom || dateTo) && (
+                    <Typography onClick={() => { setDateFrom(''); setDateTo(''); setPage(1); }}
+                      sx={{ fontSize: 11.5, color: SUB, cursor: 'pointer', textDecoration: 'underline', '&:hover': { color: TXT } }}>
+                      Réinitialiser
+                    </Typography>
+                  )}
+                </Box>
               </Box>
 
               {/* Rows */}
-              {filteredTxs.length > 0 ? (
-                filteredTxs.map((tx: any) => <TxRow key={tx.id} tx={tx} />)
+              {pagedTxs.length > 0 ? (
+                pagedTxs.map((tx: any) => <TxRow key={tx.id} tx={tx} />)
               ) : (
                 <Box sx={{ textAlign: 'center', py: 10 }}>
                   <Receipt sx={{ fontSize: 52, color: BORD, mb: 1.5 }} />
@@ -378,6 +384,23 @@ export default function WalletPage() {
                   <Typography color={SUB} fontSize={13}>
                     {txs.length === 0 ? 'Rechargez votre wallet pour commencer.' : 'Essayez d\'autres filtres.'}
                   </Typography>
+                </Box>
+              )}
+
+              {/* Pagination */}
+              {filteredTxs.length > PAGE_SIZE && (
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: { xs: 1.5, md: 2.5 }, py: 1.5, borderTop: `1px solid ${BORD}` }}>
+                  <Typography fontSize={12} color={SUB}>Page {currentPage} / {pageCount}</Typography>
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Button size="small" disabled={currentPage <= 1} onClick={() => setPage(p => Math.max(1, p - 1))}
+                      sx={{ textTransform: 'none', fontWeight: 700, fontSize: 12.5, color: TXT, border: `1px solid ${BORD}`, borderRadius: '8px', px: 1.5, '&.Mui-disabled': { color: SUB, opacity: 0.5 } }}>
+                      Précédent
+                    </Button>
+                    <Button size="small" disabled={currentPage >= pageCount} onClick={() => setPage(p => Math.min(pageCount, p + 1))}
+                      sx={{ textTransform: 'none', fontWeight: 700, fontSize: 12.5, color: TXT, border: `1px solid ${BORD}`, borderRadius: '8px', px: 1.5, '&.Mui-disabled': { color: SUB, opacity: 0.5 } }}>
+                      Suivant
+                    </Button>
+                  </Box>
                 </Box>
               )}
             </Box>

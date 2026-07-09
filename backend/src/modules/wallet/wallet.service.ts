@@ -203,4 +203,31 @@ export class WalletService {
     const w = await this.ensureWallet(sellerId);
     return Number(w.balance);
   }
+
+  /** Débite le wallet pour payer un abonnement (même schéma transactionnel/ledger que
+   * deductForCampaign) — utilisé par PaymentsService quand le vendeur choisit de payer
+   * avec son solde wallet plutôt que via MonCash. */
+  async deductForSubscription(sellerId: string, subscriptionId: string, amount: number) {
+    const wallet = await this.ensureWallet(sellerId);
+
+    const result = await this.prisma.sellerWallet.updateMany({
+      where: { id: wallet.id, balance: { gte: amount } },
+      data: { balance: { decrement: amount } },
+    });
+    if (result.count === 0) throw new BadRequestException('Solde wallet insuffisant');
+
+    const updated = await this.prisma.sellerWallet.findUniqueOrThrow({ where: { id: wallet.id } });
+    await this.prisma.walletTransaction.create({
+      data: {
+        walletId: wallet.id,
+        type: 'SUBSCRIPTION',
+        amount: -amount,
+        balanceAfter: updated.balance,
+        description: `Paiement abonnement (wallet)`,
+        reference: subscriptionId,
+        status: 'COMPLETED',
+      },
+    });
+    return { balance: updated.balance };
+  }
 }

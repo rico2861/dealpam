@@ -281,6 +281,100 @@ export class PaymentsService {
     };
   }
 
+  // ── Payer un abonnement directement avec le solde wallet (pas de redirection MonCash) ──
+  async paySubscriptionWithWallet(
+    userId: string, planId: string,
+    billingCycle: 'MONTHLY' | 'ANNUAL' = 'MONTHLY',
+    couponCode?: string,
+  ) {
+    const plan = await this.prisma.subscriptionPlan.findFirst({ where: { id: planId, isActive: true } });
+    if (!plan) throw new NotFoundException('Plan introuvable ou inactif');
+
+    const seller = await this.prisma.seller.findUnique({ where: { userId } });
+    if (!seller) throw new NotFoundException('Profil vendeur introuvable');
+
+    const current = await this.prisma.sellerSubscription.findFirst({
+      where: { sellerId: seller.id, isActive: true, endDate: { gt: new Date() } },
+    });
+    if (current && current.planId === planId) {
+      throw new ConflictException('Vous êtes déjà sur ce plan pour la période en cours.');
+    }
+
+    const monthlyPrice = Number(plan.priceHTG);
+    const isAnnual     = billingCycle === 'ANNUAL';
+    const discountPct  = plan.annualDiscountPercent ?? 25;
+    let amountHTG = isAnnual
+      ? Math.round(monthlyPrice * 12 * (1 - discountPct / 100))
+      : monthlyPrice;
+
+    let couponId: string | null = null;
+    let couponDiscount = 0;
+    if (couponCode) {
+      const { coupon, discount } = await this.coupons.validate(couponCode, 'SUBSCRIPTION', userId, amountHTG);
+      couponId = coupon.id;
+      couponDiscount = discount;
+      amountHTG = Math.max(0, amountHTG - discount);
+    }
+
+    if (amountHTG > 0) {
+      const balance = await this.wallet.getBalance(seller.id);
+      if (balance < amountHTG) {
+        throw new BadRequestException(`Solde wallet insuffisant : ${amountHTG} HTG requis, ${balance} HTG disponible`);
+      }
+    }
+
+    // Si un abonnement payé est déjà en cours, on programme le changement pour la fin de
+    // la période courante (jamais de rétroactif) — sinon activation immédiate.
+    const isImmediate = !current;
+    const startDate = current ? new Date(current.endDate) : new Date();
+    const endDate    = new Date(startDate);
+    if (isAnnual) endDate.setFullYear(endDate.getFullYear() + 1);
+    else          endDate.setMonth(endDate.getMonth() + 1);
+
+    const sub = await this.prisma.$transaction(async (tx) => {
+      if (isImmediate) {
+        await tx.sellerSubscription.updateMany({ where: { sellerId: seller.id, isActive: true }, data: { isActive: false } });
+      } else {
+        await tx.sellerSubscription.update({ where: { id: current!.id }, data: { cancelAtPeriodEnd: false } });
+      }
+      return tx.sellerSubscription.create({
+        data: { sellerId: seller.id, planId: plan.id, startDate, endDate, isActive: isImmediate, billingCycle },
+        include: { plan: true },
+      });
+    });
+
+    // Débit réel du wallet APRÈS création de l'abonnement — décrément atomique conditionné
+    // sur le solde (cf. WalletService.deductForSubscription), échoue proprement si le solde
+    // a changé entretemps (achat concurrent depuis un autre onglet par ex.).
+    if (amountHTG > 0) {
+      await this.wallet.deductForSubscription(seller.id, sub.id, amountHTG);
+    }
+
+    await this.prisma.payment.create({
+      data: {
+        subscriptionId:    sub.id,
+        method:            'WALLET',
+        status:            'COMPLETED',
+        amountHTG:         new Decimal(amountHTG),
+        transactionId:     `wallet-sub-${sub.id}`,
+        moncashOrderId:    `wallet-sub-${sub.id}`,
+        paidAt:            new Date(),
+        couponId:          couponId ?? undefined,
+        couponDiscountHTG: couponId ? new Decimal(couponDiscount) : undefined,
+      },
+    });
+
+    if (couponId) await this.coupons.redeem(couponId, userId, 'SUBSCRIPTION', sub.id, couponDiscount);
+
+    return {
+      type:           isImmediate ? 'subscription' : 'subscription_scheduled',
+      subscription:   sub,
+      tier:           sub.plan.tier,
+      amount_htg:     amountHTG,
+      effective_date: isImmediate ? undefined : startDate,
+    };
+  }
+
   // ══════════════════════════════════════════════════════════════════════════
   //  CAMPAGNES PUB
   // ══════════════════════════════════════════════════════════════════════════
