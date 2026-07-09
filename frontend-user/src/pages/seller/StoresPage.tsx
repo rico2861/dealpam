@@ -493,7 +493,6 @@ export default function SellerStoresPage() {
   const qc = useQueryClient();
   const { enqueueSnackbar } = useSnackbar();
   const [createOpen, setCreateOpen] = useState(false);
-  const [editStore, setEditStore]   = useState<any>(null);
   const [deleteStore, setDeleteStore] = useState<any>(null);
 
   const { data, isLoading } = useQuery({
@@ -509,11 +508,6 @@ export default function SellerStoresPage() {
   const createMut = useMutation({
     mutationFn: (body: any) => api.post('/stores/me', body).then(r => r.data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['myStores'] }); qc.invalidateQueries({ queryKey: ['sellerStats'] }); setCreateOpen(false); enqueueSnackbar('Boutique créée !', { variant: 'success' }); },
-    onError: (e: any) => enqueueSnackbar(e.response?.data?.message || 'Erreur', { variant: 'error' }),
-  });
-  const updateMut = useMutation({
-    mutationFn: ({ id, body }: any) => api.patch(`/stores/me/${id}`, body).then(r => r.data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['myStores'] }); setEditStore(null); enqueueSnackbar('Boutique mise à jour !', { variant: 'success' }); },
     onError: (e: any) => enqueueSnackbar(e.response?.data?.message || 'Erreur', { variant: 'error' }),
   });
   const deleteMut = useMutation({
@@ -605,7 +599,7 @@ export default function SellerStoresPage() {
         <Grid container spacing={2.5}>
           {stores.map((store: any) => (
             <Grid item xs={12} md={6} key={store.id}>
-              <StoreCard store={store} onEdit={setEditStore} onDelete={setDeleteStore} onCopy={copyLink} />
+              <StoreCard store={store} onEdit={() => navigate('/seller/store')} onDelete={setDeleteStore} onCopy={copyLink} />
             </Grid>
           ))}
         </Grid>
@@ -619,18 +613,6 @@ export default function SellerStoresPage() {
         onSave={(d) => createMut.mutate(d)}
         loading={createMut.isPending}
       />
-
-      {/* Edit dialog */}
-      {editStore && (
-        <StoreDialog
-          open={!!editStore}
-          title="Modifier la boutique"
-          initial={editStore}
-          onClose={() => setEditStore(null)}
-          onSave={(d) => updateMut.mutate({ id: editStore.id, body: d })}
-          loading={updateMut.isPending}
-        />
-      )}
 
       <Dialog open={!!deleteStore} onClose={() => setDeleteStore(null)} maxWidth="xs" fullWidth PaperProps={dialogPaper}>
         <DialogTitle sx={{ color: TXT, fontWeight: 900, fontSize: 17 }}>Supprimer la boutique ?</DialogTitle>
