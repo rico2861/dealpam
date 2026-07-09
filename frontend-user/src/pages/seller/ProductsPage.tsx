@@ -191,15 +191,6 @@ export default function SellerProductsPage({ mode = 'products' }: { mode?: 'prod
                       <StIcon sx={{ fontSize: 13, color: st.color, flexShrink: 0 }}/>
                       <Typography fontSize={12} fontWeight={600} color={st.color}>{st.label}</Typography>
                     </Box>
-                    {p.hasPendingEdit && (
-                      <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, mt: 0.6, px: 0.9, py: 0.3,
-                        borderRadius: '6px', bgcolor: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.35)' }}>
-                        <Warning sx={{ fontSize: 12, color: '#F59E0B' }} />
-                        <Typography fontSize={10.5} color="#F59E0B" fontWeight={700}>
-                          Modification en attente de validation admin
-                        </Typography>
-                      </Box>
-                    )}
                   </Box>
                 </Box>
 
