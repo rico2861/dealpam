@@ -42,6 +42,15 @@ function Pill({ children, active, onClick, color = OR }: { children: React.React
   );
 }
 
+// NestJS renvoie parfois `message` sous forme de tableau (plusieurs erreurs de
+// validation class-validator à la fois) — sans ce garde-fou, ce tableau finissait
+// tel quel dans le toast (rendu illisible/vide selon le cas) au lieu d'un message clair.
+function extractErrorMessage(e: any, fallback: string): string {
+  const msg = e?.response?.data?.message;
+  if (Array.isArray(msg)) return msg.join(' — ');
+  return msg || fallback;
+}
+
 const DEPTS = ['Ouest', 'Nord', 'Nord-Est', 'Nord-Ouest', 'Artibonite', 'Centre', 'Sud', 'Sud-Est', 'Grande-Anse', 'Nippes'];
 const MAX_PRODUCTS = 10;
 const MIN_BUDGET = 25;
@@ -346,7 +355,7 @@ export default function AdsPage() {
       setPublishId(null);
       enqueueSnackbar('Campagne publiée', { variant: 'success' });
     } catch (e: any) {
-      enqueueSnackbar(e?.response?.data?.message || 'Erreur lors de la publication', { variant: 'error' });
+      enqueueSnackbar(extractErrorMessage(e, 'Erreur lors de la publication'), { variant: 'error' });
     } finally {
       setPublishLoading(false);
     }
@@ -405,6 +414,13 @@ export default function AdsPage() {
     if (form.targetType === 'PRODUCT' && form.productIds.length > 1 && form.paymentMethod === 'MONCASH') {
       setFormError('Le paiement MonCash direct ne fonctionne que pour un seul produit à la fois — utilisez le Wallet, ou sélectionnez un seul produit.');
       return;
+    }
+    if (form.totalBudget < MIN_BUDGET) {
+      // Le champ budget n'empêche pas réellement de taper une valeur sous le minimum
+      // (l'attribut HTML `min` ne bloque pas la saisie) — sans ce contrôle, le formulaire
+      // se soumettait quand même et le backend (class-validator @Min(25)) rejetait la
+      // requête à chaque fois, sans qu'aucun message clair n'explique pourquoi.
+      setFormError(`Budget minimum : ${MIN_BUDGET} HTG.`); return;
     }
     const start = new Date(form.startDate);
     const end = new Date(form.endDate);
@@ -491,11 +507,11 @@ export default function AdsPage() {
           localStorage.setItem('adCampaignPay', createdIds[0]);
           window.location.href = pay.redirect_url;
         } catch (e: any) {
-          enqueueSnackbar(e?.response?.data?.message || 'Impossible d\'initier MonCash', { variant: 'error' });
+          enqueueSnackbar(extractErrorMessage(e, `Impossible d'initier MonCash`), { variant: 'error' });
         }
       }
     } catch (e: any) {
-      enqueueSnackbar(e?.response?.data?.message || 'Erreur lors de la création', { variant: 'error' });
+      enqueueSnackbar(extractErrorMessage(e, 'Erreur lors de la création'), { variant: 'error' });
     } finally {
       setSubmitting(false);
     }
@@ -519,7 +535,7 @@ export default function AdsPage() {
         window.location.href = pay.redirect_url;
       }
     } catch (e: any) {
-      enqueueSnackbar(e?.response?.data?.message || 'Erreur de paiement', { variant: 'error' });
+      enqueueSnackbar(extractErrorMessage(e, 'Erreur de paiement'), { variant: 'error' });
     } finally {
       setPayLoading(false);
     }
