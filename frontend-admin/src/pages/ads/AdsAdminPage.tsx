@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box, Typography, Grid, Card, CardContent, Chip, LinearProgress, Avatar,
   Button, TextField, Select, MenuItem, FormControl, InputLabel, Dialog,
@@ -40,6 +40,35 @@ export default function AdsAdminPage() {
   const [reviewId, setReviewId] = useState<string | null>(null);
   const [reviewNote, setReviewNote] = useState('');
 
+  // Tarification publicitaire (budget minimum, CPM, CPC) — configurable ici,
+  // remplace les constantes auparavant codées en dur dans ads.service.ts.
+  const { data: settings } = useQuery({
+    queryKey: ['ads-admin-settings'],
+    queryFn: () => api.get('/ads/admin/settings').then(r => r.data),
+  });
+  const [settingsForm, setSettingsForm] = useState<{ minBudgetHTG: string; cpmRateHTG: string; cpcRateHTG: string }>({ minBudgetHTG: '', cpmRateHTG: '', cpcRateHTG: '' });
+  useEffect(() => {
+    if (settings) {
+      setSettingsForm({
+        minBudgetHTG: String(settings.minBudgetHTG),
+        cpmRateHTG: String(settings.cpmRateHTG),
+        cpcRateHTG: String(settings.cpcRateHTG),
+      });
+    }
+  }, [settings]);
+  const settingsMut = useMutation({
+    mutationFn: (body: { minBudgetHTG: number; cpmRateHTG: number; cpcRateHTG: number }) => api.patch('/ads/admin/settings', body),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['ads-admin-settings'] }); enqueueSnackbar('Tarifs mis à jour', { variant: 'success' }); },
+    onError: (e: any) => enqueueSnackbar(e?.response?.data?.message || 'Erreur lors de la mise à jour', { variant: 'error' }),
+  });
+  const saveSettings = () => {
+    settingsMut.mutate({
+      minBudgetHTG: Number(settingsForm.minBudgetHTG),
+      cpmRateHTG: Number(settingsForm.cpmRateHTG),
+      cpcRateHTG: Number(settingsForm.cpcRateHTG),
+    });
+  };
+
   const statusFilter = STATUS_TABS[tab] === 'ALL' ? undefined : STATUS_TABS[tab];
 
   const { data, isLoading } = useQuery({
@@ -70,6 +99,32 @@ export default function AdsAdminPage() {
         <Typography variant="h5" fontWeight={800}>Gestion des Publicités</Typography>
         <Typography fontSize={13} color="#666">Contrôle de toutes les campagnes des vendeurs</Typography>
       </Box>
+
+      {/* Tarification (budget minimum, CPM, CPC) — configurable, remplace les
+          constantes auparavant codées en dur côté backend. */}
+      <Card elevation={0} sx={{ border: '1px solid #E8E8E8', borderRadius: 2, mb: 3 }}>
+        <CardContent sx={{ p: 2.5 }}>
+          <Typography fontWeight={700} fontSize={14} mb={0.3}>Tarification publicitaire</Typography>
+          <Typography fontSize={12} color="#666" mb={2}>
+            Ces valeurs s'appliquent immédiatement à toutes les nouvelles campagnes créées par les vendeurs.
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+            <TextField size="small" label="Budget minimum (HTG)" type="number" value={settingsForm.minBudgetHTG}
+              onChange={e => setSettingsForm(f => ({ ...f, minBudgetHTG: e.target.value }))}
+              sx={{ width: 180 }} />
+            <TextField size="small" label="Tarif CPM (HTG / 1 000 impressions)" type="number" value={settingsForm.cpmRateHTG}
+              onChange={e => setSettingsForm(f => ({ ...f, cpmRateHTG: e.target.value }))}
+              sx={{ width: 240 }} />
+            <TextField size="small" label="Tarif CPC (HTG / clic)" type="number" value={settingsForm.cpcRateHTG}
+              onChange={e => setSettingsForm(f => ({ ...f, cpcRateHTG: e.target.value }))}
+              sx={{ width: 180 }} />
+            <Button variant="contained" onClick={saveSettings} disabled={settingsMut.isPending}
+              sx={{ bgcolor: ORANGE, textTransform: 'none', fontWeight: 700, '&:hover': { bgcolor: '#E68A00' } }}>
+              {settingsMut.isPending ? 'Enregistrement…' : 'Enregistrer'}
+            </Button>
+          </Box>
+        </CardContent>
+      </Card>
 
       {/* Global Stats */}
       <Grid container spacing={2} sx={{ mb: 3 }}>

@@ -1025,6 +1025,20 @@ model AdCampaign {
   @@map("ad_campaigns")
 }
 
+// Réglages de tarification publicitaire, éditables depuis le panneau admin
+// (au lieu de constantes codées en dur dans ads.service.ts). Une seule ligne
+// utilisée en pratique (id fixe 'default') — pas besoin de multi-tenant ici.
+model AdSettings {
+  id           String  @id @default("default")
+  minBudgetHTG Decimal @default(250) @map("min_budget_htg") @db.Decimal(10, 2)
+  cpmRateHTG   Decimal @default(150) @map("cpm_rate_htg") @db.Decimal(10, 2)   // HTG pour 1 000 impressions
+  cpcRateHTG   Decimal @default(25)  @map("cpc_rate_htg") @db.Decimal(10, 2)   // HTG par clic
+
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("ad_settings")
+}
+
 model AdEvent {
   id          String     @id @default(uuid())
   campaignId  String     @map("campaign_id")

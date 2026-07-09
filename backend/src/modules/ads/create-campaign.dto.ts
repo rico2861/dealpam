@@ -7,7 +7,11 @@ export class CreateCampaignDto {
   @IsString() @IsOptional() storeId?: string;
   @IsIn(['AWARENESS', 'TRAFFIC', 'CONVERSIONS']) @IsOptional() objective?: string;
 
-  @Type(() => Number) @IsNumber() @Min(25) totalBudget: number;   // HTG
+  // Le minimum réel (configurable par l'admin via AdSettings) est vérifié à
+  // l'exécution dans AdsService.createCampaign — ce décorateur statique ne
+  // sert qu'à rejeter les valeurs absurdes (négatives/nulles) avant même
+  // d'atteindre le service.
+  @Type(() => Number) @IsNumber() @Min(1) totalBudget: number;   // HTG
   @Type(() => Number) @IsNumber() @IsOptional() dailyBudget?: number;
 
   @IsDateString() startDate: string;

@@ -13,6 +13,14 @@ export class AdsController {
 
   // ── PUBLIC (no auth needed) ─────────────────────────────────────────────────
 
+  // Lecture seule des tarifs publicitaires en vigueur — utilisée par la page
+  // vendeur pour afficher le budget minimum et les tarifs CPM/CPC à jour,
+  // sans exposer les routes d'administration (réservées ADMIN/SUPER_ADMIN).
+  @Get('settings')
+  getPublicSettings() {
+    return this.ads.getSettings();
+  }
+
   @Get('serve')
   serve(
     @Query('department') department?: string,
@@ -128,6 +136,18 @@ export class AdsController {
   @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('ADMIN', 'SUPER_ADMIN')
   forceStatus(@Param('id') id: string, @Body('status') status: string) {
     return this.ads.adminForceStatus(id, status);
+  }
+
+  @Get('admin/settings')
+  @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('ADMIN', 'SUPER_ADMIN')
+  getAdminSettings() {
+    return this.ads.getSettings();
+  }
+
+  @Patch('admin/settings')
+  @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('ADMIN', 'SUPER_ADMIN')
+  updateAdminSettings(@Body() body: { minBudgetHTG?: number; cpmRateHTG?: number; cpcRateHTG?: number }) {
+    return this.ads.updateSettings(body);
   }
 
   // Helper: get sellerId from userId

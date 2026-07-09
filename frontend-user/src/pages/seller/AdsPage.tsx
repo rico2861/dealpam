@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Box, Typography, Button, Grid, LinearProgress,
   Dialog, DialogTitle, DialogContent, DialogActions, TextField,
@@ -53,7 +53,13 @@ function extractErrorMessage(e: any, fallback: string): string {
 
 const DEPTS = ['Ouest', 'Nord', 'Nord-Est', 'Nord-Ouest', 'Artibonite', 'Centre', 'Sud', 'Sud-Est', 'Grande-Anse', 'Nippes'];
 const MAX_PRODUCTS = 10;
-const MIN_BUDGET = 25;
+// Valeurs de repli tant que /ads/settings n'a pas encore répondu — remplacées
+// dès que possible par les tarifs réels configurés par l'admin (voir `settings`
+// query plus bas). Ne pas modifier ces nombres directement : ils sont purement
+// des placeholders d'affichage avant le premier chargement.
+const FALLBACK_MIN_BUDGET = 250;
+const FALLBACK_CPM = 150;
+const FALLBACK_CPC = 25;
 
 const STATUS_MAP: Record<string, { label: string; color: string }> = {
   ACTIVE:          { label: 'Active',          color: GRN },
@@ -333,6 +339,26 @@ export default function AdsPage() {
   });
   const categoryList: { slug: string; name: string }[] = categoriesData ?? [];
 
+  // Tarifs publicitaires (budget minimum, CPM, CPC) — configurables par l'admin.
+  // Route publique en lecture seule : pas besoin d'être connecté pour voir les
+  // tarifs affichés dans le bandeau "Comment ça marche ?".
+  const { data: adSettings } = useQuery({
+    queryKey: ['ads-settings'],
+    queryFn: () => api.get('/ads/settings').then(r => r.data),
+  });
+  const MIN_BUDGET = adSettings?.minBudgetHTG ?? FALLBACK_MIN_BUDGET;
+  const CPM_RATE = adSettings?.cpmRateHTG ?? FALLBACK_CPM;
+  const CPC_RATE = adSettings?.cpcRateHTG ?? FALLBACK_CPC;
+
+  // Filet de sécurité : si un dialog MUI reste monté/démonté dans un état
+  // incohérent (ex: erreur pendant la fermeture d'un dialog empêchant son
+  // cleanup), body peut rester bloqué en overflow:hidden pour toute la page,
+  // ce qui casse Page Up/Page Down partout sur le site. On force la remise à
+  // zéro au démontage de cette page, par précaution.
+  useEffect(() => {
+    return () => { document.body.style.overflow = ''; };
+  }, []);
+
   const pauseMut  = useMutation({ mutationFn: (id: string) => api.patch(`/ads/my/${id}/pause`),  onSuccess: () => qc.invalidateQueries({ queryKey: ['my-campaigns'] }) });
   const resumeMut = useMutation({ mutationFn: (id: string) => api.patch(`/ads/my/${id}/resume`), onSuccess: () => qc.invalidateQueries({ queryKey: ['my-campaigns'] }) });
   const cancelMut = useMutation({ mutationFn: (id: string) => api.patch(`/ads/my/${id}/cancel`), onSuccess: () => qc.invalidateQueries({ queryKey: ['my-campaigns'] }) });
@@ -420,7 +446,7 @@ export default function AdsPage() {
       // (l'attribut HTML `min` ne bloque pas la saisie) — sans ce contrôle, le formulaire
       // se soumettait quand même et le backend (class-validator @Min(25)) rejetait la
       // requête à chaque fois, sans qu'aucun message clair n'explique pourquoi.
-      setFormError(`Budget minimum : ${MIN_BUDGET} HTG.`); return;
+      setFormError(`Le budget minimum est de ${MIN_BUDGET.toLocaleString()} HTG.`); return;
     }
     const start = new Date(form.startDate);
     const end = new Date(form.endDate);
@@ -588,7 +614,7 @@ export default function AdsPage() {
         <Typography fontSize={13} color={SUB2} lineHeight={1.6}>
           <strong style={{ color: TXT }}>Comment ça marche ?</strong> Créez une campagne, choisissez votre budget et audience.
           Après validation, vos produits sont affichés en priorité.{' '}
-          <span style={{ color: OR, fontWeight: 700 }}>15 HTG / 1 000 impressions · 8 HTG / clic</span>
+          <span style={{ color: OR, fontWeight: 700 }}>{CPM_RATE} HTG / 1 000 impressions · {CPC_RATE} HTG / clic</span>
         </Typography>
       </Box>
 
@@ -611,12 +637,32 @@ export default function AdsPage() {
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
           {list.map((c: any) => {
             const img = c.product?.images?.[0]?.urlThumb || c.product?.images?.[0]?.urlMedium || c.store?.logoUrl;
-            const pct = Math.min(100, (Number(c.spent) / Number(c.totalBudget)) * 100);
+            const spent = Number(c.spent) || 0;
+            const budget = Number(c.totalBudget) || 0;
+            const pct = Math.min(100, (spent / budget) * 100);
             const ctr = c.impressions > 0 ? ((c.clicks / c.impressions) * 100).toFixed(1) : '0';
             const daysLeft = Math.max(0, Math.ceil((new Date(c.endDate).getTime() - Date.now()) / 86400000));
             const sc = statusColor(c.status);
             const expanded = statsId === c.id;
             const isStore = !c.productId && c.storeId;
+
+            // Coût par résultat obtenu jusqu'ici : par clic si la campagne en a
+            // généré, sinon par 1 000 impressions — dérivé uniquement de champs
+            // réels (spent/clicks/impressions), aucune donnée inventée.
+            const costPerResult = c.clicks > 0
+              ? `${(spent / c.clicks).toFixed(2)} HTG / clic`
+              : c.impressions > 0
+                ? `${((spent / c.impressions) * 1000).toFixed(2)} HTG / 1 000 impr.`
+                : '—';
+
+            // Jours restants estimés au rythme de dépense actuel — durée déjà
+            // écoulée depuis le début pour calculer un rythme quotidien moyen,
+            // projeté sur le budget restant. Purement dérivé, pas de fausse donnée.
+            const startedMs = new Date(c.startDate).getTime();
+            const elapsedDays = Math.max(1, Math.ceil((Date.now() - startedMs) / 86400000));
+            const dailyPace = spent > 0 ? spent / elapsedDays : 0;
+            const remainingBudget = Math.max(0, budget - spent);
+            const estDaysAtPace = dailyPace > 0 ? Math.ceil(remainingBudget / dailyPace) : null;
             return (
               <Box key={c.id} sx={{ borderRadius: '18px', bgcolor: CARD, border: `1px solid ${BORD}`, transition: 'all 0.15s', '&:hover': { borderColor: 'rgba(15,23,42,0.09)' }, overflow: 'hidden' }}>
                 <Box sx={{ p: 2.5 }}>
@@ -710,14 +756,30 @@ export default function AdsPage() {
                   </Box>
 
                   <Box sx={{ mt: 2 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.6 }}>
                       <Typography fontSize={11} color={SUB}>Budget utilisé</Typography>
                       <Typography fontSize={11} fontWeight={700} color={pct > 80 ? RED : SUB2}>
-                        {Number(c.spent).toLocaleString()} / {Number(c.totalBudget).toLocaleString()} HTG ({pct.toFixed(0)}%)
+                        {spent.toLocaleString()} / {budget.toLocaleString()} HTG ({pct.toFixed(0)}%)
                       </Typography>
                     </Box>
                     <LinearProgress variant="determinate" value={pct}
-                      sx={{ height: 5, borderRadius: 3, bgcolor: 'rgba(15,23,42,0.09)', '& .MuiLinearProgress-bar': { borderRadius: 3, bgcolor: pct > 80 ? RED : OR } }} />
+                      sx={{ height: 7, borderRadius: 4, bgcolor: 'rgba(15,23,42,0.09)', '& .MuiLinearProgress-bar': { borderRadius: 4, bgcolor: pct > 80 ? RED : OR } }} />
+
+                    {/* Statistiques dérivées — coût par résultat et rythme de dépense */}
+                    {(c.status === 'ACTIVE' || c.status === 'PAUSED') && (
+                      <Box sx={{ display: 'flex', gap: 1, mt: 1, flexWrap: 'wrap' }}>
+                        <Box sx={{ px: 1.1, py: 0.4, borderRadius: '7px', bgcolor: `${GRN}12`, border: `1px solid ${GRN}28` }}>
+                          <Typography fontSize={10.5} fontWeight={700} color={GRN}>Coût/résultat : {costPerResult}</Typography>
+                        </Box>
+                        <Box sx={{ px: 1.1, py: 0.4, borderRadius: '7px', bgcolor: `${BLU}12`, border: `1px solid ${BLU}28` }}>
+                          <Typography fontSize={10.5} fontWeight={700} color={BLU}>
+                            {estDaysAtPace != null
+                              ? `Budget épuisé dans ~${estDaysAtPace}j au rythme actuel`
+                              : 'Pas encore assez de données pour estimer le rythme'}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    )}
                   </Box>
                 </Box>
 
@@ -772,7 +834,14 @@ export default function AdsPage() {
             {/* Campaign name — scrollMarginTop evite que le clavier mobile fasse
                 remonter ce champ sous le titre fixe du dialog au focus. */}
             <Grid item xs={12} sx={{ scrollMarginTop: '90px' }}>
+              {/* InputLabelProps shrink:true (comme les champs date plus bas) évite que
+                  le label bascule de sa position "placeholder" à sa position "notch"
+                  au moment du focus — cette transition, mesurée pendant que le Dialog
+                  est encore en train d'animer son ouverture (Grow), produisait un
+                  contour (fieldset) mal repositionné et un rendu visuellement cassé
+                  dès qu'on cliquait dans le champ. */}
               <TextField fullWidth label="Nom de la campagne *" value={form.name}
+                InputLabelProps={{ shrink: true }}
                 onChange={e => setForm(f => ({ ...f, name: e.target.value }))} sx={fieldSx} />
             </Grid>
 
@@ -845,7 +914,7 @@ export default function AdsPage() {
               <TextField fullWidth label="Budget total (HTG) *" type="number"
                 value={form.totalBudget} inputProps={{ min: MIN_BUDGET, step: 25 }}
                 onChange={e => setForm(f => ({ ...f, totalBudget: Number(e.target.value) }))}
-                helperText={`Minimum ${MIN_BUDGET} HTG`} sx={fieldSx} />
+                helperText={`Minimum ${MIN_BUDGET.toLocaleString()} HTG`} sx={fieldSx} />
             </Grid>
             <Grid item xs={12} md={6}>
               <TextField fullWidth label="Budget quotidien — optionnel" type="number"
@@ -949,10 +1018,18 @@ export default function AdsPage() {
                 <PayMethodCard method="MONCASH" selected={form.paymentMethod === 'MONCASH'} onClick={() => setForm(f => ({ ...f, paymentMethod: 'MONCASH' }))} budget={form.totalBudget} />
               </Box>
               {form.paymentMethod === 'WALLET' && walletBalance < form.totalBudget && (
-                <Box sx={{ mt: 1.2, p: 1.5, borderRadius: '10px', bgcolor: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)' }}>
-                  <Typography fontSize={12.5} color={YLW}>
-                    Solde insuffisant ({walletBalance.toLocaleString()} HTG / {form.totalBudget.toLocaleString()} HTG requis). La campagne sera créée en <strong>brouillon</strong> — rechargez votre wallet puis payez depuis la liste.
-                  </Typography>
+                <Box sx={{ mt: 1.4, p: 1.8, borderRadius: '14px', bgcolor: 'rgba(245,158,11,0.07)', border: '1.5px solid rgba(245,158,11,0.3)', display: 'flex', gap: 1.4, alignItems: 'flex-start' }}>
+                  <Box sx={{ width: 30, height: 30, borderRadius: '9px', bgcolor: 'rgba(245,158,11,0.16)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', mt: 0.1 }}>
+                    <AccountBalanceWallet sx={{ fontSize: 15, color: YLW }} />
+                  </Box>
+                  <Box>
+                    <Typography fontSize={13} fontWeight={800} color={YLW} mb={0.3}>Solde Wallet insuffisant</Typography>
+                    <Typography fontSize={12.5} color={SUB2} lineHeight={1.55}>
+                      Vous disposez de <strong style={{ color: TXT }}>{walletBalance.toLocaleString()} HTG</strong> sur un budget de{' '}
+                      <strong style={{ color: TXT }}>{form.totalBudget.toLocaleString()} HTG</strong>. Votre campagne sera enregistrée en{' '}
+                      <strong style={{ color: TXT }}>brouillon</strong> — rechargez votre wallet puis lancez le paiement depuis la liste de vos campagnes.
+                    </Typography>
+                  </Box>
                 </Box>
               )}
             </Grid>

@@ -4,10 +4,12 @@ import { WalletService } from '../wallet/wallet.service';
 import { MoncashService } from '../moncash/moncash.service';
 import { CreateCampaignDto } from './create-campaign.dto';
 
-// Cost per event (HTG)
-const CPM = 15;   // coût pour 1 000 impressions
-const CPC = 8;    // coût par clic
-const CPA = 25;   // coût par conversion
+// Valeurs de repli si la table AdSettings est vide (ne devrait arriver
+// qu'avant la première exécution de la migration/seed).
+const DEFAULT_MIN_BUDGET = 250;
+const DEFAULT_CPM = 150;  // coût pour 1 000 impressions
+const DEFAULT_CPC = 25;   // coût par clic
+const CPA = 25;   // coût par conversion (non exposé à l'admin pour l'instant)
 
 @Injectable()
 export class AdsService {
@@ -16,6 +18,48 @@ export class AdsService {
     private walletService: WalletService,
     private moncash: MoncashService,
   ) {}
+
+  // ── PRICING SETTINGS (admin-configurable) ───────────────────────────────────
+  // Pas de mise en cache en mémoire ici : le volume de lecture est faible
+  // (une lecture par création/évènement de campagne) et on veut que les
+  // changements admin soient pris en compte immédiatement, sans redémarrage.
+  async getSettings() {
+    const row = await (this.prisma as any).adSettings.findUnique({ where: { id: 'default' } });
+    if (!row) {
+      return { minBudgetHTG: DEFAULT_MIN_BUDGET, cpmRateHTG: DEFAULT_CPM, cpcRateHTG: DEFAULT_CPC };
+    }
+    return {
+      minBudgetHTG: Number(row.minBudgetHTG),
+      cpmRateHTG: Number(row.cpmRateHTG),
+      cpcRateHTG: Number(row.cpcRateHTG),
+    };
+  }
+
+  async updateSettings(dto: { minBudgetHTG?: number; cpmRateHTG?: number; cpcRateHTG?: number }) {
+    const data: any = {};
+    if (dto.minBudgetHTG != null) {
+      if (dto.minBudgetHTG < 1) throw new BadRequestException('Le budget minimum doit être positif');
+      data.minBudgetHTG = dto.minBudgetHTG;
+    }
+    if (dto.cpmRateHTG != null) {
+      if (dto.cpmRateHTG < 0) throw new BadRequestException('Le tarif CPM doit être positif');
+      data.cpmRateHTG = dto.cpmRateHTG;
+    }
+    if (dto.cpcRateHTG != null) {
+      if (dto.cpcRateHTG < 0) throw new BadRequestException('Le tarif CPC doit être positif');
+      data.cpcRateHTG = dto.cpcRateHTG;
+    }
+    const updated = await (this.prisma as any).adSettings.upsert({
+      where: { id: 'default' },
+      create: { id: 'default', minBudgetHTG: data.minBudgetHTG ?? DEFAULT_MIN_BUDGET, cpmRateHTG: data.cpmRateHTG ?? DEFAULT_CPM, cpcRateHTG: data.cpcRateHTG ?? DEFAULT_CPC },
+      update: data,
+    });
+    return {
+      minBudgetHTG: Number(updated.minBudgetHTG),
+      cpmRateHTG: Number(updated.cpmRateHTG),
+      cpcRateHTG: Number(updated.cpcRateHTG),
+    };
+  }
 
   // ── SELLER ──────────────────────────────────────────────────────────────────
 
@@ -33,6 +77,11 @@ export class AdsService {
     }
 
     if (!dto.productId && !dto.storeId) throw new BadRequestException('Sélectionnez un produit ou une boutique à promouvoir');
+
+    const settings = await this.getSettings();
+    if (dto.totalBudget < settings.minBudgetHTG) {
+      throw new BadRequestException(`Le budget minimum est de ${settings.minBudgetHTG} HTG.`);
+    }
 
     if (dto.productId) {
       const product = await this.prisma.product.findFirst({ where: { id: dto.productId, store: { sellerId } } });
@@ -216,6 +265,20 @@ export class AdsService {
     const c = await this.prisma.adCampaign.findFirst({ where: { id: campaignId, sellerId } });
     if (!c) throw new NotFoundException('Campagne introuvable');
     if (['COMPLETED', 'CANCELLED'].includes(c.status)) throw new BadRequestException('Impossible d\'annuler cette campagne');
+
+    // Remboursement du budget non consommé — uniquement pour les campagnes payées
+    // par Wallet (paymentId absent : seul le paiement MonCash renseigne ce champ,
+    // cf. payCampaign ci-dessous). Un paiement MonCash a été réglé en externe, pas
+    // depuis le solde Wallet, donc rien à recréditer ici pour ce cas.
+    const remaining = Number(c.totalBudget) - Number(c.spent);
+    if (!c.paymentId && remaining > 0 && (c.status === 'PENDING_REVIEW' || c.status === 'ACTIVE' || c.status === 'PAUSED')) {
+      await this.walletService.refundToWallet(
+        sellerId, remaining,
+        `Remboursement — campagne "${c.name}" annulée (budget non utilisé)`,
+        campaignId,
+      );
+    }
+
     return this.prisma.adCampaign.update({ where: { id: campaignId }, data: { status: 'CANCELLED' } });
   }
 
@@ -401,7 +464,8 @@ export class AdsService {
     const c = await this.prisma.adCampaign.findUnique({ where: { id: campaignId } });
     if (!c || c.status !== 'ACTIVE') return;
 
-    const cost = type === 'IMPRESSION' ? CPM / 1000 : type === 'CLICK' ? CPC : CPA;
+    const settings = await this.getSettings();
+    const cost = type === 'IMPRESSION' ? settings.cpmRateHTG / 1000 : type === 'CLICK' ? settings.cpcRateHTG : CPA;
 
     // Check budget
     if (Number(c.spent) + cost > Number(c.totalBudget)) {

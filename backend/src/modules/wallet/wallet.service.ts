@@ -144,6 +144,30 @@ export class WalletService {
     return { type: 'wallet', balance: updated.balance, amount, message: 'Recharge effectuée avec succès' };
   }
 
+  /** Recrédite le wallet (ex: annulation d'une campagne pub payée par wallet dont
+   * le budget n'a pas été entièrement dépensé) — jamais de décrément, pas de
+   * vérification de solde nécessaire côté crédit. */
+  async refundToWallet(sellerId: string, amount: number, description: string, reference: string) {
+    if (amount <= 0) return null;
+    const wallet = await this.ensureWallet(sellerId);
+    const updated = await this.prisma.sellerWallet.update({
+      where: { id: wallet.id },
+      data: { balance: { increment: amount } },
+    });
+    await this.prisma.walletTransaction.create({
+      data: {
+        walletId: wallet.id,
+        type: 'REFUND',
+        amount,
+        balanceAfter: updated.balance,
+        description,
+        reference,
+        status: 'COMPLETED',
+      },
+    });
+    return { balance: updated.balance };
+  }
+
   async deductForCampaign(sellerId: string, campaignId: string, amount: number) {
     const wallet = await this.ensureWallet(sellerId);
 
