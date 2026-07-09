@@ -9,6 +9,8 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '../../store/auth.store';
 import api from '../../api/axios';
+import { ListSkeleton } from '../../components/shared/Skeletons';
+import { useDelayedLoading } from '../../hooks/useDelayedLoading';
 
 const ORANGE = '#FF6B00';
 const GREEN  = '#10B981';
@@ -95,6 +97,7 @@ export default function DashboardPage() {
     queryKey: ['myOrders'],
     queryFn: () => api.get('/orders/me').then(r => r.data),
   });
+  const showOrdersSkel = useDelayedLoading(ordersLoading);
 
   const { data: wishlist } = useQuery({
     queryKey: ['wishlist'],
@@ -184,9 +187,7 @@ export default function DashboardPage() {
             </Box>
 
             {ordersLoading ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
-                <CircularProgress size={28} sx={{ color: ORANGE }} />
-              </Box>
+              showOrdersSkel ? <ListSkeleton rows={3} /> : null
             ) : recentOrders.length === 0 ? (
               <Box sx={{ textAlign: 'center', py: 6 }}>
                 <Box sx={{ width: 56, height: 56, borderRadius: '16px', mx: 'auto', mb: 2,

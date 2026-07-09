@@ -16,6 +16,8 @@ import { io, Socket } from 'socket.io-client';
 import api from '../../api/axios';
 import { useAuthStore } from '../../store/auth.store';
 import { getOrCreatePublicKey, encryptMsg, decryptMsg, isEncrypted } from '../../utils/e2e-crypto';
+import { ListSkeleton, MessageSkeleton } from '../../components/shared/Skeletons';
+import { useDelayedLoading } from '../../hooks/useDelayedLoading';
 
 const API_URL  = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 /* ── palette exacte (spec messagerie) — identique à ConvListPanel.tsx ───── */
@@ -148,12 +150,14 @@ export default function SellerChatPage() {
     return null;
   }, []);
 
-  const { data: conversations = [] } = useQuery<Conv[]>({
+  const { data: conversations = [], isLoading: convsLoading } = useQuery<Conv[]>({
     queryKey: ['seller-conversations'],
     queryFn: () => api.get('/chat/conversations').then(r => r.data),
     enabled: !!token,
     refetchInterval: 30_000,
   });
+  const showConvsSkel = useDelayedLoading(convsLoading);
+  const showMsgsSkel  = useDelayedLoading(loadingMsgs);
 
   const scrollBottom = (force = false) => {
     setTimeout(() => {
@@ -437,12 +441,13 @@ export default function SellerChatPage() {
         {/* Conv list */}
         <Box sx={{ flex: 1, overflowY: 'auto', px: 1.5, pb: 2,
           '&::-webkit-scrollbar': { width: 0 } }}>
-          {filtered.length === 0 && (
+          {convsLoading ? (
+            showConvsSkel ? <ListSkeleton rows={6} /> : null
+          ) : filtered.length === 0 ? (
             <Box sx={{ py: 8, textAlign: 'center' }}>
               <Typography sx={{ color: SUB, fontSize: 13 }}>Aucune conversation</Typography>
             </Box>
-          )}
-          {filtered.map((conv) => {
+          ) : filtered.map((conv) => {
             const sel    = conv.id === active;
             const unread = getMe(conv)?.unreadCount ?? 0;
             const sup    = conv.isSupport;
@@ -674,9 +679,7 @@ export default function SellerChatPage() {
               '& > *': { width: '100%', maxWidth: 860, mx: 'auto' },
             }}>
               {loadingMsgs && (
-                <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', py: 6 }}>
-                  <CircularProgress size={28} sx={{ color: ORANGE }} />
-                </Box>
+                showMsgsSkel ? <MessageSkeleton /> : null
               )}
 
               {!loadingMsgs && messages.length === 0 && (

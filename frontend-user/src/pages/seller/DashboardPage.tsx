@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import {
   Box, Typography, Button, Avatar, LinearProgress, Chip,
-  CircularProgress,
 } from '@mui/material';
 import {
   Inventory, ShoppingBag, AttachMoney, Store, ArrowForward,
@@ -11,6 +10,8 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import api from '../../api/axios';
+import { StatCardSkeleton, ListSkeleton } from '../../components/shared/Skeletons';
+import { useDelayedLoading } from '../../hooks/useDelayedLoading';
 
 /* ── palette ─────────────────────────────────────────────────────────────── */
 const OR   = '#FF6B00';
@@ -89,12 +90,18 @@ export default function SellerDashboard() {
   const daysLeft  = sub ? Math.max(0, Math.ceil((new Date(sub.endDate).getTime() - Date.now()) / 86400000)) : 0;
   const progress  = Math.min(100, Math.round((daysLeft / 30) * 100));
   const expiring  = daysLeft < 7;
+  const showSkel  = useDelayedLoading(isLoading);
 
-  if (isLoading) return (
-    <Box sx={{ display:'flex', justifyContent:'center', py:10, bgcolor:BG, minHeight:'100vh' }}>
-      <CircularProgress sx={{ color:OR }}/>
+  if (isLoading) return showSkel ? (
+    <Box sx={{ p:{ xs:2, md:3 }, bgcolor:BG, minHeight:'100vh' }}>
+      <Box sx={{ display:'grid', gridTemplateColumns:{ xs:'1fr 1fr', sm:'repeat(4,1fr)' }, gap:1.5, mb:3 }}>
+        {Array.from({ length: 4 }).map((_, i) => <StatCardSkeleton key={i}/>)}
+      </Box>
+      <Box sx={{ p:3, borderRadius:'16px', bgcolor:CARD, border:`1px solid ${BORD}` }}>
+        <ListSkeleton rows={4}/>
+      </Box>
     </Box>
-  );
+  ) : null;
 
   return (
     <Box sx={{ p:{ xs:2, md:3 }, bgcolor:BG, minHeight:'100vh' }}>

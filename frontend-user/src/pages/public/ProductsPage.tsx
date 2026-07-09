@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import {
   Grid, Typography, Box, Card, FormControl, InputLabel, Select, MenuItem,
-  Button, Pagination, CircularProgress, Drawer, IconButton, Slider, Chip,
+  Button, Pagination, Drawer, IconButton, Slider, Chip,
   useMediaQuery, useTheme, alpha, Collapse, Switch, Tooltip,
 } from '@mui/material';
 import {
@@ -13,6 +13,8 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import api from '../../api/axios';
 import { useLocationStore } from '../../store/location.store';
+import { ProductCardSkeleton } from '../../components/shared/Skeletons';
+import { useDelayedLoading } from '../../hooks/useDelayedLoading';
 
 const ORANGE = '#FF9900';
 const HAITI_DEPTS = [
@@ -459,6 +461,7 @@ export default function ProductsPage() {
     queryKey: ['products', params],
     queryFn: () => api.get('/products', { params }).then(r => r.data).catch(() => ({ data: [], total: 0, totalPages: 0 })),
   });
+  const showSkel = useDelayedLoading(isLoading);
 
   // Fetch categories for horizontal chip bar
   const { data: categoriesData } = useQuery({
@@ -677,9 +680,21 @@ export default function ProductsPage() {
         {/* Products area */}
         <Box sx={{ flex: 1, minWidth: 0 }}>
           {isLoading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 14 }}>
-              <CircularProgress sx={{ color: ORANGE }} />
-            </Box>
+            showSkel ? (
+              <Box sx={{
+                display: 'grid',
+                gap: { xs: '10px', sm: '12px', md: '14px' },
+                gridTemplateColumns: {
+                  xs: 'repeat(2, 1fr)',
+                  sm: 'repeat(3, 1fr)',
+                  md: 'repeat(3, 1fr)',
+                  lg: 'repeat(4, 1fr)',
+                  xl: 'repeat(5, 1fr)',
+                },
+              }}>
+                {Array.from({ length: 12 }).map((_, i) => <ProductCardSkeleton key={i} />)}
+              </Box>
+            ) : null
           ) : (data?.data || []).length === 0 ? (
             <Box sx={{
               textAlign: 'center', py: 12, bgcolor: 'white', borderRadius: 3,

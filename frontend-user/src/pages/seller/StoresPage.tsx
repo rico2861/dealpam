@@ -14,6 +14,8 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import api from '../../api/axios';
+import { StoreCardSkeleton } from '../../components/shared/Skeletons';
+import { useDelayedLoading } from '../../hooks/useDelayedLoading';
 
 const OR   = '#FF6B00';
 const BG   = '#F7F8FA';
@@ -498,6 +500,7 @@ export default function SellerStoresPage() {
     queryKey: ['myStores'],
     queryFn: () => api.get('/stores/me/all').then(r => r.data),
   });
+  const showSkel = useDelayedLoading(isLoading);
 
   const stores: any[]      = data?.stores   ?? [];
   const maxStores: number  = data?.maxStores ?? 1;
@@ -568,7 +571,13 @@ export default function SellerStoresPage() {
       )}
 
       {isLoading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 12 }}><CircularProgress sx={{ color: OR }} /></Box>
+        showSkel ? (
+          <Grid container spacing={2.5}>
+            {Array.from({ length: 2 }).map((_, i) => (
+              <Grid item xs={12} md={6} key={i}><StoreCardSkeleton /></Grid>
+            ))}
+          </Grid>
+        ) : null
       ) : stores.length === 0 ? (
         <Box sx={{ textAlign: 'center', py: 12, borderRadius: '20px', bgcolor: CARD, border: `1px dashed rgba(15,23,42,0.09)` }}>
           <Box sx={{ width: 80, height: 80, borderRadius: '24px', bgcolor: 'rgba(255,107,0,0.1)',

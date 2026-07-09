@@ -11,6 +11,8 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import api from '../../api/axios';
+import { SkelBox, SkelText } from '../../components/shared/Skeletons';
+import { useDelayedLoading } from '../../hooks/useDelayedLoading';
 
 const ORANGE = '#FF6B00';
 const OR   = '#FF6B00';
@@ -509,11 +511,41 @@ export default function SellerStorePage() {
     try { return JSON.parse(val); } catch { return []; }
   };
 
-  if (isLoading) return (
-    <Box sx={{ display: 'flex', justifyContent: 'center', py: 10, bgcolor: BG, minHeight: '100vh' }}>
-      <CircularProgress sx={{ color: OR }} />
+  const showSkel = useDelayedLoading(isLoading);
+
+  if (isLoading) return showSkel ? (
+    <Box sx={{ p: { xs: 2, md: 3 }, bgcolor: BG, minHeight: '100vh' }}>
+      <Box sx={{ maxWidth: 1200, mx: 'auto' }}>
+        {/* Header skeleton */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+          <SkelBox sx={{ width: 56, height: 56, borderRadius: '14px' }} />
+          <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 0.8 }}>
+            <SkelText width={220} sx={{ height: 20 }} />
+            <SkelText width={340} />
+          </Box>
+        </Box>
+        {/* Tabs skeleton */}
+        <Box sx={{ display: 'flex', gap: 2, mb: 2, bgcolor: CARD, borderRadius: '16px 16px 0 0', px: 2, py: 1.5 }}>
+          {Array.from({ length: 4 }).map((_, i) => <SkelText key={i} width={100} sx={{ height: 18 }} />)}
+        </Box>
+        {/* Form skeleton */}
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '2fr 1fr' }, gap: 3 }}>
+          <Box sx={{ borderRadius: '16px', bgcolor: CARD, border: `1px solid ${BORD}`, p: { xs: 2, md: 3 }, display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <SkelBox sx={{ height: 40, borderRadius: '10px' }} />
+            <SkelBox sx={{ height: 90, borderRadius: '10px' }} />
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+              {Array.from({ length: 4 }).map((_, i) => <SkelBox key={i} sx={{ height: 40, borderRadius: '10px' }} />)}
+            </Box>
+          </Box>
+          <Box sx={{ borderRadius: '16px', bgcolor: CARD, border: `1px solid ${BORD}`, p: 2.5, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+            <SkelText width="60%" />
+            <SkelBox sx={{ height: 44, borderRadius: '10px' }} />
+            <SkelBox sx={{ height: 44, borderRadius: '10px', mt: 1.5 }} />
+          </Box>
+        </Box>
+      </Box>
     </Box>
-  );
+  ) : null;
 
   return (
     <Box sx={{ p: { xs: 2, md: 3 }, bgcolor: BG, minHeight: '100vh' }}>

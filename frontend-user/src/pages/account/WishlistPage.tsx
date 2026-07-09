@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Box, Typography, alpha, Skeleton, IconButton } from '@mui/material';
+import { Box, Typography, alpha, IconButton } from '@mui/material';
 import {
   FavoriteBorderOutlined, DeleteOutlineRounded, ShoppingCartOutlined,
   FilterListOutlined, ArrowForward, StorefrontOutlined, TrendingDownOutlined,
@@ -10,6 +10,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import api from '../../api/axios';
 import { useAuthStore } from '../../store/auth.store';
 import { useSnackbar } from 'notistack';
+import { ProductCardSkeletonGrid } from '../../components/shared/Skeletons';
+import { useDelayedLoading } from '../../hooks/useDelayedLoading';
 
 const ORANGE = '#FF6B00';
 const RED    = '#EF4444';
@@ -45,6 +47,7 @@ export default function WishlistPage() {
     // refetchOnMount:false défini dans main.tsx.
     refetchOnMount: 'always',
   });
+  const showSkel = useDelayedLoading(isLoading);
 
   const remove = useMutation({
     mutationFn: (productId: string) => api.delete(`/wishlist/${productId}`),
@@ -119,13 +122,7 @@ export default function WishlistPage() {
         )}
 
         {/* ── Skeletons ── */}
-        {isLoading && (
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2,1fr)', sm: 'repeat(3,1fr)', md: 'repeat(4,1fr)' }, gap: { xs: 1.5, sm: 2 } }}>
-            {Array.from({ length: 8 }).map((_, i) => (
-              <Skeleton key={i} variant="rounded" height={300} sx={{ borderRadius: '18px', bgcolor: '#F1F5F9' }} />
-            ))}
-          </Box>
-        )}
+        {isLoading && showSkel && <ProductCardSkeletonGrid count={8} />}
 
         {/* ── Empty ── */}
         {!isLoading && filtered.length === 0 && (

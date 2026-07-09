@@ -11,6 +11,8 @@ import {
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import api from '../../api/axios';
+import { SkelBox, SkelText, ListSkeleton } from '../../components/shared/Skeletons';
+import { useDelayedLoading } from '../../hooks/useDelayedLoading';
 
 // ── Palette ────────────────────────────────────────────────────────────────
 const OR   = '#FF6B00';
@@ -200,6 +202,7 @@ export default function WalletPage() {
     queryFn: () => api.get('/wallet').then(r => r.data),
     enabled: !!localStorage.getItem('accessToken'),
   });
+  const showSkel = useDelayedLoading(isLoading);
 
   const handleRecharge = async () => {
     const amt = parseFloat(amount);
@@ -265,7 +268,25 @@ export default function WalletPage() {
         </Box>
 
         {isLoading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', py: 12 }}><CircularProgress sx={{ color: OR }} /></Box>
+          showSkel ? (
+            <>
+              <Box sx={{ borderRadius: '20px', p: { xs: 2.5, md: 4 }, mb: 2.5, border: '1px solid rgba(255,107,0,0.2)' }}>
+                <SkelText width={140} sx={{ mb: 1.5 }} />
+                <SkelBox sx={{ width: 220, height: 44, borderRadius: '10px' }} />
+              </Box>
+              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', md: 'repeat(3,1fr)' }, gap: 1.5, mb: 2.5 }}>
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <Box key={i} sx={{ p: { xs: 2, md: 2.5 }, borderRadius: '14px', bgcolor: CARD, border: `1px solid ${BORD}`, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <SkelBox sx={{ width: 40, height: 40, borderRadius: '11px' }} />
+                    <Box sx={{ flex: 1 }}><SkelText width="70%" sx={{ mb: 0.6 }} /><SkelText width="50%" sx={{ height: 16 }} /></Box>
+                  </Box>
+                ))}
+              </Box>
+              <Box sx={{ borderRadius: '16px', bgcolor: CARD, border: `1px solid ${BORD}` }}>
+                <ListSkeleton rows={5} withImage={false} />
+              </Box>
+            </>
+          ) : null
         ) : (
           <>
             {/* ── Balance hero ── */}

@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { io as socketIo } from 'socket.io-client';
 import {
   Container, Grid, Box, Typography, Button, Chip, Avatar, Rating,
-  Tabs, Tab, Skeleton, alpha, IconButton, Tooltip, TextField,
+  Tabs, Tab, alpha, IconButton, Tooltip, TextField,
   CircularProgress, Divider, MenuItem, Select, FormControl, InputLabel,
   Collapse, LinearProgress,
 } from '@mui/material';
@@ -20,6 +20,8 @@ import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import api from '../../api/axios';
 import { useAuthStore } from '../../store/auth.store';
+import { SkelBox, SkelText, ProductCardSkeletonGrid } from '../../components/shared/Skeletons';
+import { useDelayedLoading } from '../../hooks/useDelayedLoading';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const ORANGE = '#FF6B00';
@@ -420,13 +422,32 @@ function ChatWidget({ store, sellerUserId, open, onClose }: {
 }
 
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
+// Composé pour épouser la mise en page réelle : bannière + identité boutique,
+// puis la grille de produits (mêmes proportions que la grille finale).
 function PageSkeleton() {
   return (
-    <Box>
-      <Skeleton variant="rectangular" height={280} />
+    <Box sx={{ bgcolor: BG, minHeight: '100vh' }}>
+      <SkelBox sx={{ height: { xs: 200, md: 300 }, borderRadius: 0 }} />
+      <Box sx={{ bgcolor: 'white', borderBottom: '1px solid #E5E7EB' }}>
+        <Container maxWidth="xl">
+          <Box sx={{ display: 'flex', gap: 2.5, alignItems: 'flex-end', pb: 2.5, mt: -5, flexWrap: 'wrap' }}>
+            <SkelBox sx={{ width: { xs: 72, md: 96 }, height: { xs: 72, md: 96 }, borderRadius: '12px', flexShrink: 0 }} />
+            <Box sx={{ flex: 1, minWidth: 200, pb: 0.5, display: 'flex', flexDirection: 'column', gap: 1 }}>
+              <SkelText width="35%" sx={{ height: 22 }} />
+              <SkelText width="55%" />
+            </Box>
+          </Box>
+        </Container>
+      </Box>
       <Container maxWidth="xl" sx={{ py: 3 }}>
-        <Skeleton height={40} width="40%" sx={{ mb: 1 }} />
-        <Skeleton height={20} width="60%" />
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={3.5}>
+            <SkelBox sx={{ height: 320, borderRadius: '12px' }} />
+          </Grid>
+          <Grid item xs={12} md={8.5}>
+            <ProductCardSkeletonGrid count={8} />
+          </Grid>
+        </Grid>
       </Container>
     </Box>
   );
@@ -455,6 +476,7 @@ export default function BoutiquePage() {
     queryFn:  () => api.get(`/stores/${slug}`).then(r => r.data),
     staleTime: 60_000,
   });
+  const showSkel = useDelayedLoading(isLoading);
 
   // Infinite products
   const PAGE_SIZE = 20;
@@ -497,7 +519,7 @@ export default function BoutiquePage() {
     }
   };
 
-  if (isLoading) return <PageSkeleton />;
+  if (isLoading) return showSkel ? <PageSkeleton /> : null;
   if (!store)    return (
     <Container sx={{ py: 8, textAlign: 'center' }}>
       <Storefront sx={{ fontSize: 64, color: '#E2E8F0', mb: 2 }} />

@@ -5,6 +5,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
+import { SkelBox, SkelText } from '../../components/shared/Skeletons';
+import { useDelayedLoading } from '../../hooks/useDelayedLoading';
 
 const OR   = '#FF6B00';
 const BG   = '#F7F8FA';
@@ -110,7 +112,26 @@ export default function SellerSubscriptionPage() {
     onError: (e: any) => enqueueSnackbar(e.response?.data?.message || 'Erreur', { variant: 'error' }),
   });
 
-  if (isLoading) return <Box sx={{ display: 'flex', justifyContent: 'center', py: 12 }}><CircularProgress sx={{ color: OR }} /></Box>;
+  const showSkel = useDelayedLoading(isLoading);
+
+  if (isLoading) return showSkel ? (
+    <Box sx={{ p: { xs: 2, md: 3 }, bgcolor: BG, minHeight: '100vh' }}>
+      <Box sx={{ mb: 3 }}>
+        <SkelText width={200} sx={{ height: 20, mb: 1 }} />
+        <SkelText width={280} />
+      </Box>
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', md: 'repeat(4,1fr)' }, gap: 1.5 }}>
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Box key={i} sx={{ borderRadius: '18px', bgcolor: CARD, border: `1px solid ${BORD}`, p: 2.5, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+            <SkelBox sx={{ width: 36, height: 36, borderRadius: '10px' }} />
+            <SkelText width={90} sx={{ height: 24 }} />
+            {Array.from({ length: 4 }).map((__, j) => <SkelText key={j} width="90%" />)}
+            <SkelBox sx={{ height: 40, borderRadius: '11px', mt: 1 }} />
+          </Box>
+        ))}
+      </Box>
+    </Box>
+  ) : null;
 
   const daysLeft = currentSub ? Math.max(0, Math.ceil((new Date(currentSub.endDate).getTime() - Date.now()) / 86400000)) : 0;
 

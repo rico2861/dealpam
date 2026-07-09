@@ -2,7 +2,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Container, Grid, Box, Typography, Button, Chip, IconButton,
-  Skeleton, alpha, Alert,
+  alpha, Alert,
 } from '@mui/material';
 import {
   Favorite, Delete, ShoppingCart, ArrowBack, Star,
@@ -12,6 +12,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import api from '../../api/axios';
 import { useCartStore } from '../../store/cart.store';
+import { ProductCardSkeletonGrid } from '../../components/shared/Skeletons';
+import { useDelayedLoading } from '../../hooks/useDelayedLoading';
 
 const RED  = '#EF4444';
 const BLUE = '#2563EB';
@@ -30,6 +32,7 @@ export default function WishlistPage() {
     queryKey: ['wishlist'],
     queryFn:  () => api.get('/wishlist').then(r => r.data),
   });
+  const showSkel = useDelayedLoading(isLoading);
 
   const removeMutation = useMutation({
     mutationFn: (productId: string) => api.delete(`/wishlist/${productId}`),
@@ -93,13 +96,7 @@ export default function WishlistPage() {
 
       <Container maxWidth="xl" sx={{ pt: 3 }}>
         {isLoading ? (
-          <Grid container spacing={2}>
-            {Array(6).fill(0).map((_, i) => (
-              <Grid item xs={6} sm={4} md={3} lg={2} key={i}>
-                <Skeleton variant="rectangular" height={280} sx={{ borderRadius: 2.5 }} />
-              </Grid>
-            ))}
-          </Grid>
+          showSkel ? <ProductCardSkeletonGrid count={6} /> : null
         ) : items.length === 0 ? (
           <Box sx={{ py: 10, textAlign: 'center' }}>
             <FavoriteBorder sx={{ fontSize: 80, color: '#E5E7EB', mb: 2 }} />

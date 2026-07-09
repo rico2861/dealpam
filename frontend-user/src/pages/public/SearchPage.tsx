@@ -16,6 +16,8 @@ import api from '../../api/axios';
 import { useCartStore } from '../../store/cart.store';
 import { useLocationStore } from '../../store/location.store';
 import { useSnackbar } from 'notistack';
+import { ProductCardSkeleton } from '../../components/shared/Skeletons';
+import { useDelayedLoading } from '../../hooks/useDelayedLoading';
 
 const ORANGE = '#FF9900';
 const DARK = '#131921';
@@ -367,6 +369,7 @@ export default function SearchPage() {
     },
     placeholderData: keepPreviousData,
   });
+  const showSkel = useDelayedLoading(isLoading);
 
   const products: any[] = data?.data || [];
   const total: number = data?.total || 0;
@@ -500,13 +503,15 @@ export default function SearchPage() {
 
             {/* Products */}
             {isLoading ? (
-              <Grid container spacing={1.5}>
-                {Array.from({ length: 12 }).map((_, i) => (
-                  <Grid item xs={6} sm={4} md={3} key={i}>
-                    <Skeleton variant="rectangular" height={280} sx={{ borderRadius: 1.5 }} />
-                  </Grid>
-                ))}
-              </Grid>
+              showSkel ? (
+                <Grid container spacing={1.5}>
+                  {Array.from({ length: 12 }).map((_, i) => (
+                    <Grid item xs={6} sm={4} md={3} key={i}>
+                      <ProductCardSkeleton />
+                    </Grid>
+                  ))}
+                </Grid>
+              ) : null
             ) : products.length === 0 ? (
               <Box sx={{ bgcolor: 'white', borderRadius: 2, p: { xs: 4, md: 6 }, textAlign: 'center',
                 border: '1px solid #E8E8E8' }}>

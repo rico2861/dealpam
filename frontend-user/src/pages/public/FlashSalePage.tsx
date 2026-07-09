@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, createContext, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Box, Container, Typography, Button, Skeleton,
+  Box, Container, Typography, Button,
   alpha, IconButton,
 } from '@mui/material';
 import { FlashOn, Favorite, FavoriteBorder, Store, KeyboardArrowUp, Home, ChevronRight, LocalFireDepartment, NewReleases, TrendingDown } from '@mui/icons-material';
@@ -9,6 +9,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../../api/axios';
 import { useAuthStore } from '../../store/auth.store';
 import { useNavigate } from 'react-router-dom';
+import { ProductCardSkeleton } from '../../components/shared/Skeletons';
+import { useDelayedLoading } from '../../hooks/useDelayedLoading';
 
 const LikedCtx = createContext<Set<string>>(new Set());
 const useLikedIds = () => useContext(LikedCtx);
@@ -181,19 +183,6 @@ function FlashCard({ p }: { p: any }) {
   );
 }
 
-function CardSkeleton() {
-  return (
-    <Box sx={{ borderRadius: '12px', overflow: 'hidden', bgcolor: 'white', border: '1px solid rgba(15,27,46,0.06)' }}>
-      <Skeleton variant="rectangular" sx={{ paddingTop: '100%' }} />
-      <Box sx={{ p: 1.4 }}>
-        <Skeleton width="85%" height={13} />
-        <Skeleton width="55%" height={13} sx={{ mt: 0.6 }} />
-        <Skeleton width="65%" height={17} sx={{ mt: 0.8 }} />
-      </Box>
-    </Box>
-  );
-}
-
 const SORTS = [
   { key: 'discount', label: 'Meilleures remises', Icon: TrendingDown },
   { key: 'newest',   label: 'Nouveautés',         Icon: NewReleases },
@@ -229,6 +218,7 @@ export default function FlashSalePage() {
     }).catch(() => []),
     staleTime: 120_000,
   });
+  const showSkel = useDelayedLoading(isLoading);
 
   // Tri client — réellement fonctionnel, recalculé à chaque changement de filtre.
   const products = useMemo(() => {
@@ -345,10 +335,12 @@ export default function FlashSalePage() {
 
         {/* Grille */}
         {isLoading ? (
-          <Box sx={{ display: 'grid', gap: { xs: '10px', md: '14px' },
-            gridTemplateColumns: { xs: 'repeat(2,1fr)', sm: 'repeat(3,1fr)', md: 'repeat(4,1fr)', lg: 'repeat(5,1fr)', xl: 'repeat(6,1fr)' } }}>
-            {Array.from({ length: 12 }).map((_, i) => <CardSkeleton key={i} />)}
-          </Box>
+          showSkel ? (
+            <Box sx={{ display: 'grid', gap: { xs: '10px', md: '14px' },
+              gridTemplateColumns: { xs: 'repeat(2,1fr)', sm: 'repeat(3,1fr)', md: 'repeat(4,1fr)', lg: 'repeat(5,1fr)', xl: 'repeat(6,1fr)' } }}>
+              {Array.from({ length: 12 }).map((_, i) => <ProductCardSkeleton key={i} />)}
+            </Box>
+          ) : null
         ) : products.length === 0 ? (
           <Box sx={{ textAlign: 'center', py: { xs: 8, md: 10 }, bgcolor: 'white', borderRadius: '16px', border: '1px solid rgba(15,27,46,0.08)' }}>
             <Box sx={{

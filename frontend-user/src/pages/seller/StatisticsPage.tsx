@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { Box, Typography, CircularProgress } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 import {
   TrendingUp, ShoppingBag, Visibility, Star, BarChart,
   ArrowUpward, ArrowDownward,
 } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
 import api from '../../api/axios';
+import { StatCardSkeleton } from '../../components/shared/Skeletons';
+import { useDelayedLoading } from '../../hooks/useDelayedLoading';
 
 const OR   = '#FF6B00';
 const BG   = '#F7F8FA';
@@ -84,6 +86,7 @@ export default function StatisticsPage() {
     enabled: !!localStorage.getItem('accessToken'),
   });
 
+  const showSkel = useDelayedLoading(isLoading);
   const productList: any[] = products ?? [];
 
   const totalRevenue = dash?.totalRevenue ?? 0;
@@ -122,7 +125,11 @@ export default function StatisticsPage() {
       </Box>
 
       {isLoading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 12 }}><CircularProgress sx={{ color: OR }} /></Box>
+        showSkel ? (
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', md: 'repeat(4,1fr)' }, gap: 1.5, mb: 2 }}>
+            {Array.from({ length: 4 }).map((_, i) => <StatCardSkeleton key={i} />)}
+          </Box>
+        ) : null
       ) : (
         <>
           {/* KPI grid */}

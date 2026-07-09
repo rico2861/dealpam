@@ -14,6 +14,8 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import api from '../../api/axios';
+import { ListSkeleton } from '../../components/shared/Skeletons';
+import { useDelayedLoading } from '../../hooks/useDelayedLoading';
 
 const OR   = '#FF6B00';
 const BG   = '#F7F8FA';
@@ -362,6 +364,7 @@ export default function SellerOrdersPage() {
     enabled: !!localStorage.getItem('accessToken'),
     refetchInterval: 30000,
   });
+  const showSkel = useDelayedLoading(isLoading);
 
   const updateMut = useMutation({
     mutationFn: ({ id, status }: { id: string; status: string }) =>
@@ -474,9 +477,7 @@ export default function SellerOrdersPage() {
 
       {/* Orders */}
       {isLoading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 12 }}>
-          <CircularProgress sx={{ color: OR }}/>
-        </Box>
+        showSkel ? <ListSkeleton rows={5} /> : null
       ) : filtered.length === 0 ? (
         <Box sx={{ py: 10, textAlign: 'center', borderRadius: '16px', bgcolor: CARD, border: `1px solid ${BORD}` }}>
           <ShoppingBag sx={{ fontSize: 52, color: BORD, mb: 2 }}/>

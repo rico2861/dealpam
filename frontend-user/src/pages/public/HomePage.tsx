@@ -19,6 +19,8 @@ import { useLocationState } from '../../hooks/useLocationState';
 import LocationModal from '../../components/location/LocationModal';
 import { useGeoDetect } from '../../hooks/useGeoDetect';
 import { useEventsStore } from '../../store/events.store';
+import { useDelayedLoading } from '../../hooks/useDelayedLoading';
+import { ProductCardSkeletonGrid, StoreCardSkeleton, SkelBox } from '../../components/shared/Skeletons';
 
 /* ─── Wishlist context (évite prop drilling) ────────────────────────────── */
 const LikedCtx = createContext<Set<string>>(new Set());
@@ -650,7 +652,8 @@ function SellerCard({ s }: { s: any }) {
 }
 
 /* ─── Section vendeurs vedettes ──────────────────────────────────────────── */
-function FeaturedSellersSection({ sellers }: { sellers: any[] }) {
+function FeaturedSellersSection({ sellers, loading }: { sellers: any[]; loading?: boolean }) {
+  const showSkel = useDelayedLoading(!!loading);
   const SCROLL_STEP = 420;
   const scrollRef = useRef<HTMLDivElement>(null);
   const drag = useRef({ on: false, x0: 0, sl0: 0 });
@@ -696,6 +699,22 @@ function FeaturedSellersSection({ sellers }: { sellers: any[] }) {
     };
   }, [updateArrows, sellers.length]);
 
+  if (loading) {
+    if (!showSkel) return null;
+    return (
+      <Box sx={{ bgcolor: '#FFFFFF', borderTop: `1px solid ${FS_BORDER}`, borderBottom: `1px solid ${FS_BORDER}`, py: { xs: 2.5, md: 3.5 } }}>
+        <Container maxWidth="xl" sx={{ px: { xs: 1.5, md: 2 } }}>
+          <Box sx={{ display: 'flex', gap: { xs: '14px', md: '20px' } }}>
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Box key={i} sx={{ flexShrink: 0, width: { xs: 132, sm: 152, md: 164 } }}>
+                <StoreCardSkeleton />
+              </Box>
+            ))}
+          </Box>
+        </Container>
+      </Box>
+    );
+  }
   if (!sellers.length) return null;
 
   return (
@@ -1384,7 +1403,8 @@ function DealCarousel({ products, flash = false }: { products: any[]; flash?: bo
 }
 
 /* ─── Section Ventes Flash — palette exacte du spec ──────────────────────── */
-function FlashSection({ products, to }: { products: any[]; to: string }) {
+function FlashSection({ products, to, loading }: { products: any[]; to: string; loading?: boolean }) {
+  const showSkel = useDelayedLoading(!!loading);
   const [ended, setEnded] = useState(false);
   const { data: flashConfig } = useQuery({
     queryKey: ['flash-config-public'],
@@ -1400,6 +1420,16 @@ function FlashSection({ products, to }: { products: any[]; to: string }) {
   const endAt = flashConfig?.endAt ? new Date(flashConfig.endAt) : null;
   const title = flashConfig?.title || 'ventes flash';
 
+  if (loading) {
+    if (!showSkel) return null;
+    return (
+      <Container maxWidth="xl" sx={{ px: { xs: 1.5, md: 2 }, py: { xs: 2, md: 3 } }}>
+        <Box sx={{ bgcolor: '#fff', borderRadius: '16px', border: `1px solid ${FS_BORDER}`, p: { xs: '18px', md: '22px 24px' } }}>
+          <ProductCardSkeletonGrid count={6} />
+        </Box>
+      </Container>
+    );
+  }
   if (!products.length || ended) return null;
 
   // Quand il y a peu d'offres, le panneau ne doit pas s'étirer sur toute la
@@ -1471,7 +1501,8 @@ function FlashSection({ products, to }: { products: any[]; to: string }) {
 }
 
 /* ─── Section En promotion — design premium ──────────────────────────────── */
-function PromoSection({ products, to }: { products: any[]; to: string }) {
+function PromoSection({ products, to, loading }: { products: any[]; to: string; loading?: boolean }) {
+  const showSkel = useDelayedLoading(!!loading);
   const scrollRef = useRef<HTMLDivElement>(null);
   const drag = useRef({ on: false, x0: 0, sl0: 0 });
 
@@ -1491,6 +1522,22 @@ function PromoSection({ products, to }: { products: any[]; to: string }) {
   };
   const onUp = () => { drag.current.on = false; };
 
+  if (loading) {
+    if (!showSkel) return null;
+    return (
+      <Box sx={{ background: 'linear-gradient(135deg, #0F0F0F 0%, #1A1A2E 60%, #16213E 100%)', py: { xs: 2, md: 3.5 } }}>
+        <Box sx={{ px: { xs: 1.5, md: 3 }, maxWidth: '1536px', mx: 'auto' }}>
+          <Box sx={{ display: 'flex', gap: { xs: '8px', sm: '12px', md: '14px' }, overflow: 'hidden' }}>
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Box key={i} sx={{ width: { xs: 'calc(45vw - 16px)', sm: 175, md: 205 }, flexShrink: 0 }}>
+                <SkelBox sx={{ width: '100%', height: 220, borderRadius: '12px' }} />
+              </Box>
+            ))}
+          </Box>
+        </Box>
+      </Box>
+    );
+  }
   if (!products.length) return null;
 
   return (
@@ -1621,9 +1668,21 @@ function PromoSection({ products, to }: { products: any[]; to: string }) {
 }
 
 /* ─── Section standard — grille ──────────────────────────────────────────── */
-function Section({ title, count, to, products }: {
-  title: string; count?: number; to: string; products: any[];
+function Section({ title, count, to, products, loading, skelCount = 8 }: {
+  title: string; count?: number; to: string; products: any[]; loading?: boolean; skelCount?: number;
 }) {
+  const showSkel = useDelayedLoading(!!loading);
+  if (loading) {
+    if (!showSkel) return null;
+    return (
+      <Box sx={{ bgcolor: 'white', py: { xs: 2, md: 3 }, borderBottom: '1px solid #F0F0F0' }}>
+        <Container maxWidth="xl" sx={{ px: { xs: 1.5, md: 2 } }}>
+          <SectionHeader title={title} to={to} />
+          <ProductCardSkeletonGrid count={skelCount} />
+        </Container>
+      </Box>
+    );
+  }
   if (!products.length) return null;
   return (
     <Box sx={{ bgcolor: 'white', py: { xs: 2, md: 3 }, borderBottom: '1px solid #F0F0F0' }}>
@@ -1702,9 +1761,10 @@ function LevelBadge({ level }: { level?: string }) {
 }
 
 /* ─── Near-you section ────────────────────────────────────────────────────── */
-function NearYouSection({ products, location, onModal, label, level, hasLocalVendor }: {
-  products: any[]; location: any; onModal: () => void; label?: string | null; level?: string; hasLocalVendor?: boolean;
+function NearYouSection({ products, location, onModal, label, level, hasLocalVendor, loading }: {
+  products: any[]; location: any; onModal: () => void; label?: string | null; level?: string; hasLocalVendor?: boolean; loading?: boolean;
 }) {
+  const showSkel = useDelayedLoading(!!loading);
   const { user } = useAuthStore();
   const isSeller = user?.role === 'SELLER';
   const sellerCtaLink = isSeller ? '/seller' : user ? '/become-seller' : '/register?role=SELLER';
@@ -1716,6 +1776,17 @@ function NearYouSection({ products, location, onModal, label, level, hasLocalVen
         ? `Produits populaires en ${location.department}`
         : 'Produits près de vous');
   const isFallback = level === 'national';
+
+  if (loading) {
+    if (!showSkel) return null;
+    return (
+      <Box sx={{ bgcolor: 'white', borderBottom: '1px solid #F0F0F0', py: { xs: 2.5, md: 3.5 } }}>
+        <Container maxWidth="xl" sx={{ px: { xs: 2, md: 2 } }}>
+          <ProductCardSkeletonGrid count={8} />
+        </Container>
+      </Box>
+    );
+  }
 
   // No location chosen yet
   if (!location && products.length === 0) {
@@ -1909,7 +1980,18 @@ function NearYouSection({ products, location, onModal, label, level, hasLocalVen
 }
 
 /* ─── Admin banner ───────────────────────────────────────────────────────── */
-function AdminBanner({ banners }: { banners: any[] }) {
+function AdminBanner({ banners, loading }: { banners: any[]; loading?: boolean }) {
+  const showSkel = useDelayedLoading(!!loading);
+  if (loading) {
+    if (!showSkel) return null;
+    return (
+      <Box sx={{ bgcolor: PG, py: 1.5 }}>
+        <Container maxWidth="xl" sx={{ px: { xs: 2, md: 2 } }}>
+          <SkelBox sx={{ width: '100%', height: 200, borderRadius: '10px' }} />
+        </Container>
+      </Box>
+    );
+  }
   if (!banners.length) return null;
   const b = banners[0];
   return (
@@ -2215,37 +2297,37 @@ export default function HomePage() {
   const dept = location?.department;
   const deptParam = dept ? `&department=${encodeURIComponent(dept)}` : '';
 
-  const { data: featuredSellers = [] } = useQuery({ queryKey: ['hp-featured-sellers', dept], queryFn: () => api.get(`/sellers/featured?limit=24${deptParam}`).then(r => r.data || []).catch(() => []), staleTime: 300_000 });
+  const { data: featuredSellers = [], isLoading: featuredSellersLoading } = useQuery({ queryKey: ['hp-featured-sellers', dept], queryFn: () => api.get(`/sellers/featured?limit=24${deptParam}`).then(r => r.data || []).catch(() => []), staleTime: 300_000 });
 
   // Tendances + fallback national si résultat local vide
-  const { data: trendingRaw = [] }    = useQuery({ queryKey: ['hp-trending', dept],   queryFn: () => q(`/products?sort=views&limit=24${deptParam}`),                staleTime: 180_000 });
+  const { data: trendingRaw = [], isLoading: trendingLoading }    = useQuery({ queryKey: ['hp-trending', dept],   queryFn: () => q(`/products?sort=views&limit=24${deptParam}`),                staleTime: 180_000 });
   const { data: trendingFb = [] }     = useQuery({ queryKey: ['hp-trending-fb'],       queryFn: () => q(`/products?sort=views&limit=24`),                           staleTime: 180_000, enabled: dept ? (trendingRaw as any[]).length === 0 : false });
   const trending = (trendingRaw as any[]).length > 0 ? trendingRaw : trendingFb;
 
-  const { data: newArrivalsRaw = [] } = useQuery({ queryKey: ['hp-new', dept],        queryFn: () => q(`/products?sort=newest&limit=24${deptParam}`),               staleTime: 180_000 });
+  const { data: newArrivalsRaw = [], isLoading: newArrivalsLoading } = useQuery({ queryKey: ['hp-new', dept],        queryFn: () => q(`/products?sort=newest&limit=24${deptParam}`),               staleTime: 180_000 });
   const { data: newArrivalsFb = [] }  = useQuery({ queryKey: ['hp-new-fb'],            queryFn: () => q(`/products?sort=newest&limit=24`),                          staleTime: 180_000, enabled: dept ? (newArrivalsRaw as any[]).length === 0 : false });
   const newArrivals = (newArrivalsRaw as any[]).length > 0 ? newArrivalsRaw : newArrivalsFb;
 
-  const { data: onSaleRaw = [] }      = useQuery({ queryKey: ['hp-sale', dept],       queryFn: () => q(`/products?hasSale=true&sort=discount&limit=40${deptParam}`), staleTime: 180_000 });
+  const { data: onSaleRaw = [], isLoading: onSaleLoading }      = useQuery({ queryKey: ['hp-sale', dept],       queryFn: () => q(`/products?hasSale=true&sort=discount&limit=40${deptParam}`), staleTime: 180_000 });
   const { data: onSaleFb = [] }       = useQuery({ queryKey: ['hp-sale-fb'],           queryFn: () => q(`/products?hasSale=true&sort=discount&limit=40`),            staleTime: 180_000, enabled: dept ? (onSaleRaw as any[]).length === 0 : false });
   const onSale = (onSaleRaw as any[]).length > 0 ? onSaleRaw : onSaleFb;
 
-  const { data: topSellersRaw = [] }  = useQuery({ queryKey: ['hp-top', dept],     queryFn: () => q(`/products?sort=popular&limit=24${deptParam}`),               staleTime: 180_000 });
+  const { data: topSellersRaw = [], isLoading: topSellersLoading }  = useQuery({ queryKey: ['hp-top', dept],     queryFn: () => q(`/products?sort=popular&limit=24${deptParam}`),               staleTime: 180_000 });
   const topSellers = (topSellersRaw as any[]).filter((p: any) => (p.totalSold || 0) > 0);
-  const { data: featured = [] }    = useQuery({ queryKey: ['hp-featured', dept],   queryFn: () => q(`/products?featured=true&limit=24${deptParam}`),              staleTime: 300_000 });
+  const { data: featured = [], isLoading: featuredLoading }    = useQuery({ queryKey: ['hp-featured', dept],   queryFn: () => q(`/products?featured=true&limit=24${deptParam}`),              staleTime: 300_000 });
 
   // Categories — queryKey inclut dept pour invalider quand la localisation change
-  const { data: phones = [] }      = useQuery({ queryKey: ['hp-phones', dept],     queryFn: () => q(`/products?category=smartphones&limit=24${deptParam}`),       staleTime: 180_000 });
-  const { data: vehicles = [] }    = useQuery({ queryKey: ['hp-vehicles', dept],   queryFn: () => q(`/products?category=vehicules&limit=24${deptParam}`),         staleTime: 180_000 });
-  const { data: clothes = [] }     = useQuery({ queryKey: ['hp-clothes', dept],    queryFn: () => q(`/products?category=vetements&limit=24${deptParam}`),         staleTime: 180_000 });
-  const { data: furniture = [] }   = useQuery({ queryKey: ['hp-furniture', dept],  queryFn: () => q(`/products?category=meubles&limit=24${deptParam}`),           staleTime: 180_000 });
-  const { data: electronics = [] } = useQuery({ queryKey: ['hp-elec', dept],       queryFn: () => q(`/products?category=electronique&limit=24${deptParam}`),      staleTime: 180_000 });
-  const { data: beauty = [] }      = useQuery({ queryKey: ['hp-beauty', dept],     queryFn: () => q(`/products?category=beaute&limit=24${deptParam}`),            staleTime: 180_000 });
-  const { data: shoes = [] }       = useQuery({ queryKey: ['hp-shoes', dept],      queryFn: () => q(`/products?category=chaussures&limit=24${deptParam}`),        staleTime: 180_000 });
-  const { data: sport = [] }       = useQuery({ queryKey: ['hp-sport', dept],      queryFn: () => q(`/products?category=sport&limit=24${deptParam}`),             staleTime: 180_000 });
-  const { data: food = [] }        = useQuery({ queryKey: ['hp-food', dept],       queryFn: () => q(`/products?category=alimentation&limit=24${deptParam}`),      staleTime: 180_000 });
+  const { data: phones = [], isLoading: phonesLoading }      = useQuery({ queryKey: ['hp-phones', dept],     queryFn: () => q(`/products?category=smartphones&limit=24${deptParam}`),       staleTime: 180_000 });
+  const { data: vehicles = [], isLoading: vehiclesLoading }    = useQuery({ queryKey: ['hp-vehicles', dept],   queryFn: () => q(`/products?category=vehicules&limit=24${deptParam}`),         staleTime: 180_000 });
+  const { data: clothes = [], isLoading: clothesLoading }     = useQuery({ queryKey: ['hp-clothes', dept],    queryFn: () => q(`/products?category=vetements&limit=24${deptParam}`),         staleTime: 180_000 });
+  const { data: furniture = [], isLoading: furnitureLoading }   = useQuery({ queryKey: ['hp-furniture', dept],  queryFn: () => q(`/products?category=meubles&limit=24${deptParam}`),           staleTime: 180_000 });
+  const { data: electronics = [], isLoading: electronicsLoading } = useQuery({ queryKey: ['hp-elec', dept],       queryFn: () => q(`/products?category=electronique&limit=24${deptParam}`),      staleTime: 180_000 });
+  const { data: beauty = [], isLoading: beautyLoading }      = useQuery({ queryKey: ['hp-beauty', dept],     queryFn: () => q(`/products?category=beaute&limit=24${deptParam}`),            staleTime: 180_000 });
+  const { data: shoes = [], isLoading: shoesLoading }       = useQuery({ queryKey: ['hp-shoes', dept],      queryFn: () => q(`/products?category=chaussures&limit=24${deptParam}`),        staleTime: 180_000 });
+  const { data: sport = [], isLoading: sportLoading }       = useQuery({ queryKey: ['hp-sport', dept],      queryFn: () => q(`/products?category=sport&limit=24${deptParam}`),             staleTime: 180_000 });
+  const { data: food = [], isLoading: foodLoading }        = useQuery({ queryKey: ['hp-food', dept],       queryFn: () => q(`/products?category=alimentation&limit=24${deptParam}`),      staleTime: 180_000 });
 
-  const { data: banners = [] }     = useQuery({ queryKey: ['hp-banners'],    queryFn: () => api.get('/banners').then(r => r.data || []).catch(() => []),           staleTime: 300_000 });
+  const { data: banners = [], isLoading: bannersLoading }     = useQuery({ queryKey: ['hp-banners'],    queryFn: () => api.get('/banners').then(r => r.data || []).catch(() => []),           staleTime: 300_000 });
   const adParams = new URLSearchParams({ limit: '12' });
   if (dept) adParams.set('department', dept);
   if ((user as any)?.gender) adParams.set('gender', (user as any).gender);
@@ -2253,7 +2335,7 @@ export default function HomePage() {
     const age = Math.floor((Date.now() - new Date((user as any).birthDate).getTime()) / (365.25 * 86400000));
     if (age > 0) adParams.set('age', String(age));
   }
-  const { data: promoAds = [] } = useQuery({ queryKey: ['hp-promo-ads', dept, (user as any)?.gender, (user as any)?.birthDate], queryFn: () => api.get(`/ads/serve?${adParams}`).then(r => Array.isArray(r.data) ? r.data : []).catch(() => []), staleTime: 120_000 });
+  const { data: promoAds = [], isLoading: promoAdsLoading } = useQuery({ queryKey: ['hp-promo-ads', dept, (user as any)?.gender, (user as any)?.birthDate], queryFn: () => api.get(`/ads/serve?${adParams}`).then(r => Array.isArray(r.data) ? r.data : []).catch(() => []), staleTime: 120_000 });
 
   // Wishlist IDs pour initialiser les coeurs sans appel supplémentaire par carte
   const { data: wishlistRaw = [] } = useQuery({
@@ -2263,30 +2345,31 @@ export default function HomePage() {
     staleTime: 60_000,
   });
   const likedIds = useMemo(() => new Set((wishlistRaw as any[]).map((w: any) => w.productId)), [wishlistRaw]);
-  const { data: personalized = [] }= useQuery({ queryKey: ['hp-pers', user?.id, sessionId], queryFn: () => api.get(`/products/personalized?sessionId=${sessionId}&limit=24`).then(r => r.data || []).catch(() => []), staleTime: 120_000 });
+  const { data: personalized = [], isLoading: personalizedLoading }= useQuery({ queryKey: ['hp-pers', user?.id, sessionId], queryFn: () => api.get(`/products/personalized?sessionId=${sessionId}&limit=24`).then(r => r.data || []).catch(() => []), staleTime: 120_000 });
 
   // Recommandations comportementales — top 3 catégories des 7 derniers jours
-  const { data: recCat0 = [] } = useQuery({
+  const { data: recCat0 = [], isLoading: recCat0Loading } = useQuery({
     queryKey: ['hp-rec-cat0', topCategories[0]],
     queryFn: () => topCategories[0] ? q(`/products?category=${encodeURIComponent(topCategories[0])}&limit=12`) : Promise.resolve([]),
     enabled: topCategories.length > 0,
     staleTime: 180_000,
   });
-  const { data: recCat1 = [] } = useQuery({
+  const { data: recCat1 = [], isLoading: recCat1Loading } = useQuery({
     queryKey: ['hp-rec-cat1', topCategories[1]],
     queryFn: () => topCategories[1] ? q(`/products?category=${encodeURIComponent(topCategories[1])}&limit=12`) : Promise.resolve([]),
     enabled: topCategories.length > 1,
     staleTime: 180_000,
   });
-  const { data: recCat2 = [] } = useQuery({
+  const { data: recCat2 = [], isLoading: recCat2Loading } = useQuery({
     queryKey: ['hp-rec-cat2', topCategories[2]],
     queryFn: () => topCategories[2] ? q(`/products?category=${encodeURIComponent(topCategories[2])}&limit=12`) : Promise.resolve([]),
     enabled: topCategories.length > 2,
     staleTime: 180_000,
   });
+  const recommendedLoading = (topCategories.length > 0) && (recCat0Loading || recCat1Loading || recCat2Loading);
   // Tendances régionales (fallback si pas d'historique)
   const MIN_TRENDING_VIEWS = 10;
-  const { data: regionalTrendingRaw = [] } = useQuery({
+  const { data: regionalTrendingRaw = [], isLoading: regionalTrendingLoading } = useQuery({
     queryKey: ['hp-regional', location?.department],
     queryFn: () => {
       const params = new URLSearchParams({ sort: 'views', limit: '16' });
@@ -2297,7 +2380,7 @@ export default function HomePage() {
   });
   const regionalTrending = (regionalTrendingRaw as any[]).filter((p: any) => (p.viewCount || 0) >= MIN_TRENDING_VIEWS);
 
-  const { data: nearRaw = null } = useQuery({
+  const { data: nearRaw = null, isLoading: nearLoading } = useQuery({
     queryKey: ['hp-near', location?.department, location?.city],
     queryFn: () => {
       if (!location?.department) return Promise.resolve(null);
@@ -2366,39 +2449,49 @@ export default function HomePage() {
       <TrustBar />
 
       {/* 3 — Boutiques vedettes */}
-      <FeaturedSellersSection sellers={featuredSellers as any[]} />
+      <FeaturedSellersSection sellers={featuredSellers as any[]} loading={featuredSellersLoading} />
 
       {/* 4 — En promotion : uniquement les produits sponsorisés (campagnes actives) */}
-      {(promoAds as any[]).length > 0 && (
-        <PromoSection to="/products?hasSale=true&sort=discount" products={promoAds as any[]} />
+      {(promoAdsLoading || (promoAds as any[]).length > 0) && (
+        <PromoSection to="/products?hasSale=true&sort=discount" products={promoAds as any[]} loading={promoAdsLoading} />
       )}
 
       {/* 5 — Produits pres de chez toi */}
       <NearYouSection products={nearYou as any[]} location={location}
-        onModal={openLocModal} label={nearLabel} level={nearLevel} hasLocalVendor={nearHasLocalVendor} />
+        onModal={openLocModal} label={nearLabel} level={nearLevel} hasLocalVendor={nearHasLocalVendor}
+        loading={nearLoading} />
 
       {/* 6 — Ventes Flash (après produits locaux) */}
-      {flashItems.length > 0 && (
-        <FlashSection to="/ventes-flash" products={flashItems} />
+      {(onSaleLoading || flashItems.length > 0) && (
+        <FlashSection to="/ventes-flash" products={flashItems} loading={onSaleLoading} />
       )}
 
 
       {/* 7 — Nouvelles arrivées */}
-      {(newArrivals as any[]).length > 0 && (
+      {(newArrivalsLoading || (newArrivals as any[]).length > 0) && (
         <Section title="Nouvelles arrivees" to="/products?sort=newest"
-          products={newArrivals as any[]} count={(newArrivals as any[]).length} />
+          products={newArrivals as any[]} count={(newArrivals as any[]).length}
+          loading={newArrivalsLoading} skelCount={8} />
       )}
 
       {/* 8 — Sign-in CTA */}
       {!user && <SignInCta />}
 
       {/* 9 — Pour vous / Tendances */}
-      {user && (personalized as any[]).length > 0
-        ? <Section title="Selectionnes pour vous" to="/products" products={personalized as any[]} count={(personalized as any[]).length} />
-        : <Section title="Les plus vus" to="/products?sort=views" products={trending as any[]} count={(trending as any[]).length} />}
+      {user ? (
+        (personalizedLoading || (personalized as any[]).length > 0) &&
+          <Section title="Selectionnes pour vous" to="/products" products={personalized as any[]} count={(personalized as any[]).length}
+            loading={personalizedLoading} skelCount={8} />
+      ) : (
+        (trendingLoading || (trending as any[]).length > 0) &&
+          <Section title="Les plus vus" to="/products?sort=views" products={trending as any[]} count={(trending as any[]).length}
+            loading={trendingLoading} skelCount={8} />
+      )}
 
       {/* 9b — Recommande pour vous (comportemental) */}
-      {recommendedProducts.length > 0 ? (
+      {recommendedLoading ? (
+        <Section title="Recommande pour vous" to="/products" products={[]} loading skelCount={8} />
+      ) : recommendedProducts.length > 0 ? (
         <Box sx={{ bgcolor: 'white', py: { xs: 2, md: 3 }, borderBottom: '1px solid #F0F0F0' }}>
           <Container maxWidth="xl" sx={{ px: { xs: 1.5, md: 2 } }}>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
@@ -2422,83 +2515,95 @@ export default function HomePage() {
         </Box>
       ) : (
         /* Nouveau visiteur : tendances régionales */
-        (regionalTrending as any[]).length > 0 && (
+        (regionalTrendingLoading || (regionalTrending as any[]).length > 0) && (
           <Section
             title={location?.city ? `Tendances dans votre localité` : location?.department ? `Tendances dans votre département` : 'Tendances en Haiti'}
             to={location?.department ? `/products?sort=views&department=${encodeURIComponent(location.department)}` : '/products?sort=views'}
             products={regionalTrending as any[]}
             count={(regionalTrending as any[]).length}
+            loading={regionalTrendingLoading} skelCount={8}
           />
         )
       )}
 
       {/* 10 — Smartphones */}
-      {(phones as any[]).length > 0 && (
+      {(phonesLoading || (phones as any[]).length > 0) && (
         <Section title="Smartphones & Tablettes" to="/products?category=smartphones"
-          products={phones as any[]} count={(phones as any[]).length} />
+          products={phones as any[]} count={(phones as any[]).length}
+          loading={phonesLoading} skelCount={8} />
       )}
 
       {/* 11 — Admin banner */}
-      <AdminBanner banners={banners as any[]} />
+      <AdminBanner banners={banners as any[]} loading={bannersLoading} />
 
       {/* 12 — Top vendus */}
-      {(topSellers as any[]).length > 0 && (
+      {(topSellersLoading || (topSellers as any[]).length > 0) && (
         <Section title="Top vendus" to="/products?sort=popular"
-          products={topSellers as any[]} count={(topSellers as any[]).length} />
+          products={topSellers as any[]} count={(topSellers as any[]).length}
+          loading={topSellersLoading} skelCount={8} />
       )}
 
       {/* 13 — Mode */}
-      {(clothes as any[]).length > 0 && (
+      {(clothesLoading || (clothes as any[]).length > 0) && (
         <Section title="Mode & Vetements" to="/products?category=vetements"
-          products={clothes as any[]} count={(clothes as any[]).length} />
+          products={clothes as any[]} count={(clothes as any[]).length}
+          loading={clothesLoading} skelCount={8} />
       )}
 
       {/* 14 — Electronique */}
-      {(electronics as any[]).length > 0 && (
+      {(electronicsLoading || (electronics as any[]).length > 0) && (
         <Section title="Electronique & Informatique" to="/products?category=electronique"
-          products={electronics as any[]} count={(electronics as any[]).length} />
+          products={electronics as any[]} count={(electronics as any[]).length}
+          loading={electronicsLoading} skelCount={8} />
       )}
 
       {/* 15 — Chaussures */}
-      {(shoes as any[]).length > 0 && (
+      {(shoesLoading || (shoes as any[]).length > 0) && (
         <Section title="Chaussures" to="/products?category=chaussures"
-          products={shoes as any[]} count={(shoes as any[]).length} />
+          products={shoes as any[]} count={(shoes as any[]).length}
+          loading={shoesLoading} skelCount={8} />
       )}
 
       {/* 16 — Vehicules */}
-      {(vehicles as any[]).length > 0 && (
+      {(vehiclesLoading || (vehicles as any[]).length > 0) && (
         <Section title="Vehicules & Motos" to="/products?category=vehicules"
-          products={vehicles as any[]} count={(vehicles as any[]).length} />
+          products={vehicles as any[]} count={(vehicles as any[]).length}
+          loading={vehiclesLoading} skelCount={8} />
       )}
 
       {/* 17 — Maison */}
-      {(furniture as any[]).length > 0 && (
+      {(furnitureLoading || (furniture as any[]).length > 0) && (
         <Section title="Maison & Meubles" to="/products?category=meubles"
-          products={furniture as any[]} count={(furniture as any[]).length} />
+          products={furniture as any[]} count={(furniture as any[]).length}
+          loading={furnitureLoading} skelCount={8} />
       )}
 
       {/* 18 — Sport */}
-      {(sport as any[]).length > 0 && (
+      {(sportLoading || (sport as any[]).length > 0) && (
         <Section title="Sport & Loisirs" to="/products?category=sport"
-          products={sport as any[]} count={(sport as any[]).length} />
+          products={sport as any[]} count={(sport as any[]).length}
+          loading={sportLoading} skelCount={8} />
       )}
 
       {/* 19 — Beaute */}
-      {(beauty as any[]).length > 0 && (
+      {(beautyLoading || (beauty as any[]).length > 0) && (
         <Section title="Beaute & Soins" to="/products?category=beaute"
-          products={beauty as any[]} count={(beauty as any[]).length} />
+          products={beauty as any[]} count={(beauty as any[]).length}
+          loading={beautyLoading} skelCount={8} />
       )}
 
       {/* 20 — Alimentation */}
-      {(food as any[]).length > 0 && (
+      {(foodLoading || (food as any[]).length > 0) && (
         <Section title="Alimentation & Boissons" to="/products?category=alimentation"
-          products={food as any[]} count={(food as any[]).length} />
+          products={food as any[]} count={(food as any[]).length}
+          loading={foodLoading} skelCount={8} />
       )}
 
       {/* 21 — Vedettes (isFeatured) */}
-      {(featured as any[]).length > 0 && (
+      {(featuredLoading || (featured as any[]).length > 0) && (
         <Section title="Selections du moment" to="/products?featured=true"
-          products={featured as any[]} count={(featured as any[]).length} />
+          products={featured as any[]} count={(featured as any[]).length}
+          loading={featuredLoading} skelCount={8} />
       )}
 
       {/* 16 — CTA final */}

@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import {
   Box, Typography, Button, Grid, LinearProgress,
   Dialog, DialogTitle, DialogContent, DialogActions, TextField,
-  Skeleton, Avatar, Collapse, CircularProgress,
+  Avatar, Collapse, CircularProgress,
 } from '@mui/material';
 import {
   Add, Campaign, TrendingUp, Visibility, TouchApp, ShoppingCart,
@@ -13,6 +13,8 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import api from '../../api/axios';
+import { ListSkeleton } from '../../components/shared/Skeletons';
+import { useDelayedLoading } from '../../hooks/useDelayedLoading';
 
 const OR   = '#FF6B00';
 const BG   = '#F7F8FA';
@@ -294,6 +296,7 @@ export default function AdsPage() {
     queryFn: () => api.get('/ads/my').then(r => r.data),
     enabled: hasToken,
   });
+  const showSkel = useDelayedLoading(isLoading);
   const { data: products } = useQuery({
     queryKey: ['seller-products-simple'],
     queryFn: () => api.get('/products/me?limit=200').then(r => r.data?.data || []),
@@ -575,9 +578,7 @@ export default function AdsPage() {
 
       {/* Campaign list */}
       {isLoading ? (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-          {[...Array(3)].map((_, i) => <Skeleton key={i} height={110} sx={{ borderRadius: '16px', bgcolor: 'rgba(15,23,42,0.09)', transform: 'none' }} />)}
-        </Box>
+        showSkel ? <ListSkeleton rows={3} /> : null
       ) : list.length === 0 ? (
         <Box sx={{ textAlign: 'center', py: 12, borderRadius: '20px', bgcolor: CARD, border: `1px dashed rgba(15,23,42,0.09)` }}>
           <Box sx={{ width: 80, height: 80, borderRadius: '24px', bgcolor: 'rgba(255,107,0,0.1)', border: '1px solid rgba(255,107,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', mx: 'auto', mb: 2.5 }}>

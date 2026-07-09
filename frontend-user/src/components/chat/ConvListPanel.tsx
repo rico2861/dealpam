@@ -1,9 +1,11 @@
 import { useMemo, useState } from 'react';
-import { Box, Typography, InputBase, CircularProgress, Avatar } from '@mui/material';
+import { Box, Typography, InputBase, Avatar } from '@mui/material';
 import { Search, SupportAgent, ChatBubbleOutline } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
 import api from '../../api/axios';
 import { useAuthStore } from '../../store/auth.store';
+import { ListSkeleton } from '../shared/Skeletons';
+import { useDelayedLoading } from '../../hooks/useDelayedLoading';
 
 /* ── palette exacte (spec messagerie) ────────────────────────────────────── */
 export const CHAT_NAVY       = '#0F1B2E';
@@ -40,6 +42,7 @@ export default function ConvListPanel({ selectedUserId, onSelect }: { selectedUs
     refetchInterval: 20_000,
     refetchOnMount: 'always',
   });
+  const showSkel = useDelayedLoading(isLoading);
 
   const getOther = (conv: Conv) => conv.participants.find(p => p.userId !== user?.id);
   const getMe    = (conv: Conv) => conv.participants.find(p => p.userId === user?.id);
@@ -68,8 +71,8 @@ export default function ConvListPanel({ selectedUserId, onSelect }: { selectedUs
 
       {/* list */}
       <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
-        {isLoading && (
-          <Box sx={{ display: 'flex', justifyContent: 'center', pt: 6 }}><CircularProgress size={24} sx={{ color: CHAT_ORANGE }} /></Box>
+        {isLoading && showSkel && (
+          <Box sx={{ px: 1.5, pt: 1 }}><ListSkeleton rows={5} withImage /></Box>
         )}
         {!isLoading && filtered.length === 0 && (
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', pt: 6, px: 3 }}>
