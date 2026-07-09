@@ -249,28 +249,11 @@ function SideBanners({ banners }: { banners: typeof LEFT_BANNERS }) {
   );
 }
 
-/* ─── Hero carousel — slides par défaut (fallback si aucune bannière admin) ── */
-const DEFAULT_SLIDES = [
-  { img: 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=1400&q=85',
-    tag: 'NOUVEAUTÉS', title: 'Tout ce que vous\naimez, enfin local',
-    sub: 'Des milliers de produits de vendeurs haïtiens vérifiés',
-    cta: 'Découvrir', to: '/products', catFilter: null },
-  { img: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1400&q=85',
-    tag: 'MODE & STYLE', title: 'Tendances Mode\nÉté 2025',
-    sub: 'Vêtements, chaussures et accessoires tendance',
-    cta: 'Shopper', to: '/products?category=vetements', catFilter: 'vetements' },
-  { img: 'https://images.unsplash.com/photo-1611186871525-4cf23d23c4ca?w=1400&q=85',
-    tag: 'HIGH-TECH', title: 'Smartphones &\nÉlectronique',
-    sub: "iPhone, Samsung, MacBook — jusqu'à -35%",
-    cta: 'Voir les offres', to: '/products?category=smartphones', catFilter: 'smartphones' },
-  { img: 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=1400&q=85',
-    tag: 'VÉHICULES', title: 'Voitures &\nAccessoires Auto',
-    sub: 'Toyota, Honda, Hyundai — meilleurs prix en Haïti',
-    cta: 'Explorer', to: '/products?category=vehicules', catFilter: 'vehicules' },
-];
+/* ─── Hero carousel — piloté à 100% par l'admin (page "Pubs Homepage") ─────── */
+type HeroSlide = { img: string; tag: string; title: string; sub: string; cta: string; to: string; catFilter: string | null };
 
 /* ─── Central carousel — moderne, responsive, swipe tactile ──────────────── */
-function CentralCarousel({ allProducts, slides }: { allProducts: any[]; slides: typeof DEFAULT_SLIDES }) {
+function CentralCarousel({ allProducts, slides }: { allProducts: any[]; slides: HeroSlide[] }) {
   const [idx,     setIdx]     = useState(0);
   const [prog,    setProg]    = useState(0);
   const [miniIdx, setMiniIdx] = useState(0);
@@ -495,7 +478,11 @@ function CentralCarousel({ allProducts, slides }: { allProducts: any[]; slides: 
 }
 
 /* ─── Hero wrapper ───────────────────────────────────────────────────────── */
-function HeroSection({ allProducts, slides }: { allProducts: any[]; slides: typeof DEFAULT_SLIDES }) {
+function HeroSection({ allProducts, slides }: { allProducts: any[]; slides: HeroSlide[] }) {
+  // Aucune bannière configurée par l'admin ("Pubs Homepage") : on n'affiche
+  // plus de contenu marketing statique par défaut, la section est simplement
+  // masquée jusqu'à ce qu'au moins une bannière soit ajoutée.
+  if (slides.length === 0) return null;
   return (
     <Box sx={{
       bgcolor: { xs: '#0F172A', md: PG },
@@ -2410,19 +2397,18 @@ export default function HomePage() {
   // choisies par l'admin (isFeatured) — jamais de faux produits inventés.
   const carouselPool = apiPool.length >= 4 ? apiPool : (featured as any[]);
 
-  // Grand carousel hero — piloté par l'admin (bannières homepage), avec repli
-  // sur des slides marketing par défaut si aucune bannière n'est configurée.
-  const heroSlides = (banners as any[]).length > 0
-    ? (banners as any[]).map((b) => ({
-        img: b.imageUrl,
-        tag: b.tag || '',
-        title: b.title || '',
-        sub: b.subtitle || '',
-        cta: b.ctaText || 'Découvrir',
-        to: b.targetUrl,
-        catFilter: b.catFilter || null,
-      }))
-    : DEFAULT_SLIDES;
+  // Grand carousel hero — entièrement piloté par l'admin (page "Pubs Homepage").
+  // Plus de contenu marketing statique en dur : si l'admin n'a configuré aucune
+  // bannière, la section hero ne s'affiche simplement pas (voir HeroSection).
+  const heroSlides = (banners as any[]).map((b) => ({
+    img: b.imageUrl,
+    tag: b.tag || '',
+    title: b.title || '',
+    sub: b.subtitle || '',
+    cta: b.ctaText || 'Découvrir',
+    to: b.targetUrl,
+    catFilter: b.catFilter || null,
+  }));
 
   // Produits recommandés : mix des 3 catégories les plus vues, dédupliqués
   const recommendedProducts = (() => {
