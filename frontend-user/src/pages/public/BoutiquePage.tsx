@@ -8,7 +8,7 @@ import {
   Collapse, LinearProgress,
 } from '@mui/material';
 import {
-  Verified, Star, LocationOn, Phone, WhatsApp, Email,
+  Verified, Star, LocationOn, Phone, Email,
   ContentCopy, CheckCircle as CheckCircleIcon, ShoppingBag,
   AccessTime, Security, Description, Gavel, BusinessCenter, Badge, OpenInNew,
   Chat, Close, Send, FiberManualRecord, Share, ArrowBack,
@@ -533,74 +533,69 @@ export default function BoutiquePage() {
   const verifiedDoc = docs.some((d: any) => d.isValid);
   const allStores   = (seller?.stores ?? []) as any[];
   const otherStores = allStores.filter((s: any) => s.slug !== slug);
-  const plan        = seller?.subscriptions?.[0]?.plan;
   const products    = (prodsPages?.pages ?? []).flatMap((p: any) => p.data ?? []);
   const totalProds  = prodsPages?.pages?.[0]?.total ?? 0;
-  const waNum       = store.whatsapp || store.phone;
 
   return (
     <Box sx={{ bgcolor: BG, minHeight: '100vh', pb: { xs: 10, md: 6 } }}>
 
       {/* ── HERO ──────────────────────────────────────────────────────────── */}
-      <Box sx={{ position: 'relative', height: { xs: 200, md: 300 }, overflow: 'hidden', bgcolor: '#0F172A' }}>
+      <Box sx={{ position: 'relative', height: { xs: 220, md: 320 }, overflow: 'hidden', bgcolor: '#0F172A', borderRadius: { xs: 0, md: '0 0 28px 28px' } }}>
         {store.bannerUrl ? (
           <Box component="img" src={store.bannerUrl} alt="banner"
-            sx={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.7 }} />
+            sx={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.75 }} />
         ) : (
           <Box sx={{
             width: '100%', height: '100%',
-            background: 'linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #2D1B00 100%)',
-          }} />
+            background: 'linear-gradient(135deg, #0F172A 0%, #1E293B 55%, #2D1B00 100%)',
+          }}>
+            <Box sx={{ position: 'absolute', right: -80, top: -80, width: 320, height: 320, borderRadius: '50%',
+              background: `radial-gradient(circle,${alpha(ORANGE, 0.25)},transparent 70%)` }} />
+          </Box>
         )}
-        <Box sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 60%)' }} />
+        <Box sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.75) 0%, transparent 55%)' }} />
 
         {/* Back */}
         <IconButton onClick={() => navigate(-1)}
-          sx={{ position: 'absolute', top: 12, left: 12, bgcolor: 'rgba(0,0,0,0.45)', color: 'white',
-            '&:hover': { bgcolor: 'rgba(0,0,0,0.65)' } }}>
+          sx={{ position: 'absolute', top: 16, left: 16, bgcolor: 'rgba(0,0,0,0.4)', color: 'white', backdropFilter: 'blur(6px)',
+            '&:hover': { bgcolor: 'rgba(0,0,0,0.6)' } }}>
           <ArrowBack />
         </IconButton>
 
         {/* Share */}
         <IconButton onClick={share}
-          sx={{ position: 'absolute', top: 12, right: 12, bgcolor: 'rgba(0,0,0,0.45)', color: 'white',
-            '&:hover': { bgcolor: 'rgba(0,0,0,0.65)' } }}>
+          sx={{ position: 'absolute', top: 16, right: 16, bgcolor: 'rgba(0,0,0,0.4)', color: 'white', backdropFilter: 'blur(6px)',
+            '&:hover': { bgcolor: 'rgba(0,0,0,0.6)' } }}>
           {copied ? <CheckCircleIcon /> : <Share />}
         </IconButton>
       </Box>
 
       {/* ── STORE IDENTITY ────────────────────────────────────────────────── */}
-      <Box sx={{ bgcolor: 'white', borderBottom: '1px solid #E5E7EB', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
+      <Box sx={{ bgcolor: 'white', borderBottom: '1px solid #E5E7EB' }}>
         <Container maxWidth="xl">
-          <Box sx={{ display: 'flex', gap: 2.5, alignItems: 'flex-end', pt: { xs: 0, md: 0 }, pb: 2.5, mt: -5, position: 'relative', flexWrap: 'wrap' }}>
+          <Box sx={{ display: 'flex', gap: 2.5, alignItems: 'flex-end', pb: 2.5, mt: -6, position: 'relative', flexWrap: 'wrap' }}>
             {/* Logo */}
-            <Box sx={{ width: { xs: 72, md: 96 }, height: { xs: 72, md: 96 }, borderRadius: 3,
-              border: '3px solid white', overflow: 'hidden', flexShrink: 0, boxShadow: '0 4px 16px rgba(0,0,0,0.15)', bgcolor: 'white' }}>
+            <Box sx={{ width: { xs: 84, md: 108 }, height: { xs: 84, md: 108 }, borderRadius: '22px',
+              border: '4px solid white', overflow: 'hidden', flexShrink: 0, boxShadow: '0 8px 24px rgba(0,0,0,0.18)', bgcolor: 'white' }}>
               {store.logoUrl ? (
                 <Box component="img" src={store.logoUrl} alt={store.name}
                   sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               ) : (
-                <Box sx={{ width: '100%', height: '100%', bgcolor: ORANGE, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Typography fontSize={32} fontWeight={900} color="white">{store.name?.[0]?.toUpperCase()}</Typography>
+                <Box sx={{ width: '100%', height: '100%', background: `linear-gradient(135deg,${ORANGE},#E05A00)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Typography fontSize={36} fontWeight={900} color="white">{store.name?.[0]?.toUpperCase()}</Typography>
                 </Box>
               )}
             </Box>
 
             {/* Info */}
-            <Box sx={{ flex: 1, minWidth: 0, pb: 0.5 }}>
+            <Box sx={{ flex: 1, minWidth: 0, pb: 0.8 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                <Typography fontWeight={900} fontSize={{ xs: 20, md: 26 }} color="#0F1111">{store.name}</Typography>
+                <Typography fontWeight={900} fontSize={{ xs: 21, md: 27 }} color="#0F172A" letterSpacing="-0.5px">{store.name}</Typography>
                 {(store.isVerified || verifiedDoc) && (
                   <Verified sx={{ fontSize: 22, color: ORANGE }} />
                 )}
-                {plan && (
-                  <Chip label={plan.name ?? plan.tier} size="small"
-                    sx={{ height: 20, fontSize: 10.5, fontWeight: 700,
-                      bgcolor: plan.tier === 'ELITE' ? '#A855F7' : plan.tier === 'PREMIUM' ? '#F59E0B' : '#3B82F6',
-                      color: 'white' }} />
-                )}
               </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mt: 0.6, flexWrap: 'wrap' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mt: 0.7, flexWrap: 'wrap' }}>
                 {store.avgRating > 0 && (
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     <Star sx={{ fontSize: 15, color: GOLD }} />
@@ -624,16 +619,7 @@ export default function BoutiquePage() {
             </Box>
 
             {/* Actions */}
-            <Box sx={{ display: 'flex', gap: 1, flexShrink: 0, pb: 0.5 }}>
-              {waNum && (
-                <Button variant="outlined" startIcon={<WhatsApp />}
-                  component="a" target="_blank"
-                  href={`https://wa.me/${waNum.replace(/\D/g, '')}?text=Bonjour, j'ai vu votre boutique DealPam ${store.name} !`}
-                  sx={{ borderColor: '#25D366', color: '#25D366', fontWeight: 700, borderRadius: 2.5, borderWidth: 1.5,
-                    '&:hover': { bgcolor: '#F0FDF4', borderWidth: 1.5 } }}>
-                  Contacter
-                </Button>
-              )}
+            <Box sx={{ display: 'flex', gap: 1, flexShrink: 0, pb: 0.8 }}>
               <Button variant="contained" startIcon={<Chat />}
                 onClick={() => { if (!user) navigate('/login'); else setChatOpen(p => !p); }}
                 sx={{ background: `linear-gradient(135deg, #E05A00, ${ORANGE})`,
