@@ -7,8 +7,9 @@ import {
 import {
   Save, Upload, Visibility, CheckCircle,
   PendingOutlined, ErrorOutline, Description, Person, Business,
-  Lock, ChatBubbleOutline,
+  Lock, ChatBubbleOutline, WorkspacePremium, ArrowForward, Badge as BadgeIcon,
 } from '@mui/icons-material';
+import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import api from '../../api/axios';
@@ -84,7 +85,9 @@ function DocStatus({ isValid }: { isValid: boolean | null }) {
   return <Box sx={{ px: 0.9, py: 0.2, borderRadius: '6px', bgcolor: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.25)' }}><Typography fontSize={10} fontWeight={700} color={YLW}>En attente</Typography></Box>;
 }
 
-function AwayMessageSection() {
+// Réservé aux plans Business et supérieurs — vérifié aussi côté backend
+// (UsersService.updateAwayMessage), ce contrôle UI est juste pour l'expérience.
+function AwayMessageSection({ canUse, planName }: { canUse: boolean; planName?: string }) {
   const { enqueueSnackbar } = useSnackbar();
   const { data, refetch } = useQuery<{ awayMessageEnabled: boolean; awayMessage: string | null }>({
     queryKey: ['away-message'],
@@ -105,9 +108,40 @@ function AwayMessageSection() {
       await api.patch('/users/me/away-message', { enabled, message: message || null });
       enqueueSnackbar('Message d\'absence sauvegardé', { variant: 'success' });
       refetch();
-    } catch { enqueueSnackbar('Erreur', { variant: 'error' }); }
+    } catch (e: any) {
+      enqueueSnackbar(e?.response?.data?.message || 'Erreur', { variant: 'error' });
+    }
     finally { setSaving(false); }
   };
+
+  if (!canUse) {
+    return (
+      <Box sx={{ borderRadius: '16px', bgcolor: CARD, border: `1px solid ${BORD}`, p: 2.5, position: 'relative', overflow: 'hidden' }}>
+        <SectionHead icon={ChatBubbleOutline} label="Message d'absence automatique" color={BLU} />
+        <Box sx={{
+          p: 2.5, borderRadius: '14px', textAlign: 'center',
+          background: 'linear-gradient(135deg,rgba(139,92,246,0.08),rgba(59,130,246,0.05))',
+          border: '1px solid rgba(139,92,246,0.2)',
+        }}>
+          <Box sx={{ width: 40, height: 40, borderRadius: '11px', mx: 'auto', mb: 1.2, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            bgcolor: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)' }}>
+            <WorkspacePremium sx={{ fontSize: 20, color: PUR }} />
+          </Box>
+          <Typography fontWeight={800} fontSize={14} color={TXT} mb={0.5}>Fonctionnalité Business</Typography>
+          <Typography fontSize={12.5} color={SUB} mb={2} sx={{ maxWidth: 380, mx: 'auto' }}>
+            Le message d'absence automatique, envoyé à vos clients quand vous êtes hors ligne, est réservé aux plans
+            <strong style={{ color: TXT }}> Business</strong>, <strong style={{ color: TXT }}>Premium</strong> et <strong style={{ color: TXT }}>Elite</strong>
+            {planName ? ` — vous êtes actuellement sur le plan ${planName}.` : '.'}
+          </Typography>
+          <Button component={Link} to="/seller/subscription" endIcon={<ArrowForward sx={{ fontSize: 15 }} />}
+            sx={{ bgcolor: PUR, color: '#fff', borderRadius: '10px', fontWeight: 700, fontSize: 13, px: 2.5,
+              '&:hover': { bgcolor: '#7C3AED' } }}>
+            Voir les plans
+          </Button>
+        </Box>
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ borderRadius: '16px', bgcolor: CARD, border: `1px solid ${BORD}`, p: 2.5 }}>
@@ -166,6 +200,14 @@ export default function SellerProfilePage() {
     enabled: hasToken,
   });
 
+  const { data: currentSub } = useQuery({
+    queryKey: ['sellerSub'],
+    queryFn: () => api.get('/subscriptions/me').then(r => r.data).catch(() => null),
+    enabled: hasToken,
+  });
+  const planTier = currentSub?.plan?.tier ?? null;
+  const canUseAwayMessage = !!planTier && planTier !== 'STARTER';
+
   const profileMut = useMutation({
     mutationFn: (data: any) => api.patch('/sellers/me/profile', data),
     onSuccess: () => { setProfileTouched(false); enqueueSnackbar('Profil mis à jour !', { variant: 'success' }); },
@@ -211,10 +253,22 @@ export default function SellerProfilePage() {
   return (
     <Box sx={{ p: { xs: 2, md: 3 }, bgcolor: BG, minHeight: '100vh' }}>
 
-      {/* Header */}
-      <Box sx={{ mb: 3 }}>
-        <Typography fontWeight={900} fontSize={{ xs: 20, md: 24 }} color={TXT} letterSpacing="-0.5px">Profil & Documents</Typography>
-        <Typography fontSize={13} color={SUB}>Complétez votre profil pour obtenir le badge de confiance DealPam</Typography>
+      {/* Hero header */}
+      <Box sx={{
+        mb: 3, p: { xs: 2.5, md: 3 }, borderRadius: '20px', position: 'relative', overflow: 'hidden',
+        background: 'linear-gradient(135deg,#0F172A 0%,#1E293B 55%,#1E293B 100%)',
+        display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap',
+      }}>
+        <Box sx={{ position: 'absolute', right: -60, top: -60, width: 220, height: 220, borderRadius: '50%',
+          background: `radial-gradient(circle,${OR}33,transparent 70%)` }} />
+        <Box sx={{ width: 52, height: 52, borderRadius: '14px', flexShrink: 0, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          bgcolor: `${OR}22`, border: `1px solid ${OR}44` }}>
+          <BadgeIcon sx={{ color: OR, fontSize: 26 }} />
+        </Box>
+        <Box sx={{ position: 'relative' }}>
+          <Typography fontWeight={900} fontSize={{ xs: 19, md: 23 }} color="#fff" letterSpacing="-0.4px">Profil & Documents</Typography>
+          <Typography fontSize={12.5} color="rgba(255,255,255,0.55)">Complétez votre profil pour obtenir le badge de confiance DealPam</Typography>
+        </Box>
       </Box>
 
       {/* Statut de vérification du compte */}
@@ -422,7 +476,7 @@ export default function SellerProfilePage() {
       </Box>
 
       {/* Away message */}
-      <AwayMessageSection />
+      <AwayMessageSection canUse={canUseAwayMessage} planName={currentSub?.plan?.name} />
     </Box>
   );
 }

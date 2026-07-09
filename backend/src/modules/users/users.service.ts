@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
@@ -100,7 +100,24 @@ export class UsersService {
     });
   }
 
-  updateAwayMessage(id: string, enabled: boolean, message?: string) {
+  // ── Message d'absence : réservé aux plans BUSINESS et supérieurs ──────────
+  // La désactivation reste toujours permise (un vendeur qui redescend au plan
+  // STARTER ne doit pas rester bloqué avec un message actif qu'il ne peut plus
+  // éditer) ; seule l'ACTIVATION est bloquée sans plan suffisant. Vérifié ici
+  // (pas seulement côté UI) pour ne pas dépendre uniquement du frontend.
+  async updateAwayMessage(id: string, enabled: boolean, message?: string) {
+    if (enabled) {
+      const seller = await this.prisma.seller.findUnique({ where: { userId: id } });
+      const sub = seller ? await this.prisma.sellerSubscription.findFirst({
+        where: { sellerId: seller.id, isActive: true, endDate: { gt: new Date() } },
+        include: { plan: true },
+      }) : null;
+      if (!sub || sub.plan.tier === 'STARTER') {
+        throw new ForbiddenException(
+          'Le message d\'absence automatique nécessite un plan Business ou supérieur.'
+        );
+      }
+    }
     return (this.prisma.user as any).update({
       where: { id },
       data: { awayMessageEnabled: enabled, awayMessage: message ?? null },
