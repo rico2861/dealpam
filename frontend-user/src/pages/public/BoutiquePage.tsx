@@ -530,7 +530,6 @@ export default function BoutiquePage() {
 
   const seller      = store.seller;
   const docs        = (seller?.documents ?? []) as any[];
-  const verifiedDoc = docs.some((d: any) => d.isValid);
   const allStores   = (seller?.stores ?? []) as any[];
   const otherStores = allStores.filter((s: any) => s.slug !== slug);
   const products    = (prodsPages?.pages ?? []).flatMap((p: any) => p.data ?? []);
@@ -591,8 +590,17 @@ export default function BoutiquePage() {
             <Box sx={{ flex: 1, minWidth: 0, pb: 0.8 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
                 <Typography fontWeight={900} fontSize={{ xs: 21, md: 27 }} color="#0F172A" letterSpacing="-0.5px">{store.name}</Typography>
-                {(store.isVerified || verifiedDoc) && (
-                  <Verified sx={{ fontSize: 22, color: ORANGE }} />
+                {store.isVerified && (
+                  <Tooltip title="Identité et selfie vérifiés par DealPam">
+                    <Verified sx={{ fontSize: 22, color: ORANGE }} />
+                  </Tooltip>
+                )}
+                {store.hasVerifiedPatente && (
+                  <Tooltip title="Patente commerciale vérifiée par DealPam">
+                    <Chip icon={<Description sx={{ fontSize: '14px !important' }} />} label="Patente vérifiée" size="small"
+                      sx={{ height: 22, fontSize: 10.5, fontWeight: 700, bgcolor: alpha('#10B981', 0.1), color: '#10B981',
+                        border: '1px solid rgba(16,185,129,0.3)' }} />
+                  </Tooltip>
                 )}
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mt: 0.7, flexWrap: 'wrap' }}>

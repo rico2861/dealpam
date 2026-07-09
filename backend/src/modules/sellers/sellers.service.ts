@@ -359,8 +359,10 @@ export class SellersService {
   }
 
   // ── Badge logic ───────────────────────────────────────────────────────────
-  // isVerified = true  si vendeur APPROVED + au moins 1 document isValid=true
-  // isVerified = false si vendeur suspendu/rejeté ou aucun document validé
+  // isVerified = true si vendeur APPROVED + pièce d'identité ET selfie validés.
+  // La patente commerciale est optionnelle pour ce badge — elle n'accorde qu'un
+  // badge distinct "Patente vérifiée" (hasVerifiedPatente), affiché publiquement
+  // en plus si le vendeur choisit de la fournir (crédibilité supplémentaire).
   async adminSetVerified(sellerId: string, isVerified: boolean) {
     const seller = await this.prisma.seller.findUnique({
       where: { id: sellerId },
@@ -382,10 +384,13 @@ export class SellersService {
       },
     });
     if (!seller || !seller.stores[0]) return;
-    const shouldVerify = seller.status === 'APPROVED' && seller.documents.length > 0;
+    const hasIdentity = seller.documents.some(d => d.type === 'IDENTITY');
+    const hasSelfie    = seller.documents.some(d => d.type === 'SELFIE');
+    const hasPatente   = seller.documents.some(d => d.type === 'PATENTE');
+    const shouldVerify = seller.status === 'APPROVED' && hasIdentity && hasSelfie;
     await this.prisma.store.update({
       where: { id: seller.stores[0].id },
-      data:  { isVerified: shouldVerify },
+      data:  { isVerified: shouldVerify, hasVerifiedPatente: hasPatente },
     });
   }
 

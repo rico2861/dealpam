@@ -283,6 +283,7 @@ model Store {
   totalReviews     Int       @default(0) @map("total_reviews")
   totalSales       Int       @default(0) @map("total_sales")
   isVerified       Boolean   @default(false) @map("is_verified")
+  hasVerifiedPatente Boolean @default(false) @map("has_verified_patente")
   isActive         Boolean   @default(true) @map("is_active")
   badges           String[]  @default([])
   reputationScore  Float     @default(100) @map("reputation_score")

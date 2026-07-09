@@ -549,17 +549,21 @@ export class PaymentsService {
           data:    isImmediate ? { isActive: true } : {},
           include: { seller: { include: { stores: { where: { isPrimary: true }, take: 1 } } }, plan: true },
         });
-        // Badge tier : le plan payant déclenche isVerified si le vendeur est APPROVED
+        // Badge "Vérifié" : nécessite vendeur APPROVED + pièce d'identité ET selfie
+        // validés (la patente reste optionnelle, cf. SellersService._syncStoreVerification —
+        // même règle appliquée ici pour rester cohérent avec la validation de documents).
         if (isImmediate && sub.seller.status === 'APPROVED' && sub.seller.stores[0]) {
-          const hasDocs = await this.prisma.businessDocument.count({
+          const validDocs = await this.prisma.businessDocument.findMany({
             where: { sellerId: sub.sellerId, isValid: true },
+            select: { type: true },
           });
-          if (hasDocs > 0) {
-            await tx.store.update({
-              where: { id: sub.seller.stores[0].id },
-              data:  { isVerified: true },
-            });
-          }
+          const hasIdentity = validDocs.some(d => d.type === 'IDENTITY');
+          const hasSelfie   = validDocs.some(d => d.type === 'SELFIE');
+          const hasPatente  = validDocs.some(d => d.type === 'PATENTE');
+          await tx.store.update({
+            where: { id: sub.seller.stores[0].id },
+            data:  { isVerified: hasIdentity && hasSelfie, hasVerifiedPatente: hasPatente },
+          });
         }
 
         // Enregistrer l'utilisation du coupon (si un coupon avait été appliqué à l'initiation)

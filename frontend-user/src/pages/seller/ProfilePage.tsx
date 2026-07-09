@@ -28,10 +28,15 @@ const YLW  = '#F59E0B';
 const BLU  = '#3B82F6';
 const PUR  = '#8B5CF6';
 
+// La patente commerciale est volontairement optionnelle pour le badge "Vérifié" —
+// seuls pièce d'identité + selfie sont requis (cf. SellersService._syncStoreVerification
+// côté backend, qui applique exactement cette même règle). La patente, si fournie et
+// validée, accorde un badge distinct "Patente vérifiée" affiché publiquement sur la
+// boutique — un vrai plus de crédibilité, mais jamais un blocage pour être "Vérifié".
 const DOC_TYPES = [
-  { value: 'PATENTE',               label: 'Patente commerciale',       required: true },
   { value: 'IDENTITY',              label: 'Pièce d\'identité (CIN, passeport, permis)', required: true },
   { value: 'SELFIE',                label: 'Selfie (vérification faciale)', required: true },
+  { value: 'PATENTE',               label: 'Patente commerciale',       required: false },
   { value: 'BUSINESS_REGISTRATION', label: 'Enregistrement commercial', required: false },
   { value: 'TAX',                   label: 'Document fiscal (NIF)',     required: false },
   { value: 'LEGAL',                 label: 'Document juridique',        required: false },
@@ -471,6 +476,13 @@ export default function SellerProfilePage() {
                 </Box>
               );
             })}
+          </Box>
+          <Box sx={{ mt: 1.5, p: 1.5, borderRadius: '10px', bgcolor: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.2)' }}>
+            <Typography fontSize={12} color={SUB2}>
+              💡 La <strong style={{ color: TXT }}>patente commerciale</strong> reste optionnelle pour le badge "Vérifié", mais si vous
+              la fournissez et qu'elle est validée, un badge <strong style={{ color: TXT }}>"Patente vérifiée"</strong> distinct
+              s'affiche publiquement sur votre boutique — un vrai plus de crédibilité auprès des clients.
+            </Typography>
           </Box>
         </Box>
       </Box>

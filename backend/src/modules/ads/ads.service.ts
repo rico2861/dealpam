@@ -21,7 +21,16 @@ export class AdsService {
 
   async createCampaign(sellerId: string, dto: CreateCampaignDto) {
     const seller = await this.prisma.seller.findUnique({ where: { id: sellerId }, include: { stores: true } });
-    if (!seller || seller.status !== 'APPROVED') throw new ForbiddenException('Boutique non approuvée');
+    if (!seller) throw new NotFoundException('Vendeur introuvable');
+    if (seller.status !== 'APPROVED') {
+      throw new ForbiddenException(
+        seller.status === 'PENDING'
+          ? 'Votre compte vendeur est en cours de vérification par notre équipe — les campagnes publicitaires seront disponibles dès son approbation.'
+          : seller.status === 'REJECTED'
+            ? 'Votre compte vendeur n\'est pas approuvé — corrigez et renvoyez vos documents depuis Profil & Documents pour débloquer les campagnes publicitaires.'
+            : 'Votre compte vendeur doit être approuvé pour créer une campagne publicitaire.'
+      );
+    }
 
     if (!dto.productId && !dto.storeId) throw new BadRequestException('Sélectionnez un produit ou une boutique à promouvoir');
 
