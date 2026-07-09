@@ -26,6 +26,15 @@ export default function MoncashTransactionsPage() {
       api.post('/admin/moncash-transactions/lookup', payload).then(r => r.data),
   });
 
+  // Déclenche la vérification/crédit réel (même endpoint que le retour MonCash côté client) —
+  // utile quand une transaction MonCash est trouvée mais n'a jamais été créditée (ex: bug de
+  // routage côté client déjà corrigé, coupure réseau au retour, etc.).
+  const forceCredit = useMutation({
+    mutationFn: (transactionId: string) =>
+      api.post('/payments/verify', { transaction_id: transactionId }).then(r => r.data),
+    onSuccess: () => refetch(),
+  });
+
   const { data = { data: [], total: 0 }, isLoading, refetch } = useQuery({
     queryKey: ['admin-moncash-tx', statusFilter],
     queryFn: () => api.get('/admin/moncash-transactions', {
@@ -116,6 +125,30 @@ export default function MoncashTransactionsPage() {
                     </Typography>
                   </Box>
                 ))}
+              </Box>
+            )}
+
+            {lookup.data.found && lookup.data.message === 'successful' && (
+              <Box sx={{ mt: 2.5 }}>
+                <Button
+                  variant="contained" color="success"
+                  onClick={() => forceCredit.mutate(lookup.data.transaction_id)}
+                  disabled={forceCredit.isPending}
+                >
+                  {forceCredit.isPending ? <CircularProgress size={18} sx={{ color: 'white' }} /> : 'Forcer la vérification / le crédit'}
+                </Button>
+                {forceCredit.isSuccess && (
+                  <Alert severity="success" sx={{ mt: 1.5 }}>
+                    {forceCredit.data.type === 'wallet'
+                      ? `Wallet crédité : ${forceCredit.data.amount} HTG (nouveau solde : ${forceCredit.data.balance} HTG)`
+                      : `Traitement effectué (type: ${forceCredit.data.type ?? 'inconnu'})`}
+                  </Alert>
+                )}
+                {forceCredit.isError && (
+                  <Alert severity="error" sx={{ mt: 1.5 }}>
+                    {(forceCredit.error as any)?.response?.data?.message ?? 'Échec de la vérification/crédit'}
+                  </Alert>
+                )}
               </Box>
             )}
           </Box>
