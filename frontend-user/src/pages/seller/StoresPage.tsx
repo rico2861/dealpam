@@ -532,27 +532,28 @@ export default function SellerStoresPage() {
   return (
     <Box sx={{ p: { xs: 2, md: 3 }, bgcolor: BG, minHeight: '100vh' }}>
 
-      {/* Hero header */}
+      {/* Hero header — fusionne titre + statut du quota + CTA unique (plus de bouton dupliqué) */}
       <Box sx={{
         mb: 3, p: { xs: 2.5, md: 3 }, borderRadius: '20px', position: 'relative', overflow: 'hidden',
         background: 'linear-gradient(135deg,#0F172A 0%,#1E293B 55%,#1E293B 100%)',
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2,
+        display: 'flex', flexDirection: 'column', gap: canCreate ? 0 : 2,
       }}>
         <Box sx={{ position: 'absolute', right: -60, top: -60, width: 220, height: 220, borderRadius: '50%',
-          background: `radial-gradient(circle,${OR}33,transparent 70%)` }} />
-        <Box sx={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Box sx={{ width: 52, height: 52, borderRadius: '14px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-            bgcolor: `${OR}22`, border: `1px solid ${OR}44` }}>
-            <StorefrontOutlined sx={{ color: OR, fontSize: 26 }} />
+          background: `radial-gradient(circle,${(canCreate ? OR : BLU)}30,transparent 70%)` }} />
+
+        <Box sx={{ position: 'relative', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Box sx={{ width: 52, height: 52, borderRadius: '14px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              bgcolor: `${OR}22`, border: `1px solid ${OR}44` }}>
+              <StorefrontOutlined sx={{ color: OR, fontSize: 26 }} />
+            </Box>
+            <Box>
+              <Typography fontWeight={900} fontSize={{ xs: 19, md: 23 }} color="#fff" letterSpacing="-0.4px">Mes boutiques</Typography>
+              <Typography fontSize={12.5} color="rgba(255,255,255,0.55)">
+                {stores.length} / {maxStores} boutique{maxStores > 1 ? 's' : ''} utilisée{maxStores > 1 ? 's' : ''}
+              </Typography>
+            </Box>
           </Box>
-          <Box>
-            <Typography fontWeight={900} fontSize={{ xs: 19, md: 23 }} color="#fff" letterSpacing="-0.4px">Mes boutiques</Typography>
-            <Typography fontSize={12.5} color="rgba(255,255,255,0.55)">
-              {stores.length} / {maxStores} boutique{maxStores > 1 ? 's' : ''} utilisée{maxStores > 1 ? 's' : ''}
-            </Typography>
-          </Box>
-        </Box>
-        <Box sx={{ position: 'relative' }}>
           {canCreate ? (
             <Button onClick={() => setCreateOpen(true)} startIcon={<Add sx={{ fontSize: 18 }} />}
               sx={{ bgcolor: OR, color: '#fff', borderRadius: '12px', fontWeight: 700, px: 2.5, py: 1.2,
@@ -560,42 +561,23 @@ export default function SellerStoresPage() {
               Nouvelle boutique
             </Button>
           ) : (
-            <Button onClick={() => navigate('/seller/subscription')} startIcon={<ArrowForward sx={{ fontSize: 17 }} />}
+            <Button onClick={() => navigate('/seller/subscription')} endIcon={<ArrowForward sx={{ fontSize: 15 }} />}
               sx={{ bgcolor: BLU, color: '#fff', borderRadius: '12px', fontWeight: 700, px: 2.5, py: 1.2,
                 boxShadow: '0 4px 14px rgba(59,130,246,0.35)', '&:hover': { bgcolor: '#2563EB' } }}>
-              Upgrader mon plan
+              Voir les plans
             </Button>
           )}
         </Box>
-      </Box>
 
-      {!canCreate && stores.length >= maxStores && (
-        <Box sx={{
-          mb: 3, p: 2.2, borderRadius: '16px', display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap',
-          position: 'relative', overflow: 'hidden',
-          background: 'linear-gradient(135deg,#101A2E 0%,#16213A 100%)', border: '1px solid rgba(59,130,246,0.3)',
-        }}>
-          <Box sx={{ position: 'absolute', right: -30, top: -30, width: 140, height: 140, borderRadius: '50%',
-            background: `radial-gradient(circle,${BLU}22,transparent 70%)` }} />
-          <Box sx={{ width: 42, height: 42, borderRadius: '12px', bgcolor: 'rgba(59,130,246,0.18)', border: '1px solid rgba(59,130,246,0.4)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, position: 'relative' }}>
-            <StorefrontOutlined sx={{ fontSize: 20, color: BLU }} />
-          </Box>
-          <Box sx={{ flex: 1, position: 'relative', minWidth: 200 }}>
-            <Typography fontSize={13.5} fontWeight={800} color="#fff">
-              Limite de {maxStores} boutique{maxStores > 1 ? 's' : ''} atteinte
-            </Typography>
-            <Typography fontSize={12} color="rgba(255,255,255,0.55)">
-              Passez au plan supérieur pour créer davantage de boutiques et développer votre activité.
+        {!canCreate && (
+          <Box sx={{ position: 'relative', mt: 0.5, pt: 2, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+            <Typography fontSize={12.5} color="rgba(255,255,255,0.6)">
+              <strong style={{ color: '#fff' }}>Limite de {maxStores} boutique{maxStores > 1 ? 's' : ''} atteinte</strong> — passez
+              au plan supérieur pour en créer davantage et développer votre activité.
             </Typography>
           </Box>
-          <Button onClick={() => navigate('/seller/subscription')} endIcon={<ArrowForward sx={{ fontSize: 14 }} />}
-            sx={{ position: 'relative', borderRadius: '10px', bgcolor: BLU, color: '#fff', fontWeight: 700, fontSize: 12.5, px: 2, flexShrink: 0,
-              '&:hover': { bgcolor: '#2563EB' } }}>
-            Voir les plans
-          </Button>
-        </Box>
-      )}
+        )}
+      </Box>
 
       {isLoading ? (
         showSkel ? (
