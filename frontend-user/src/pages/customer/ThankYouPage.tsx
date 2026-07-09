@@ -37,15 +37,23 @@ const DELIVERY_LABELS: Record<string, string> = {
  *  - "subscription" : paiement d'un abonnement vendeur (via MoncashReturnHandler)
  */
 export default function ThankYouPage() {
-  const { state } = useLocation();
+  const { state, search } = useLocation();
   const navigate  = useNavigate();
   const user      = useAuthStore((s) => s.user);
   const firstName = user?.firstName || '';
 
   const type = state?.type ?? 'product';
 
+  // MonCash redirige le navigateur DIRECTEMENT vers cette page (URL de retour
+  // configurée dans le portail marchand MonCash) avec ?transactionId=... dans
+  // l'URL — jamais de `state` React Router pour un retour externe comme celui-ci.
+  // Rediriger immédiatement (comme avant) effaçait ce transactionId de l'URL
+  // avant que MoncashReturnHandler (monté au niveau App) ait pu le lire et
+  // vérifier le paiement — le paiement n'était donc jamais confirmé.
+  const hasPendingMoncashReturn = new URLSearchParams(search).has('transactionId');
+
   useEffect(() => {
-    if (!state) navigate('/account/orders', { replace: true });
+    if (!state && !hasPendingMoncashReturn) navigate('/account/orders', { replace: true });
   }, []);
 
   if (!state) return null;
