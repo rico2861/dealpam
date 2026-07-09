@@ -326,12 +326,13 @@ function AccountDropdown({ user, isSeller, navigate, onClose, logout }: any) {
   ];
 
   const sellerItems = [
-    { label: 'Dashboard',    path: '/seller' },
-    { label: 'Produits',     path: '/seller/products' },
-    { label: 'Commandes',    path: '/seller/orders' },
-    { label: 'Boutique',     path: '/seller/store' },
-    { label: 'Statistiques', path: '/seller/statistics' },
-    { label: 'Abonnement',   path: '/seller/subscription' },
+    { label: 'Dashboard',      path: '/seller' },
+    { label: 'Produits',       path: '/seller/products' },
+    { label: 'Commandes',      path: '/seller/orders' },
+    { label: 'Ma boutique',    path: '/seller/store' },
+    { label: 'Mes boutiques',  path: '/seller/stores' },
+    { label: 'Statistiques',   path: '/seller/statistics' },
+    { label: 'Abonnement',     path: '/seller/subscription' },
   ];
 
   const TXT  = '#0F172A';
@@ -1118,10 +1119,11 @@ export default function Header() {
               </Box>
               <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.5, px: 0.5, pb: 0.5 }}>
                 {[
-                  { l: 'Dashboard', p: '/seller', I: Dashboard },
-                  { l: 'Produits',  p: '/seller/products', I: Inventory },
-                  { l: 'Commandes', p: '/seller/orders',   I: ShoppingBag },
-                  { l: 'Boutique',  p: '/seller/store',    I: GridView },
+                  { l: 'Dashboard',     p: '/seller',          I: Dashboard },
+                  { l: 'Produits',      p: '/seller/products', I: Inventory },
+                  { l: 'Commandes',     p: '/seller/orders',   I: ShoppingBag },
+                  { l: 'Ma boutique',   p: '/seller/store',    I: GridView },
+                  { l: 'Mes boutiques', p: '/seller/stores',   I: StorefrontOutlined },
                 ].map(({ l, p, I }) => (
                   <Box key={p} component={Link} to={p} onClick={() => setDrawerOpen(false)} sx={{
                     display: 'flex', alignItems: 'center', gap: 1, px: 1.2, py: 1, borderRadius: '12px',
