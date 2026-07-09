@@ -219,9 +219,9 @@ const LEFT_BANNERS = [
   { label: 'Tendances',    img: 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=400&q=80', to: '/products?sort=views' },
 ];
 const RIGHT_BANNERS = [
-  { label: 'Smartphones',    img: 'https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?w=400&q=80', to: '/products?category=smartphones' },
-  { label: 'Collection Auto',img: 'https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=400&q=80', to: '/products?category=vehicules' },
-  { label: 'Maison & Déco', img: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400&q=80', to: '/products?category=meubles' },
+  { label: 'Restaurant',     img: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400&q=80', to: '/products?category=restaurants' },
+  { label: 'Maison',         img: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400&q=80', to: '/products?category=maison' },
+  { label: 'Service',        img: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&q=80', to: '/products?category=services' },
 ];
 
 function SideBanners({ banners }: { banners: typeof LEFT_BANNERS }) {
