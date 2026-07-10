@@ -1,8 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../../prisma/prisma.service';
-import { WalletService } from '../wallet/wallet.service';
-import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class AdsCron {
@@ -12,11 +10,7 @@ export class AdsCron {
   // déclenchement (redémarrage, appel manuel) de facturer deux fois la même heure.
   private lastRunHour: string | null = null;
 
-  constructor(
-    private prisma: PrismaService,
-    private walletService: WalletService,
-    private notifications: NotificationsService,
-  ) {}
+  constructor(private prisma: PrismaService) {}
 
   @Cron(CronExpression.EVERY_HOUR)
   async handleDailyBilling() {
@@ -45,7 +39,6 @@ export class AdsCron {
     });
 
     let billed = 0;
-    let paused = 0;
 
     for (const campaign of campaigns) {
       try {
@@ -67,25 +60,13 @@ export class AdsCron {
           continue;
         }
 
-        const sellerUserId = campaign.seller.userId;
-        const balance = await this.walletService.getBalance(campaign.sellerId);
-
-        if (balance < charge) {
-          // Solde insuffisant — pause, pas de facturation, pas de lastBilledDate
-          // (ré-essaie chaque heure tant que le vendeur n'a pas rechargé).
-          await this.prisma.adCampaign.update({ where: { id: campaign.id }, data: { status: 'PAUSED' } });
-          await this.notifications.create(
-            sellerUserId,
-            'Campagne mise en pause — solde insuffisant',
-            `Votre campagne "${campaign.name}" a été mise en pause car votre solde Wallet (${balance} HTG) est insuffisant pour couvrir la facturation quotidienne (${charge.toFixed(2)} HTG). Rechargez votre wallet pour la relancer.`,
-            'CAMPAIGN_PAUSED_LOW_BALANCE',
-          ).catch(() => null);
-          paused++;
-          continue;
-        }
-
-        await this.walletService.deductDailyForCampaign(campaign.sellerId, campaign.id, charge);
-
+        // Correctif double-facturation : le budget total est déjà intégralement
+        // débité du wallet UNE SEULE FOIS au moment du paiement (AdsService.payCampaign
+        // pour Wallet ; paiement MonCash externe sinon) — cette tâche ne doit donc
+        // JAMAIS re-débiter le wallet ici. Elle ne fait qu'incrémenter `spent` pour
+        // le suivi/reporting et détecter l'épuisement du budget déjà payé.
+        // Avant ce correctif, walletService.deductDailyForCampaign était appelé ici
+        // EN PLUS du débit initial, facturant le vendeur jusqu'au double du budget.
         const newSpent = spent + charge;
         const data: any = { spent: { increment: charge }, lastBilledDate: now };
         if (newSpent >= totalBudget) data.status = 'COMPLETED';
@@ -114,6 +95,6 @@ export class AdsCron {
       data: { status: 'COMPLETED' },
     });
 
-    this.logger.log(`Ads billing done: ${billed} billed, ${paused} paused, ${expired.count} marked completed (expired).`);
+    this.logger.log(`Ads billing done: ${billed} billed, ${expired.count} marked completed (expired).`);
   }
 }

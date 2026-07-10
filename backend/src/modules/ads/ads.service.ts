@@ -288,7 +288,14 @@ export class AdsService {
     if (campaign.status !== 'PENDING_PAYMENT') throw new BadRequestException('Cette campagne n\'attend pas de paiement');
 
     if (method === 'WALLET') {
-      await this.walletService.deductForCampaign(sellerId, campaignId, campaign.totalBudget);
+      // Le budget total est débité ICI, en une fois — c'est le SEUL point où
+      // l'argent quitte réellement le wallet pour cette campagne (voir le
+      // correctif dans ads.cron.ts : la facturation quotidienne n'y déduit
+      // plus le wallet une seconde fois, elle ne fait qu'incrémenter `spent`
+      // pour le suivi/reporting — avant ce correctif, le budget total était
+      // débité ici PUIS re-débité progressivement par le cron, facturant le
+      // vendeur jusqu'au double du budget réel de sa campagne).
+      await this.walletService.deductForCampaign(sellerId, campaignId, Number(campaign.totalBudget));
       return this.prisma.adCampaign.update({
         where: { id: campaignId },
         data: { status: 'PENDING_REVIEW' },
