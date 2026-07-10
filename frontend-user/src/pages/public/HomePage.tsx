@@ -19,7 +19,6 @@ import { useLocationState } from '../../hooks/useLocationState';
 import LocationModal from '../../components/location/LocationModal';
 import { useGeoDetect } from '../../hooks/useGeoDetect';
 import { useEventsStore } from '../../store/events.store';
-import { useDelayedLoading } from '../../hooks/useDelayedLoading';
 import { ProductCardSkeletonGrid, StoreCardSkeleton, SkelBox } from '../../components/shared/Skeletons';
 
 /* ─── Wishlist context (évite prop drilling) ────────────────────────────── */
@@ -640,7 +639,6 @@ function SellerCard({ s }: { s: any }) {
 
 /* ─── Section vendeurs vedettes ──────────────────────────────────────────── */
 function FeaturedSellersSection({ sellers, loading }: { sellers: any[]; loading?: boolean }) {
-  const showSkel = useDelayedLoading(!!loading);
   const SCROLL_STEP = 420;
   const scrollRef = useRef<HTMLDivElement>(null);
   const drag = useRef({ on: false, x0: 0, sl0: 0 });
@@ -687,7 +685,6 @@ function FeaturedSellersSection({ sellers, loading }: { sellers: any[]; loading?
   }, [updateArrows, sellers.length]);
 
   if (loading) {
-    if (!showSkel) return null;
     return (
       <Box sx={{ bgcolor: '#FFFFFF', borderTop: `1px solid ${FS_BORDER}`, borderBottom: `1px solid ${FS_BORDER}`, py: { xs: 2.5, md: 3.5 } }}>
         <Container maxWidth="xl" sx={{ px: { xs: 1.5, md: 2 } }}>
@@ -1391,7 +1388,6 @@ function DealCarousel({ products, flash = false }: { products: any[]; flash?: bo
 
 /* ─── Section Ventes Flash — palette exacte du spec ──────────────────────── */
 function FlashSection({ products, to, loading }: { products: any[]; to: string; loading?: boolean }) {
-  const showSkel = useDelayedLoading(!!loading);
   const [ended, setEnded] = useState(false);
   const { data: flashConfig } = useQuery({
     queryKey: ['flash-config-public'],
@@ -1408,7 +1404,6 @@ function FlashSection({ products, to, loading }: { products: any[]; to: string; 
   const title = flashConfig?.title || 'ventes flash';
 
   if (loading) {
-    if (!showSkel) return null;
     return (
       <Container maxWidth="xl" sx={{ px: { xs: 1.5, md: 2 }, py: { xs: 2, md: 3 } }}>
         <Box sx={{ bgcolor: '#fff', borderRadius: '16px', border: `1px solid ${FS_BORDER}`, p: { xs: '18px', md: '22px 24px' } }}>
@@ -1489,7 +1484,6 @@ function FlashSection({ products, to, loading }: { products: any[]; to: string; 
 
 /* ─── Section En promotion — design premium ──────────────────────────────── */
 function PromoSection({ products, to, loading }: { products: any[]; to: string; loading?: boolean }) {
-  const showSkel = useDelayedLoading(!!loading);
   const scrollRef = useRef<HTMLDivElement>(null);
   const drag = useRef({ on: false, x0: 0, sl0: 0 });
 
@@ -1510,7 +1504,6 @@ function PromoSection({ products, to, loading }: { products: any[]; to: string; 
   const onUp = () => { drag.current.on = false; };
 
   if (loading) {
-    if (!showSkel) return null;
     return (
       <Box sx={{ background: 'linear-gradient(135deg, #0F0F0F 0%, #1A1A2E 60%, #16213E 100%)', py: { xs: 2, md: 3.5 } }}>
         <Box sx={{ px: { xs: 1.5, md: 3 }, maxWidth: '1536px', mx: 'auto' }}>
@@ -1658,9 +1651,16 @@ function PromoSection({ products, to, loading }: { products: any[]; to: string; 
 function Section({ title, count, to, products, loading, skelCount = 8 }: {
   title: string; count?: number; to: string; products: any[]; loading?: boolean; skelCount?: number;
 }) {
-  const showSkel = useDelayedLoading(!!loading);
+  // Pas de useDelayedLoading ici : ce hook est pensé pour UN SEUL loader
+  // (attendre 300ms avant d'afficher un squelette, pour éviter un flash sur
+  // un chargement isolé très rapide). Sur cette page, une vingtaine de
+  // sections chargent en parallèle — avec le délai, aucune ne réservait sa
+  // place pendant ces 300ms (rendu `null`), donc la page semblait très
+  // courte, puis TOUTES les sections encore en attente apparaissaient d'un
+  // coup au même instant dès que leurs requêtes aboutissaient. Le squelette
+  // s'affiche maintenant immédiatement pour que chaque section garde sa
+  // place et se remplace en douceur par son contenu, indépendamment des autres.
   if (loading) {
-    if (!showSkel) return null;
     return (
       <Box sx={{ bgcolor: 'white', py: { xs: 2, md: 3 }, borderBottom: '1px solid #F0F0F0' }}>
         <Container maxWidth="xl" sx={{ px: { xs: 1.5, md: 2 } }}>
@@ -1751,7 +1751,6 @@ function LevelBadge({ level }: { level?: string }) {
 function NearYouSection({ products, location, onModal, label, level, hasLocalVendor, loading }: {
   products: any[]; location: any; onModal: () => void; label?: string | null; level?: string; hasLocalVendor?: boolean; loading?: boolean;
 }) {
-  const showSkel = useDelayedLoading(!!loading);
   const { user } = useAuthStore();
   const isSeller = user?.role === 'SELLER';
   const sellerCtaLink = isSeller ? '/seller' : user ? '/become-seller' : '/register?role=SELLER';
@@ -1765,7 +1764,6 @@ function NearYouSection({ products, location, onModal, label, level, hasLocalVen
   const isFallback = level === 'national';
 
   if (loading) {
-    if (!showSkel) return null;
     return (
       <Box sx={{ bgcolor: 'white', borderBottom: '1px solid #F0F0F0', py: { xs: 2.5, md: 3.5 } }}>
         <Container maxWidth="xl" sx={{ px: { xs: 2, md: 2 } }}>
@@ -1968,9 +1966,7 @@ function NearYouSection({ products, location, onModal, label, level, hasLocalVen
 
 /* ─── Admin banner ───────────────────────────────────────────────────────── */
 function AdminBanner({ banners, loading }: { banners: any[]; loading?: boolean }) {
-  const showSkel = useDelayedLoading(!!loading);
   if (loading) {
-    if (!showSkel) return null;
     return (
       <Box sx={{ bgcolor: PG, py: 1.5 }}>
         <Container maxWidth="xl" sx={{ px: { xs: 2, md: 2 } }}>
@@ -2592,8 +2588,11 @@ export default function HomePage() {
           loading={featuredLoading} skelCount={8} />
       )}
 
-      {/* 16 — CTA final */}
-      <Box sx={{ bgcolor: 'white', py: { xs: 3, md: 5 } }}>
+      {/* 16 — CTA final — animation d'entrée douce : ce bloc est statique (aucune
+          donnée à charger) mais apparaissait de façon abrupte/saccadée quand les
+          sections au-dessus (encore en chargement) le poussaient brusquement à
+          l'écran. Un fade-in evite l'effet de "pop" soudain au premier rendu. */}
+      <Box sx={{ bgcolor: 'white', py: { xs: 3, md: 5 }, animation: 'dp-fadeSlide 0.5s ease both' }}>
         <Container maxWidth="xl" sx={{ px: { xs: 2, md: 2 }, textAlign: 'center' }}>
           <Typography fontSize={{ xs: 20, md: 26 }} fontWeight={800} color={BG} mb={1}>
             Explorez tout le marketplace
