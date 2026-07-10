@@ -68,7 +68,6 @@ import CustomerDashboard from './pages/customer/DashboardPage';
 import OrdersPage from './pages/customer/OrdersPage';
 import OrderDetailPage from './pages/customer/OrderDetailPage';
 import MessagesPage from './pages/customer/MessagesPage';
-import ConversationsListPage from './pages/customer/ConversationsListPage';
 import WishlistPage from './pages/account/WishlistPage';
 import ProfilePage from './pages/customer/ProfilePage';
 import BecomeSellerPage from './pages/customer/BecomeSellerPage';
@@ -184,7 +183,9 @@ export default function App() {
             <Route index element={<CustomerDashboard />} />
             <Route path="orders" element={<OrdersPage />} />
             <Route path="orders/:id" element={<OrderDetailPage />} />
-            <Route path="messages" element={<ConversationsListPage />} />
+            {/* Une seule page pour la liste + le fil de discussion (comme seller/ChatPage) —
+                :userId est optionnel, juste utilisé pour ouvrir directement une conversation. */}
+            <Route path="messages" element={<MessagesPage />} />
             <Route path="messages/:userId" element={<MessagesPage />} />
             <Route path="wishlist" element={<WishlistPage />} />
             <Route path="profile" element={<ProfilePage />} />

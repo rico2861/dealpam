@@ -1,278 +1,832 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  Box, Typography, TextField, IconButton, CircularProgress, Avatar, LinearProgress, Tooltip,
+  Box, Typography, Avatar, IconButton, CircularProgress, alpha,
+  InputBase, Tooltip, Chip,
 } from '@mui/material';
-import { ArrowBack, Send, AttachFile, PictureAsPdfOutlined, InsertDriveFileOutlined, Refresh, ChatBubbleOutline } from '@mui/icons-material';
+import {
+  Send, ArrowBack, AttachFileOutlined,
+  DoneAll, Done, PictureAsPdfOutlined, InsertDriveFileOutlined,
+  KeyboardArrowDown, FiberManualRecord, Search,
+  SmartToyOutlined, SupportAgent, ChatBubbleOutline,
+} from '@mui/icons-material';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
+import { io, Socket } from 'socket.io-client';
 import api from '../../api/axios';
-import { MessageSkeleton } from '../../components/shared/Skeletons';
-import { useDelayedLoading } from '../../hooks/useDelayedLoading';
 import { useAuthStore } from '../../store/auth.store';
-import ConvListPanel, {
-  CHAT_NAVY, CHAT_ORANGE, CHAT_ORANGE_HOV, CHAT_SURFACE_1, CHAT_SURFACE_2, CHAT_BORD, CHAT_SUB2, CHAT_SUB,
-} from '../../components/chat/ConvListPanel';
+import { getOrCreatePublicKey, encryptMsg, decryptMsg, isEncrypted } from '../../utils/e2e-crypto';
+import { ListSkeleton, MessageSkeleton } from '../../components/shared/Skeletons';
+import { useDelayedLoading } from '../../hooks/useDelayedLoading';
 
-function fmtDate(iso: string) {
-  const d = new Date(iso), now = new Date();
-  if (d.toDateString() === now.toDateString()) return "aujourd'hui";
-  const y = new Date(now); y.setDate(y.getDate() - 1);
-  if (d.toDateString() === y.toDateString()) return 'hier';
-  return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+// Page refaite pour offrir exactement la même expérience que le chat vendeur
+// (seller/ChatPage.tsx) : temps réel (socket.io), chiffrement de bout en bout,
+// indicateur "en train d'écrire", accusés de lecture, présence en ligne —
+// au lieu de l'ancienne version en simple polling REST toutes les 4s, sans
+// aucune de ces fonctionnalités.
+
+const API_URL  = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
+const NAVY      = '#0F1B2E';
+const ORANGE    = '#F5711A';
+const ORANGE_BG = '#FDECDF';
+const DARK_BG   = '#FFFFFF';
+const PANEL_BG  = '#F5F5F3';
+const BORD      = 'rgba(15,27,46,0.08)';
+const BUBBLE_BG = '#F5F5F3';
+const SUB       = '#888780';
+const SUB2      = '#5F5E5A';
+const PURPLE    = '#8B5CF6';
+
+interface Msg {
+  id: string;
+  content: string;
+  senderId: string;
+  type: string; // TEXT | IMAGE | FILE | BOT | SYSTEM
+  mediaUrl?: string;
+  isRead: boolean;
+  createdAt: string;
+  sender?: { id: string; firstName: string; lastName: string; avatar?: string; role?: string };
 }
 
-function groupByDate<T extends { createdAt: string }>(msgs: T[]) {
-  const groups: { date: string; messages: T[] }[] = [];
+interface ConvUser {
+  userId: string;
+  unreadCount: number;
+  user: { id: string; firstName: string; lastName: string; avatar?: string; role?: string };
+}
+
+interface Conv {
+  id: string;
+  isSupport: boolean;
+  topic?: string;
+  status: string;
+  lastMessage?: string;
+  lastMessageAt?: string;
+  participants: ConvUser[];
+  messages: Msg[];
+}
+
+function fmtTime(iso: string) {
+  return new Date(iso).toLocaleTimeString('fr', { hour: '2-digit', minute: '2-digit' });
+}
+
+function fmtDate(iso: string) {
+  const d = new Date(iso);
+  const now = new Date();
+  if (d.toDateString() === now.toDateString()) return "Aujourd'hui";
+  const y = new Date(now); y.setDate(y.getDate() - 1);
+  if (d.toDateString() === y.toDateString()) return 'Hier';
+  return d.toLocaleDateString('fr', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+function groupByDate(msgs: Msg[]) {
+  const groups: { date: string; messages: Msg[] }[] = [];
   msgs.forEach(m => {
     const d = fmtDate(m.createdAt);
     const last = groups[groups.length - 1];
-    if (last?.date === d) last.messages.push(m); else groups.push({ date: d, messages: [m] });
+    if (last?.date === d) last.messages.push(m);
+    else groups.push({ date: d, messages: [m] });
   });
   return groups;
 }
 
-/* ── Fil de conversation (bulle par bulle) — extrait pour être réutilisé
-   tel quel dans le panneau desktop et la vue plein écran mobile. ────────── */
-function ChatThread({ sellerUserId }: { sellerUserId: string }) {
-  const navigate  = useNavigate();
-  const { user }  = useAuthStore();
-  const { enqueueSnackbar } = useSnackbar();
-  const qc        = useQueryClient();
-  const bottomRef = useRef<HTMLDivElement>(null);
-  const fileRef   = useRef<HTMLInputElement>(null);
-  const [text, setText]       = useState('');
-  const [sending, setSending] = useState(false);
-  const [failedText, setFailedText] = useState<string | null>(null);
-  const [convId, setConvId]   = useState<string | null>(null);
-  const [uploading, setUploading]         = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-
-  useEffect(() => {
-    setConvId(null);
-    if (!sellerUserId) return;
-    api.post('/chat/conversations', { userId: sellerUserId })
-      .then(r => setConvId(r.data.id))
-      .catch(() => enqueueSnackbar("Impossible d'ouvrir la conversation", { variant: 'error' }));
-  }, [sellerUserId]); // eslint-disable-line
-
-  const { data: msgData, isLoading } = useQuery({
-    queryKey: ['conv-messages', convId],
-    queryFn:  () => api.get(`/chat/conversations/${convId}/messages`).then(r => r.data),
-    enabled:  !!convId,
-    refetchInterval: 4000,
-  });
-  const showMsgSkel = useDelayedLoading(!convId || isLoading);
-  const messages: any[] = msgData?.data ?? [];
-
-  const { data: sellerProfile } = useQuery({
-    queryKey: ['mini-profile', sellerUserId],
-    queryFn:  () => api.get(`/users/${sellerUserId}/mini-profile`).then(r => r.data),
-    enabled:  !!sellerUserId,
-  });
-
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages.length]);
-  useEffect(() => { if (convId) api.post(`/chat/conversations/${convId}/read`).catch(() => {}); }, [convId, messages.length]);
-
-  const send = async (content?: string, type: 'TEXT' | 'IMAGE' | 'FILE' = 'TEXT', mediaUrl?: string) => {
-    const body = content ?? text.trim();
-    if (!body.trim() || !convId || sending) return;
-    setSending(true); setFailedText(null);
-    if (type === 'TEXT') setText('');
-    try {
-      await api.post(`/chat/conversations/${convId}/messages`, { content: body, type, mediaUrl });
-      qc.invalidateQueries({ queryKey: ['conv-messages', convId] });
-    } catch {
-      enqueueSnackbar("Erreur lors de l'envoi", { variant: 'error' });
-      if (type === 'TEXT') setFailedText(body);
-    } finally { setSending(false); }
-  };
-
-  const retrySend = () => { if (failedText) { const t = failedText; setFailedText(null); send(t); } };
-
-  const handleFile = async (file: File) => {
-    if (!convId) return;
-    const isImage = file.type.startsWith('image/');
-    const form = new FormData();
-    form.append('file', file);
-    setUploading(true); setUploadProgress(0);
-    try {
-      const endpoint = isImage ? '/upload/chat-image' : '/upload/chat-file';
-      const { data } = await api.post(endpoint, form, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-        onUploadProgress: e => setUploadProgress(Math.round((e.loaded * 100) / (e.total ?? 1))),
-      });
-      const mediaUrl = isImage ? `chatimg:${data.publicId}` : `chatfile:${data.publicId}:${data.fileName}`;
-      await send(file.name, isImage ? 'IMAGE' : 'FILE', mediaUrl);
-    } catch {
-      enqueueSnackbar("Erreur lors de l'envoi du fichier", { variant: 'error' });
-    } finally { setUploading(false); setUploadProgress(0); }
-  };
-
-  const otherParticipant = messages.find((m: any) => m.sender?.id !== user?.id)?.sender ?? sellerProfile;
-  const groups = groupByDate(messages);
-
+function MediaBubble({ url, name, mine }: { url: string; name?: string; mine: boolean }) {
+  const isPdf = /\.pdf$/i.test(url) || url.includes('pdf');
+  const isImg = /\.(jpg|jpeg|png|gif|webp|svg)/i.test(url);
+  if (isImg) return (
+    <Box component="a" href={url} target="_blank" rel="noreferrer" sx={{ display: 'block', mt: 0.5 }}>
+      <Box component="img" src={url} alt="image" sx={{ maxWidth: 220, maxHeight: 220, borderRadius: '10px', objectFit: 'cover', display: 'block', border: '1px solid rgba(15,23,42,0.09)' }} />
+    </Box>
+  );
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', bgcolor: CHAT_SURFACE_2 }}>
-      {/* header */}
-      <Box sx={{ px: 2.5, py: 1.6, borderBottom: `1px solid ${CHAT_BORD}`, display: 'flex', alignItems: 'center', gap: 1.5, flexShrink: 0 }}>
-        <IconButton onClick={() => navigate('/account/messages')}
-          sx={{ display: { xs: 'inline-flex', lg: 'none' }, color: CHAT_NAVY, bgcolor: CHAT_SURFACE_1, borderRadius: '10px', width: 36, height: 36 }}>
-          <ArrowBack sx={{ fontSize: 18 }} />
-        </IconButton>
-        {otherParticipant ? (
-          <>
-            <Avatar sx={{ width: 38, height: 38, bgcolor: CHAT_NAVY, color: '#fff', fontSize: 14, fontWeight: 500 }}>
-              {otherParticipant.firstName?.[0]}
-            </Avatar>
-            <Box sx={{ minWidth: 0 }}>
-              <Typography sx={{ fontWeight: 500, fontSize: 14.5, color: CHAT_NAVY }} noWrap>
-                {otherParticipant.firstName} {otherParticipant.lastName}
-              </Typography>
-              <Typography sx={{ fontSize: 11.5, color: CHAT_SUB }}>vendeur</Typography>
-            </Box>
-          </>
-        ) : (
-          <Typography sx={{ fontWeight: 500, fontSize: 15, color: CHAT_NAVY }}>conversation</Typography>
-        )}
-      </Box>
-
-      {/* messages */}
-      <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto', px: 2.5, py: 2, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-        {!convId || isLoading ? (
-          showMsgSkel ? <MessageSkeleton /> : null
-        ) : messages.length === 0 ? (
-          <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-            <ChatBubbleOutline sx={{ fontSize: 30, color: CHAT_SUB }} />
-            <Typography sx={{ fontSize: 13.5, color: CHAT_SUB2 }}>envoyez un message pour démarrer la conversation.</Typography>
-          </Box>
-        ) : (
-          groups.map((g, gi) => (
-            <Box key={gi}>
-              <Box sx={{ display: 'flex', justifyContent: 'center', my: 1.5 }}>
-                <Typography sx={{ fontSize: 11, color: CHAT_SUB, bgcolor: CHAT_SURFACE_1, px: 1.4, py: 0.4, borderRadius: '10px' }}>{g.date}</Typography>
-              </Box>
-              {g.messages.map((msg: any) => {
-                const isMine = msg.sender?.id === user?.id;
-                const isImg  = msg.type === 'IMAGE' && msg.mediaUrl;
-                const isFile = msg.type === 'FILE' && msg.mediaUrl;
-                return (
-                  <Box key={msg.id} sx={{ display: 'flex', justifyContent: isMine ? 'flex-end' : 'flex-start', mb: 1 }}>
-                    {!isMine && (
-                      <Avatar sx={{ width: 28, height: 28, bgcolor: CHAT_NAVY, color: '#fff', fontSize: 11, fontWeight: 500, mr: 1, mt: 0.5, flexShrink: 0 }}>
-                        {msg.sender?.firstName?.[0]}
-                      </Avatar>
-                    )}
-                    <Box sx={{ maxWidth: { xs: '80%', md: '70%' } }}>
-                      <Box sx={{
-                        px: isImg ? 0.8 : 1.6, py: isImg ? 0.8 : 1,
-                        borderRadius: isMine ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
-                        bgcolor: isMine ? CHAT_ORANGE : CHAT_SURFACE_1,
-                        overflow: 'hidden',
-                      }}>
-                        {isImg && (
-                          <Box component="img" src={msg.mediaUrl} alt="" loading="lazy" onClick={() => window.open(msg.mediaUrl, '_blank')}
-                            sx={{ maxWidth: '100%', maxHeight: 260, borderRadius: '10px', display: 'block', cursor: 'pointer', objectFit: 'cover' }} />
-                        )}
-                        {isFile && (
-                          <Box component="a" href={msg.mediaUrl} target="_blank" rel="noopener" sx={{ display: 'flex', alignItems: 'center', gap: 1, textDecoration: 'none', px: 0.5 }}>
-                            {/\.pdf($|\?)/i.test(msg.mediaUrl)
-                              ? <PictureAsPdfOutlined sx={{ fontSize: 20, color: isMine ? '#fff' : '#B3261E', flexShrink: 0 }} />
-                              : <InsertDriveFileOutlined sx={{ fontSize: 20, color: isMine ? '#fff' : CHAT_NAVY, flexShrink: 0 }} />}
-                            <Typography sx={{ fontSize: 12.5, fontWeight: 500, color: isMine ? '#fff' : CHAT_NAVY, wordBreak: 'break-all' }}>{msg.content}</Typography>
-                          </Box>
-                        )}
-                        {!isImg && !isFile && (
-                          <Typography sx={{ fontSize: 13, color: isMine ? '#fff' : CHAT_NAVY, lineHeight: 1.5, wordBreak: 'break-word' }}>{msg.content}</Typography>
-                        )}
-                      </Box>
-                      <Typography sx={{ fontSize: 10.5, color: CHAT_SUB, mt: 0.4, textAlign: isMine ? 'right' : 'left', px: 0.5 }}>
-                        {new Date(msg.createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                      </Typography>
-                    </Box>
-                  </Box>
-                );
-              })}
-            </Box>
-          ))
-        )}
-        {failedText && (
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
-            <Box sx={{ maxWidth: '70%' }}>
-              <Box sx={{ px: 1.6, py: 1, borderRadius: '14px 14px 4px 14px', bgcolor: CHAT_ORANGE, opacity: 0.6 }}>
-                <Typography sx={{ fontSize: 13, color: '#fff' }}>{failedText}</Typography>
-              </Box>
-              <Box onClick={retrySend} sx={{ display: 'flex', alignItems: 'center', gap: 0.4, justifyContent: 'flex-end', mt: 0.4, cursor: 'pointer' }}>
-                <Refresh sx={{ fontSize: 12, color: '#B3261E' }} />
-                <Typography sx={{ fontSize: 11, color: '#B3261E', fontWeight: 500 }}>échec — réessayer</Typography>
-              </Box>
-            </Box>
-          </Box>
-        )}
-        <div ref={bottomRef} />
-      </Box>
-
-      {uploading && <LinearProgress variant="determinate" value={uploadProgress} sx={{ flexShrink: 0, bgcolor: CHAT_SURFACE_1, '& .MuiLinearProgress-bar': { bgcolor: CHAT_ORANGE } }} />}
-
-      {/* composer */}
-      <Box sx={{ px: 2, py: 1.5, borderTop: `1px solid ${CHAT_BORD}`, flexShrink: 0, display: 'flex', gap: 1, alignItems: 'flex-end' }}>
-        <input ref={fileRef} type="file" accept="image/*,.pdf,.doc,.docx,.xlsx" style={{ display: 'none' }}
-          onChange={e => { if (e.target.files?.[0]) handleFile(e.target.files[0]); e.target.value = ''; }} />
-        <Tooltip title="joindre un fichier ou une image">
-          <span>
-            <IconButton onClick={() => fileRef.current?.click()} disabled={uploading || !convId}
-              sx={{ width: 42, height: 42, borderRadius: '50%', flexShrink: 0, color: CHAT_SUB2, bgcolor: CHAT_SURFACE_1,
-                '&:hover': { color: CHAT_ORANGE } }}>
-              <AttachFile sx={{ fontSize: 18 }} />
-            </IconButton>
-          </span>
-        </Tooltip>
-        <TextField fullWidth multiline maxRows={4} value={text} onChange={e => setText(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
-          placeholder="écrivez un message…"
-          sx={{
-            '& .MuiOutlinedInput-root': { borderRadius: '20px', bgcolor: CHAT_SURFACE_1, color: CHAT_NAVY,
-              '& fieldset': { borderColor: 'transparent' }, '&:hover fieldset': { borderColor: CHAT_BORD },
-              '&.Mui-focused fieldset': { borderColor: CHAT_ORANGE, borderWidth: 2 } },
-            '& .MuiInputBase-input': { color: CHAT_NAVY, fontSize: 13.5, '&::placeholder': { color: CHAT_SUB, opacity: 1 } },
-          }} />
-        <IconButton onClick={() => send()} disabled={!text.trim() || sending || !convId}
-          sx={{ width: 42, height: 42, bgcolor: text.trim() ? CHAT_ORANGE : CHAT_SURFACE_1, color: text.trim() ? '#fff' : CHAT_SUB,
-            borderRadius: '50%', flexShrink: 0, transition: 'background 0.15s ease, transform 0.1s ease',
-            '&:hover': { bgcolor: text.trim() ? CHAT_ORANGE_HOV : CHAT_SURFACE_1 },
-            '&:active': { transform: 'scale(0.95)' },
-            '&:focus-visible': { outline: `2px solid ${CHAT_ORANGE}`, outlineOffset: 2 },
-            '&.Mui-disabled': { bgcolor: CHAT_SURFACE_1, color: CHAT_SUB } }}>
-          {sending ? <CircularProgress size={17} sx={{ color: CHAT_SUB2 }} /> : <Send sx={{ fontSize: 17 }} />}
-        </IconButton>
-      </Box>
+    <Box component="a" href={url} target="_blank" rel="noreferrer" sx={{
+      display: 'flex', alignItems: 'center', gap: 1, textDecoration: 'none',
+      mt: 0.5, px: 1.5, py: 1, borderRadius: '10px',
+      bgcolor: mine ? 'rgba(0,0,0,0.15)' : '#FFFFFF',
+      border: '1px solid rgba(15,23,42,0.09)',
+    }}>
+      {isPdf ? <PictureAsPdfOutlined sx={{ fontSize: 20, color: '#F87171' }} /> : <InsertDriveFileOutlined sx={{ fontSize: 20, color: '#3B82F6' }} />}
+      <Typography sx={{ fontSize: 12, color: mine ? 'white' : NAVY, fontWeight: 600 }}>{name ?? 'Fichier joint'}</Typography>
     </Box>
   );
 }
 
-/* ── Page — split desktop (liste persistante + fil), plein écran mobile ─── */
 export default function MessagesPage() {
-  const { userId: sellerUserId } = useParams();
+  const { userId: deepLinkUserId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuthStore();
+  const token = localStorage.getItem('accessToken');
+  const qc = useQueryClient();
+  const { enqueueSnackbar } = useSnackbar();
+
+  const [active, setActive]         = useState<string | null>(null);
+  const [messages, setMessages]     = useState<Msg[]>([]);
+  const [text, setText]             = useState('');
+  const [sending, setSending]       = useState(false);
+  const [onlineIds, setOnlineIds]   = useState<Set<string>>(new Set());
+  const [typing, setTyping]         = useState(false);
+  const [loadingMsgs, setLoadingMsgs] = useState(false);
+  const [uploadPct, setUploadPct]   = useState<number | null>(null);
+  const [showScrollBtn, setShowScrollBtn] = useState(false);
+  const [search, setSearch]         = useState('');
+
+  const socketRef   = useRef<Socket | null>(null);
+  const bottomRef   = useRef<HTMLDivElement>(null);
+  const msgBoxRef   = useRef<HTMLDivElement>(null);
+  const fileRef     = useRef<HTMLInputElement>(null);
+  const activeRef   = useRef<string | null>(null);
+  const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const peerKeys    = useRef<Map<string, string>>(new Map());
+
+  useEffect(() => {
+    getOrCreatePublicKey().then(pub =>
+      api.patch('/users/me/public-key', { publicKey: pub }).catch(() => {})
+    );
+  }, []);
+
+  const getPeerPub = useCallback(async (peerId: string): Promise<string | null> => {
+    if (peerKeys.current.has(peerId)) return peerKeys.current.get(peerId)!;
+    try {
+      const { data } = await api.get(`/users/${peerId}/public-key`);
+      if (data?.publicKey) { peerKeys.current.set(peerId, data.publicKey); return data.publicKey; }
+    } catch { /* peer may not support E2E */ }
+    return null;
+  }, []);
+
+  const { data: conversations = [], isLoading: convsLoading } = useQuery<Conv[]>({
+    queryKey: ['my-conversations'],
+    queryFn: () => api.get('/chat/conversations').then(r => r.data),
+    enabled: !!token,
+    refetchInterval: 30_000,
+  });
+  const showConvsSkel = useDelayedLoading(convsLoading);
+  const showMsgsSkel  = useDelayedLoading(loadingMsgs);
+
+  const scrollBottom = (force = false) => {
+    setTimeout(() => {
+      if (!msgBoxRef.current) return;
+      const { scrollTop, scrollHeight, clientHeight } = msgBoxRef.current;
+      const nearBottom = scrollHeight - scrollTop - clientHeight < 120;
+      if (force || nearBottom) {
+        bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+        setShowScrollBtn(false);
+      } else {
+        setShowScrollBtn(true);
+      }
+    }, 50);
+  };
+
+  useEffect(() => {
+    if (!token) return;
+    const s = io(`${API_URL.replace('/v1', '')}/chat`, {
+      auth: (cb: (o: object) => void) => cb({ token: localStorage.getItem('accessToken') }),
+      transports: ['websocket', 'polling'],
+      reconnectionAttempts: 5,
+    });
+    socketRef.current = s;
+
+    s.on('connect', () => {
+      if (activeRef.current) s.emit('chat:join', { conversationId: activeRef.current });
+    });
+
+    s.on('user:online',  ({ userId }: { userId: string }) => setOnlineIds(p => new Set([...p, userId])));
+    s.on('user:offline', ({ userId }: { userId: string }) => setOnlineIds(p => { const n = new Set(p); n.delete(userId); return n; }));
+
+    s.on('chat:message', async (msg: Msg) => {
+      qc.invalidateQueries({ queryKey: ['my-conversations'] });
+      const msgConvId = (msg as any).conversationId;
+      if (msgConvId && msgConvId !== activeRef.current) return;
+
+      let decrypted = msg;
+      if (msg.type === 'TEXT' && msg.senderId !== user?.id && isEncrypted(msg.content)) {
+        try {
+          const peerPub = await getPeerPub(msg.senderId);
+          if (peerPub) decrypted = { ...msg, content: await decryptMsg(msg.content, peerPub) };
+        } catch { /* leave ciphertext if decrypt fails */ }
+      }
+
+      setMessages(prev => {
+        const optIdx = prev.findIndex(m => m.id.startsWith('opt-') && m.senderId === decrypted.senderId && m.content === decrypted.content);
+        if (optIdx !== -1) { const next = [...prev]; next[optIdx] = decrypted; return next; }
+        if (prev.find(m => m.id === decrypted.id)) return prev;
+        return [...prev, decrypted];
+      });
+      scrollBottom();
+    });
+
+    s.on('chat:read', ({ userId }: { userId: string }) => {
+      if (userId !== user?.id) {
+        setMessages(prev => prev.map(m => ({ ...m, isRead: true })));
+      }
+    });
+
+    s.on('chat:typing', ({ conversationId }: { conversationId: string }) => {
+      if (conversationId !== activeRef.current) return;
+      setTyping(true);
+      if (typingTimer.current) clearTimeout(typingTimer.current);
+      typingTimer.current = setTimeout(() => setTyping(false), 2500);
+    });
+
+    return () => { s.disconnect(); };
+  }, [token]);
+
+  const selectConv = useCallback(async (convId: string, otherUserId?: string) => {
+    setActive(convId);
+    activeRef.current = convId;
+    setMessages([]);
+    setTyping(false);
+    setLoadingMsgs(true);
+    if (otherUserId) navigate(`/account/messages/${otherUserId}`, { replace: true });
+
+    const s = socketRef.current;
+    if (s?.connected) {
+      s.emit('chat:join', { conversationId: convId });
+    } else {
+      s?.once('connect', () => s.emit('chat:join', { conversationId: convId }));
+    }
+
+    try {
+      const r = await api.get(`/chat/conversations/${convId}/messages`);
+      const raw: Msg[] = r.data.data ?? [];
+      const decrypted = await Promise.all(raw.map(async (msg) => {
+        if (msg.type !== 'TEXT' || msg.senderId === user?.id || !isEncrypted(msg.content)) return msg;
+        try {
+          const peerPub = await getPeerPub(msg.senderId);
+          if (peerPub) return { ...msg, content: await decryptMsg(msg.content, peerPub) };
+        } catch { /* return original on failure */ }
+        return msg;
+      }));
+      setMessages(decrypted);
+      scrollBottom(true);
+    } catch { /* ignore */ }
+    finally { setLoadingMsgs(false); }
+
+    api.post(`/chat/conversations/${convId}/read`).catch(() => {});
+    socketRef.current?.emit('chat:read', { conversationId: convId });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Deep-link : /account/messages/:userId ouvre (ou crée) la conversation avec
+  // ce vendeur précis — ex: bouton "Contacter" depuis une page boutique/produit.
+  const deepLinkHandled = useRef<string | null>(null);
+  useEffect(() => {
+    if (!deepLinkUserId || !token || deepLinkHandled.current === deepLinkUserId) return;
+    deepLinkHandled.current = deepLinkUserId;
+    (async () => {
+      try {
+        const existing = conversations.find(c => !c.isSupport && c.participants.some(p => p.userId === deepLinkUserId));
+        if (existing) { selectConv(existing.id); return; }
+        const { data: conv } = await api.post('/chat/conversations', { userId: deepLinkUserId });
+        qc.invalidateQueries({ queryKey: ['my-conversations'] });
+        selectConv(conv.id);
+      } catch {
+        enqueueSnackbar("Impossible d'ouvrir cette conversation — réessayez.", { variant: 'error' });
+      }
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deepLinkUserId, token, conversations]);
+
+  const sendMsg = async () => {
+    const content = text.trim();
+    if (!content || !active || sending) return;
+    setText('');
+    setSending(true);
+
+    const opt: Msg = {
+      id: `opt-${Date.now()}`, content, type: 'TEXT', isRead: false,
+      senderId: user!.id, createdAt: new Date().toISOString(),
+      sender: { id: user!.id, firstName: user!.firstName ?? '', lastName: user!.lastName ?? '', role: user?.role },
+    };
+    setMessages(p => [...p, opt]);
+    scrollBottom(true);
+
+    let payload = content;
+    const conv = conversations.find(c => c.id === active);
+    if (conv && !conv.isSupport) {
+      const peer = conv.participants.find(p => p.userId !== user?.id);
+      if (peer) {
+        const peerPub = await getPeerPub(peer.userId);
+        if (peerPub) {
+          try { payload = await encryptMsg(content, peerPub); } catch { /* send plaintext on crypto failure */ }
+        }
+      }
+    }
+
+    try {
+      if (socketRef.current?.connected) {
+        socketRef.current.emit('chat:send', { conversationId: active, content: payload });
+      } else {
+        const { data: saved } = await api.post(`/chat/conversations/${active}/messages`, { content: payload });
+        setMessages(p => p.map(m => m.id === opt.id ? { ...saved, content } : m));
+      }
+    } catch { /* ignore */ }
+    finally { setSending(false); }
+  };
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !active) return;
+    e.target.value = '';
+    const formData = new FormData();
+    formData.append('file', file);
+    const isImage = file.type.startsWith('image/');
+    const endpoint = isImage ? '/upload/chat-image' : '/upload/chat-file';
+    setUploadPct(0);
+    try {
+      const { data } = await api.post(endpoint, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        onUploadProgress: p => setUploadPct(Math.round((p.loaded / (p.total ?? 1)) * 100)),
+      });
+      const mediaRef = isImage ? `chatimg:${data.publicId}` : `chatfile:${data.publicId}:${data.fileName}`;
+      const type = isImage ? 'IMAGE' : 'FILE';
+      const previewUrl = isImage ? URL.createObjectURL(file) : mediaRef;
+      const opt: Msg = {
+        id: `opt-${Date.now()}`, content: file.name, type, mediaUrl: previewUrl, isRead: false,
+        senderId: user!.id, createdAt: new Date().toISOString(),
+        sender: { id: user!.id, firstName: user!.firstName ?? '', lastName: user!.lastName ?? '', role: user?.role },
+      };
+      setMessages(p => [...p, opt]);
+      scrollBottom(true);
+      socketRef.current?.emit('chat:send', { conversationId: active, content: file.name, type, mediaUrl: mediaRef });
+    } catch { /* ignore */ }
+    finally { setUploadPct(null); }
+  };
+
+  const getOther  = (conv: Conv) => conv.participants.find(p => p.userId !== user?.id);
+  const getMe     = (conv: Conv) => conv.participants.find(p => p.userId === user?.id);
+  const isMine    = (msg: Msg) => msg.senderId === user?.id;
+  const isAdmin   = (msg: Msg) => ['ADMIN', 'SUPER_ADMIN', 'MODERATOR'].includes(msg.sender?.role ?? '');
+
+  const convLabel = (conv: Conv) => {
+    if (conv.isSupport) return 'Support DealPam';
+    const o = getOther(conv);
+    return o ? `${o.user.firstName} ${o.user.lastName}` : 'Inconnu';
+  };
+
+  const activeConv = conversations.find(c => c.id === active);
+  const otherParticipant = activeConv ? getOther(activeConv) : null;
+
+  const filtered = search.trim()
+    ? conversations.filter(c => convLabel(c).toLowerCase().includes(search.toLowerCase()))
+    : conversations;
+
+  const groups = groupByDate(messages);
 
   return (
-    <Box sx={{ display: 'flex', justifyContent: 'center', py: { xs: 0, lg: 4 }, px: { xs: 0, lg: 3 } }}>
+    <Box sx={{ display: 'flex', width: '100%', height: { xs: 'calc(100vh - 60px)', md: '100vh' }, overflow: 'hidden', bgcolor: DARK_BG }}>
+      <input ref={fileRef} type="file" accept="image/*,.pdf,.doc,.docx,.txt" style={{ display: 'none' }} onChange={handleFile} />
+
+      {/* ── LEFT ── */}
       <Box sx={{
-        width: '100%', maxWidth: 1024, height: { xs: '100vh', lg: 'calc(100vh - 140px)' }, minHeight: { lg: 560 },
-        display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '280px 1fr' },
-        border: { xs: 'none', lg: `0.5px solid ${CHAT_BORD}` }, borderRadius: { xs: 0, lg: '12px' }, overflow: 'hidden',
+        width: { xs: active ? 0 : '100%', sm: 280, md: 320, lg: 360 },
+        flexShrink: 0, overflow: 'hidden',
+        display: { xs: active ? 'none' : 'flex', sm: 'flex' },
+        flexDirection: 'column',
+        background: 'linear-gradient(180deg,#FFFFFF 0%,#F7F8FA 100%)',
+        borderRight: `1px solid ${BORD}`,
       }}>
-        <Box sx={{ display: { xs: sellerUserId ? 'none' : 'block', lg: 'block' }, height: '100%', borderRight: { lg: `1px solid ${CHAT_BORD}` } }}>
-          <ConvListPanel selectedUserId={sellerUserId} onSelect={(_, otherUserId) => navigate(`/account/messages/${otherUserId}`)} />
-        </Box>
-        <Box sx={{ display: { xs: sellerUserId ? 'block' : 'none', lg: 'block' }, height: '100%' }}>
-          {sellerUserId ? <ChatThread sellerUserId={sellerUserId} /> : (
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', bgcolor: CHAT_SURFACE_2, gap: 1 }}>
-              <ChatBubbleOutline sx={{ fontSize: 34, color: CHAT_SUB }} />
-              <Typography sx={{ fontSize: 14, color: CHAT_SUB2 }}>sélectionnez une conversation</Typography>
+        <Box sx={{ px: 2.5, pt: 3, pb: 2, flexShrink: 0 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2.5 }}>
+            <Box sx={{ flex: 1 }}>
+              <Typography sx={{ fontWeight: 500, fontSize: 18, color: NAVY, letterSpacing: '-0.5px', lineHeight: 1 }}>
+                Messages
+              </Typography>
+              <Typography sx={{ fontSize: 11, color: SUB, mt: 0.4 }}>
+                {conversations.length} conversation{conversations.length !== 1 ? 's' : ''}
+              </Typography>
             </Box>
-          )}
+            {conversations.reduce((s, c) => s + (getMe(c)?.unreadCount ?? 0), 0) > 0 && (
+              <Box sx={{ width: 32, height: 32, borderRadius: '10px',
+                background: ORANGE,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 4px 12px rgba(245,113,26,0.35)' }}>
+                <Typography sx={{ fontSize: 12, fontWeight: 500, color: 'white' }}>
+                  {conversations.reduce((s, c) => s + (getMe(c)?.unreadCount ?? 0), 0)}
+                </Typography>
+              </Box>
+            )}
+          </Box>
+
+          <Box sx={{
+            display: 'flex', alignItems: 'center', gap: 1,
+            bgcolor: 'rgba(15,23,42,0.09)', border: '1px solid rgba(15,23,42,0.09)',
+            borderRadius: '12px', px: 1.5, py: 1.1,
+            '&:focus-within': { borderColor: 'rgba(245,113,26,0.5)', bgcolor: 'rgba(245,113,26,0.04)', boxShadow: '0 0 0 3px rgba(245,113,26,0.08)' },
+            transition: 'all 0.2s',
+          }}>
+            <Search sx={{ fontSize: 15, color: SUB, flexShrink: 0 }} />
+            <InputBase placeholder="Rechercher une conversation…" value={search} onChange={e => setSearch(e.target.value)}
+              sx={{ flex: 1, '& input': { color: NAVY, fontSize: 12.5, padding: 0, '&::placeholder': { color: SUB, opacity: 1 } } }}
+            />
+          </Box>
         </Box>
+
+        {filtered.length > 0 && (
+          <Box sx={{ px: 2.5, mb: 1 }}>
+            <Typography sx={{ fontSize: 10, fontWeight: 500, color: SUB, textTransform: 'uppercase', letterSpacing: '1px' }}>
+              Récentes
+            </Typography>
+          </Box>
+        )}
+
+        <Box sx={{ flex: 1, overflowY: 'auto', px: 1.5, pb: 2, '&::-webkit-scrollbar': { width: 0 } }}>
+          {convsLoading ? (
+            showConvsSkel ? <ListSkeleton rows={6} /> : null
+          ) : filtered.length === 0 ? (
+            <Box sx={{ py: 8, textAlign: 'center' }}>
+              <Typography sx={{ color: SUB, fontSize: 13 }}>Aucune conversation</Typography>
+            </Box>
+          ) : filtered.map((conv) => {
+            const sel    = conv.id === active;
+            const unread = getMe(conv)?.unreadCount ?? 0;
+            const sup    = conv.isSupport;
+            const other  = getOther(conv);
+            const online = onlineIds.has(other?.userId ?? '');
+            const name   = sup ? 'S' : (other?.user.firstName?.[0]?.toUpperCase() ?? '?');
+
+            return (
+              <Box key={conv.id} onClick={() => selectConv(conv.id, other?.userId)} sx={{
+                display: 'flex', gap: 1.5, alignItems: 'center',
+                px: 1.5, py: 1.5, mb: 0.5, cursor: 'pointer',
+                transition: 'background 0.15s ease',
+                bgcolor: sel ? ORANGE_BG : 'transparent',
+                borderLeft: sel ? `2px solid ${ORANGE}` : '2px solid transparent',
+                '&:hover': { bgcolor: sel ? ORANGE_BG : 'rgba(15,27,46,0.03)' },
+              }}>
+                <Box sx={{ position: 'relative', flexShrink: 0 }}>
+                  {sup ? (
+                    <Box sx={{ width: 46, height: 46, borderRadius: '14px',
+                      background: 'linear-gradient(135deg,rgba(245,113,26,0.25),rgba(245,113,26,0.1))',
+                      border: '1.5px solid rgba(245,113,26,0.3)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      boxShadow: sel ? '0 4px 12px rgba(245,113,26,0.2)' : 'none' }}>
+                      <SupportAgent sx={{ fontSize: 20, color: ORANGE }} />
+                    </Box>
+                  ) : other?.user.avatar ? (
+                    <Box component="img" src={other.user.avatar} alt={name}
+                      sx={{ width: 46, height: 46, borderRadius: '14px', objectFit: 'cover',
+                        border: `2px solid ${sel ? 'rgba(245,113,26,0.4)' : 'rgba(15,23,42,0.09)'}` }}/>
+                  ) : (
+                    <Box sx={{ width: 46, height: 46, borderRadius: '50%',
+                      bgcolor: NAVY,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Typography sx={{ fontWeight: 500, fontSize: 17, color: '#fff' }}>
+                        {name}
+                      </Typography>
+                    </Box>
+                  )}
+                  {!sup && online && (
+                    <Box sx={{ position: 'absolute', bottom: -2, right: -2, width: 12, height: 12, borderRadius: '50%',
+                      bgcolor: '#10B981', border: '2.5px solid #FFFFFF', boxShadow: '0 0 8px rgba(16,185,129,0.6)' }} />
+                  )}
+                  {unread > 0 && (
+                    <Box sx={{ position: 'absolute', top: -4, right: -4, minWidth: 18, height: 18, borderRadius: '6px',
+                      bgcolor: ORANGE, border: '2px solid #FFFFFF',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      boxShadow: '0 2px 8px rgba(245,113,26,0.5)',
+                      animation: 'dp-pulse 2s ease-in-out infinite',
+                      '@keyframes dp-pulse': {
+                        '0%,100%': { boxShadow: '0 2px 8px rgba(245,113,26,0.5)' },
+                        '50%':     { boxShadow: '0 2px 14px rgba(245,113,26,0.85)' },
+                      } }}>
+                      <Typography sx={{ fontSize: 9.5, fontWeight: 500, color: 'white', px: 0.4, lineHeight: 1 }}>
+                        {unread > 9 ? '9+' : unread}
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
+
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+                    <Typography sx={{
+                      fontSize: 13.5, lineHeight: 1, fontWeight: 500,
+                      color: sel ? NAVY : unread > 0 ? NAVY : SUB2,
+                    }} noWrap>
+                      {convLabel(conv)}
+                    </Typography>
+                    {conv.lastMessageAt && (
+                      <Typography sx={{ fontSize: 10.5, flexShrink: 0, ml: 1,
+                        color: unread > 0 ? ORANGE : SUB,
+                        fontWeight: unread > 0 ? 700 : 400 }}>
+                        {fmtTime(conv.lastMessageAt)}
+                      </Typography>
+                    )}
+                  </Box>
+                  <Typography sx={{ fontSize: 12, lineHeight: 1.3,
+                    color: unread > 0 ? SUB2 : SUB,
+                    fontWeight: unread > 0 ? 500 : 400,
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {conv.lastMessage ?? 'Démarrez la conversation'}
+                  </Typography>
+                </Box>
+              </Box>
+            );
+          })}
+        </Box>
+      </Box>
+
+      {/* ── RIGHT: chat area ── */}
+      <Box sx={{
+        flex: 1, minWidth: 0, position: 'relative', bgcolor: DARK_BG,
+        flexDirection: 'column',
+        display: { xs: active ? 'flex' : 'none', sm: 'flex' },
+      }}>
+        {!active ? (
+          <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 0, p: 4 }}>
+            <Box sx={{ position: 'relative', mb: 3 }}>
+              <Box sx={{ width: 96, height: 96, borderRadius: '50%', border: '1px solid rgba(245,113,26,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Box sx={{ width: 72, height: 72, borderRadius: '50%', border: '1px solid rgba(245,113,26,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Box sx={{ width: 52, height: 52, borderRadius: '16px',
+                    bgcolor: 'rgba(245,113,26,0.1)', border: '1px solid rgba(245,113,26,0.2)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    boxShadow: '0 0 24px rgba(245,113,26,0.1)' }}>
+                    <ChatBubbleOutline sx={{ fontSize: 24, color: 'rgba(245,113,26,0.55)' }} />
+                  </Box>
+                </Box>
+              </Box>
+            </Box>
+            <Typography sx={{ fontSize: 15, fontWeight: 500, color: SUB, mb: 0.8, letterSpacing: '-0.2px' }}>
+              Aucune conversation sélectionnée
+            </Typography>
+            <Typography sx={{ fontSize: 13, color: SUB, textAlign: 'center', maxWidth: 260, lineHeight: 1.6 }}>
+              Choisissez une conversation à gauche pour échanger avec un vendeur ou le support DealPam
+            </Typography>
+            {conversations.length > 0 && (
+              <Box sx={{ mt: 3, display: 'flex', gap: 1.5 }}>
+                {[
+                  { label: 'Conversations', value: conversations.length },
+                  { label: 'Non lues', value: conversations.reduce((s, c) => s + (getMe(c)?.unreadCount ?? 0), 0) },
+                ].map(({ label, value }) => (
+                  <Box key={label} sx={{ px: 2, py: 1.2, borderRadius: '10px',
+                    bgcolor: 'rgba(15,23,42,0.09)', border: '1px solid rgba(15,23,42,0.09)', textAlign: 'center' }}>
+                    <Typography sx={{ fontWeight: 500, fontSize: 18, color: value > 0 ? ORANGE : SUB2, lineHeight: 1 }}>
+                      {value}
+                    </Typography>
+                    <Typography sx={{ fontSize: 11, color: SUB, mt: 0.3 }}>{label}</Typography>
+                  </Box>
+                ))}
+              </Box>
+            )}
+          </Box>
+        ) : (
+          <>
+            <Box sx={{
+              px: 2.5, py: 1.5, bgcolor: PANEL_BG,
+              borderBottom: `1px solid ${BORD}`,
+              display: 'flex', alignItems: 'center', gap: 1.5, flexShrink: 0,
+              position: 'relative',
+            }}>
+              <Box sx={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '1px', background: 'linear-gradient(90deg, transparent, rgba(245,113,26,0.3), transparent)' }} />
+
+              <IconButton size="small" sx={{ display: { sm: 'none' }, color: SUB2 }}
+                onClick={() => { setActive(null); activeRef.current = null; navigate('/account/messages'); }}>
+                <ArrowBack />
+              </IconButton>
+
+              {activeConv?.isSupport ? (
+                <Avatar sx={{ width: 40, height: 40, bgcolor: alpha(ORANGE, 0.18), border: `1.5px solid ${alpha(ORANGE, 0.3)}` }}>
+                  <SupportAgent sx={{ fontSize: 20, color: ORANGE }} />
+                </Avatar>
+              ) : (
+                <Box sx={{ position: 'relative' }}>
+                  <Avatar src={otherParticipant?.user.avatar ?? undefined} sx={{ width: 40, height: 40, bgcolor: 'rgba(15,23,42,0.09)', fontWeight: 500, fontSize: 15, color: NAVY, border: '1.5px solid rgba(15,23,42,0.09)' }}>
+                    {otherParticipant?.user.firstName?.[0] ?? '?'}
+                  </Avatar>
+                  {onlineIds.has(otherParticipant?.userId ?? '') && (
+                    <Box sx={{ position: 'absolute', bottom: 1, right: 1, width: 10, height: 10, borderRadius: '50%', bgcolor: '#10B981', border: `2px solid ${PANEL_BG}` }} />
+                  )}
+                </Box>
+              )}
+
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography sx={{ fontWeight: 500, fontSize: 14, color: NAVY }} noWrap>
+                  {activeConv ? convLabel(activeConv) : ''}
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.1 }}>
+                  {typing ? (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4 }}>
+                      {[0,1,2].map(i => (
+                        <Box key={i} sx={{ width: 4, height: 4, borderRadius: '50%', bgcolor: ORANGE,
+                          animation: 'bounce 1.2s ease infinite', animationDelay: `${i * 0.2}s`,
+                          '@keyframes bounce': { '0%,80%,100%': { transform: 'scale(0.7)', opacity: 0.5 }, '40%': { transform: 'scale(1)', opacity: 1 } } }} />
+                      ))}
+                      <Typography sx={{ fontSize: 11.5, color: alpha(ORANGE, 0.8), ml: 0.3 }}>est en train d'écrire…</Typography>
+                    </Box>
+                  ) : activeConv?.isSupport ? (
+                    <Typography sx={{ fontSize: 11.5, color: '#10B981', fontWeight: 600 }}>Support · répond rapidement</Typography>
+                  ) : (
+                    <>
+                      <FiberManualRecord sx={{ fontSize: 8, color: onlineIds.has(otherParticipant?.userId ?? '') ? '#10B981' : SUB }} />
+                      <Typography sx={{ fontSize: 11.5, color: SUB }}>
+                        {onlineIds.has(otherParticipant?.userId ?? '') ? 'En ligne' : 'Hors ligne'}
+                      </Typography>
+                    </>
+                  )}
+                </Box>
+              </Box>
+
+              {activeConv && !activeConv.isSupport && (
+                <Tooltip title="Chiffrement de bout en bout actif" arrow placement="bottom">
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4, px: 1, py: 0.35, borderRadius: '20px', flexShrink: 0,
+                    bgcolor: alpha('#10B981', 0.1), border: `1px solid ${alpha('#10B981', 0.2)}` }}>
+                    <Typography sx={{ fontSize: 10.5, fontWeight: 500, color: '#10B981' }}>E2E</Typography>
+                  </Box>
+                </Tooltip>
+              )}
+            </Box>
+
+            <Box ref={msgBoxRef} onScroll={() => {
+              if (!msgBoxRef.current) return;
+              const { scrollTop, scrollHeight, clientHeight } = msgBoxRef.current;
+              setShowScrollBtn(scrollHeight - scrollTop - clientHeight > 120);
+            }} sx={{
+              flex: 1, overflowY: 'auto', px: { xs: 1.5, sm: 2.5 }, py: 2,
+              display: 'flex', flexDirection: 'column', gap: 0.3,
+              scrollbarWidth: 'thin', scrollbarColor: 'rgba(15,23,42,0.06) transparent',
+              '&::-webkit-scrollbar': { width: 4 },
+              '&::-webkit-scrollbar-thumb': { bgcolor: 'rgba(15,23,42,0.09)', borderRadius: 2 },
+              '& > *': { width: '100%', maxWidth: 860, mx: 'auto' },
+            }}>
+              {loadingMsgs && (
+                showMsgsSkel ? <MessageSkeleton /> : null
+              )}
+
+              {!loadingMsgs && messages.length === 0 && (
+                <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', py: 8 }}>
+                  <Typography sx={{ color: SUB, fontSize: 13 }}>Aucun message — envoyez le premier !</Typography>
+                </Box>
+              )}
+
+              {!loadingMsgs && groups.map(({ date, messages: gMsgs }) => (
+                <Box key={date}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, my: 2 }}>
+                    <Box sx={{ flex: 1, height: '1px', bgcolor: '#FFFFFF' }} />
+                    <Typography sx={{ fontSize: 10.5, color: SUB, fontWeight: 600, px: 1 }}>{date}</Typography>
+                    <Box sx={{ flex: 1, height: '1px', bgcolor: '#FFFFFF' }} />
+                  </Box>
+
+                  {gMsgs.map((msg, idx) => {
+                    const mine   = isMine(msg);
+                    const admin  = isAdmin(msg);
+                    const bot    = msg.type === 'BOT';
+                    const system = msg.type === 'SYSTEM';
+                    const showAvatar = !mine && (idx === 0 || gMsgs[idx - 1]?.senderId !== msg.senderId);
+                    const isLast = mine && (idx === gMsgs.length - 1 || gMsgs[idx + 1]?.senderId !== msg.senderId);
+
+                    if (system) return (
+                      <Box key={msg.id} sx={{ display: 'flex', justifyContent: 'center', my: 1 }}>
+                        <Chip label={msg.content} size="small" sx={{
+                          bgcolor: alpha('#10B981', 0.12), color: '#10B981', border: `1px solid ${alpha('#10B981', 0.25)}`,
+                          fontSize: 11.5, fontWeight: 600, height: 'auto', py: 0.5,
+                        }} />
+                      </Box>
+                    );
+
+                    return (
+                      <Box key={msg.id} sx={{ display: 'flex', flexDirection: mine ? 'row-reverse' : 'row', alignItems: 'flex-end', gap: 0.8, mb: 0.4 }}>
+                        {!mine && (
+                          <Box sx={{ width: 30, flexShrink: 0 }}>
+                            {showAvatar && (
+                              <Avatar src={msg.sender?.avatar ?? undefined} sx={{ width: 30, height: 30,
+                                bgcolor: bot ? alpha(PURPLE, 0.18) : admin ? alpha(ORANGE, 0.18) : '#FFFFFF',
+                                fontSize: 12, fontWeight: 500,
+                                border: `1px solid ${bot ? alpha(PURPLE, 0.3) : admin ? alpha(ORANGE, 0.25) : 'rgba(15,23,42,0.09)'}` }}>
+                                {bot ? <SmartToyOutlined sx={{ fontSize: 14, color: PURPLE }} />
+                                     : admin ? <SupportAgent sx={{ fontSize: 14, color: ORANGE }} />
+                                     : (msg.sender?.firstName?.[0] ?? '?')}
+                              </Avatar>
+                            )}
+                          </Box>
+                        )}
+
+                        <Box sx={{ maxWidth: { xs: '80%', sm: '65%' }, display: 'flex', flexDirection: 'column', alignItems: mine ? 'flex-end' : 'flex-start' }}>
+                          {!mine && showAvatar && (
+                            <Typography sx={{ fontSize: 10, mb: 0.4, ml: 0.5, fontWeight: 500,
+                              color: bot ? alpha(PURPLE, 0.7) : admin ? alpha(ORANGE, 0.7) : SUB }}>
+                              {bot ? '🤖 DealPam IA' : admin ? 'Support DealPam' : `${msg.sender?.firstName ?? ''} ${msg.sender?.lastName ?? ''}`}
+                            </Typography>
+                          )}
+
+                          <Box sx={{
+                            px: 1.5, py: 1,
+                            bgcolor: mine ? ORANGE : bot ? alpha(PURPLE, 0.12) : BUBBLE_BG,
+                            borderRadius: mine ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
+                            boxShadow: mine ? `0 2px 10px ${alpha(ORANGE, 0.35)}` : bot ? `0 0 0 1px ${alpha(PURPLE, 0.25)}` : 'none',
+                            border: mine ? 'none' : bot ? `1px solid ${alpha(PURPLE, 0.2)}` : '1px solid rgba(15,23,42,0.09)',
+                          }}>
+                            {msg.mediaUrl && <MediaBubble url={msg.mediaUrl} name={msg.type !== 'IMAGE' ? msg.content : undefined} mine={mine} />}
+                            {(msg.type === 'TEXT' || msg.type === 'BOT' || !msg.mediaUrl) && (
+                              <Typography sx={{ fontSize: 13.5, color: mine ? 'white' : NAVY, lineHeight: 1.5, wordBreak: 'break-word' }}>
+                                {msg.content}
+                              </Typography>
+                            )}
+                          </Box>
+
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4, mt: 0.3, px: 0.5 }}>
+                            <Typography sx={{ fontSize: 9.5, color: SUB }}>{fmtTime(msg.createdAt)}</Typography>
+                            {mine && isLast && (
+                              <Tooltip title={msg.isRead ? 'Lu' : 'Envoyé'} placement="left">
+                                {msg.isRead
+                                  ? <DoneAll sx={{ fontSize: 13, color: '#60A5FA' }} />
+                                  : <Done sx={{ fontSize: 13, color: SUB }} />
+                                }
+                              </Tooltip>
+                            )}
+                          </Box>
+                        </Box>
+                      </Box>
+                    );
+                  })}
+                </Box>
+              ))}
+
+              {typing && (
+                <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 0.8, mb: 0.4 }}>
+                  <Box sx={{ width: 30 }} />
+                  <Box sx={{ bgcolor: BUBBLE_BG, border: '1px solid rgba(15,23,42,0.09)', borderRadius: '14px 14px 14px 4px', px: 1.5, py: 1, display: 'flex', gap: 0.4, alignItems: 'center' }}>
+                    {[0,1,2].map(i => (
+                      <Box key={i} sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: 'rgba(15,23,42,0.09)',
+                        animation: 'dp-bounce 1.2s ease infinite', animationDelay: `${i * 0.2}s`,
+                        '@keyframes dp-bounce': { '0%,80%,100%': { transform: 'scale(0.7)', opacity: 0.5 }, '40%': { transform: 'scale(1)', opacity: 1 } } }} />
+                    ))}
+                  </Box>
+                </Box>
+              )}
+
+              <div ref={bottomRef} />
+            </Box>
+
+            {showScrollBtn && (
+              <Box onClick={() => scrollBottom(true)} sx={{
+                position: 'absolute', bottom: 80, right: 20,
+                width: 36, height: 36, borderRadius: '50%', cursor: 'pointer',
+                bgcolor: '#FFFFFF', backdropFilter: 'blur(8px)',
+                border: '1px solid rgba(15,23,42,0.09)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 4px 12px rgba(15,23,42,0.15)', transition: 'all 0.15s',
+                '&:hover': { bgcolor: 'rgba(15,23,42,0.04)' }, zIndex: 5,
+              }}>
+                <KeyboardArrowDown sx={{ fontSize: 21, color: NAVY }} />
+              </Box>
+            )}
+
+            {uploadPct !== null && (
+              <Box sx={{ px: 2.5, py: 0.8, bgcolor: 'rgba(15,23,42,0.09)', borderTop: '1px solid rgba(15,23,42,0.09)' }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.4 }}>
+                  <Typography sx={{ fontSize: 11, color: SUB }}>Envoi en cours…</Typography>
+                  <Typography sx={{ fontSize: 11, color: ORANGE, fontWeight: 500 }}>{uploadPct}%</Typography>
+                </Box>
+                <Box sx={{ height: 3, borderRadius: 2, bgcolor: 'rgba(15,23,42,0.09)', overflow: 'hidden' }}>
+                  <Box sx={{ height: '100%', width: `${uploadPct}%`, bgcolor: ORANGE, borderRadius: 2, transition: 'width 0.2s' }} />
+                </Box>
+              </Box>
+            )}
+
+            <Box sx={{ px: 2, py: 1.5, bgcolor: PANEL_BG, borderTop: `1px solid ${BORD}`, display: 'flex', gap: 1.2, alignItems: 'flex-end', flexShrink: 0 }}>
+              <Tooltip title="Joindre image ou fichier" placement="top">
+                <IconButton size="small" onClick={() => fileRef.current?.click()} sx={{
+                  color: SUB, borderRadius: '10px', width: 38, height: 38,
+                  border: `1px solid ${BORD}`, bgcolor: 'rgba(15,23,42,0.09)', flexShrink: 0,
+                  '&:hover': { color: ORANGE, borderColor: 'rgba(245,113,26,0.35)', bgcolor: 'rgba(245,113,26,0.08)' },
+                  transition: 'all 0.18s',
+                }}>
+                  <AttachFileOutlined sx={{ fontSize: 17 }} />
+                </IconButton>
+              </Tooltip>
+
+              <Box sx={{
+                flex: 1, display: 'flex', alignItems: 'flex-end',
+                bgcolor: 'rgba(15,23,42,0.09)', border: `1px solid ${BORD}`,
+                borderRadius: '12px', px: 1.5, py: 1,
+                '&:focus-within': { borderColor: 'rgba(245,113,26,0.5)', boxShadow: '0 0 0 3px rgba(245,113,26,0.08)', bgcolor: 'rgba(245,113,26,0.03)' },
+                transition: 'all 0.18s',
+              }}>
+                <InputBase
+                  multiline maxRows={5}
+                  placeholder="Écrire un message… (Entrée pour envoyer)"
+                  value={text}
+                  onChange={e => {
+                    setText(e.target.value);
+                    if (active && socketRef.current) socketRef.current.emit('chat:typing', { conversationId: active });
+                  }}
+                  onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMsg(); } }}
+                  sx={{ flex: 1, '& textarea, & input': { color: NAVY, fontSize: 13.5, lineHeight: 1.5, '&::placeholder': { color: SUB, opacity: 1 } } }}
+                />
+              </Box>
+
+              <IconButton onClick={sendMsg} disabled={!text.trim() || sending} sx={{
+                width: 40, height: 40, borderRadius: '10px', flexShrink: 0,
+                background: text.trim() ? ORANGE : '#FFFFFF',
+                color: text.trim() ? 'white' : SUB,
+                boxShadow: text.trim() ? '0 4px 14px rgba(245,113,26,0.35)' : 'none',
+                transition: 'all 0.18s',
+                '&:hover': { transform: text.trim() ? 'scale(1.06)' : 'none', boxShadow: text.trim() ? '0 6px 18px rgba(245,113,26,0.45)' : 'none' },
+                '&.Mui-disabled': { background: '#FFFFFF', color: '#FFFFFF' },
+              }}>
+                {sending ? <CircularProgress size={15} sx={{ color: SUB2 }} /> : <Send sx={{ fontSize: 17 }} />}
+              </IconButton>
+            </Box>
+          </>
+        )}
       </Box>
     </Box>
   );
