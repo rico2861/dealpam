@@ -28,6 +28,15 @@ export const useAuthStore = create<AuthState>()(
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
         set({ user: null, accessToken: null });
+        // Vide tout cache Workbox lié à l'API — évite qu'un autre compte
+        // connecté ensuite sur cet appareil hérite de données mises en cache
+        // pour ce compte-ci (voir vite.config.ts pour le détail du bug).
+        if ('caches' in window) {
+          try {
+            const keys = await caches.keys();
+            await Promise.all(keys.filter((k) => k.startsWith('api-')).map((k) => caches.delete(k)));
+          } catch {}
+        }
       },
       updateUser: (u) => set((s) => ({ user: s.user ? { ...s.user, ...u } : null })),
       refreshProfile: async () => {

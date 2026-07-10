@@ -25,6 +25,16 @@ function AppSnackbarProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+// Purge les anciens caches Workbox 'api-*' d'appareils déjà affectés par le bug
+// où les réponses /v1/* étaient mises en cache par URL sans tenir compte du
+// compte connecté (fuite de données entre comptes). Un simple refresh ne les
+// vide pas de lui-même — nettoyage fait une fois au démarrage de l'app.
+if ('caches' in window) {
+  caches.keys().then((keys) => {
+    keys.filter((k) => k.startsWith('api-')).forEach((k) => caches.delete(k));
+  }).catch(() => {});
+}
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {

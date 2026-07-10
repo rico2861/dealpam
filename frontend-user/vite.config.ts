@@ -34,29 +34,17 @@ export default defineConfig({
         // Cache app shell (JS/CSS/HTML)
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         // Runtime caching for API calls
+        //
+        // IMPORTANT — ne JAMAIS mettre en cache une réponse de /v1/* ici.
+        // Workbox met en cache une réponse par URL seule, sans tenir compte
+        // du header Authorization. Si un client se déconnecte et qu'un autre
+        // compte se connecte sur le même appareil, ou si le réseau est lent,
+        // NetworkFirst peut renvoyer la réponse mise en cache du PREMIER
+        // compte au SECOND compte — un vrai bug de fuite de données entre
+        // comptes (déjà arrivé : /users/me, /orders, /subscriptions...).
+        // Un simple F5 ne vide pas ce cache (Cache Storage != cache HTTP).
+        // Seules les images (publiques, non liées à un compte) restent en cache.
         runtimeCaching: [
-          {
-            // API products — network first, fallback to cache 5 min
-            urlPattern: /^https?:\/\/.*\/v1\/products/,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'api-products',
-              expiration: { maxEntries: 100, maxAgeSeconds: 300 },
-              networkTimeoutSeconds: 5,
-            },
-          },
-          {
-            // Plans d'abonnement / abonnement du vendeur — toujours vérifier le
-            // serveur en premier (tarifs, quotas, statut d'annulation ne doivent
-            // jamais rester figés sur une vieille valeur mise en cache).
-            urlPattern: /^https?:\/\/.*\/v1\/subscriptions/,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'api-subscriptions',
-              expiration: { maxEntries: 20, maxAgeSeconds: 60 },
-              networkTimeoutSeconds: 5,
-            },
-          },
           {
             // Product images — cache first, 7 days
             urlPattern: /^https?:\/\/.*\.(png|jpg|jpeg|webp|gif|svg)$/,
@@ -64,20 +52,6 @@ export default defineConfig({
             options: {
               cacheName: 'images',
               expiration: { maxEntries: 300, maxAgeSeconds: 604800 },
-            },
-          },
-          {
-            // Tout le reste (commandes, notifications, wallet, dashboard, chat…) —
-            // toujours essayer le réseau en premier. Le cache de secours ne sert
-            // qu'en cas de coupure réseau, jamais à la place d'une réponse fraîche :
-            // ces données changent en temps réel (statut de commande, paiement…)
-            // et ne doivent jamais rester figées pendant 24h comme avant.
-            urlPattern: /^https?:\/\/.*\/v1\//,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'api-other',
-              expiration: { maxEntries: 100, maxAgeSeconds: 60 },
-              networkTimeoutSeconds: 8,
             },
           },
         ],
