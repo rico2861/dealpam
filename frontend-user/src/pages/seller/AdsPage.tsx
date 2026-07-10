@@ -288,7 +288,7 @@ export default function AdsPage() {
     name: '', targetType: 'PRODUCT' as 'PRODUCT' | 'STORE',
     productIds: [] as string[], storeId: '',
     objective: 'TRAFFIC', totalBudget: 1000,
-    dailyBudget: '', startDate: '', endDate: '',
+    dailyBudget: '', startDate: '', startTime: '09:00', endDate: '',
     targetingMode: 'AUTO' as 'AUTO' | 'MANUAL',
     targetGenders: [] as string[], targetAgeMin: '', targetAgeMax: '',
     targetDepts: [] as string[], targetCategories: [] as string[],
@@ -297,7 +297,7 @@ export default function AdsPage() {
   const resetForm = () => {
     setForm({
       name: '', targetType: 'PRODUCT', productIds: [], storeId: '',
-      objective: 'TRAFFIC', totalBudget: 1000, dailyBudget: '', startDate: '', endDate: '',
+      objective: 'TRAFFIC', totalBudget: 1000, dailyBudget: '', startDate: '', startTime: '09:00', endDate: '',
       targetingMode: 'AUTO', targetGenders: [], targetAgeMin: '', targetAgeMax: '',
       targetDepts: [], targetCategories: [], paymentMethod: 'WALLET',
     });
@@ -448,7 +448,10 @@ export default function AdsPage() {
       // requête à chaque fois, sans qu'aucun message clair n'explique pourquoi.
       setFormError(`Le budget minimum est de ${MIN_BUDGET.toLocaleString()} HTG.`); return;
     }
-    const start = new Date(form.startDate);
+    // L'heure de début choisie par le vendeur (par défaut 09:00) est combinée à la
+    // date pour former le démarrage réel de la campagne — sans ça, toutes les
+    // campagnes démarraient implicitement à 00:00, jamais à l'heure voulue.
+    const start = new Date(`${form.startDate}T${form.startTime || '00:00'}:00`);
     const end = new Date(form.endDate);
     if (end <= start) {
       setFormError('La date de fin doit être après la date de début.'); return;
@@ -495,7 +498,7 @@ export default function AdsPage() {
           objective: form.objective,
           totalBudget: form.totalBudget,
           dailyBudget: form.dailyBudget ? Number(form.dailyBudget) : undefined,
-          startDate: form.startDate,
+          startDate: `${form.startDate}T${form.startTime || '00:00'}:00`,
           endDate: form.endDate,
           targetingMode: form.targetingMode,
           targetGenders: isAuto ? [] : form.targetGenders,
@@ -921,9 +924,13 @@ export default function AdsPage() {
                 value={form.dailyBudget} onChange={e => setForm(f => ({ ...f, dailyBudget: e.target.value }))}
                 helperText="Vide = pas de limite journalière" sx={fieldSx} />
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12} md={3}>
               <TextField fullWidth label="Date de début *" type="date" value={form.startDate}
                 InputLabelProps={{ shrink: true }} onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))} sx={fieldSx} />
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <TextField fullWidth label="Heure de début *" type="time" value={form.startTime}
+                InputLabelProps={{ shrink: true }} onChange={e => setForm(f => ({ ...f, startTime: e.target.value }))} sx={fieldSx} />
             </Grid>
             <Grid item xs={12} md={6}>
               <TextField fullWidth label="Date de fin *" type="date" value={form.endDate}

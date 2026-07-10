@@ -266,12 +266,36 @@ export class AdsService {
     if (!c) throw new NotFoundException('Campagne introuvable');
     if (['COMPLETED', 'CANCELLED'].includes(c.status)) throw new BadRequestException('Impossible d\'annuler cette campagne');
 
+    // Une campagne déjà lancée (publishedAt atteint — le boost est réellement
+    // appliqué et la facturation quotidienne a pu commencer) ne peut plus être
+    // annulée par le vendeur, seulement mise en pause. Avant le lancement
+    // (publishedAt absent, ou fixé dans le futur), l'annulation reste possible
+    // quel que soit le statut d'approbation (PENDING_REVIEW / ACTIVE en attente
+    // de publication / etc.).
+    if (c.publishedAt && c.publishedAt <= new Date()) {
+      throw new BadRequestException(
+        'Cette campagne a déjà démarré — elle ne peut plus être annulée. Vous pouvez la mettre en pause depuis la liste.'
+      );
+    }
+
+    // Verrou atomique anti-doublon : l'update conditionnel (status pas déjà
+    // CANCELLED/COMPLETED) garantit qu'un double clic ou deux requêtes
+    // concurrentes ne déclenchent jamais deux remboursements pour la même
+    // campagne — un seul appelant peut "gagner" la transition vers CANCELLED.
+    const claimed = await this.prisma.adCampaign.updateMany({
+      where: { id: campaignId, sellerId, status: { notIn: ['COMPLETED', 'CANCELLED'] } },
+      data: { status: 'CANCELLED' },
+    });
+    if (claimed.count === 0) throw new BadRequestException('Impossible d\'annuler cette campagne');
+
     // Remboursement du budget non consommé — uniquement pour les campagnes payées
     // par Wallet (paymentId absent : seul le paiement MonCash renseigne ce champ,
     // cf. payCampaign ci-dessous). Un paiement MonCash a été réglé en externe, pas
-    // depuis le solde Wallet, donc rien à recréditer ici pour ce cas.
+    // depuis le solde Wallet, donc rien à recréditer ici pour ce cas. Comme la
+    // campagne n'a jamais démarré (vérifié ci-dessus), `spent` est toujours à 0
+    // ici : le remboursement couvre systématiquement le budget total.
     const remaining = Number(c.totalBudget) - Number(c.spent);
-    if (!c.paymentId && remaining > 0 && (c.status === 'PENDING_REVIEW' || c.status === 'ACTIVE' || c.status === 'PAUSED')) {
+    if (!c.paymentId && remaining > 0) {
       await this.walletService.refundToWallet(
         sellerId, remaining,
         `Remboursement — campagne "${c.name}" annulée (budget non utilisé)`,
@@ -279,7 +303,7 @@ export class AdsService {
       );
     }
 
-    return this.prisma.adCampaign.update({ where: { id: campaignId }, data: { status: 'CANCELLED' } });
+    return this.prisma.adCampaign.findUniqueOrThrow({ where: { id: campaignId } });
   }
 
   async payCampaign(campaignId: string, sellerId: string, method: 'WALLET' | 'MONCASH', reference?: string) {
