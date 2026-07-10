@@ -9,7 +9,7 @@ import {
   LocationOn, LocalShipping, Storefront, ExpandMore, ExpandLess,
   CheckCircle, Inventory, Star,
 } from '@mui/icons-material';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import api from '../../api/axios';
 import { compressImages, compressImage } from '../../utils/compressImage';
@@ -248,6 +248,7 @@ function VehicleFields({ attrs, onChange }: { attrs: any; onChange: (k: string, 
 
 export default function AddProductPage() {
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const { enqueueSnackbar } = useSnackbar();
   const mainImgRef = useRef<HTMLInputElement>(null);
 
@@ -390,6 +391,7 @@ export default function AddProductPage() {
       mainImages.forEach(img => fd.append('images', img));
       variantImageFiles.forEach(img => fd.append('variantImages', img));
       await api.post('/products', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+      qc.invalidateQueries({ queryKey: ['sellerProducts'] });
       enqueueSnackbar('Produit soumis pour validation !', { variant: 'success' });
       navigate('/seller/products');
     } catch (e: any) {

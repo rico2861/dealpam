@@ -8,7 +8,7 @@ import {
   MedicalServices, Home, DesignServices, RestaurantMenu,
   Add, ArrowBack, CheckCircle, Schedule, AddPhotoAlternate, Close,
 } from '@mui/icons-material';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../../api/axios';
 import { compressImages } from '../../utils/compressImage';
 
@@ -317,6 +317,7 @@ function FoodForm({ data, onChange }: { data: any; onChange: (d: any) => void })
 
 export default function AddServicePage() {
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const { id } = useParams();
   const isEdit = !!id;
   const [step, setStep]           = useState<'type' | 'form'>(isEdit ? 'form' : 'type');
@@ -366,7 +367,10 @@ export default function AddServicePage() {
     mutationFn: (fd: FormData) => isEdit
       ? api.patch(`/products/${id}`, fd, { headers: { 'Content-Type': 'multipart/form-data' } }).then(r => r.data)
       : api.post('/products', fd, { headers: { 'Content-Type': 'multipart/form-data' } }).then(r => r.data),
-    onSuccess: () => navigate('/seller/services'),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['sellerProducts'] });
+      navigate('/seller/services');
+    },
     onError: (e: any) => {
       const msg = e.response?.data?.message;
       setError(Array.isArray(msg) ? msg.join(' · ') : (msg ?? `Erreur lors de la ${isEdit ? 'mise à jour' : 'création'}`));

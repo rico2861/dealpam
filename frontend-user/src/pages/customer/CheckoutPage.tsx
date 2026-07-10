@@ -642,6 +642,7 @@ export default function CheckoutPage() {
       const orders = Array.isArray(res.data) ? res.data : [res.data];
       await fetchCount();
       qc.invalidateQueries({ queryKey: ['cart'] });
+      qc.invalidateQueries({ queryKey: ['myOrders'] });
       navigate('/order-received/thank-you', {
         replace: true,
         state: {
