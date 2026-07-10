@@ -114,7 +114,11 @@ function Field({
             '& input, & textarea': {
               color: '#0F172A !important', WebkitTextFillColor: '#0F172A', fontSize: 14, fontWeight: 500,
               p: 0, lineHeight: '24px', caretColor: '#0F172A',
-              '&::placeholder': { color: '#64748B', opacity: 1 },
+              // Italique : un exemple placeholder ("Marie", "Ma Super Boutique"…) ressemble
+              // à une vraie réponse déjà saisie une fois affiché en texte droit normal — des
+              // vendeurs ont cru que le champ était pré-rempli et n'y ont pas retapé leur
+              // propre valeur. L'italique lève toute ambiguïté visuelle avec le texte réel.
+              '&::placeholder': { color: '#64748B', opacity: 1, fontStyle: 'italic' },
               '&:-webkit-autofill, &:-webkit-autofill:hover, &:-webkit-autofill:focus': {
                 WebkitBoxShadow: '0 0 0 100px #FFFFFF inset',
                 WebkitTextFillColor: '#0F172A',
@@ -587,9 +591,9 @@ export default function RegisterPage() {
 
               {/* Prénom + Nom */}
               <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
-                <Field label="Prénom" required value={form.firstName} onChange={f('firstName')} placeholder="Marie" autoFocus
+                <Field label="Prénom" required value={form.firstName} onChange={f('firstName')} placeholder="Ex : Marie" autoFocus
                   accentColor={accent} startIcon={<PersonOutline sx={{ fontSize: 18 }} />} />
-                <Field label="Nom" required value={form.lastName} onChange={f('lastName')} placeholder="Jean"
+                <Field label="Nom" required value={form.lastName} onChange={f('lastName')} placeholder="Ex : Jean"
                   accentColor={accent} />
               </Box>
 
@@ -598,7 +602,7 @@ export default function RegisterPage() {
                 label="Nom d'utilisateur"
                 value={form.username}
                 onChange={(e) => { setUsernameTouched(true); f('username')(e); }}
-                placeholder="ex: marie_jean"
+                placeholder="Ex : marie_jean"
                 accentColor={accent}
                 status={usernameStatus}
                 startIcon={<AlternateEmail sx={{ fontSize: 18 }} />}
@@ -630,7 +634,7 @@ export default function RegisterPage() {
                   type="email"
                   value={form.email}
                   onChange={(e) => f('email')(e)}
-                  placeholder="vous@exemple.com"
+                  placeholder="Ex : vous@exemple.com"
                   accentColor={accent}
                   status={emailStatus}
                   startIcon={<EmailOutlined sx={{ fontSize: 18 }} />}
@@ -700,7 +704,7 @@ export default function RegisterPage() {
                   </Box>
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.8 }}>
                     <Field label="Nom de la boutique" required value={form.storeName} onChange={f('storeName')}
-                      placeholder="Ma Super Boutique" accentColor={PURPLE} />
+                      placeholder="Ex : Ma Super Boutique" accentColor={PURPLE} />
                     <Field label="Description" value={form.storeDescription} onChange={f('storeDescription') as any}
                       placeholder="Ce que vous vendez…" accentColor={PURPLE} multiline rows={2} />
                     <Field label="NIF (optionnel)" value={form.nif} onChange={f('nif')}
