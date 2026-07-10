@@ -138,9 +138,21 @@ export class OrdersService {
       return orders;
     });
 
-    // Email notifications (non-blocking)
+    // Email notifications — envoyées en arrière-plan, SANS attendre leur fin.
+    // Avant : chaque envoi SMTP (souvent lent, parfois plusieurs secondes) était
+    // `await`é dans le cycle requête/réponse. Avec 2 emails par commande (vendeur
+    // + client), un SMTP lent pouvait dépasser le timeout de 30s côté frontend :
+    // la commande était déjà créée en base (transaction déjà validée plus haut),
+    // mais le client recevait "Erreur lors de la commande" malgré tout. Ne plus
+    // attendre ces envois fait que la réponse HTTP part dès que la commande est
+    // en base, quel que soit l'état du serveur mail.
+    this.sendOrderEmails(userId, result as any[]).catch(() => {});
+    return result;
+  }
+
+  private async sendOrderEmails(userId: string, orders: any[]): Promise<void> {
     const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { email: true, firstName: true, lastName: true } });
-    for (const order of result as any[]) {
+    for (const order of orders) {
       // Notify seller
       const sellerUser = await this.prisma.user.findFirst({
         where:  { seller: { stores: { some: { id: order.storeId } } } },
@@ -168,7 +180,6 @@ export class OrdersService {
         }).catch(() => {});
       }
     }
-    return result;
   }
 
   // ── Client : mes commandes ────────────────────────────────────────────────

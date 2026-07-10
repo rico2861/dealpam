@@ -112,7 +112,7 @@ function AddAddressModal({ open, onClose, profile, onCreated }: any) {
           display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
           <LocationOn sx={{ fontSize: 18, color: OR }} />
         </Box>
-        <Typography fontWeight={600} fontSize={16} color={TXT} sx={{ flex: 1 }}>Nouvelle adresse de livraison</Typography>
+        <Typography fontWeight={600} fontSize={16} color={TXT} sx={{ flex: 1 }}>Préciser l'adresse de livraison</Typography>
         <IconButton size="small" onClick={onClose} sx={{ bgcolor: CARD, '&:hover': { bgcolor: BORD } }}>
           <Close fontSize="small" sx={{ color: TXT2 }} />
         </IconButton>
@@ -120,6 +120,10 @@ function AddAddressModal({ open, onClose, profile, onCreated }: any) {
 
       {/* Fields — scrollable si le contenu dépasse, bouton toujours visible */}
       <Box sx={{ px: 3, py: 2.5, overflowY: 'auto', flex: 1 }}>
+        <Typography fontSize={12.5} color={TXT2} mb={2}>
+          Le vendeur définit les zones qu'il livre — précisez ici votre adresse exacte
+          dans cette zone pour éviter toute ambiguïté à la livraison.
+        </Typography>
         <TextField fullWidth label="Libellé" value={form.label} onChange={e => set('label', e.target.value)}
           sx={fieldSx} placeholder="Ex: Maison, Bureau..." InputLabelProps={{ shrink: true }} />
         <TextField fullWidth label="Nom complet" value={form.fullName} onChange={e => set('fullName', e.target.value)}
@@ -337,7 +341,7 @@ function DeliveryStep({
           <Button startIcon={<Add />} onClick={() => setAddOpen(true)} size="small"
             sx={{ color: OR, fontWeight: 700, textTransform: 'none', fontSize: 13, mb: 1, borderRadius: '10px',
               border: `1px dashed ${alpha(OR, 0.4)}`, px: 2, py: 0.8, bgcolor: alpha(OR, 0.03), '&:hover': { bgcolor: alpha(OR, 0.06) } }}>
-            Ajouter une autre adresse
+            {addresses.length === 0 ? "Préciser l'adresse de livraison" : 'Préciser une autre adresse'}
           </Button>
         </Box>
       )}
@@ -401,7 +405,9 @@ function DeliveryStep({
         sx={{ mt: 1, py: 1.4, borderRadius: '14px', fontWeight: 600, textTransform: 'none', fontSize: 14.5,
           bgcolor: OR, boxShadow: `0 8px 24px ${alpha(OR, 0.3)}`, '&:hover': { bgcolor: ORD },
           '&.Mui-disabled': { bgcolor: '#F1F5F9', color: '#64748B' } }}>
-        Continuer vers le paiement
+        {/* Les vendeurs hors plateforme DealPam n'ont pas de paiement en ligne — le
+            client passe directement la commande, il n'y a pas d'étape "paiement". */}
+        {storeInfo?.isPlatformStore ? 'Continuer vers le paiement' : 'Continuer'}
       </Button>
 
       <AddAddressModal open={addOpen} onClose={() => setAddOpen(false)} profile={profile}
@@ -515,10 +521,65 @@ function PaymentStep({ paymentMethods, selectedPayment, setSelectedPayment, note
 // plateforme entre l'acheteur et le vendeur, selon les modalités habituelles
 // de ce dernier. Le libellé "commander" (au lieu de "payer") suffit à lui
 // seul à indiquer la différence — pas de texte d'avertissement nécessaire.
-function OrderStep({ notes, setNotes, onBack, onNext, placing }: any) {
+function OrderStep({ notes, setNotes, onBack, onNext, placing, paymentMethods, selectedPayment, setSelectedPayment, storeInfo }: any) {
   return (
     <Box>
       <Typography fontWeight={600} fontSize={16} mb={2} color={TXT}>Confirmer la commande</Typography>
+
+      {/* Ce vendeur n'est pas sur la plateforme DealPam : aucun paiement en ligne
+          ici, mais le client doit quand même savoir COMMENT il pourra payer
+          (cash à la livraison, MonCash, virement...) avant de valider. */}
+      <Typography fontWeight={600} fontSize={13.5} mb={1} color={TXT}>Modes de paiement acceptés par le vendeur</Typography>
+      {paymentMethods.length === 0 ? (
+        <Box sx={{ p: 2, borderRadius: '14px', border: `1px dashed ${alpha(OR, 0.3)}`, bgcolor: alpha(OR, 0.05), mb: 2 }}>
+          <Typography fontSize={13} color="#475569">
+            Ce vendeur n'a pas précisé ses modes de paiement. Contactez-le directement pour convenir du paiement.
+          </Typography>
+        </Box>
+      ) : (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.1, mb: 2 }}>
+          {paymentMethods.map((m: string) => {
+            const info = PAYMENT_INFO[m] ?? { label: m, color: TXT2, Icon: CreditCard, hint: '' };
+            const active = selectedPayment === m;
+            return (
+              <Box key={m} onClick={() => setSelectedPayment(m)}
+                sx={{ display: 'flex', alignItems: 'center', gap: 1.5, p: 1.8, cursor: 'pointer',
+                  borderRadius: '14px', border: `1px solid ${active ? info.color : BORD}`,
+                  bgcolor: active ? alpha(info.color, 0.08) : CARD, transition: 'all 0.15s',
+                  '&:hover': { borderColor: alpha(info.color, 0.5) } }}>
+                <Box sx={{ width: 42, height: 42, borderRadius: '12px', bgcolor: alpha(info.color, 0.12),
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <info.Icon sx={{ fontSize: 21, color: info.color }} />
+                </Box>
+                <Box sx={{ flex: 1 }}>
+                  <Typography fontWeight={700} fontSize={14} color={active ? info.color : TXT}>{info.label}</Typography>
+                  <Typography fontSize={11.5} color={TXT2}>{info.hint}</Typography>
+                </Box>
+                <Radio checked={active} onChange={() => {}} size="small"
+                  sx={{ color: active ? info.color : 'rgba(15,23,42,0.2)', '&.Mui-checked': { color: info.color } }} />
+              </Box>
+            );
+          })}
+        </Box>
+      )}
+
+      {(selectedPayment === 'MONCASH' || selectedPayment === 'NATCASH') && storeInfo?.moncashPhone && (
+        <Box sx={{ p: 2, bgcolor: alpha('#FF6B00', 0.08), borderRadius: '14px',
+          border: `1px solid ${alpha('#FF6B00', 0.25)}`, mb: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, mb: 0.5 }}>
+            <Smartphone sx={{ fontSize: 16, color: '#FF6B00' }} />
+            <Typography fontSize={13} fontWeight={700} color="#FF6B00">
+              Numéro {selectedPayment === 'MONCASH' ? 'MonCash' : 'NatCash'} du vendeur
+            </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography fontWeight={700} fontSize={20} letterSpacing={2} color={TXT}>{storeInfo.moncashPhone}</Typography>
+            <IconButton size="small" onClick={() => navigator.clipboard.writeText(storeInfo.moncashPhone)}>
+              <ContentCopy sx={{ fontSize: 14, color: TXT2 }} />
+            </IconButton>
+          </Box>
+        </Box>
+      )}
 
       <TextField fullWidth multiline rows={2} label="Note pour le vendeur (optionnel)"
         value={notes} onChange={e => setNotes(e.target.value)}
@@ -704,7 +765,7 @@ export default function CheckoutPage() {
       <Container maxWidth="xl" sx={{ pt: 3 }}>
         {/* Stepper */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 4, maxWidth: 420 }}>
-          {['Livraison', 'Paiement'].map((label, i) => (
+          {['Livraison', storeDetail?.isPlatformStore ? 'Paiement' : 'Commande'].map((label, i) => (
             <Box key={label} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flex: i === 0 ? 1 : 'unset' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Box sx={{ width: 26, height: 26, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -750,6 +811,9 @@ export default function CheckoutPage() {
                 ) : (
                   <OrderStep
                     notes={notes} setNotes={setNotes}
+                    paymentMethods={paymentMethods}
+                    selectedPayment={selectedPayment} setSelectedPayment={setSelectedPayment}
+                    storeInfo={{ ...storeDetail, ...storeOptions }}
                     onBack={() => setStep(0)} onNext={placeOrder} placing={placing}
                   />
                 )
