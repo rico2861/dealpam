@@ -207,6 +207,10 @@ export default function AdsAdminPage() {
                             <Chip label={`${c.targetAgeMin || '?'}–${c.targetAgeMax || '?'} ans`} size="small"
                               sx={{ fontSize: 10, bgcolor: '#ECFDF5', color: '#059669' }} />
                           )}
+                          {c.targetInterests?.length > 0 && (
+                            <Chip label={`Intérêts: ${c.targetInterests.join(', ')}`} size="small"
+                              sx={{ fontSize: 10, bgcolor: '#EFF6FF', color: '#3B82F6' }} />
+                          )}
                           <Chip label={`${daysLeft}j restants`} size="small"
                             sx={{ fontSize: 10, bgcolor: '#FFF8EC', color: '#FF9900' }} />
                           <Chip label={c.objective} size="small" variant="outlined" sx={{ fontSize: 10 }} />

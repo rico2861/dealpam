@@ -2,13 +2,13 @@ import React, { useState, useMemo, useEffect } from 'react';
 import {
   Box, Typography, Button, Grid, LinearProgress,
   Dialog, DialogTitle, DialogContent, DialogActions, TextField,
-  Avatar, Collapse, CircularProgress,
+  Avatar, Collapse, CircularProgress, Tooltip,
 } from '@mui/material';
 import {
   Add, Campaign, TrendingUp, Visibility, TouchApp, ShoppingCart,
   Pause, PlayArrow, Cancel, BarChart, FlashOn, LocationOn,
   AutoAwesome, Tune, AccountBalanceWallet, Store, Inventory,
-  Search, CheckCircle, OpenInNew,
+  Search, CheckCircle, OpenInNew, Lock, Insights, PictureAsPdf, TableChart, Download,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
@@ -52,6 +52,9 @@ function extractErrorMessage(e: any, fallback: string): string {
 }
 
 const DEPTS = ['Ouest', 'Nord', 'Nord-Est', 'Nord-Ouest', 'Artibonite', 'Centre', 'Sud', 'Sud-Est', 'Grande-Anse', 'Nippes'];
+// Liste fixe de centres d'intérêt — ciblage manuel simple (tags choisis à la
+// main), pas une inférence comportementale/ML.
+const INTERESTS = ['Mode', 'Technologie', 'Sport', 'Beauté', 'Maison', 'Automobile', 'Alimentation', 'Voyage', 'Enfants', 'Gaming'];
 const MAX_PRODUCTS = 10;
 // Valeurs de repli tant que /ads/settings n'a pas encore répondu — remplacées
 // dès que possible par les tarifs réels configurés par l'admin (voir `settings`
@@ -73,6 +76,7 @@ const STATUS_MAP: Record<string, { label: string; color: string }> = {
 };
 const statusColor = (s: string) => STATUS_MAP[s]?.color || SUB;
 const statusLabel = (s: string) => STATUS_MAP[s]?.label || s;
+const scoreColor = (score: number) => (score >= 70 ? GRN : score >= 45 ? YLW : RED);
 
 const fieldSx = {
   '& .MuiOutlinedInput-root': {
@@ -291,7 +295,7 @@ export default function AdsPage() {
     dailyBudget: '', startDate: '', startTime: '09:00', endDate: '',
     targetingMode: 'AUTO' as 'AUTO' | 'MANUAL',
     targetGenders: [] as string[], targetAgeMin: '', targetAgeMax: '',
-    targetDepts: [] as string[], targetCategories: [] as string[],
+    targetDepts: [] as string[], targetCategories: [] as string[], targetInterests: [] as string[],
     paymentMethod: 'WALLET' as 'WALLET' | 'MONCASH',
   });
   const resetForm = () => {
@@ -299,7 +303,7 @@ export default function AdsPage() {
       name: '', targetType: 'PRODUCT', productIds: [], storeId: '',
       objective: 'TRAFFIC', totalBudget: 1000, dailyBudget: '', startDate: '', startTime: '09:00', endDate: '',
       targetingMode: 'AUTO', targetGenders: [], targetAgeMin: '', targetAgeMax: '',
-      targetDepts: [], targetCategories: [], paymentMethod: 'WALLET',
+      targetDepts: [], targetCategories: [], targetInterests: [], paymentMethod: 'WALLET',
     });
     setFormError('');
   };
@@ -338,6 +342,18 @@ export default function AdsPage() {
     enabled: hasToken,
   });
   const categoryList: { slug: string; name: string }[] = categoriesData ?? [];
+
+  // Palier d'abonnement du vendeur — même pattern que StatisticsPage.tsx :
+  // hasKeywordTargeting distingue les plans BUSINESS/ELITE (ciblage avancé
+  // par mots-clés/centres d'intérêt déjà prévu pour ça) des plans STARTER/BASIC.
+  // Réutilisé ici pour gater le ciblage par intérêts, la vue avancée
+  // (score de performance + suggestions) et les exports.
+  const { data: currentSub } = useQuery({
+    queryKey: ['sellerSub'],
+    queryFn: () => api.get('/subscriptions/me').then(r => r.data).catch(() => null),
+    enabled: hasToken,
+  });
+  const hasKeywordTargeting = !!currentSub?.plan?.hasKeywordTargeting;
 
   // Tarifs publicitaires (budget minimum, CPM, CPC) — configurables par l'admin.
   // Route publique en lecture seule : pas besoin d'être connecté pour voir les
@@ -399,6 +415,63 @@ export default function AdsPage() {
   const totalSpent  = list.reduce((s: number, c: any) => s + Number(c.spent || 0), 0);
   const totalImpr   = list.reduce((s: number, c: any) => s + (c.impressions || 0), 0);
   const totalClicks = list.reduce((s: number, c: any) => s + (c.clicks || 0), 0);
+
+  // ── Exports (CSV/Excel/PDF) — réservés aux plans Business/Elite, même
+  // pattern (bibliothèques, imports dynamiques) que StatisticsPage.tsx ──────
+  const exportRows = () => list.map((c: any) => {
+    const impr = c.impressions || 0;
+    const clicks = c.clicks || 0;
+    return {
+      Nom: c.name,
+      Statut: statusLabel(c.status),
+      'Budget total (HTG)': Number(c.totalBudget) || 0,
+      'Dépensé (HTG)': Number(c.spent) || 0,
+      Impressions: impr,
+      Clics: clicks,
+      'CTR (%)': impr > 0 ? Number(((clicks / impr) * 100).toFixed(2)) : 0,
+      'Date de début': new Date(c.startDate).toLocaleDateString('fr-FR'),
+      'Date de fin': new Date(c.endDate).toLocaleDateString('fr-FR'),
+    };
+  });
+
+  function handleExportCsv() {
+    const rows = exportRows();
+    if (rows.length === 0) return;
+    const headers = Object.keys(rows[0]);
+    const csv = [headers.join(','), ...rows.map(r => headers.map(h => `"${String((r as any)[h]).replace(/"/g, '""')}"`).join(','))].join('\n');
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `campagnes-pub-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function handleExportExcel() {
+    const XLSX = await import('xlsx');
+    const wb = XLSX.utils.book_new();
+    const sheet = XLSX.utils.json_to_sheet(exportRows());
+    XLSX.utils.book_append_sheet(wb, sheet, 'Campagnes');
+    XLSX.writeFile(wb, `campagnes-pub-${new Date().toISOString().slice(0, 10)}.xlsx`);
+  }
+
+  async function handleExportPdf() {
+    const { default: jsPDF } = await import('jspdf');
+    const autoTable = (await import('jspdf-autotable')).default;
+    const doc = new jsPDF();
+    doc.setFontSize(14);
+    doc.text('Campagnes publicitaires — DealPam', 14, 15);
+    doc.setFontSize(10);
+    doc.text(`Généré le ${new Date().toLocaleDateString('fr-FR')}`, 14, 21);
+    const rows = exportRows();
+    autoTable(doc, {
+      startY: 27,
+      head: [['Nom', 'Statut', 'Budget', 'Dépensé', 'Impr.', 'Clics', 'CTR', 'Début', 'Fin']],
+      body: rows.map(r => [r.Nom, r.Statut, r['Budget total (HTG)'], r['Dépensé (HTG)'], r.Impressions, r.Clics, `${r['CTR (%)']}%`, r['Date de début'], r['Date de fin']]),
+      styles: { fontSize: 8 },
+    });
+    doc.save(`campagnes-pub-${new Date().toISOString().slice(0, 10)}.pdf`);
+  }
 
   // Product items for selector
   const productItems: { id: string; name: string; sub?: string; img?: string }[] = useMemo(() =>
@@ -504,6 +577,7 @@ export default function AdsPage() {
           targetGenders: isAuto ? [] : form.targetGenders,
           targetDepts: isAuto ? [] : form.targetDepts,
           targetCategories: isAuto ? [] : form.targetCategories,
+          targetInterests: isAuto ? [] : (hasKeywordTargeting ? form.targetInterests : []),
           targetAgeMin: isAuto ? undefined : (form.targetAgeMin ? Number(form.targetAgeMin) : undefined),
           targetAgeMax: isAuto ? undefined : (form.targetAgeMax ? Number(form.targetAgeMax) : undefined),
         });
@@ -574,6 +648,7 @@ export default function AdsPage() {
   const toggleDept   = (d: string) => setForm(f => ({ ...f, targetDepts: f.targetDepts.includes(d) ? f.targetDepts.filter(x => x !== d) : [...f.targetDepts, d] }));
   const toggleCat    = (c: string) => setForm(f => ({ ...f, targetCategories: f.targetCategories.includes(c) ? f.targetCategories.filter(x => x !== c) : [...f.targetCategories, c] }));
   const toggleAllCats = () => setForm(f => ({ ...f, targetCategories: f.targetCategories.length === categoryList.length ? [] : categoryList.map(c => c.slug) }));
+  const toggleInterest = (i: string) => setForm(f => ({ ...f, targetInterests: f.targetInterests.includes(i) ? f.targetInterests.filter(x => x !== i) : [...f.targetInterests, i] }));
 
   return (
     <Box sx={{ p: { xs: 2, md: 3 }, bgcolor: BG, minHeight: '100vh' }}>
@@ -584,11 +659,36 @@ export default function AdsPage() {
           <Typography fontWeight={900} fontSize={{ xs: 20, md: 24 }} color={TXT} letterSpacing="-0.5px">Mes Publicités</Typography>
           <Typography fontSize={13} color={SUB}>Boostez vos produits et augmentez vos ventes</Typography>
         </Box>
-        <Button onClick={() => setOpen(true)} startIcon={<Add sx={{ fontSize: 18 }} />}
-          sx={{ bgcolor: OR, color: '#fff', borderRadius: '12px', fontWeight: 700, px: 2.5, py: 1.2, textTransform: 'none',
-            boxShadow: '0 4px 14px rgba(255,107,0,0.28)', '&:hover': { bgcolor: '#E05A00' } }}>
-          Créer une pub
-        </Button>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {hasKeywordTargeting ? (
+            <Box sx={{ display: 'flex', gap: 0.8 }}>
+              <Box onClick={handleExportCsv} sx={{ display: 'flex', alignItems: 'center', gap: 0.5, px: 1.2, py: 0.7, borderRadius: '9px', cursor: 'pointer', bgcolor: '#FFFFFF', border: `1px solid ${BORD}` }}>
+                <Download sx={{ fontSize: 15, color: BLU }} />
+                <Typography fontSize={12} fontWeight={700} color={TXT}>CSV</Typography>
+              </Box>
+              <Box onClick={handleExportExcel} sx={{ display: 'flex', alignItems: 'center', gap: 0.5, px: 1.2, py: 0.7, borderRadius: '9px', cursor: 'pointer', bgcolor: '#FFFFFF', border: `1px solid ${BORD}` }}>
+                <TableChart sx={{ fontSize: 15, color: GRN }} />
+                <Typography fontSize={12} fontWeight={700} color={TXT}>Excel</Typography>
+              </Box>
+              <Box onClick={handleExportPdf} sx={{ display: 'flex', alignItems: 'center', gap: 0.5, px: 1.2, py: 0.7, borderRadius: '9px', cursor: 'pointer', bgcolor: '#FFFFFF', border: `1px solid ${BORD}` }}>
+                <PictureAsPdf sx={{ fontSize: 15, color: RED }} />
+                <Typography fontSize={12} fontWeight={700} color={TXT}>PDF</Typography>
+              </Box>
+            </Box>
+          ) : (
+            <Tooltip title="Exports réservés aux plans Business et Elite">
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, px: 1.2, py: 0.7, borderRadius: '9px', bgcolor: '#FFFFFF', border: `1px solid ${BORD}`, opacity: 0.6 }}>
+                <Lock sx={{ fontSize: 13, color: SUB }} />
+                <Download sx={{ fontSize: 15, color: SUB }} />
+              </Box>
+            </Tooltip>
+          )}
+          <Button onClick={() => setOpen(true)} startIcon={<Add sx={{ fontSize: 18 }} />}
+            sx={{ bgcolor: OR, color: '#fff', borderRadius: '12px', fontWeight: 700, px: 2.5, py: 1.2, textTransform: 'none',
+              boxShadow: '0 4px 14px rgba(255,107,0,0.28)', '&:hover': { bgcolor: '#E05A00' } }}>
+            Créer une pub
+          </Button>
+        </Box>
       </Box>
 
       {/* KPI cards */}
@@ -683,6 +783,12 @@ export default function AdsPage() {
                         {isStore && (
                           <Box sx={{ px: 1, py: 0.15, borderRadius: '6px', bgcolor: `${BLU}18`, border: `1px solid ${BLU}30` }}>
                             <Typography fontSize={10} fontWeight={700} color={BLU}>Boutique</Typography>
+                          </Box>
+                        )}
+                        {hasKeywordTargeting && typeof c.performanceScore === 'number' && (
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3, px: 1, py: 0.15, borderRadius: '6px', bgcolor: `${scoreColor(c.performanceScore)}18`, border: `1px solid ${scoreColor(c.performanceScore)}40` }}>
+                            <Insights sx={{ fontSize: 11, color: scoreColor(c.performanceScore) }} />
+                            <Typography fontSize={10} fontWeight={800} color={scoreColor(c.performanceScore)}>Score {c.performanceScore}/100</Typography>
                           </Box>
                         )}
                       </Box>
@@ -803,6 +909,49 @@ export default function AdsPage() {
                           </Box>
                         ))}
                       </Box>
+                    </Box>
+
+                    {/* Vue avancée — score de performance + suggestions, réservée
+                        aux plans Business/Elite (hasKeywordTargeting). Dérivée
+                        uniquement de données réelles (voir ads.service.ts) —
+                        aucune ML, une formule déterministe documentée côté backend. */}
+                    <Box sx={{ mt: 1.5, p: 2, borderRadius: '12px', bgcolor: 'rgba(15,23,42,0.09)', border: `1px solid ${BORD}` }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, mb: 1.5 }}>
+                        <Insights sx={{ fontSize: 15, color: PUR }} />
+                        <Typography fontWeight={700} fontSize={12} color={SUB} sx={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}>Vue avancée</Typography>
+                        {!hasKeywordTargeting && <Lock sx={{ fontSize: 12, color: SUB }} />}
+                      </Box>
+                      {hasKeywordTargeting ? (
+                        typeof stats.performanceScore === 'number' ? (
+                          <>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, mb: 1.5 }}>
+                              <Typography fontWeight={900} fontSize={26} color={scoreColor(stats.performanceScore)}>{stats.performanceScore}</Typography>
+                              <Typography fontSize={12} color={SUB}>/ 100 — score de performance</Typography>
+                            </Box>
+                            <LinearProgress variant="determinate" value={stats.performanceScore}
+                              sx={{ height: 6, borderRadius: 4, mb: 1.5, bgcolor: 'rgba(15,23,42,0.09)', '& .MuiLinearProgress-bar': { borderRadius: 4, bgcolor: scoreColor(stats.performanceScore) } }} />
+                            {stats.suggestions?.length > 0 ? (
+                              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.8 }}>
+                                {stats.suggestions.map((s: string, i: number) => (
+                                  <Box key={i} sx={{ display: 'flex', gap: 0.8, alignItems: 'flex-start', p: 1, borderRadius: '8px', bgcolor: `${OR}0a`, border: `1px solid ${OR}20` }}>
+                                    <AutoAwesome sx={{ fontSize: 13, color: OR, mt: 0.2, flexShrink: 0 }} />
+                                    <Typography fontSize={11.5} color={SUB2} lineHeight={1.5}>{s}</Typography>
+                                  </Box>
+                                ))}
+                              </Box>
+                            ) : (
+                              <Typography fontSize={11.5} color={SUB}>Aucune suggestion particulière pour le moment — cette campagne suit son cours normalement.</Typography>
+                            )}
+                          </>
+                        ) : (
+                          <Typography fontSize={11.5} color={SUB}>Chargement…</Typography>
+                        )
+                      ) : (
+                        <Typography fontSize={11.5} color={SUB}>
+                          Score de performance et suggestions d'optimisation réservés aux plans Business et Elite —{' '}
+                          <a href="/seller/subscription" style={{ color: OR, fontWeight: 700, textDecoration: 'none' }}>passez à un plan supérieur</a>.
+                        </Typography>
+                      )}
                     </Box>
                   </Box>
                 )}
@@ -993,6 +1142,24 @@ export default function AdsPage() {
                       <Pill active={form.targetCategories.length === categoryList.length && categoryList.length > 0} onClick={toggleAllCats} color={OR}>Tout</Pill>
                       {categoryList.map(c => <Pill key={c.slug} active={form.targetCategories.includes(c.slug)} onClick={() => toggleCat(c.slug)} color={GRN}>{c.name}</Pill>)}
                     </Box>
+                  </Box>
+                  <Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6, mb: 1 }}>
+                      <Typography fontSize={11} fontWeight={700} color={SUB} sx={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}>Centres d'intérêt</Typography>
+                      {!hasKeywordTargeting && <Lock sx={{ fontSize: 12, color: SUB }} />}
+                    </Box>
+                    {hasKeywordTargeting ? (
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.7 }}>
+                        {INTERESTS.map(i => <Pill key={i} active={form.targetInterests.includes(i)} onClick={() => toggleInterest(i)} color={BLU}>{i}</Pill>)}
+                      </Box>
+                    ) : (
+                      <Box sx={{ p: 1.4, borderRadius: '10px', bgcolor: 'rgba(15,23,42,0.04)', border: `1px dashed ${BORD}` }}>
+                        <Typography fontSize={11.5} color={SUB}>
+                          Le ciblage par centres d'intérêt est réservé aux plans Business et Elite —{' '}
+                          <a href="/seller/subscription" style={{ color: OR, fontWeight: 700, textDecoration: 'none' }}>passez à un plan supérieur</a>.
+                        </Typography>
+                      </Box>
+                    )}
                   </Box>
                 </Box>
               )}

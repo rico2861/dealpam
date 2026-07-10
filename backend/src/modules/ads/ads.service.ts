@@ -164,6 +164,7 @@ export class AdsService {
         targetAgeMax: dto.targetAgeMax || null,
         targetDepts: dto.targetDepts || [],
         targetCategories: dto.targetCategories || [],
+        targetInterests: dto.targetInterests || [],
         status: 'PENDING_PAYMENT',
       },
       include: { product: { include: { images: { where: { isPrimary: true }, take: 1 } } }, store: { select: { id: true, name: true, logoUrl: true, slug: true } } },
@@ -178,22 +179,173 @@ export class AdsService {
         skip: (page - 1) * 20,
         take: 20,
         include: {
-          product: { include: { images: { where: { isPrimary: true }, take: 1 } } },
+          product: {
+            include: {
+              images: { where: { isPrimary: true }, take: 1 },
+              _count: { select: { images: true } },
+            },
+          },
           store: { select: { id: true, name: true, logoUrl: true, slug: true } },
           _count: { select: { events: true } },
         },
       }),
       this.prisma.adCampaign.count({ where: { sellerId } }),
     ]);
-    return { data, total, page };
+
+    // Score de performance + suggestions ajoutés à chaque campagne — voir
+    // computePerformanceAndSuggestions() pour la formule complète documentée.
+    const enriched = data.map((c: any) => ({ ...c, ...this.computePerformanceAndSuggestions(c) }));
+    return { data: enriched, total, page };
+  }
+
+  // ── SCORE DE PERFORMANCE (heuristique déterministe — PAS de ML) ─────────────
+  // Formule 0-100, entièrement explicable, basée uniquement sur des signaux
+  // réels déjà stockés (aucune donnée inventée) :
+  //
+  //   • CTR relatif à un benchmark de 3% ............. 40 points max
+  //       - Si < 50 impressions : donnée jugée insuffisante pour juger le CTR
+  //         équitablement → note neutre de 28/40 (évite de punir une
+  //         campagne qui vient de démarrer et n'a simplement pas eu le temps
+  //         d'accumuler des impressions).
+  //       - Sinon : (CTR mesuré / 3%) × 40, plafonné à 40.
+  //   • Qualité de la fiche produit promue ............ 30 points max
+  //       - Photos : ≥3 images = 18 pts, 1-2 images = 9 pts, 0 image = 0 pt.
+  //       - Description : ≥80 caractères = 12 pts, ≥30 caractères = 6 pts,
+  //         sinon 0 pt.
+  //       - (Une campagne "boutique" sans produit promu direct reçoit un
+  //         score neutre de 20/30 ici, faute de fiche produit à évaluer.)
+  //   • Rythme de consommation du budget ............... 30 points max
+  //       - Compare la fraction de temps écoulée depuis le début de la
+  //         campagne à la fraction du budget déjà dépensée : plus l'écart
+  //         est faible, plus la campagne "consomme" son budget au rythme
+  //         prévu (ni trop lent = sous-diffusion, ni trop vite = risque
+  //         d'épuisement prématuré). Score = 30 - (écart × 60), plancher 0.
+  //       - Si rien n'a encore été dépensé, note neutre de 21/30 (campagne
+  //         probablement toute juste lancée/pas encore publiée).
+  //
+  //   Garde-fou "jeune campagne" : une campagne démarrée il y a moins de 3
+  //   jours ne peut pas obtenir un score final inférieur à 55/100, quel que
+  //   soit le calcul ci-dessus — le manque de données ne doit pas être
+  //   confondu avec une mauvaise performance.
+  private computePerformanceAndSuggestions(c: any): { performanceScore: number; suggestions: string[] } {
+    const impressions = c.impressions || 0;
+    const clicks = c.clicks || 0;
+    const spent = Number(c.spent) || 0;
+    const budget = Number(c.totalBudget) || 0;
+    const startedMs = new Date(c.startDate).getTime();
+    const endMs = new Date(c.endDate).getTime();
+    const now = Date.now();
+    const ageDays = Math.max(0, (now - startedMs) / 86400000);
+    const totalDays = Math.max(1, (endMs - startedMs) / 86400000);
+    const ctr = impressions > 0 ? (clicks / impressions) * 100 : 0;
+
+    const BENCHMARK_CTR = 3; // % — repère indicatif, pas une norme officielle
+
+    // 1) CTR (40 pts)
+    let ctrScore: number;
+    if (impressions < 50) {
+      ctrScore = 28; // donnée insuffisante — neutre
+    } else {
+      ctrScore = Math.min(40, (ctr / BENCHMARK_CTR) * 40);
+    }
+
+    // 2) Qualité fiche produit (30 pts)
+    let productScore: number;
+    if (c.product) {
+      const imgCount = c.product._count?.images ?? (c.product.images?.length || 0);
+      const descLen = (c.product.description || '').trim().length;
+      const imgPts = imgCount >= 3 ? 18 : imgCount >= 1 ? 9 : 0;
+      const descPts = descLen >= 80 ? 12 : descLen >= 30 ? 6 : 0;
+      productScore = imgPts + descPts;
+    } else {
+      productScore = 20; // campagne "boutique" — pas de fiche produit unique à juger
+    }
+
+    // 3) Rythme budgétaire (30 pts)
+    let paceScore: number;
+    if (spent <= 0) {
+      paceScore = 21; // pas encore de dépense — neutre
+    } else {
+      const expectedFraction = Math.min(1, ageDays / totalDays);
+      const actualFraction = budget > 0 ? Math.min(1, spent / budget) : 0;
+      const gap = Math.abs(actualFraction - expectedFraction);
+      paceScore = Math.max(0, 30 - gap * 60);
+    }
+
+    let performanceScore = Math.round(ctrScore + productScore + paceScore);
+    if (ageDays < 3) performanceScore = Math.max(performanceScore, 55);
+    performanceScore = Math.max(0, Math.min(100, performanceScore));
+
+    const suggestions = this.buildSuggestions({ c, ctr, impressions, clicks, spent, budget, ageDays, totalDays, performanceScore });
+
+    return { performanceScore, suggestions };
+  }
+
+  // ── SUGGESTIONS DE STRATÉGIE (règles simples if/else — PAS de ML/IA) ────────
+  // Génère jusqu'à 3 messages courts et actionnables en français, à partir de
+  // conditions explicites sur des statistiques réelles. Volontairement un
+  // moteur à règles modeste (pas un système de recommandation apprenant).
+  private buildSuggestions(ctx: {
+    c: any; ctr: number; impressions: number; clicks: number; spent: number; budget: number;
+    ageDays: number; totalDays: number; performanceScore: number;
+  }): string[] {
+    const { c, ctr, impressions, clicks, spent, budget, ageDays, totalDays, performanceScore } = ctx;
+    const out: string[] = [];
+    const daysLeft = Math.max(0, totalDays - ageDays);
+    const remaining = Math.max(0, budget - spent);
+
+    // Règle 1 : CTR faible avec assez de données pour juger
+    if (impressions >= 100 && ctr < 1) {
+      out.push(`CTR faible (${ctr.toFixed(1)}%) — essayez d'améliorer la photo principale ou le titre du produit pour donner plus envie de cliquer.`);
+    }
+
+    // Règle 2 : beaucoup d'impressions mais aucun clic
+    if (impressions >= 200 && clicks === 0) {
+      out.push(`${impressions.toLocaleString()} impressions sans aucun clic — le visuel ou le prix affiché ne convainc peut-être pas, pensez à les revoir.`);
+    }
+
+    // Règle 3 : budget presque épuisé alors qu'il reste du temps
+    if (budget > 0 && remaining / budget < 0.1 && daysLeft > 2) {
+      out.push(`Budget presque épuisé alors qu'il reste ${Math.ceil(daysLeft)} jour(s) — augmentez-le si les résultats vous conviennent, sinon la diffusion s'arrêtera bientôt.`);
+    }
+
+    // Règle 4 : campagne bientôt terminée avec beaucoup de budget non utilisé
+    if (daysLeft > 0 && daysLeft <= 2 && budget > 0 && spent / budget < 0.5) {
+      out.push(`Campagne bientôt terminée avec moins de 50% du budget dépensé — envisagez de prolonger la durée pour ne pas gaspiller le reste.`);
+    }
+
+    // Règle 5 : produit avec peu de photos
+    if (c.product) {
+      const imgCount = c.product._count?.images ?? (c.product.images?.length || 0);
+      if (imgCount < 2) {
+        out.push(`Ce produit n'a que ${imgCount} photo(s) — ajoutez-en davantage, les annonces avec plusieurs photos obtiennent généralement plus de clics.`);
+      }
+    }
+
+    // Règle 6 : description trop courte
+    if (c.product && (c.product.description || '').trim().length < 30) {
+      out.push(`La description du produit est très courte — un texte plus détaillé rassure les acheteurs et peut améliorer vos conversions.`);
+    }
+
+    // Règle 7 : bonnes performances — encourager à investir davantage
+    if (performanceScore >= 80 && remaining / Math.max(budget, 1) < 0.3) {
+      out.push(`Bonnes performances (score ${performanceScore}/100) — envisagez d'augmenter le budget pour amplifier des résultats qui fonctionnent déjà bien.`);
+    }
+
+    return out.slice(0, 3);
   }
 
   async getCampaignStats(campaignId: string, sellerId: string) {
-    const campaign = await this.prisma.adCampaign.findFirst({
+    const campaign: any = await this.prisma.adCampaign.findFirst({
       where: { id: campaignId, sellerId },
-      include: { product: { include: { images: { where: { isPrimary: true }, take: 1 } } }, store: { select: { id: true, name: true, logoUrl: true, slug: true } } },
+      include: {
+        product: { include: { images: { where: { isPrimary: true }, take: 1 }, _count: { select: { images: true } } } },
+        store: { select: { id: true, name: true, logoUrl: true, slug: true } },
+      },
     });
     if (!campaign) throw new NotFoundException('Campagne introuvable');
+
+    const { performanceScore, suggestions } = this.computePerformanceAndSuggestions(campaign);
 
     // Daily breakdown last 30 days
     const events = await this.prisma.adEvent.findMany({
@@ -216,7 +368,7 @@ export class AdsService {
     const remaining = Number(campaign.totalBudget) - Number(campaign.spent);
     const daysLeft = Math.max(0, Math.ceil((campaign.endDate.getTime() - Date.now()) / 86400000));
 
-    return { campaign, ctr, cpc, remaining, daysLeft, daily: Object.entries(daily).map(([date, v]) => ({ date, ...v })) };
+    return { campaign, ctr, cpc, remaining, daysLeft, performanceScore, suggestions, daily: Object.entries(daily).map(([date, v]) => ({ date, ...v })) };
   }
 
   async pauseCampaign(campaignId: string, sellerId: string) {

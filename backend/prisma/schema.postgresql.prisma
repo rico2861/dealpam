@@ -996,6 +996,10 @@ model AdCampaign {
   targetAgeMax     Int?      @map("target_age_max")
   targetDepts      String[]  @default([]) @map("target_depts")     // Départements haïtiens
   targetCategories String[]  @default([]) @map("target_categories")
+  // Centres d'intérêt sélectionnés manuellement par le vendeur (liste fixe côté
+  // frontend, ex. "Mode", "Technologie"...) — PAS un ciblage inféré par
+  // comportement/ML, une simple liste de tags choisis à la main.
+  targetInterests  String[]  @default([]) @map("target_interests")
 
   // Statistiques
   impressions    Int         @default(0)

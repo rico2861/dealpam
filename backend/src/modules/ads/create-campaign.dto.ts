@@ -23,4 +23,7 @@ export class CreateCampaignDto {
   @Type(() => Number) @IsNumber() @IsOptional() targetAgeMax?: number;
   @IsArray() @IsOptional() targetDepts?: string[];        // Départements haïtiens
   @IsArray() @IsOptional() targetCategories?: string[];
+  // Centres d'intérêt sélectionnés manuellement (liste fixe côté frontend) —
+  // simple tag list, pas d'inférence comportementale/ML.
+  @IsArray() @IsOptional() targetInterests?: string[];
 }
