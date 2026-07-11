@@ -212,8 +212,9 @@ function OfferStatusBlock({ order, item }: { order: any; item: any }) {
         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
           <Button size="small" disabled={respondMut.isPending} onClick={() => respondMut.mutate({ action: 'ACCEPT' })}
             sx={{ borderRadius: '9px', fontWeight: 700, fontSize: 12, px: 1.8, py: 0.6,
-              bgcolor: GRN, color: '#fff', '&:hover': { bgcolor: '#0EA271' } }}>
-            Accepter ce prix
+              bgcolor: GRN, color: '#fff', '&:hover': { bgcolor: '#0EA271' }, '&.Mui-disabled': { bgcolor: alpha(GRN, 0.5), color: '#fff' } }}>
+            {respondMut.isPending && respondMut.variables?.action === 'ACCEPT'
+              ? <CircularProgress size={14} sx={{ color: '#fff' }} /> : 'Accepter ce prix'}
           </Button>
           <Button size="small" disabled={respondMut.isPending} onClick={() => setCounterOpen(true)}
             sx={{ borderRadius: '9px', fontWeight: 700, fontSize: 12, px: 1.8, py: 0.6,
@@ -224,8 +225,9 @@ function OfferStatusBlock({ order, item }: { order: any; item: any }) {
           <Button size="small" disabled={respondMut.isPending} onClick={() => respondMut.mutate({ action: 'REJECT' })}
             sx={{ borderRadius: '9px', fontWeight: 700, fontSize: 12, px: 1.8, py: 0.6,
               bgcolor: 'transparent', color: RED, border: '1px solid rgba(239,68,68,0.35)',
-              '&:hover': { bgcolor: 'rgba(239,68,68,0.1)' } }}>
-            Refuser définitivement
+              '&:hover': { bgcolor: 'rgba(239,68,68,0.1)' }, '&.Mui-disabled': { color: alpha(RED, 0.5), border: '1px solid rgba(239,68,68,0.15)' } }}>
+            {respondMut.isPending && respondMut.variables?.action === 'REJECT'
+              ? <CircularProgress size={14} sx={{ color: RED }} /> : 'Refuser définitivement'}
           </Button>
         </Box>
 

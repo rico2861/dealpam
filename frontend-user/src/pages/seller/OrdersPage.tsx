@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Box, Typography, Button, Avatar, CircularProgress,
   Dialog, DialogTitle, DialogContent, DialogActions,
-  Collapse, Tooltip, IconButton, TextField, Chip,
+  Collapse, Tooltip, IconButton, TextField, Chip, alpha,
 } from '@mui/material';
 import {
   LocalShipping, CheckCircle, HourglassEmpty, Cancel,
@@ -107,8 +107,9 @@ function OfferBlock({ order, item }: { order: any; item: any }) {
       <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
         <Button size="small" onClick={() => decideMut.mutate({ action: 'ACCEPT' })} disabled={decideMut.isPending}
           sx={{ borderRadius: '9px', fontWeight: 700, fontSize: 12, px: 1.8, py: 0.6,
-            bgcolor: GRN, color: '#fff', '&:hover': { bgcolor: '#0EA271' } }}>
-          Accepter l'offre
+            bgcolor: GRN, color: '#fff', '&:hover': { bgcolor: '#0EA271' }, '&.Mui-disabled': { bgcolor: alpha(GRN, 0.5), color: '#fff' } }}>
+          {decideMut.isPending && decideMut.variables?.action === 'ACCEPT'
+            ? <CircularProgress size={14} sx={{ color: '#fff' }} /> : "Accepter l'offre"}
         </Button>
         <Button size="small" onClick={() => setCounterOpen(true)} disabled={decideMut.isPending}
           sx={{ borderRadius: '9px', fontWeight: 700, fontSize: 12, px: 1.8, py: 0.6,
@@ -169,7 +170,7 @@ function OfferBlock({ order, item }: { order: any; item: any }) {
 }
 
 /* ── Order card ─────────────────────────────────────────────────────────── */
-function OrderCard({ order, onUpdate }: { order: any; onUpdate: (id: string, status: string) => void }) {
+function OrderCard({ order, onUpdate, pendingStatus }: { order: any; onUpdate: (id: string, status: string) => void; pendingStatus?: string | null }) {
   const navigate = useNavigate();
   const [expanded, setExpanded] = useState(false);
   const pendingOfferItems = (order.items || []).filter((i: any) => i.offerStatus === 'PENDING' || i.offerStatus === 'COUNTERED');
@@ -373,8 +374,10 @@ function OrderCard({ order, onUpdate }: { order: any; onUpdate: (id: string, sta
         <Box sx={{ px: 2.5, py: 1.8, borderTop: `1px solid ${BORD}`, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
           {st.next.map(next => {
             const isCancelBtn = next === 'CANCELLED';
+            const isLoading = pendingStatus === next;
             return (
               <Button key={next} size="small" onClick={() => onUpdate(order.id, next)}
+                disabled={!!pendingStatus}
                 sx={{
                   borderRadius: '9px', fontWeight: 700, fontSize: 12.5, px: 2, py: 0.8,
                   bgcolor: isCancelBtn ? 'transparent' : OR,
@@ -385,8 +388,15 @@ function OrderCard({ order, onUpdate }: { order: any; onUpdate: (id: string, sta
                     bgcolor: isCancelBtn ? 'rgba(239,68,68,0.1)' : '#E05A00',
                     borderColor: isCancelBtn ? 'rgba(239,68,68,0.6)' : undefined,
                   },
+                  '&.Mui-disabled': {
+                    bgcolor: isCancelBtn ? 'transparent' : alpha(OR, 0.5),
+                    color: isCancelBtn ? alpha(RED, 0.5) : '#fff',
+                    border: isCancelBtn ? '1px solid rgba(239,68,68,0.2)' : 'none',
+                  },
                 }}>
-                {NEXT_LABEL[next] ?? next}
+                {isLoading
+                  ? <CircularProgress size={14} sx={{ color: isCancelBtn ? RED : '#fff' }} />
+                  : (NEXT_LABEL[next] ?? next)}
               </Button>
             );
           })}
@@ -561,7 +571,8 @@ export default function SellerOrdersPage() {
         <>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
             {paged.map((order: any) => (
-              <OrderCard key={order.id} order={order} onUpdate={handleUpdate}/>
+              <OrderCard key={order.id} order={order} onUpdate={handleUpdate}
+                pendingStatus={updateMut.isPending && updateMut.variables?.id === order.id ? updateMut.variables?.status : null} />
             ))}
           </Box>
           {filtered.length > PAGE_SIZE && (
