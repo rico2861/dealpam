@@ -109,6 +109,12 @@ const theme = createTheme({
     MuiButton: { styleOverrides: { root: { borderRadius: 10, textTransform: 'none', fontWeight: 600 } } },
     MuiCard: { styleOverrides: { root: { borderRadius: 14, boxShadow: '0 2px 12px rgba(0,0,0,0.06)', border: '1px solid rgba(0,0,0,0.04)' } } },
     MuiTextField: { defaultProps: { size: 'small' } },
+    // Le label flottant ("Boutique", "Nom de la campagne"...) restait parfois figé à
+    // mi-hauteur, chevauchant la bordure du champ au lieu de se rétracter proprement
+    // au-dessus — surtout dans les Dialog (l'animation d'entrée Grow empêche MUI de
+    // mesurer correctement le label au premier rendu). Forcer shrink:true partout
+    // règle ce glitch sur TOUS les champs (TextField et Select) d'un coup.
+    MuiInputLabel: { defaultProps: { shrink: true } },
   },
 });
 
