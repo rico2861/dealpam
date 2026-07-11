@@ -3,7 +3,7 @@ import {
   Box, Typography, CircularProgress, TextField, InputAdornment,
   Dialog, DialogContent, Button,
 } from '@mui/material';
-import { CheckCircle, Store, Star, WorkspacePremium, Diamond, CreditCard, AccountBalanceWallet, OpenInNew } from '@mui/icons-material';
+import { CheckCircle, Store, Star, WorkspacePremium, Diamond, AccountBalanceWallet, OpenInNew } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import { useNavigate } from 'react-router-dom';
@@ -316,23 +316,6 @@ export default function SellerSubscriptionPage() {
             </Box>
           );
         })}
-      </Box>
-
-      {/* Payment methods */}
-      <Box sx={{ p: 2.5, borderRadius: '14px', bgcolor: CARD, border: `1px solid ${BORD}`, display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
-        <Box sx={{ width: 34, height: 34, borderRadius: '9px', bgcolor: 'rgba(255,107,0,0.1)', border: '1px solid rgba(255,107,0,0.2)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          <CreditCard sx={{ fontSize: 17, color: OR }} />
-        </Box>
-        <Box>
-          <Typography fontSize={13} fontWeight={700} color={TXT}>Méthodes de paiement acceptées</Typography>
-          <Typography fontSize={12} color={SUB}>MonCash · NatCash · Visa/Mastercard · PayPal — L'abonnement est valable 30 jours</Typography>
-          {currentSub && (
-            <Typography fontSize={12} color={SUB} sx={{ mt: 0.3 }}>
-              Un changement de plan ne prend effet qu'à la fin de la période déjà payée — jamais immédiatement, jamais de remboursement rétroactif.
-            </Typography>
-          )}
-        </Box>
       </Box>
 
       {/* Choix du mode de paiement */}
