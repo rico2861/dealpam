@@ -165,12 +165,12 @@ function SubServicesEditor({ data, onChange }: { data: any; onChange: (d: any) =
   return (
     <Box>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.2 }}>
-        <Typography fontSize={13} fontWeight={700} color={TXT}>Prestations proposées (optionnel)</Typography>
+        <Typography fontSize={13} fontWeight={700} color={TXT}>Prestations proposées *</Typography>
         <Button size="small" startIcon={<Add sx={{ fontSize: 15 }} />} onClick={add}
           sx={{ color: OR, fontWeight: 700, fontSize: 12.5 }}>Ajouter</Button>
       </Box>
       <Typography fontSize={12} color={SUB} mb={1.5}>
-        Détaillez chaque prestation avec son prix — le client pourra choisir avant de prendre RDV.
+        Au moins une prestation est requise — détaillez son prix, le client pourra choisir avant de prendre RDV.
       </Typography>
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
         {list.map((s, i) => (
@@ -383,6 +383,13 @@ export default function AddServicePage() {
     if (!base.description.trim() || base.description.trim().length < 3) return setError('La description doit contenir au moins 3 caractères');
     if (!storeId)              return setError('Sélectionnez une boutique');
     if (!categoryId)           return setError('Sélectionnez une catégorie');
+    if (listingType === 'SERVICE') {
+      const subServices: any[] = extra.subServices || [];
+      const validPrestations = subServices.filter(s => s.name?.trim() && Number(s.price) > 0);
+      if (validPrestations.length === 0) {
+        return setError('Ajoutez au moins une prestation avec un nom et un prix');
+      }
+    }
 
     const price    = extra.price ?? 0;
     const priceUnitMap: Record<string, string> = { SERVICE: 'HTG/séance', FREELANCE: 'HTG/projet' };
