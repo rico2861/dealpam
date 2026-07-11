@@ -9,6 +9,7 @@ import {
   Menu as MenuIcon, Logout, ArrowBack, Campaign, Chat,
   Description, AccountBalanceWallet, AutoAwesome, BarChart,
   Add, KeyboardArrowRight, Close, CalendarMonth, MedicalServices,
+  Verified, HourglassTopRounded,
 } from '@mui/icons-material';
 import { useAuthStore } from '../../store/auth.store';
 import { useQuery } from '@tanstack/react-query';
@@ -124,14 +125,33 @@ function SidebarContent({ badges, onClose, stats }: {
 
       {/* Status pill */}
       {stats && (
-        <Box sx={{ mx: 2, mt: 1.5, mb: 0.5, px: 1.5, py: 1, borderRadius: '10px', bgcolor: 'rgba(15,23,42,0.09)', border: `1px solid ${BORD}`, display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Box sx={{ width: 7, height: 7, borderRadius: '50%', flexShrink: 0, bgcolor: isApproved ? '#10B981' : '#F59E0B', boxShadow: isApproved ? '0 0 6px #10B981' : '0 0 6px #F59E0B' }} />
-          <Typography fontSize={12} fontWeight={600} color={isApproved ? '#34D399' : '#FCD34D'} noWrap>
-            {isApproved ? 'Boutique active' : 'En attente'}
+        <Box sx={{
+          mx: 2, mt: 1.5, mb: 0.5, px: 1.6, py: 1.1, borderRadius: '12px',
+          background: isApproved
+            ? 'linear-gradient(135deg, rgba(16,185,129,0.14), rgba(16,185,129,0.05))'
+            : 'linear-gradient(135deg, rgba(245,158,11,0.14), rgba(245,158,11,0.05))',
+          border: `1px solid ${isApproved ? 'rgba(16,185,129,0.28)' : 'rgba(245,158,11,0.28)'}`,
+          display: 'flex', alignItems: 'center', gap: 1,
+        }}>
+          <Box sx={{
+            width: 26, height: 26, borderRadius: '8px', flexShrink: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            bgcolor: isApproved ? 'rgba(16,185,129,0.18)' : 'rgba(245,158,11,0.18)',
+          }}>
+            {isApproved
+              ? <Store sx={{ fontSize: 15, color: '#34D399' }} />
+              : <HourglassTopRounded sx={{ fontSize: 14, color: '#FCD34D' }} />}
+          </Box>
+          <Typography fontSize={12.5} fontWeight={700} color={isApproved ? '#34D399' : '#FCD34D'} noWrap sx={{ flex: 1 }}>
+            {isApproved ? 'Boutique active' : 'En attente d\'approbation'}
           </Typography>
           {stats.isVerified && (
-            <Box sx={{ ml: 'auto', px: 0.8, py: 0.1, borderRadius: '4px', flexShrink: 0, bgcolor: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)' }}>
-              <Typography fontSize={9} fontWeight={800} color="#34D399">VERIFIE</Typography>
+            <Box sx={{
+              ml: 'auto', px: 0.9, py: 0.35, borderRadius: '7px', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 0.4,
+              bgcolor: 'rgba(16,185,129,0.16)', border: '1px solid rgba(16,185,129,0.35)',
+            }}>
+              <Verified sx={{ fontSize: 12, color: '#34D399' }} />
+              <Typography fontSize={9.5} fontWeight={800} color="#34D399" letterSpacing="0.3px">VÉRIFIÉ</Typography>
             </Box>
           )}
         </Box>
