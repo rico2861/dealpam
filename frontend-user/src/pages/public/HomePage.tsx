@@ -1760,7 +1760,7 @@ function NearYouSection({ products, location, onModal, label, level, hasLocalVen
   const city = location?.city || location?.department;
   const sectionTitle = label
     || (location?.city
-      ? `Tendances à ${location.city}`
+      ? `Tendances dans votre ville — ${location.city}`
       : location?.department
         ? `Tendances dans votre département — ${location.department}`
         : 'Produits près de chez vous');

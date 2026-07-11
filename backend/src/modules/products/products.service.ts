@@ -978,7 +978,9 @@ export class ProductsService {
       if (byCity.length >= 1) return {
         products: byCity.slice(0, limit),
         level: 'city' as const,
-        label: `Tendances à ${city}`,
+        // Pas de préposition figée ("à Port-au-Prince" mais "aux Cayes", "au Cap-Haïtien"...) —
+        // un tiret neutre évite toute faute de grammaire selon la ville, même format que le département.
+        label: `Tendances dans votre ville — ${city}`,
         hasLocalVendor,
       };
     }
