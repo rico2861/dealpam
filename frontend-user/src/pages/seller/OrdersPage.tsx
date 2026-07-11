@@ -39,7 +39,7 @@ const STATUS: Record<string, { label: string; color: string; icon: any; next: st
   PENDING:   { label: 'En attente',     color: YLW, icon: HourglassEmpty, next: ['CONFIRMED', 'CANCELLED'] },
   CONFIRMED: { label: 'Confirmée',      color: BLU, icon: Assignment,     next: ['PREPARING'] },
   PREPARING: { label: 'En préparation', color: PUR, icon: Inventory,      next: ['SHIPPED'] },
-  SHIPPED:   { label: 'Expédiée',       color: CYN, icon: LocalShipping,  next: ['DELIVERED'] },
+  SHIPPED:   { label: 'En route',       color: CYN, icon: LocalShipping,  next: ['DELIVERED'] },
   DELIVERED: { label: 'Livrée',         color: GRN, icon: CheckCircle,    next: [] },
   CANCELLED: { label: 'Annulée',        color: RED, icon: Cancel,         next: [] },
 };
@@ -47,7 +47,7 @@ const STATUS: Record<string, { label: string; color: string; icon: any; next: st
 const NEXT_LABEL: Record<string, string> = {
   CONFIRMED: 'Accepter',
   PREPARING: 'En préparation',
-  SHIPPED:   'Marquer expédiée',
+  SHIPPED:   'Marquer en route',
   DELIVERED: 'Marquer livrée',
   CANCELLED: 'Annuler',
 };
@@ -346,10 +346,12 @@ function OrderCard({ order, onUpdate }: { order: any; onUpdate: (id: string, sta
           <Box sx={{ pb: 1.5, display: 'flex', flexDirection: 'column', gap: 0.8 }}>
             {[
               order.deliveryType && { k: 'Livraison', v: order.deliveryType === 'DELIVERY' ? '🏠 À domicile' : order.deliveryType === 'PICKUP' ? '🏪 Retrait boutique' : '📞 Contact direct' },
-              order.pickupPointName && { k: 'Point retrait', v: order.pickupPointName },
-              order.address && { k: 'Adresse', v: `${order.address.line1}, ${order.address.city}` },
-              order.chosenPaymentMethod && { k: 'Paiement', v: order.chosenPaymentMethod },
+              order.pickupPointName && { k: 'Point retrait', v: `${order.pickupPointName}${order.pickupPointAddress ? ` — ${order.pickupPointAddress}` : ''}` },
+              order.address && { k: 'Adresse', v: `${order.address.fullName ? order.address.fullName + ' · ' : ''}${order.address.line1}, ${order.address.city}, ${order.address.department}${order.address.phone ? ` · ${order.address.phone}` : ''}` },
+              Number(order.shippingHTG) > 0 && { k: 'Frais livraison', v: fmt(Number(order.shippingHTG)) },
+              order.chosenPaymentMethod && { k: 'Paiement choisi', v: order.chosenPaymentMethod },
               order.paymentTxRef && { k: 'Réf. TX', v: `${order.paymentTxRef} (${order.paymentTxStatus})` },
+              { k: 'Total dû par le client', v: fmt(Number(order.totalHTG)) },
             ].filter(Boolean).map((row: any) => (
               <Box key={row.k} sx={{ display: 'flex', gap: 1.5 }}>
                 <Typography fontSize={12} color={SUB} sx={{ minWidth: 100, flexShrink: 0 }}>{row.k} :</Typography>

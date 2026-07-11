@@ -70,9 +70,10 @@ export class OrdersController {
     @CurrentUser() u: any,
     @Param('orderId') orderId: string,
     @Param('itemId') itemId: string,
-    @Body('action') action: 'ACCEPT' | 'DECLINE',
+    @Body('action') action: 'ACCEPT' | 'REJECT' | 'COUNTER',
+    @Body('counterPrice') counterPrice: number,
   ) {
-    return this.os.respondToCounter(u.id, orderId, itemId, action);
+    return this.os.respondToCounter(u.id, orderId, itemId, action, counterPrice);
   }
 
   @Get() @UseGuards(RolesGuard) @Roles('ADMIN','SUPER_ADMIN')

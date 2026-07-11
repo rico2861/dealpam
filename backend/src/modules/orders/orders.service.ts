@@ -284,13 +284,15 @@ export class OrdersService {
         CANCELLED: 'Commande annulée',
         REFUNDED:  'Remboursée',
       };
-      await this.mail.sendOrderStatusUpdate(
+      // Pas de await ici : un SMTP lent ne doit jamais retarder la réponse du
+      // bouton "Confirmer/Annuler/Livré..." (même bug que sur la création de commande).
+      this.mail.sendOrderStatusUpdate(
         order.user.email,
         order.user.firstName,
         order.id.slice(-8).toUpperCase(),
         statusLabels[status] || status,
         `Total: ${Number(order.totalHTG).toLocaleString()} HTG`,
-      ).catch(() => {}); // never block on email failure
+      ).catch(() => {});
     }
 
     // ── Vendor punishment system ──────────────────────────────────────────
@@ -365,10 +367,13 @@ export class OrdersService {
       throw new BadRequestException('Un prix de contre-offre valide est requis');
     }
 
+    // Les emails ne sont jamais await — un SMTP lent ne doit pas retarder la
+    // réponse au clic sur Accepter/Refuser/Contre-offre (même bug que la
+    // création de commande et le changement de statut, déjà corrigé ailleurs).
     if (action === 'ACCEPT') {
       await this.prisma.orderItem.update({ where: { id: itemId }, data: { offerStatus: 'ACCEPTED' } });
       if (order.user?.email) {
-        await this.mail.sendOfferDecision(
+        this.mail.sendOfferDecision(
           order.user.email, order.user.firstName, item.productName, Number(item.offeredPrice), 'ACCEPTED',
         ).catch(() => {});
       }
@@ -385,7 +390,7 @@ export class OrdersService {
         data: { offerStatus: 'COUNTERED', counterPrice },
       });
       if (order.user?.email) {
-        await this.mail.sendOfferDecision(
+        this.mail.sendOfferDecision(
           order.user.email, order.user.firstName, item.productName, Number(item.offeredPrice), 'COUNTERED', reason, counterPrice,
         ).catch(() => {});
       }
@@ -401,21 +406,22 @@ export class OrdersService {
         where: { id: itemId },
         data: { offerStatus: 'REJECTED', offerRejectionReason: reason },
       });
-      // Refus légitime d'une offre = décision commerciale normale, pas une négligence
-      // du vendeur : on annule la commande sans appliquer la pénalité -10 habituelle.
+      // Refus définitif du vendeur (pas une contre-offre) = fin de la négociation :
+      // décision commerciale normale, pas une négligence du vendeur — on annule la
+      // commande sans appliquer la pénalité -10 habituelle.
       await this.prisma.order.update({
         where: { id: orderId },
         data: { status: 'CANCELLED', cancelReason: reason },
       });
       if (order.user?.email) {
-        await this.mail.sendOfferDecision(
+        this.mail.sendOfferDecision(
           order.user.email, order.user.firstName, item.productName, Number(item.offeredPrice), 'REJECTED', reason,
         ).catch(() => {});
       }
       await this.notifications.create(
         order.user.id,
         'Offre refusée',
-        `Votre offre pour "${item.productName}" a été refusée. Motif : ${reason}. N'hésitez pas à soumettre une nouvelle offre.`,
+        `Votre offre pour "${item.productName}" a été refusée définitivement. Motif : ${reason}.`,
         'OFFER_REJECTED',
         { orderId, itemId, reason },
       ).catch(() => {});
@@ -424,8 +430,18 @@ export class OrdersService {
     return this.prisma.order.findUnique({ where: { id: orderId }, include: { items: true } });
   }
 
-  // ── Client : accepter/décliner la contre-offre du vendeur ────────────────
-  async respondToCounter(userId: string, orderId: string, itemId: string, action: 'ACCEPT' | 'DECLINE') {
+  // ── Client : répondre à la contre-offre du vendeur ────────────────────────
+  // ACCEPT  : finalise au prix du vendeur, commande continue normalement.
+  // REJECT  : refus définitif — annule la commande pour de bon (aucune pénalité
+  //           de réputation, décision commerciale normale des deux côtés).
+  // COUNTER : le client repropose un nouveau prix — repasse la balle au vendeur
+  //           (offerStatus revient à PENDING, decideOffer() peut de nouveau
+  //           accepter/refuser/contre-offrir). La négociation peut boucler tant
+  //           qu'aucune des deux parties ne choisit ACCEPT ou REJECT.
+  async respondToCounter(
+    userId: string, orderId: string, itemId: string,
+    action: 'ACCEPT' | 'REJECT' | 'COUNTER', counterPrice?: number,
+  ) {
     const order = await this.prisma.order.findFirst({
       where: { id: orderId, userId },
       include: { items: true, store: { select: { id: true, name: true, sellerId: true } } },
@@ -437,12 +453,16 @@ export class OrdersService {
     if (item.offerStatus !== 'COUNTERED') {
       throw new BadRequestException('Aucune contre-offre en attente pour cet article');
     }
+    if (action === 'COUNTER' && !(counterPrice && counterPrice > 0)) {
+      throw new BadRequestException('Un prix valide est requis');
+    }
 
     const sellerUser = await this.prisma.user.findFirst({
       where: { seller: { id: order.store.sellerId } },
       select: { id: true, email: true, firstName: true },
     }).catch(() => null);
 
+    // Les emails ne sont jamais await (SMTP lent ne doit pas retarder le clic du client).
     if (action === 'ACCEPT') {
       const newUnitPrice = Number(item.counterPrice);
       const newSubtotal  = newUnitPrice * item.quantity;
@@ -455,7 +475,7 @@ export class OrdersService {
       const total = items.reduce((s, i) => s + (i.id === itemId ? newSubtotal : Number(i.subtotal)), 0);
       await this.prisma.order.update({ where: { id: orderId }, data: { subtotalHTG: total, totalHTG: total } });
       if (sellerUser?.email) {
-        await this.mail.sendMail({
+        this.mail.sendMail({
           as: 'seller', to: sellerUser.email,
           subject: `✅ Contre-offre acceptée pour ${item.productName} — DealPam`,
           html: `<p>Le client a accepté votre prix de ${newUnitPrice.toLocaleString()} HTG pour "${item.productName}". La commande #${orderId.slice(-8).toUpperCase()} suit maintenant son cours normal.</p>`,
@@ -470,24 +490,45 @@ export class OrdersService {
           { orderId, itemId },
         ).catch(() => {});
       }
-    } else {
-      await this.prisma.orderItem.update({ where: { id: itemId }, data: { offerStatus: 'DECLINED' } });
-      // Comme pour un refus vendeur : décision commerciale normale, pas de pénalité de réputation.
-      await this.prisma.order.update({
-        where: { id: orderId },
-        data: { status: 'CANCELLED', cancelReason: 'Contre-offre déclinée par le client' },
+    } else if (action === 'COUNTER') {
+      await this.prisma.orderItem.update({
+        where: { id: itemId },
+        data: { offerStatus: 'PENDING', offeredPrice: counterPrice },
       });
       if (sellerUser?.email) {
-        await this.mail.sendMail({
+        this.mail.sendMail({
           as: 'seller', to: sellerUser.email,
-          subject: `Contre-offre déclinée pour ${item.productName} — DealPam`,
-          html: `<p>Le client a décliné votre prix de ${Number(item.counterPrice).toLocaleString()} HTG pour "${item.productName}". La commande #${orderId.slice(-8).toUpperCase()} a été annulée.</p>`,
+          subject: `🔄 Nouvelle proposition du client pour ${item.productName} — DealPam`,
+          html: `<p>Le client a décliné votre prix de ${Number(item.counterPrice).toLocaleString()} HTG pour "${item.productName}" et propose maintenant ${Number(counterPrice).toLocaleString()} HTG. Répondez depuis votre espace vendeur.</p>`,
+        }).catch(() => {});
+      }
+      if (sellerUser?.id) {
+        await this.notifications.create(
+          sellerUser.id,
+          'Nouvelle proposition du client',
+          `Pour "${item.productName}", le client propose maintenant ${Number(counterPrice).toLocaleString()} HTG au lieu de votre prix de ${Number(item.counterPrice).toLocaleString()} HTG.`,
+          'OFFER_COUNTERED',
+          { orderId, itemId, counterPrice },
+        ).catch(() => {});
+      }
+    } else {
+      await this.prisma.orderItem.update({ where: { id: itemId }, data: { offerStatus: 'REJECTED' } });
+      // Refus définitif du client : décision commerciale normale, pas de pénalité de réputation.
+      await this.prisma.order.update({
+        where: { id: orderId },
+        data: { status: 'CANCELLED', cancelReason: 'Négociation refusée définitivement par le client' },
+      });
+      if (sellerUser?.email) {
+        this.mail.sendMail({
+          as: 'seller', to: sellerUser.email,
+          subject: `Négociation terminée pour ${item.productName} — DealPam`,
+          html: `<p>Le client a refusé définitivement votre prix de ${Number(item.counterPrice).toLocaleString()} HTG pour "${item.productName}". La commande #${orderId.slice(-8).toUpperCase()} a été annulée.</p>`,
         }).catch(() => {});
       }
       if (sellerUser?.id) await this.notifications.create(
         sellerUser.id,
-        'Contre-offre déclinée',
-        `Le client a décliné votre prix de ${Number(item.counterPrice).toLocaleString()} HTG pour "${item.productName}".`,
+        'Négociation refusée par le client',
+        `Le client a refusé définitivement votre prix de ${Number(item.counterPrice).toLocaleString()} HTG pour "${item.productName}". Commande annulée.`,
         'OFFER_REJECTED',
         { orderId, itemId },
       ).catch(() => {});

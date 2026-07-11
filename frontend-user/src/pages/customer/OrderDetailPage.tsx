@@ -4,6 +4,7 @@ import {
   Box, Typography, Button, Avatar, IconButton, Divider,
   Rating, TextField, CircularProgress, alpha,
   Stepper, Step, StepLabel,
+  Dialog, DialogTitle, DialogContent, DialogActions,
 } from '@mui/material';
 import {
   CheckCircle, LocalShipping, Assignment, HourglassEmpty,
@@ -169,14 +170,18 @@ const BLU = '#3B82F6';
 function OfferStatusBlock({ order, item }: { order: any; item: any }) {
   const qc = useQueryClient();
   const { enqueueSnackbar } = useSnackbar();
+  const [counterOpen, setCounterOpen] = useState(false);
+  const [counterPrice, setCounterPrice] = useState('');
 
   const respondMut = useMutation({
-    mutationFn: (action: 'ACCEPT' | 'DECLINE') =>
-      api.patch(`/orders/me/${order.id}/items/${item.id}/offer-response`, { action }),
+    mutationFn: ({ action, counterPrice }: { action: 'ACCEPT' | 'REJECT' | 'COUNTER'; counterPrice?: number }) =>
+      api.patch(`/orders/me/${order.id}/items/${item.id}/offer-response`, { action, counterPrice }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['order', order.id] });
       qc.invalidateQueries({ queryKey: ['myOrders'] });
       enqueueSnackbar('Réponse envoyée au vendeur', { variant: 'success' });
+      setCounterOpen(false);
+      setCounterPrice('');
     },
     onError: (e: any) => enqueueSnackbar(e?.response?.data?.message || 'Erreur', { variant: 'error' }),
   });
@@ -185,7 +190,7 @@ function OfferStatusBlock({ order, item }: { order: any; item: any }) {
     return (
       <Box sx={{ mt: 1, mb: 1, p: 1.4, borderRadius: '10px', bgcolor: alpha(GOLD, 0.08), border: `1px solid ${alpha(GOLD, 0.25)}` }}>
         <Typography fontSize={12.5} fontWeight={700} color={GOLD}>
-          ⏳ Votre offre est en attente de la réponse du vendeur.
+          ⏳ Votre offre de {fmt(Number(item.offeredPrice))} est en attente de la réponse du vendeur.
         </Typography>
       </Box>
     );
@@ -193,7 +198,7 @@ function OfferStatusBlock({ order, item }: { order: any; item: any }) {
   if (item.offerStatus === 'REJECTED') {
     return (
       <Box sx={{ mt: 1, mb: 1, p: 1.4, borderRadius: '10px', bgcolor: alpha(RED, 0.08), border: `1px solid ${alpha(RED, 0.25)}` }}>
-        <Typography fontSize={12.5} fontWeight={700} color={RED} mb={0.3}>Offre refusée par le vendeur</Typography>
+        <Typography fontSize={12.5} fontWeight={700} color={RED} mb={0.3}>Négociation terminée — offre refusée définitivement</Typography>
         {item.offerRejectionReason && <Typography fontSize={12} color="#64748B">Motif : {item.offerRejectionReason}</Typography>}
       </Box>
     );
@@ -204,26 +209,45 @@ function OfferStatusBlock({ order, item }: { order: any; item: any }) {
         <Typography fontSize={12.5} fontWeight={700} color={BLU} mb={1}>
           🔄 Le vendeur propose {fmt(Number(item.counterPrice))} au lieu de votre offre de {fmt(Number(item.offeredPrice))}.
         </Typography>
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <Button size="small" disabled={respondMut.isPending} onClick={() => respondMut.mutate('ACCEPT')}
+        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+          <Button size="small" disabled={respondMut.isPending} onClick={() => respondMut.mutate({ action: 'ACCEPT' })}
             sx={{ borderRadius: '9px', fontWeight: 700, fontSize: 12, px: 1.8, py: 0.6,
               bgcolor: GRN, color: '#fff', '&:hover': { bgcolor: '#0EA271' } }}>
             Accepter ce prix
           </Button>
-          <Button size="small" disabled={respondMut.isPending} onClick={() => respondMut.mutate('DECLINE')}
+          <Button size="small" disabled={respondMut.isPending} onClick={() => setCounterOpen(true)}
+            sx={{ borderRadius: '9px', fontWeight: 700, fontSize: 12, px: 1.8, py: 0.6,
+              bgcolor: 'transparent', color: BLU, border: '1px solid rgba(59,130,246,0.35)',
+              '&:hover': { bgcolor: 'rgba(59,130,246,0.1)' } }}>
+            Proposer un autre prix
+          </Button>
+          <Button size="small" disabled={respondMut.isPending} onClick={() => respondMut.mutate({ action: 'REJECT' })}
             sx={{ borderRadius: '9px', fontWeight: 700, fontSize: 12, px: 1.8, py: 0.6,
               bgcolor: 'transparent', color: RED, border: '1px solid rgba(239,68,68,0.35)',
               '&:hover': { bgcolor: 'rgba(239,68,68,0.1)' } }}>
-            Décliner
+            Refuser définitivement
           </Button>
         </Box>
-      </Box>
-    );
-  }
-  if (item.offerStatus === 'DECLINED') {
-    return (
-      <Box sx={{ mt: 1, mb: 1, p: 1.4, borderRadius: '10px', bgcolor: alpha(RED, 0.08), border: `1px solid ${alpha(RED, 0.25)}` }}>
-        <Typography fontSize={12.5} fontWeight={700} color={RED}>Vous avez décliné le prix proposé par le vendeur.</Typography>
+
+        <Dialog open={counterOpen} onClose={() => setCounterOpen(false)} maxWidth="xs" fullWidth>
+          <DialogTitle sx={{ fontWeight: 800, fontSize: 16 }}>Proposer un autre prix</DialogTitle>
+          <DialogContent>
+            <Typography fontSize={12.5} color="#64748B" mb={1.2}>
+              Le vendeur propose {fmt(Number(item.counterPrice))}. Faites votre nouvelle proposition —
+              le vendeur pourra l'accepter, la refuser définitivement, ou vous recontre-proposer.
+            </Typography>
+            <TextField fullWidth type="number" label="Votre prix (HTG)" value={counterPrice}
+              onChange={e => setCounterPrice(e.target.value)} />
+          </DialogContent>
+          <DialogActions sx={{ px: 2.5, pb: 2.5 }}>
+            <Button onClick={() => setCounterOpen(false)}>Annuler</Button>
+            <Button variant="contained" disabled={!(Number(counterPrice) > 0) || respondMut.isPending}
+              onClick={() => respondMut.mutate({ action: 'COUNTER', counterPrice: Number(counterPrice) })}
+              sx={{ bgcolor: BLU, '&:hover': { bgcolor: '#2563EB' } }}>
+              {respondMut.isPending ? <CircularProgress size={16} color="inherit" /> : 'Envoyer ma proposition'}
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Box>
     );
   }
