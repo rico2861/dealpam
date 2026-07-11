@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
-  Box, Typography, Button, CircularProgress, InputAdornment,
+  Box, Typography, Button, CircularProgress,
   alpha, InputBase, IconButton,
 } from '@mui/material';
 import {
@@ -12,8 +12,13 @@ import api from '../../api/axios';
 import { isPasswordValid, PASSWORD_RULES } from './RegisterPage';
 
 const ORANGE = '#FF6B00';
+const ORD    = '#E05A00';
+const TXT    = '#0F172A';
+const SUB    = '#64748B';
+const BORD   = 'rgba(15,23,42,0.09)';
+const CARD   = '#FFFFFF';
 
-/* ── Shared field component ── */
+/* ── Shared field component — même look que Login/Register ── */
 function Field({
   label, type = 'text', value, onChange, placeholder, autoFocus, endIcon, accent = ORANGE,
 }: {
@@ -26,14 +31,14 @@ function Field({
   return (
     <Box>
       {label && (
-        <Typography sx={{ fontSize: 11.5, fontWeight: 700, mb: 0.75, color: focused ? alpha(accent, 0.85) : 'rgba(255,255,255,0.4)', letterSpacing: '0.4px', transition: 'color 0.2s' }}>
+        <Typography sx={{ fontSize: 11.5, fontWeight: 700, mb: 0.75, color: focused ? accent : SUB, letterSpacing: '0.4px', transition: 'color 0.2s', textTransform: 'uppercase' }}>
           {label}
         </Typography>
       )}
       <Box sx={{
         display: 'flex', alignItems: 'center', gap: 1.2, px: 1.5, minHeight: 50,
-        bgcolor: focused ? 'rgba(255,255,255,0.055)' : 'rgba(255,255,255,0.03)',
-        border: `1.5px solid ${focused ? accent : 'rgba(255,255,255,0.09)'}`,
+        bgcolor: focused ? '#FFFFFF' : '#F7F8FA',
+        border: `1.5px solid ${focused ? accent : BORD}`,
         borderRadius: '14px',
         boxShadow: focused ? `0 0 0 3px ${alpha(accent, 0.12)}` : 'none',
         transition: 'all 0.22s ease',
@@ -45,13 +50,13 @@ function Field({
           sx={{
             flex: 1,
             '& input': {
-              color: 'white', fontSize: 15, fontWeight: 500, p: 0, lineHeight: '24px',
-              '&::placeholder': { color: 'rgba(255,255,255,0.2)', opacity: 1 },
-              '&:-webkit-autofill': { WebkitBoxShadow: '0 0 0 100px #0F172A inset', WebkitTextFillColor: 'white' },
+              color: TXT, fontSize: 15, fontWeight: 500, p: 0, lineHeight: '24px',
+              '&::placeholder': { color: SUB, opacity: 1, fontStyle: 'italic' },
+              '&:-webkit-autofill': { WebkitBoxShadow: '0 0 0 100px #F7F8FA inset', WebkitTextFillColor: TXT },
             },
           }}
         />
-        {endIcon && <Box sx={{ flexShrink: 0, display: 'flex', alignItems: 'center', color: 'rgba(255,255,255,0.3)' }}>{endIcon}</Box>}
+        {endIcon && <Box sx={{ flexShrink: 0, display: 'flex', alignItems: 'center', color: SUB }}>{endIcon}</Box>}
       </Box>
     </Box>
   );
@@ -101,19 +106,19 @@ function OtpInput({ value, onChange, disabled }: { value: string; onChange: (v: 
             sx={{
               width: 48, height: 58,
               textAlign: 'center',
-              fontSize: 24, fontWeight: 900, color: 'white',
-              background: filled ? alpha(ORANGE, 0.1) : 'rgba(255,255,255,0.03)',
-              border: `2px solid ${filled ? ORANGE : current ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.09)'}`,
+              fontSize: 24, fontWeight: 900, color: TXT,
+              background: filled ? alpha(ORANGE, 0.08) : '#F7F8FA',
+              border: `2px solid ${filled ? ORANGE : current ? alpha(ORANGE, 0.4) : BORD}`,
               borderRadius: '12px',
               outline: 'none',
               cursor: 'text',
               transition: 'all 0.18s',
-              boxShadow: filled ? `0 0 0 3px ${alpha(ORANGE, 0.15)}` : current ? `0 0 0 3px rgba(255,255,255,0.05)` : 'none',
+              boxShadow: filled ? `0 0 0 3px ${alpha(ORANGE, 0.12)}` : current ? `0 0 0 3px ${alpha(ORANGE, 0.08)}` : 'none',
               '&:focus': {
                 borderColor: ORANGE,
                 boxShadow: `0 0 0 3px ${alpha(ORANGE, 0.2)}`,
               },
-              '&:disabled': { opacity: 0.4, cursor: 'not-allowed' },
+              '&:disabled': { opacity: 0.5, cursor: 'not-allowed' },
               fontFamily: 'monospace',
             }}
           />
@@ -209,38 +214,36 @@ export default function ForgotPasswordPage() {
 
   const submitSx = {
     py: 1.55, fontWeight: 800, fontSize: 15, borderRadius: '14px', textTransform: 'none' as const,
-    background: `linear-gradient(135deg, ${ORANGE}, #e05e00)`,
+    background: `linear-gradient(135deg, ${ORANGE}, ${ORD})`,
     color: 'white',
-    boxShadow: '0 8px 24px rgba(255,107,0,0.35)',
-    '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 12px 32px rgba(255,107,0,0.48)' },
+    boxShadow: `0 8px 24px ${alpha(ORANGE, 0.35)}`,
+    '&:hover': { transform: 'translateY(-2px)', boxShadow: `0 12px 32px ${alpha(ORANGE, 0.48)}` },
     '&:active': { transform: 'translateY(0)' },
-    // Fond bien visible pendant le chargement — pas un orange presque transparent
-    // avec un texte/spinner quasi invisible dessus (illisible signalé).
     '&.Mui-disabled': { background: alpha(ORANGE, 0.7), color: '#fff' },
   };
 
   return (
     <Box sx={{
       minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: 'linear-gradient(145deg, #0F172A 0%, #1E293B 60%, #0F172A 100%)',
+      background: 'linear-gradient(155deg, #FFF4EB 0%, #FFF8F2 40%, #FDF3E7 100%)',
       position: 'relative', overflow: 'hidden', p: 2,
     }}>
-      {/* Background glows */}
+      {/* Background glows — cohérent avec Login/Register */}
       <Box sx={{ position: 'absolute', width: 600, height: 600, borderRadius: '50%', top: '-10%', left: '-10%', pointerEvents: 'none',
-        background: `radial-gradient(circle, ${alpha(ORANGE, 0.07)} 0%, transparent 65%)` }} />
+        background: `radial-gradient(circle, ${alpha(ORANGE, 0.1)} 0%, transparent 65%)` }} />
       <Box sx={{ position: 'absolute', width: 400, height: 400, borderRadius: '50%', bottom: '-5%', right: '-5%', pointerEvents: 'none',
         background: 'radial-gradient(circle, rgba(99,102,241,0.06) 0%, transparent 65%)' }} />
-      <Box sx={{ position: 'absolute', inset: 0, pointerEvents: 'none',
-        backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.03) 1px, transparent 1px)', backgroundSize: '36px 36px' }} />
+      <Box sx={{ position: 'absolute', inset: 0, pointerEvents: 'none', opacity: 0.035,
+        backgroundImage: 'linear-gradient(rgba(15,23,42,1) 1px, transparent 1px), linear-gradient(90deg, rgba(15,23,42,1) 1px, transparent 1px)',
+        backgroundSize: '52px 52px' }} />
 
       {/* Card */}
       <Box sx={{
         position: 'relative', zIndex: 1, width: '100%', maxWidth: 420,
-        background: 'rgba(255,255,255,0.035)',
-        backdropFilter: 'blur(24px)',
-        border: '1px solid rgba(255,255,255,0.08)',
+        bgcolor: CARD,
+        border: `1px solid ${BORD}`,
         borderRadius: '24px',
-        boxShadow: '0 32px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06)',
+        boxShadow: '0 24px 64px rgba(15,23,42,0.12)',
         p: { xs: 3.5, sm: 5 },
         overflow: 'hidden',
       }}>
@@ -251,11 +254,11 @@ export default function ForgotPasswordPage() {
         {/* ── Stage: email ── */}
         {stage === 'email' && (
           <Box component="form" onSubmit={handleSendCode}>
-            <Typography fontWeight={900} fontSize={24} color="white" mb={0.8} letterSpacing="-0.5px">
+            <Typography fontWeight={900} fontSize={24} color={TXT} mb={0.8} letterSpacing="-0.5px">
               Mot de passe oublié ?
             </Typography>
-            <Typography fontSize={14} color="rgba(255,255,255,0.38)" mb={3.5} lineHeight={1.7}>
-              Saisissez votre adresse email. Si un compte existe, vous recevrez un code valable <strong style={{ color: 'rgba(255,255,255,0.6)' }}>15 minutes</strong>.
+            <Typography fontSize={14} color={SUB} mb={3.5} lineHeight={1.7}>
+              Saisissez votre adresse email. Si un compte existe, vous recevrez un code valable <strong style={{ color: TXT }}>15 minutes</strong>.
             </Typography>
 
             <Field
@@ -263,24 +266,24 @@ export default function ForgotPasswordPage() {
               type="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
-              placeholder="vous@exemple.com"
+              placeholder="Ex : vous@exemple.com"
               autoFocus
               endIcon={<EmailOutlined sx={{ fontSize: 19 }} />}
             />
 
             {error && (
-              <Typography sx={{ fontSize: 12.5, color: '#F87171', mt: 1.5, px: 0.5 }}>{error}</Typography>
+              <Typography sx={{ fontSize: 12.5, color: '#EF4444', mt: 1.5, px: 0.5 }}>{error}</Typography>
             )}
 
             <Button fullWidth type="submit" disabled={loading || !email} variant="contained"
               endIcon={!loading && <ArrowForward sx={{ fontSize: 17 }} />}
               sx={{ ...submitSx, mt: 3 }}>
-              {loading ? <CircularProgress size={20} sx={{ color: 'rgba(255,255,255,0.5)' }} /> : 'Recevoir le code'}
+              {loading ? <CircularProgress size={20} sx={{ color: '#fff' }} /> : 'Recevoir le code'}
             </Button>
 
             <Button component={Link} to="/login" startIcon={<ArrowBack sx={{ fontSize: 14 }} />}
-              sx={{ mt: 2, display: 'flex', mx: 'auto', color: 'rgba(255,255,255,0.28)', fontWeight: 500, fontSize: 13, textTransform: 'none',
-                '&:hover': { color: 'rgba(255,255,255,0.6)', bgcolor: 'transparent' } }}>
+              sx={{ mt: 2, display: 'flex', mx: 'auto', color: SUB, fontWeight: 500, fontSize: 13, textTransform: 'none',
+                '&:hover': { color: TXT, bgcolor: 'transparent' } }}>
               Retour à la connexion
             </Button>
           </Box>
@@ -291,33 +294,33 @@ export default function ForgotPasswordPage() {
           <Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
               <IconButton onClick={() => { setStage('email'); setError(''); setCode(''); }}
-                sx={{ color: 'rgba(255,255,255,0.35)', p: 0.5, '&:hover': { color: 'white', bgcolor: 'transparent' } }}>
+                sx={{ color: SUB, p: 0.5, '&:hover': { color: TXT, bgcolor: 'transparent' } }}>
                 <ArrowBack sx={{ fontSize: 18 }} />
               </IconButton>
               <Box>
-                <Typography fontWeight={900} fontSize={21} color="white" letterSpacing="-0.4px">
+                <Typography fontWeight={900} fontSize={21} color={TXT} letterSpacing="-0.4px">
                   Vérification
                 </Typography>
-                <Typography fontSize={13} color="rgba(255,255,255,0.35)">
-                  Code envoyé à <strong style={{ color: 'rgba(255,255,255,0.65)' }}>{email}</strong>
+                <Typography fontSize={13} color={SUB}>
+                  Code envoyé à <strong style={{ color: TXT }}>{email}</strong>
                 </Typography>
               </Box>
             </Box>
 
-            <Typography fontSize={13.5} color="rgba(255,255,255,0.45)" mb={3} lineHeight={1.7}>
+            <Typography fontSize={13.5} color={SUB} mb={3} lineHeight={1.7}>
               Saisissez le code à 6 chiffres reçu par email. Il expire dans 15 minutes.
             </Typography>
 
             <OtpInput value={code} onChange={setCode} disabled={loading} />
 
             {error && (
-              <Typography sx={{ fontSize: 12.5, color: '#F87171', mt: 2, textAlign: 'center' }}>{error}</Typography>
+              <Typography sx={{ fontSize: 12.5, color: '#EF4444', mt: 2, textAlign: 'center' }}>{error}</Typography>
             )}
 
             {loading && (
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.5, mt: 3 }}>
                 <CircularProgress size={18} sx={{ color: ORANGE }} />
-                <Typography fontSize={13.5} color="rgba(255,255,255,0.4)">Vérification en cours…</Typography>
+                <Typography fontSize={13.5} color={SUB}>Vérification en cours…</Typography>
               </Box>
             )}
 
@@ -332,10 +335,9 @@ export default function ForgotPasswordPage() {
 
             <Box sx={{ mt: 3.5, textAlign: 'center' }}>
               <Button onClick={handleResend} disabled={countdown > 0 || loading}
-                sx={{ fontSize: 13, textTransform: 'none', color: 'rgba(255,255,255,0.5)', fontWeight: 500,
-                  '&:hover': { color: 'rgba(255,255,255,0.8)', bgcolor: 'transparent' },
-                  // Assez visible pour lire le décompte, sans pour autant ressembler à un lien actif.
-                  '&.Mui-disabled': { color: 'rgba(255,255,255,0.45)' } }}>
+                sx={{ fontSize: 13, textTransform: 'none', color: ORANGE, fontWeight: 700,
+                  '&:hover': { color: ORD, bgcolor: 'transparent' },
+                  '&.Mui-disabled': { color: SUB } }}>
                 {countdown > 0 ? `Renvoyer le code dans ${countdown}s` : 'Renvoyer le code'}
               </Button>
             </Box>
@@ -346,19 +348,19 @@ export default function ForgotPasswordPage() {
         {stage === 'password' && (
           <Box component="form" onSubmit={handleResetPassword}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
-              <Box sx={{ width: 40, height: 40, borderRadius: '50%', bgcolor: alpha('#10B981', 0.15), border: '2px solid rgba(16,185,129,0.35)',
+              <Box sx={{ width: 40, height: 40, borderRadius: '50%', bgcolor: alpha('#10B981', 0.12), border: '2px solid rgba(16,185,129,0.3)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <CheckCircle sx={{ color: '#10B981', fontSize: 20 }} />
               </Box>
               <Box>
-                <Typography fontWeight={900} fontSize={21} color="white" letterSpacing="-0.4px">
+                <Typography fontWeight={900} fontSize={21} color={TXT} letterSpacing="-0.4px">
                   Nouveau mot de passe
                 </Typography>
-                <Typography fontSize={13} color="rgba(255,255,255,0.35)">Code vérifié avec succès</Typography>
+                <Typography fontSize={13} color={SUB}>Code vérifié avec succès</Typography>
               </Box>
             </Box>
 
-            <Typography fontSize={13.5} color="rgba(255,255,255,0.4)" mb={3} lineHeight={1.7}>
+            <Typography fontSize={13.5} color={SUB} mb={3} lineHeight={1.7}>
               Choisissez un mot de passe fort pour sécuriser votre compte.
             </Typography>
 
@@ -372,7 +374,7 @@ export default function ForgotPasswordPage() {
               autoFocus
               endIcon={
                 <IconButton onClick={() => setShowPwd(!showPwd)} size="small" tabIndex={-1}
-                  sx={{ p: 0.3, color: 'rgba(255,255,255,0.25)', '&:hover': { color: ORANGE, bgcolor: 'transparent' } }}>
+                  sx={{ p: 0.3, color: SUB, '&:hover': { color: ORANGE, bgcolor: 'transparent' } }}>
                   {showPwd ? <VisibilityOff sx={{ fontSize: 18 }} /> : <Visibility sx={{ fontSize: 18 }} />}
                 </IconButton>
               }
@@ -387,12 +389,12 @@ export default function ForgotPasswordPage() {
                     <Box key={label} sx={{
                       display: 'flex', alignItems: 'center', gap: 0.5,
                       px: 1.2, py: 0.4, borderRadius: '20px',
-                      bgcolor: valid ? alpha('#10B981', 0.12) : 'rgba(255,255,255,0.05)',
-                      border: `1px solid ${valid ? alpha('#10B981', 0.3) : 'transparent'}`,
+                      bgcolor: valid ? alpha('#10B981', 0.1) : '#F7F8FA',
+                      border: `1px solid ${valid ? alpha('#10B981', 0.3) : BORD}`,
                       transition: 'all 0.2s',
                     }}>
-                      <Box sx={{ width: 5, height: 5, borderRadius: '50%', bgcolor: valid ? '#34D399' : 'rgba(255,255,255,0.2)', transition: 'background 0.2s' }} />
-                      <Typography fontSize={10.5} color={valid ? '#34D399' : 'rgba(255,255,255,0.3)'} fontWeight={valid ? 700 : 400}>
+                      <Box sx={{ width: 5, height: 5, borderRadius: '50%', bgcolor: valid ? '#10B981' : SUB, transition: 'background 0.2s' }} />
+                      <Typography fontSize={10.5} color={valid ? '#0EA271' : SUB} fontWeight={valid ? 700 : 400}>
                         {label}
                       </Typography>
                     </Box>
@@ -402,7 +404,7 @@ export default function ForgotPasswordPage() {
             )}
 
             {/* Confirmer mot de passe */}
-            <Box sx={{ mt: password ? 2 : 2 }}>
+            <Box sx={{ mt: 2 }}>
               <Field
                 label="Confirmer le mot de passe"
                 type={showConfirm ? 'text' : 'password'}
@@ -411,37 +413,37 @@ export default function ForgotPasswordPage() {
                 placeholder="••••••••"
                 accent={
                   confirm.length > 0
-                    ? confirm === password ? '#10B981' : '#F87171'
+                    ? confirm === password ? '#10B981' : '#EF4444'
                     : ORANGE
                 }
                 endIcon={
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     {confirm.length > 0 && (
                       confirm === password
-                        ? <CheckCircle sx={{ fontSize: 17, color: '#34D399' }} />
-                        : <Box sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: '#F87171' }} />
+                        ? <CheckCircle sx={{ fontSize: 17, color: '#10B981' }} />
+                        : <Box sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: '#EF4444' }} />
                     )}
                     <IconButton onClick={() => setShowConfirm(!showConfirm)} size="small" tabIndex={-1}
-                      sx={{ p: 0.3, color: 'rgba(255,255,255,0.25)', '&:hover': { color: ORANGE, bgcolor: 'transparent' } }}>
+                      sx={{ p: 0.3, color: SUB, '&:hover': { color: ORANGE, bgcolor: 'transparent' } }}>
                       {showConfirm ? <VisibilityOff sx={{ fontSize: 18 }} /> : <Visibility sx={{ fontSize: 18 }} />}
                     </IconButton>
                   </Box>
                 }
               />
               {confirm.length > 0 && confirm !== password && (
-                <Typography sx={{ fontSize: 12, color: '#F87171', mt: 0.7, px: 0.5 }}>
+                <Typography sx={{ fontSize: 12, color: '#EF4444', mt: 0.7, px: 0.5 }}>
                   Les mots de passe ne correspondent pas
                 </Typography>
               )}
               {confirm.length > 0 && confirm === password && (
-                <Typography sx={{ fontSize: 12, color: '#34D399', mt: 0.7, px: 0.5 }}>
+                <Typography sx={{ fontSize: 12, color: '#0EA271', mt: 0.7, px: 0.5 }}>
                   Les mots de passe correspondent
                 </Typography>
               )}
             </Box>
 
             {error && (
-              <Typography sx={{ fontSize: 12.5, color: '#F87171', mt: 1.5, px: 0.5 }}>{error}</Typography>
+              <Typography sx={{ fontSize: 12.5, color: '#EF4444', mt: 1.5, px: 0.5 }}>{error}</Typography>
             )}
 
             <Button fullWidth type="submit"
@@ -449,7 +451,7 @@ export default function ForgotPasswordPage() {
               variant="contained"
               endIcon={!loading && <LockOutlined sx={{ fontSize: 17 }} />}
               sx={{ ...submitSx, mt: 3 }}>
-              {loading ? <CircularProgress size={20} sx={{ color: 'rgba(255,255,255,0.5)' }} /> : 'Enregistrer le mot de passe'}
+              {loading ? <CircularProgress size={20} sx={{ color: '#fff' }} /> : 'Enregistrer le mot de passe'}
             </Button>
           </Box>
         )}
