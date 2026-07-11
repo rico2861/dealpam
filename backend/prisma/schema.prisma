@@ -504,6 +504,9 @@ model Product {
   status          ProductStatus @default(DRAFT)
   isFeatured      Boolean   @default(false) @map("is_featured")
   isSponsored     Boolean   @default(false) @map("is_sponsored")
+  // Badge "Édition limitée" — mis en avant visuellement sur la fiche produit
+  // (glow néon), à activer par le vendeur pour un produit précis seulement.
+  isLimitedEdition Boolean  @default(false) @map("is_limited_edition")
   // Booste par une campagne pub active tant que cette date est dans le futur — s'auto-expire
   // sans intervention de cron : les requêtes de classement vérifient juste adBoostedUntil > now.
   adBoostedUntil  DateTime? @map("ad_boosted_until")

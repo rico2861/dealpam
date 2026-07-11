@@ -382,6 +382,7 @@ export class ProductsService {
                        : 'PENDING_REVIEW',
         isFeatured:  sub.plan.tier === 'PREMIUM' || sub.plan.tier === 'ELITE',
         isSponsored: sub.plan.hasAutoSponsored,
+        isLimitedEdition: dto.isLimitedEdition || false,
       } as any,
     });
 
@@ -502,7 +503,7 @@ export class ProductsService {
           this.prisma.notification.create({
             data: {
               userId: w.userId,
-              title:  `💰 Baisse de prix !`,
+              title:  `Baisse de prix !`,
               body:   `"${product.name}" est maintenant ${discount}% moins cher.`,
               type:   'PRICE_DROP',
               data:   JSON.stringify({ productId, productSlug: product.slug, discount, newPrice: newEff, oldPrice: oldEff }) as any,

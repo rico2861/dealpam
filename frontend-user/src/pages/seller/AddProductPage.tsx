@@ -259,6 +259,7 @@ export default function AddProductPage() {
     city: '', department: 'Ouest', storeId: '',
     hasDelivery: false, deliveryPriceHTG: '',
     allowOffers: false, minOfferPriceHTG: '',
+    isLimitedEdition: false,
     minOrderQty: '1',
   });
   const [priceTiers, setPriceTiers] = useState<{ minQty: string; price: string }[]>([]);
@@ -375,6 +376,7 @@ export default function AddProductPage() {
       if (form.hasDelivery && form.deliveryPriceHTG) fd.append('deliveryPriceHTG', form.deliveryPriceHTG);
       fd.append('allowOffers', String(form.allowOffers));
       if (form.allowOffers && form.minOfferPriceHTG) fd.append('minOfferPriceHTG', form.minOfferPriceHTG);
+      fd.append('isLimitedEdition', String(form.isLimitedEdition));
       // deliveryDepts: send each zone as "Ville, Département" or just "Département"
       deliveryZones.forEach(z => fd.append('deliveryDepts', z.city ? `${z.city}, ${z.dept}` : z.dept));
       if (form.storeId) fd.append('storeId', form.storeId);
@@ -758,6 +760,9 @@ export default function AddProductPage() {
                     value={form.minOfferPriceHTG} onChange={set('minOfferPriceHTG')} inputProps={{ min: 0 }} sx={fieldSx} />
                 </Box>
               </Collapse>
+
+              <DarkToggle checked={form.isLimitedEdition} onChange={v => setForm(p => ({ ...p, isLimitedEdition: v }))}
+                label="Édition limitée" sub="Affiche un badge distinctif sur la fiche produit — à réserver aux produits vraiment rares/exclusifs" />
 
               {/* Boutique */}
               {storeList.length > 1 && (

@@ -273,6 +273,20 @@ export default function ProductDetailPage() {
 
   const variants: any[] = product?.variants ?? [];
   const colors = (()=>{ const a:{ color:string; hex:string; img:string|null }[]=[]; variants.forEach(v=>{ if(v.color&&!a.find(c=>c.color===v.color)) a.push({ color:v.color, hex:v.colorHex||'', img:v.imageUrl||null }); }); return a; })();
+
+  // Variant background system : le fond de page s'adapte subtilement (teinte
+  // légère, jamais opaque) à la couleur du variant sélectionné — cartes/texte
+  // restent blancs/foncés comme d'habitude pour garder tout lisible.
+  const selHex = colors.find(c => c.color === clr)?.hex || '';
+  const pageBg = (()=>{
+    if (!selHex || !/^#[0-9a-fA-F]{6}$/.test(selHex)) return undefined;
+    const r = parseInt(selHex.slice(1,3),16), g = parseInt(selHex.slice(3,5),16), b = parseInt(selHex.slice(5,7),16);
+    const luminance = (0.299*r + 0.587*g + 0.114*b) / 255;
+    // Couleur sombre (ex: noir) → wash sombre ; couleur claire (ex: crème) → wash clair
+    return luminance < 0.35
+      ? `linear-gradient(180deg, rgba(${r},${g},${b},0.16), ${BG} 55%)`
+      : `linear-gradient(180deg, rgba(${r},${g},${b},0.10), ${BG} 45%)`;
+  })();
   const sizes  = clr ? [...new Set(variants.filter((v:any)=>v.color===clr&&v.size).map((v:any)=>v.size))] : [...new Set(variants.filter((v:any)=>v.size).map((v:any)=>v.size))];
   const av     = variants.find((v:any)=>(!clr||v.color===clr)&&(!sz||v.size===sz))??null;
   const cur    = av?.priceOverride ? Number(av.priceOverride) : Number(product?.salePrice||product?.price||0);
@@ -479,7 +493,7 @@ export default function ProductDetailPage() {
   const isOwnProduct = !!user && !!product?.store?.seller?.userId && product.store.seller.userId === user.id;
 
   return (
-    <Box sx={{ bgcolor:BG, minHeight:'100vh', pb:{ xs:14, md:6 } }}>
+    <Box sx={{ bgcolor:BG, background:pageBg||BG, minHeight:'100vh', pb:{ xs:14, md:6 }, transition:'background 0.5s ease' }}>
 
       {/* ══ CONTENT ═════════════════════════════════════════════════════════ */}
       <Box sx={{ maxWidth:1200, mx:'auto', px:{ xs:0, md:4 } }}>
@@ -648,9 +662,25 @@ export default function ProductDetailPage() {
               )}
             </Box>
 
-            {/* title */}
+            {/* limited edition badge — vendeur-activé, réservé aux produits vraiment exclusifs */}
+            {product.isLimitedEdition && (
+              <Typography sx={{
+                fontFamily:'"Segoe Script","Brush Script MT",cursive', fontSize:{ xs:20, md:24 },
+                color:'#FF3B3B', mb:0.5, letterSpacing:'0.5px',
+                textShadow:'0 0 6px rgba(255,59,59,0.65), 0 0 14px rgba(255,59,59,0.4)',
+                animation:'dp-neon-pulse 2.4s ease-in-out infinite',
+                '@keyframes dp-neon-pulse': {
+                  '0%,100%':{ textShadow:'0 0 6px rgba(255,59,59,0.65), 0 0 14px rgba(255,59,59,0.4)' },
+                  '50%':{ textShadow:'0 0 10px rgba(255,59,59,0.9), 0 0 22px rgba(255,59,59,0.6)' },
+                },
+              }}>
+                Édition limitée
+              </Typography>
+            )}
+
+            {/* title — légèrement réduit quand le badge édition limitée est affiché */}
             <Typography component="h1" fontWeight={500} color={TXT}
-              sx={{ fontSize:{ xs:22, sm:26, md:30 }, lineHeight:1.25, letterSpacing:'-0.3px', mb:0.5 }}>
+              sx={{ fontSize: product.isLimitedEdition ? { xs:20, sm:24, md:27 } : { xs:22, sm:26, md:30 }, lineHeight:1.25, letterSpacing:'-0.3px', mb:0.5 }}>
               {product.name}
             </Typography>
             {product.category?.name&&(

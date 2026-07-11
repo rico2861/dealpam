@@ -120,4 +120,9 @@ export class CreateProductDto {
   /** Publication status */
   @IsOptional() @IsString()
   status?: string;
+
+  /** Badge "Édition limitée" — mis en avant visuellement sur la fiche produit */
+  @IsOptional() @Transform(({ value }) => value === 'true' || value === true)
+  @IsBoolean()
+  isLimitedEdition?: boolean;
 }

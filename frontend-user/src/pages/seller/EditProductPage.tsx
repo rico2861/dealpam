@@ -139,6 +139,7 @@ export default function EditProductPage() {
         deliveryPriceHTG: product.deliveryPriceHTG ?? '',
         allowOffers: !!product.allowOffers,
         minOfferPriceHTG: product.minOfferPriceHTG ?? '',
+        isLimitedEdition: !!product.isLimitedEdition,
       });
       setPriceTiers(
         parsePriceTiers(product.priceTiers).map(t => ({ minQty: String(t.minQty), price: String(t.price) })),
@@ -218,6 +219,7 @@ export default function EditProductPage() {
       if (form.hasDelivery && form.deliveryPriceHTG !== '') fd.append('deliveryPriceHTG', String(Number(form.deliveryPriceHTG)));
       fd.append('allowOffers', String(form.allowOffers));
       if (form.allowOffers && form.minOfferPriceHTG !== '') fd.append('minOfferPriceHTG', String(Number(form.minOfferPriceHTG)));
+      fd.append('isLimitedEdition', String(form.isLimitedEdition));
       deliveryZones.forEach(z => fd.append('deliveryDepts', z.city ? `${z.city}, ${z.dept}` : z.dept));
       fd.append('pickupPointNames', JSON.stringify(pickupPointNames));
       newImages.forEach(img => fd.append('images', img));
@@ -494,6 +496,9 @@ export default function EditProductPage() {
                     value={form.minOfferPriceHTG} onChange={f('minOfferPriceHTG')} inputProps={{ min: 0 }} sx={fieldSx} />
                 </Box>
               </Collapse>
+
+              <DarkToggle checked={form.isLimitedEdition} onChange={v => setForm({ ...form, isLimitedEdition: v })}
+                label="Édition limitée" sub="Affiche un badge distinctif sur la fiche produit — à réserver aux produits vraiment rares/exclusifs" />
             </Box>
           </SectionCard>
 
