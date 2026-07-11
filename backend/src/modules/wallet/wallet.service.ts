@@ -22,6 +22,17 @@ export class WalletService {
 
   async getWallet(sellerId: string) {
     const w = await this.ensureWallet(sellerId);
+
+    // Rattrapage passif : une recharge MonCash "en attente" jamais confirmée (navigateur
+    // fermé avant le retour, réseau coupé...) restait bloquée indéfiniment sur ce statut,
+    // sans jamais se résoudre. Toute recharge encore PENDING après 2h est considérée
+    // abandonnée et marquée FAILED — vérifié à chaque consultation du wallet, sans cron.
+    const STALE_AFTER_MS = 2 * 60 * 60 * 1000;
+    await this.prisma.walletTransaction.updateMany({
+      where: { walletId: w.id, type: 'RECHARGE_PENDING', status: 'PENDING', createdAt: { lt: new Date(Date.now() - STALE_AFTER_MS) } },
+      data: { status: 'FAILED', description: 'Recharge MonCash échouée — non confirmée' },
+    });
+
     const transactions = await this.prisma.walletTransaction.findMany({
       where: { walletId: w.id },
       orderBy: { createdAt: 'desc' },
@@ -80,6 +91,12 @@ export class WalletService {
 
     if (payment.message !== 'successful') {
       await this.moncashTx.record({ scenario: 'wallet', status: 'FAILED', mc: payment, failReason: payment.message });
+      // Marque la recharge en attente comme échouée — sinon elle restait "En attente"
+      // indéfiniment dans l'historique du wallet, sans jamais se résoudre.
+      await this.prisma.walletTransaction.updateMany({
+        where: { reference: payment.reference, type: 'RECHARGE_PENDING', status: 'PENDING' },
+        data: { status: 'FAILED', description: `Recharge MonCash échouée — ${payment.message}` },
+      });
       throw new BadRequestException(`Pèman echwe: ${payment.message}`);
     }
 
