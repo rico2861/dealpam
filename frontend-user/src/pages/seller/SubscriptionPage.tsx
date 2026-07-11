@@ -82,7 +82,6 @@ export default function SellerSubscriptionPage() {
 
   const handlePaymentResult = (data: any) => {
     if (data?.redirect_url) {
-      enqueueSnackbar(`Redirection MonCash pour ${data.plan}…`, { variant: 'info' });
       window.location.href = data.redirect_url;
     } else if (data?.type === 'subscription_scheduled') {
       const date = data.effective_date ? new Date(data.effective_date).toLocaleDateString('fr-FR') : '';
