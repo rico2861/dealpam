@@ -36,36 +36,47 @@ export default function LikeButton({
   const [anim,   setAnim]   = useState(false);
   const [busy,   setBusy]   = useState(false);
 
-  const toggle = useCallback(async (e: React.MouseEvent) => {
+  const toggle = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (!user) { navigate('/login'); return; }
     if (busy) return;
-    setBusy(true);
-    try {
-      if (liked) {
-        await api.delete(`/wishlist/${productId}`);
-        setLiked(false);
-        setCount(c => Math.max(0, c - 1));
-        track({ eventType: 'UNLIKE', productId, categorySlug });
-      } else {
-        await api.post('/wishlist', { productId });
-        setLiked(true);
-        setCount(c => c + 1);
-        setAnim(true);
-        setTimeout(() => setAnim(false), 700);
-        enqueueSnackbar('Ajouté aux favoris', { variant: 'success', autoHideDuration: 2000 });
-        track({ eventType: 'LIKE', productId, categorySlug });
-      }
-      // Rafraîchit immédiatement la page Favoris et le badge du header/nav,
-      // au lieu d'attendre une prochaine navigation.
-      qc.invalidateQueries({ queryKey: ['wishlist'] });
-      qc.invalidateQueries({ queryKey: ['wishlist-count'] });
-    } catch {
-      enqueueSnackbar('Erreur', { variant: 'error', autoHideDuration: 1500 });
-    } finally {
-      setBusy(false);
+
+    // Optimiste : on met à jour l'affichage TOUT DE SUITE (avant même que la
+    // requête parte), et on ne fait la requête réseau qu'en arrière-plan. Avant
+    // ce correctif, le cœur ne changeait qu'une fois la réponse serveur reçue —
+    // ça donnait une impression de lenteur/lag à chaque clic. En cas d'échec
+    // réseau, on annule juste le changement visuel.
+    const wasLiked = liked;
+    if (wasLiked) {
+      setLiked(false);
+      setCount(c => Math.max(0, c - 1));
+    } else {
+      setLiked(true);
+      setCount(c => c + 1);
+      setAnim(true);
+      setTimeout(() => setAnim(false), 700);
     }
+    setBusy(true);
+
+    const request = wasLiked
+      ? api.delete(`/wishlist/${productId}`)
+      : api.post('/wishlist', { productId });
+
+    request
+      .then(() => {
+        track({ eventType: wasLiked ? 'UNLIKE' : 'LIKE', productId, categorySlug });
+        if (!wasLiked) enqueueSnackbar('Ajouté aux favoris', { variant: 'success', autoHideDuration: 2000 });
+        qc.invalidateQueries({ queryKey: ['wishlist'] });
+        qc.invalidateQueries({ queryKey: ['wishlist-count'] });
+      })
+      .catch(() => {
+        // Rollback — l'action n'a pas pu être enregistrée côté serveur.
+        setLiked(wasLiked);
+        setCount(c => wasLiked ? c + 1 : Math.max(0, c - 1));
+        enqueueSnackbar('Erreur', { variant: 'error', autoHideDuration: 1500 });
+      })
+      .finally(() => setBusy(false));
   }, [liked, busy, user, productId, navigate, track, categorySlug, enqueueSnackbar, qc]);
 
   const iconSx = {
@@ -81,7 +92,6 @@ export default function LikeButton({
         <IconButton
           size={size}
           onClick={toggle}
-          disabled={busy}
           sx={{
             p: size === 'small' ? 0.5 : 0.8,
             bgcolor: liked ? alpha(RED, 0.08) : 'rgba(255,255,255,0.85)',
