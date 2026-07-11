@@ -479,9 +479,9 @@ export default function SellerProfilePage() {
 
         <Box sx={{ mt: 2, p: 1.5, borderRadius: '10px', bgcolor: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.2)' }}>
           <Typography fontSize={12} color={SUB2}>
-            💡 La <strong style={{ color: TXT }}>patente commerciale</strong> reste optionnelle pour le badge "Vérifié", mais si vous
-            la fournissez et qu'elle est validée, un badge <strong style={{ color: TXT }}>"Patente vérifiée"</strong> distinct
-            s'affiche publiquement sur votre boutique — un vrai plus de crédibilité auprès des clients.
+            La <strong style={{ color: TXT }}>patente commerciale</strong> n'est pas exigée pour obtenir le badge "Vérifié".
+            Fournissez-la et faites-la valider pour décrocher en plus le badge <strong style={{ color: TXT }}>"Patente vérifiée"</strong>,
+            affiché publiquement sur votre boutique et gage de confiance supplémentaire auprès de vos clients.
           </Typography>
         </Box>
       </Box>
