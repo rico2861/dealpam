@@ -6,6 +6,14 @@ interface User { id: string; email: string; firstName: string; lastName: string;
 interface AuthState {
   user: User | null;
   accessToken: string | null;
+  // La réhydratation depuis localStorage se fait de façon asynchrone (même pour
+  // un storage synchrone comme localStorage — zustand/persist passe toujours par
+  // un microtask). Sans ce flag, tout composant qui lit `user` au premier rendu
+  // après un refresh le voit encore à `null` pendant un instant — d'où le flash
+  // de mauvais contenu (redirection vers /login, mauvais layout, requêtes
+  // "enabled: !!user" qui démarrent en retard) avant que la vraie session ne
+  // s'affiche. Voir App.tsx qui bloque le rendu tant que hasHydrated est false.
+  hasHydrated: boolean;
   setUser: (user: User, token: string, refresh: string) => void;
   logout: () => void;
   updateUser: (u: Partial<User>) => void;
@@ -17,6 +25,7 @@ export const useAuthStore = create<AuthState>()(
     (set) => ({
       user: null,
       accessToken: null,
+      hasHydrated: false,
       setUser: (user, accessToken, refreshToken) => {
         localStorage.setItem('accessToken', accessToken);
         localStorage.setItem('refreshToken', refreshToken);
@@ -55,6 +64,14 @@ export const useAuthStore = create<AuthState>()(
         }
       },
     }),
-    { name: 'auth-store', partialize: (s) => ({ user: s.user }) }
+    {
+      name: 'auth-store',
+      partialize: (s) => ({ user: s.user }),
+      // Se déclenche une fois la lecture de localStorage terminée (succès ou échec) —
+      // c'est le seul signal fiable que `user` reflète enfin la vraie session.
+      onRehydrateStorage: () => () => {
+        useAuthStore.setState({ hasHydrated: true });
+      },
+    }
   )
 );
