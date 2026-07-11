@@ -473,9 +473,10 @@ export class MailService {
 
   async sendOfferDecision(
     to: string, customerName: string, productName: string, offeredPriceHTG: number,
-    decision: 'ACCEPTED' | 'REJECTED', reason?: string,
+    decision: 'ACCEPTED' | 'REJECTED' | 'COUNTERED', reason?: string, counterPriceHTG?: number,
   ): Promise<void> {
-    const isAccepted = decision === 'ACCEPTED';
+    const isAccepted  = decision === 'ACCEPTED';
+    const isCountered = decision === 'COUNTERED';
     const body = isAccepted
       ? `
         ${this.hero('🎉', '#F0FDF4', 'Votre offre a été acceptée !', `${this.esc(productName)}`)}
@@ -484,6 +485,14 @@ export class MailService {
         ${this.alert('Votre commande suit maintenant son cours normal — le vendeur va la préparer.', 'success')}
         ${this.btn('Voir mes commandes', `${BRAND.url}/account/orders`)}
       `
+      : isCountered
+      ? `
+        ${this.hero('🔄', '#EFF6FF', 'Le vendeur propose un autre prix', `${this.esc(productName)}`)}
+        ${this.greeting(customerName)}
+        ${this.para(`Pour votre offre de <strong>${offeredPriceHTG.toLocaleString()} HTG</strong> sur "${this.esc(productName)}", le vendeur propose plutôt <strong>${(counterPriceHTG ?? 0).toLocaleString()} HTG</strong>.`)}
+        ${this.para('Vous pouvez accepter ce prix ou décliner, directement depuis votre commande.')}
+        ${this.btn('Répondre au vendeur', `${BRAND.url}/account/orders`)}
+      `
       : `
         ${this.hero('📋', '#FFF8EC', 'Votre offre n\'a pas été acceptée', `${this.esc(productName)}`)}
         ${this.greeting(customerName)}
@@ -491,12 +500,13 @@ export class MailService {
         ${reason ? this.alert(this.esc(reason), 'warning') : ''}
         ${this.para('Vous pouvez soumettre une nouvelle offre à un montant plus élevé directement depuis la fiche produit.')}
       `;
-    await this.send(
-      to,
-      isAccepted ? `🎉 Offre acceptée pour ${productName} — DealPam` : `Offre refusée pour ${productName} — DealPam`,
-      this.layout(isAccepted ? 'Offre acceptée' : 'Offre refusée', isAccepted ? 'Votre offre de prix a été acceptée.' : 'Votre offre de prix a été refusée.', body),
-      'client',
-    );
+    const subject = isAccepted ? `🎉 Offre acceptée pour ${productName} — DealPam`
+      : isCountered ? `🔄 Contre-offre du vendeur pour ${productName} — DealPam`
+      : `Offre refusée pour ${productName} — DealPam`;
+    const title = isAccepted ? 'Offre acceptée' : isCountered ? 'Contre-offre du vendeur' : 'Offre refusée';
+    const preheader = isAccepted ? 'Votre offre de prix a été acceptée.'
+      : isCountered ? 'Le vendeur propose un autre prix.' : 'Votre offre de prix a été refusée.';
+    await this.send(to, subject, this.layout(title, preheader, body), 'client');
   }
 
   // ── 12. NEW MESSAGE NOTIFICATION ──────────────────────────────────────────

@@ -57,10 +57,22 @@ export class OrdersController {
     @CurrentUser() u: any,
     @Param('orderId') orderId: string,
     @Param('itemId') itemId: string,
-    @Body('action') action: 'ACCEPT' | 'REJECT',
+    @Body('action') action: 'ACCEPT' | 'REJECT' | 'COUNTER',
     @Body('reason') reason: string,
+    @Body('counterPrice') counterPrice: number,
   ) {
-    return this.os.decideOffer(u.id, orderId, itemId, action, reason);
+    return this.os.decideOffer(u.id, orderId, itemId, action, reason, counterPrice);
+  }
+
+  // ── Client : répondre à la contre-offre du vendeur ────────────────────────
+  @Patch('me/:orderId/items/:itemId/offer-response')
+  respondToCounter(
+    @CurrentUser() u: any,
+    @Param('orderId') orderId: string,
+    @Param('itemId') itemId: string,
+    @Body('action') action: 'ACCEPT' | 'DECLINE',
+  ) {
+    return this.os.respondToCounter(u.id, orderId, itemId, action);
   }
 
   @Get() @UseGuards(RolesGuard) @Roles('ADMIN','SUPER_ADMIN')

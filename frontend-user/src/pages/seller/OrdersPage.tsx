@@ -67,19 +67,35 @@ function OfferBlock({ order, item }: { order: any; item: any }) {
   const qc = useQueryClient();
   const { enqueueSnackbar } = useSnackbar();
   const [rejectOpen, setRejectOpen] = useState(false);
+  const [counterOpen, setCounterOpen] = useState(false);
   const [reason, setReason] = useState('');
+  const [counterPrice, setCounterPrice] = useState('');
 
   const decideMut = useMutation({
-    mutationFn: ({ action, reason }: { action: 'ACCEPT' | 'REJECT'; reason?: string }) =>
-      api.patch(`/orders/seller/${order.id}/items/${item.id}/offer`, { action, reason }),
+    mutationFn: ({ action, reason, counterPrice }: { action: 'ACCEPT' | 'REJECT' | 'COUNTER'; reason?: string; counterPrice?: number }) =>
+      api.patch(`/orders/seller/${order.id}/items/${item.id}/offer`, { action, reason, counterPrice }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['sellerOrders'] });
       enqueueSnackbar('Offre traitée avec succès', { variant: 'success' });
       setRejectOpen(false);
+      setCounterOpen(false);
       setReason('');
+      setCounterPrice('');
     },
     onError: (e: any) => enqueueSnackbar(e?.response?.data?.message || 'Erreur', { variant: 'error' }),
   });
+
+  // La contre-offre a déjà été envoyée : on attend la réponse du client, plus d'action possible ici.
+  if (item.offerStatus === 'COUNTERED') {
+    return (
+      <Box sx={{ mx: 2.5, mt: 1.5, mb: 0.5, p: 1.6, borderRadius: '10px',
+        bgcolor: 'rgba(59,130,246,0.08)', border: `1px solid ${BLU}40` }}>
+        <Typography fontSize={12.5} fontWeight={700} color={BLU}>
+          🔄 Vous avez proposé {fmt(Number(item.counterPrice))} — en attente de la réponse du client.
+        </Typography>
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ mx: 2.5, mt: 1.5, mb: 0.5, p: 1.6, borderRadius: '10px',
@@ -87,11 +103,17 @@ function OfferBlock({ order, item }: { order: any; item: any }) {
       <Typography fontSize={12.5} fontWeight={700} color={PUR} mb={0.8}>
         💬 Offre de prix : {fmt(Number(item.offeredPrice))} (prix catalogue : {fmt(Number(item.product?.price ?? item.unitPrice))})
       </Typography>
-      <Box sx={{ display: 'flex', gap: 1 }}>
+      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
         <Button size="small" onClick={() => decideMut.mutate({ action: 'ACCEPT' })} disabled={decideMut.isPending}
           sx={{ borderRadius: '9px', fontWeight: 700, fontSize: 12, px: 1.8, py: 0.6,
             bgcolor: GRN, color: '#fff', '&:hover': { bgcolor: '#0EA271' } }}>
           Accepter l'offre
+        </Button>
+        <Button size="small" onClick={() => setCounterOpen(true)} disabled={decideMut.isPending}
+          sx={{ borderRadius: '9px', fontWeight: 700, fontSize: 12, px: 1.8, py: 0.6,
+            bgcolor: 'transparent', color: BLU, border: '1px solid rgba(59,130,246,0.35)',
+            '&:hover': { bgcolor: 'rgba(59,130,246,0.1)' } }}>
+          Proposer un autre prix
         </Button>
         <Button size="small" onClick={() => setRejectOpen(true)} disabled={decideMut.isPending}
           sx={{ borderRadius: '9px', fontWeight: 700, fontSize: 12, px: 1.8, py: 0.6,
@@ -121,6 +143,26 @@ function OfferBlock({ order, item }: { order: any; item: any }) {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <Dialog open={counterOpen} onClose={() => setCounterOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ fontWeight: 800, fontSize: 16 }}>Proposer un autre prix</DialogTitle>
+        <DialogContent>
+          <Typography fontSize={12.5} color={SUB} mb={1.2}>
+            Le client a offert {fmt(Number(item.offeredPrice))}. Proposez votre dernier prix — le client pourra
+            l'accepter ou décliner.
+          </Typography>
+          <TextField fullWidth type="number" label="Votre prix (HTG)" value={counterPrice}
+            onChange={e => setCounterPrice(e.target.value)} />
+        </DialogContent>
+        <DialogActions sx={{ px: 2.5, pb: 2.5 }}>
+          <Button onClick={() => setCounterOpen(false)}>Annuler</Button>
+          <Button variant="contained" disabled={!(Number(counterPrice) > 0) || decideMut.isPending}
+            onClick={() => decideMut.mutate({ action: 'COUNTER', counterPrice: Number(counterPrice) })}
+            sx={{ bgcolor: BLU, '&:hover': { bgcolor: '#2563EB' } }}>
+            {decideMut.isPending ? <CircularProgress size={16} color="inherit"/> : 'Envoyer ma proposition'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
@@ -129,7 +171,7 @@ function OfferBlock({ order, item }: { order: any; item: any }) {
 function OrderCard({ order, onUpdate }: { order: any; onUpdate: (id: string, status: string) => void }) {
   const navigate = useNavigate();
   const [expanded, setExpanded] = useState(false);
-  const pendingOfferItems = (order.items || []).filter((i: any) => i.offerStatus === 'PENDING');
+  const pendingOfferItems = (order.items || []).filter((i: any) => i.offerStatus === 'PENDING' || i.offerStatus === 'COUNTERED');
   const st      = STATUS[order.status] ?? STATUS.PENDING;
   const Icon    = st.icon;
   const hours   = hoursAgo(order.createdAt);

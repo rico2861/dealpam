@@ -684,10 +684,14 @@ model OrderItem {
   unitPrice   Decimal @map("unit_price") @db.Decimal(10, 2)
   subtotal    Decimal @db.Decimal(10, 2)
   // Negociation de prix ("faire une offre") — offeredPrice = prix propose par le
-  // client (deja copie dans unitPrice si accepte). offerStatus: PENDING/ACCEPTED/REJECTED, null = item normal.
+  // client (deja copie dans unitPrice si accepte). offerStatus: PENDING/ACCEPTED/
+  // REJECTED/COUNTERED/DECLINED, null = item normal. counterPrice = dernier prix
+  // propose par le vendeur quand offerStatus = COUNTERED (le client accepte ou
+  // decline ce prix ensuite — voir OrdersService.decideOffer/respondToCounter).
   offeredPrice         Decimal? @map("offered_price") @db.Decimal(10, 2)
   offerStatus          String?  @map("offer_status")
   offerRejectionReason String?  @map("offer_rejection_reason")
+  counterPrice         Decimal? @map("counter_price") @db.Decimal(10, 2)
 
   @@map("order_items")
 }

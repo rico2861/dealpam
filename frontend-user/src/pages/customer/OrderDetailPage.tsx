@@ -13,7 +13,7 @@ import {
   EmailOutlined, LocationOn, ChatBubbleOutline,
   AddPhotoAlternate, Close,
 } from '@mui/icons-material';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import api from '../../api/axios';
 import { compressImages } from '../../utils/compressImage';
@@ -160,6 +160,81 @@ function ReviewForm({ storeId, orderId, onDone }: { storeId: string; orderId: st
       </Box>
     </Box>
   );
+}
+
+// ─── Offer status (négociation de prix) ────────────────────────────────────────
+
+const BLU = '#3B82F6';
+
+function OfferStatusBlock({ order, item }: { order: any; item: any }) {
+  const qc = useQueryClient();
+  const { enqueueSnackbar } = useSnackbar();
+
+  const respondMut = useMutation({
+    mutationFn: (action: 'ACCEPT' | 'DECLINE') =>
+      api.patch(`/orders/me/${order.id}/items/${item.id}/offer-response`, { action }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['order', order.id] });
+      qc.invalidateQueries({ queryKey: ['myOrders'] });
+      enqueueSnackbar('Réponse envoyée au vendeur', { variant: 'success' });
+    },
+    onError: (e: any) => enqueueSnackbar(e?.response?.data?.message || 'Erreur', { variant: 'error' }),
+  });
+
+  if (item.offerStatus === 'PENDING') {
+    return (
+      <Box sx={{ mt: 1, mb: 1, p: 1.4, borderRadius: '10px', bgcolor: alpha(GOLD, 0.08), border: `1px solid ${alpha(GOLD, 0.25)}` }}>
+        <Typography fontSize={12.5} fontWeight={700} color={GOLD}>
+          ⏳ Votre offre est en attente de la réponse du vendeur.
+        </Typography>
+      </Box>
+    );
+  }
+  if (item.offerStatus === 'REJECTED') {
+    return (
+      <Box sx={{ mt: 1, mb: 1, p: 1.4, borderRadius: '10px', bgcolor: alpha(RED, 0.08), border: `1px solid ${alpha(RED, 0.25)}` }}>
+        <Typography fontSize={12.5} fontWeight={700} color={RED} mb={0.3}>Offre refusée par le vendeur</Typography>
+        {item.offerRejectionReason && <Typography fontSize={12} color="#64748B">Motif : {item.offerRejectionReason}</Typography>}
+      </Box>
+    );
+  }
+  if (item.offerStatus === 'COUNTERED') {
+    return (
+      <Box sx={{ mt: 1, mb: 1, p: 1.6, borderRadius: '10px', bgcolor: alpha(BLU, 0.08), border: `1px solid ${alpha(BLU, 0.25)}` }}>
+        <Typography fontSize={12.5} fontWeight={700} color={BLU} mb={1}>
+          🔄 Le vendeur propose {fmt(Number(item.counterPrice))} au lieu de votre offre de {fmt(Number(item.offeredPrice))}.
+        </Typography>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Button size="small" disabled={respondMut.isPending} onClick={() => respondMut.mutate('ACCEPT')}
+            sx={{ borderRadius: '9px', fontWeight: 700, fontSize: 12, px: 1.8, py: 0.6,
+              bgcolor: GRN, color: '#fff', '&:hover': { bgcolor: '#0EA271' } }}>
+            Accepter ce prix
+          </Button>
+          <Button size="small" disabled={respondMut.isPending} onClick={() => respondMut.mutate('DECLINE')}
+            sx={{ borderRadius: '9px', fontWeight: 700, fontSize: 12, px: 1.8, py: 0.6,
+              bgcolor: 'transparent', color: RED, border: '1px solid rgba(239,68,68,0.35)',
+              '&:hover': { bgcolor: 'rgba(239,68,68,0.1)' } }}>
+            Décliner
+          </Button>
+        </Box>
+      </Box>
+    );
+  }
+  if (item.offerStatus === 'DECLINED') {
+    return (
+      <Box sx={{ mt: 1, mb: 1, p: 1.4, borderRadius: '10px', bgcolor: alpha(RED, 0.08), border: `1px solid ${alpha(RED, 0.25)}` }}>
+        <Typography fontSize={12.5} fontWeight={700} color={RED}>Vous avez décliné le prix proposé par le vendeur.</Typography>
+      </Box>
+    );
+  }
+  if (item.offerStatus === 'ACCEPTED') {
+    return (
+      <Box sx={{ mt: 1, mb: 1, p: 1.4, borderRadius: '10px', bgcolor: alpha(GRN, 0.08), border: `1px solid ${alpha(GRN, 0.25)}` }}>
+        <Typography fontSize={12.5} fontWeight={700} color={GRN}>✓ Offre acceptée à {fmt(Number(item.unitPrice))}.</Typography>
+      </Box>
+    );
+  }
+  return null;
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
@@ -370,24 +445,27 @@ export default function OrderDetailPage() {
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
               {order.items?.map((item: any, i: number) => (
-                <Box key={i} sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
-                  <Box sx={{ width: 56, height: 56, borderRadius: '12px', bgcolor: '#FFFFFF',
-                    border: `1px solid ${BORD}`, flexShrink: 0, overflow: 'hidden',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {item.imageUrl
-                      ? <Box component="img" src={item.imageUrl} alt="" sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      : <ShoppingBag sx={{ fontSize: 22, color: '#64748B' }} />}
+                <Box key={i}>
+                  <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                    <Box sx={{ width: 56, height: 56, borderRadius: '12px', bgcolor: '#FFFFFF',
+                      border: `1px solid ${BORD}`, flexShrink: 0, overflow: 'hidden',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {item.imageUrl
+                        ? <Box component="img" src={item.imageUrl} alt="" sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        : <ShoppingBag sx={{ fontSize: 22, color: '#64748B' }} />}
+                    </Box>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography fontWeight={600} fontSize={13.5} noWrap color="#0F172A">{item.productName}</Typography>
+                      {(item.color || item.size) && (
+                        <Typography fontSize={12} color="#64748B">{[item.color, item.size].filter(Boolean).join(' · ')}</Typography>
+                      )}
+                      <Typography fontSize={12} color="#64748B">{fmt(Number(item.unitPrice))} × {item.quantity}</Typography>
+                    </Box>
+                    <Typography fontWeight={700} fontSize={14} color="#0F172A" flexShrink={0}>
+                      {fmt(Number(item.subtotal ?? Number(item.unitPrice) * item.quantity))}
+                    </Typography>
                   </Box>
-                  <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Typography fontWeight={600} fontSize={13.5} noWrap color="#0F172A">{item.productName}</Typography>
-                    {(item.color || item.size) && (
-                      <Typography fontSize={12} color="#64748B">{[item.color, item.size].filter(Boolean).join(' · ')}</Typography>
-                    )}
-                    <Typography fontSize={12} color="#64748B">{fmt(Number(item.unitPrice))} × {item.quantity}</Typography>
-                  </Box>
-                  <Typography fontWeight={700} fontSize={14} color="#0F172A" flexShrink={0}>
-                    {fmt(Number(item.subtotal ?? Number(item.unitPrice) * item.quantity))}
-                  </Typography>
+                  {item.offerStatus && <OfferStatusBlock order={order} item={item} />}
                 </Box>
               ))}
             </Box>
