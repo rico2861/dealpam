@@ -12,6 +12,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import api from '../../api/axios';
 import { ListSkeleton } from '../../components/shared/Skeletons';
+import DateRangeFilter from '../../components/shared/DateRangeFilter';
 import { useDelayedLoading } from '../../hooks/useDelayedLoading';
 
 const OR   = '#FF6B00';
@@ -384,13 +385,12 @@ export default function AppointmentsPage() {
               {Object.entries(STATUS_CONFIG).map(([k, c]) => <MenuItem key={k} value={k}>{c.label}</MenuItem>)}
             </Select>
           </FormControl>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
-            <input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setPage(1); }}
-              style={{ fontSize: 12.5, color: TXT, border: `1px solid ${BORD}`, borderRadius: 10, padding: '9px 10px', background: 'rgba(15,23,42,0.03)' }} />
-            <Typography fontSize={12} color={SUB}>à</Typography>
-            <input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setPage(1); }}
-              style={{ fontSize: 12.5, color: TXT, border: `1px solid ${BORD}`, borderRadius: 10, padding: '9px 10px', background: 'rgba(15,23,42,0.03)' }} />
-          </Box>
+          <DateRangeFilter
+            from={dateFrom} to={dateTo}
+            onFromChange={v => { setDateFrom(v); setPage(1); }}
+            onToChange={v => { setDateTo(v); setPage(1); }}
+            textColor={TXT} subColor={SUB} borderColor={BORD}
+          />
           {hasFilters && (
             <Typography onClick={() => { setFilterStatus('ALL'); setSearch(''); setDateFrom(''); setDateTo(''); setPage(1); }}
               sx={{ fontSize: 12, color: SUB, cursor: 'pointer', textDecoration: 'underline', '&:hover': { color: TXT } }}>

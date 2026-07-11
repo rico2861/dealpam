@@ -7,6 +7,7 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import api from '../../api/axios';
 import { StatCardSkeleton } from '../../components/shared/Skeletons';
+import DateRangeFilter from '../../components/shared/DateRangeFilter';
 import { useDelayedLoading } from '../../hooks/useDelayedLoading';
 
 const OR   = '#FF6B00';
@@ -71,7 +72,6 @@ const PERIODS = [
   { key: '90d', label: '3 mois', minTier: 'advanced' },
 ];
 
-const inputStyle = { fontSize: 12.5, color: TXT, border: `1px solid ${BORD}`, borderRadius: 8, padding: '5px 8px', background: '#F7F8FA' };
 
 export default function StatisticsPage() {
   const [period, setPeriod] = useState('7d');
@@ -239,17 +239,12 @@ export default function StatisticsPage() {
           </Box>
           {/* Custom range (advanced only) */}
           {hasAdvancedStats && (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
-              <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} style={inputStyle} />
-              <Typography fontSize={12} color={SUB}>à</Typography>
-              <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} style={inputStyle} />
-              {(dateFrom || dateTo) && (
-                <Typography onClick={() => { setDateFrom(''); setDateTo(''); }}
-                  sx={{ fontSize: 11.5, color: SUB, cursor: 'pointer', textDecoration: 'underline' }}>
-                  Réinitialiser
-                </Typography>
-              )}
-            </Box>
+            <DateRangeFilter
+              from={dateFrom} to={dateTo}
+              onFromChange={setDateFrom} onToChange={setDateTo}
+              onReset={() => { setDateFrom(''); setDateTo(''); }}
+              textColor={TXT} subColor={SUB} borderColor={BORD}
+            />
           )}
           {/* Export buttons (advanced only) */}
           {hasAdvancedStats ? (

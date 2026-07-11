@@ -15,6 +15,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import api from '../../api/axios';
 import { ListSkeleton } from '../../components/shared/Skeletons';
+import DateRangeFilter from '../../components/shared/DateRangeFilter';
 import { useDelayedLoading } from '../../hooks/useDelayedLoading';
 
 const OR   = '#FF6B00';
@@ -535,18 +536,14 @@ export default function SellerOrdersPage() {
       </Box>
 
       {/* Date range filter */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, mb: 2, flexWrap: 'wrap' }}>
-        <input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setPage(1); }}
-          style={{ fontSize: 12.5, color: TXT, border: `1px solid ${BORD}`, borderRadius: 8, padding: '5px 8px', background: '#F7F8FA' }} />
-        <Typography fontSize={12} color={SUB}>à</Typography>
-        <input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setPage(1); }}
-          style={{ fontSize: 12.5, color: TXT, border: `1px solid ${BORD}`, borderRadius: 8, padding: '5px 8px', background: '#F7F8FA' }} />
-        {(dateFrom || dateTo) && (
-          <Typography onClick={() => { setDateFrom(''); setDateTo(''); setPage(1); }}
-            sx={{ fontSize: 11.5, color: SUB, cursor: 'pointer', textDecoration: 'underline', '&:hover': { color: TXT } }}>
-            Réinitialiser
-          </Typography>
-        )}
+      <Box sx={{ mb: 2 }}>
+        <DateRangeFilter
+          from={dateFrom} to={dateTo}
+          onFromChange={v => { setDateFrom(v); setPage(1); }}
+          onToChange={v => { setDateTo(v); setPage(1); }}
+          onReset={() => { setDateFrom(''); setDateTo(''); setPage(1); }}
+          textColor={TXT} subColor={SUB} borderColor={BORD}
+        />
       </Box>
 
       {/* Orders */}

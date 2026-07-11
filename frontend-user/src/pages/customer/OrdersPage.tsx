@@ -9,6 +9,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import api from '../../api/axios';
 import { ListSkeleton } from '../../components/shared/Skeletons';
+import DateRangeFilter from '../../components/shared/DateRangeFilter';
 import { useDelayedLoading } from '../../hooks/useDelayedLoading';
 import { useAuthStore } from '../../store/auth.store';
 
@@ -100,18 +101,13 @@ export default function OrdersPage() {
         </Box>
 
         {/* ── Date range filter ── */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, mb: 3, flexWrap: 'wrap' }}>
-          <input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setPage(1); }}
-            style={{ fontSize: 12.5, color: '#0F172A', border: '1px solid rgba(15,23,42,0.09)', borderRadius: 8, padding: '5px 8px', background: '#F7F8FA' }} />
-          <Typography sx={{ fontSize: 12, color: '#64748B' }}>à</Typography>
-          <input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setPage(1); }}
-            style={{ fontSize: 12.5, color: '#0F172A', border: '1px solid rgba(15,23,42,0.09)', borderRadius: 8, padding: '5px 8px', background: '#F7F8FA' }} />
-          {(dateFrom || dateTo) && (
-            <Typography onClick={() => { setDateFrom(''); setDateTo(''); setPage(1); }}
-              sx={{ fontSize: 11.5, color: '#64748B', cursor: 'pointer', textDecoration: 'underline', '&:hover': { color: '#0F172A' } }}>
-              Réinitialiser
-            </Typography>
-          )}
+        <Box sx={{ mb: 3 }}>
+          <DateRangeFilter
+            from={dateFrom} to={dateTo}
+            onFromChange={v => { setDateFrom(v); setPage(1); }}
+            onToChange={v => { setDateTo(v); setPage(1); }}
+            onReset={() => { setDateFrom(''); setDateTo(''); setPage(1); }}
+          />
         </Box>
 
         {/* ── Loading ── */}
