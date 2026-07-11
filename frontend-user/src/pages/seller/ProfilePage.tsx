@@ -37,9 +37,6 @@ const DOC_TYPES = [
   { value: 'IDENTITY',              label: 'Pièce d\'identité (CIN, passeport, permis)', required: true },
   { value: 'SELFIE',                label: 'Selfie (vérification faciale)', required: true },
   { value: 'PATENTE',               label: 'Patente commerciale',       required: false },
-  { value: 'BUSINESS_REGISTRATION', label: 'Enregistrement commercial', required: false },
-  { value: 'TAX',                   label: 'Document fiscal (NIF)',     required: false },
-  { value: 'LEGAL',                 label: 'Document juridique',        required: false },
   { value: 'OTHER',                 label: 'Autre document',            required: false },
 ];
 
