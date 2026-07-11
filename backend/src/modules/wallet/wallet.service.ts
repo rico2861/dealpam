@@ -45,7 +45,7 @@ export class WalletService {
         type: 'RECHARGE_PENDING',
         amount,
         balanceAfter: 0,
-        description: `Recharge MonCash en attente`,
+        description: `Rechargement de votre wallet en cours de confirmation`,
         reference: orderId,
         status: 'PENDING',
       },
@@ -120,7 +120,7 @@ export class WalletService {
     // concurrente de la même demande) — si 0 ligne affectée, une autre requête l'a déjà traité.
     const claimedPending = await this.prisma.walletTransaction.updateMany({
       where: { id: pending.id, status: 'PENDING' },
-      data: { status: 'CANCELLED', description: 'Remplacée par confirmation' },
+      data: { status: 'CANCELLED', description: 'Demande de rechargement remplacée par la confirmation ci-dessous' },
     });
     if (claimedPending.count === 0) throw new ConflictException('Transaction déjà en cours de traitement');
 
@@ -135,7 +135,7 @@ export class WalletService {
         type: 'RECHARGE',
         amount,
         balanceAfter: updated.balance,
-        description: `Recharge MonCash confirmée`,
+        description: `Votre wallet a été rechargé avec succès`,
         reference: payment.transaction_id,
         status: 'COMPLETED',
       },
@@ -180,13 +180,16 @@ export class WalletService {
     if (result.count === 0) throw new BadRequestException('Solde insuffisant');
 
     const updated = await this.prisma.sellerWallet.findUniqueOrThrow({ where: { id: wallet.id } });
+    const campaignName = await this.getCampaignName(campaignId);
     await this.prisma.walletTransaction.create({
       data: {
         walletId: wallet.id,
         type: 'CAMPAIGN_PAYMENT',
         amount: -amount,
         balanceAfter: updated.balance,
-        description: `Paiement campagne`,
+        description: campaignName
+          ? `Paiement pour le lancement de la campagne "${campaignName}"`
+          : `Paiement pour le lancement d'une campagne publicitaire`,
         reference: campaignId,
         status: 'COMPLETED',
       },
@@ -207,18 +210,30 @@ export class WalletService {
     if (result.count === 0) throw new BadRequestException('Solde insuffisant');
 
     const updated = await this.prisma.sellerWallet.findUniqueOrThrow({ where: { id: wallet.id } });
+    const campaignName = await this.getCampaignName(campaignId);
     await this.prisma.walletTransaction.create({
       data: {
         walletId: wallet.id,
         type: 'CAMPAIGN_PAYMENT',
         amount: -amount,
         balanceAfter: updated.balance,
-        description: `Facturation quotidienne campagne`,
+        description: campaignName
+          ? `Frais quotidien de diffusion — campagne "${campaignName}"`
+          : `Frais quotidien de diffusion d'une campagne publicitaire`,
         reference: campaignId,
         status: 'COMPLETED',
       },
     });
     return { balance: updated.balance };
+  }
+
+  private async getCampaignName(campaignId: string): Promise<string | null> {
+    try {
+      const c = await this.prisma.adCampaign.findUnique({ where: { id: campaignId }, select: { name: true } });
+      return c?.name ?? null;
+    } catch {
+      return null;
+    }
   }
 
   /** Solde actuel du wallet (créé si inexistant) — utilisé par le cron pour vérifier
@@ -241,13 +256,21 @@ export class WalletService {
     if (result.count === 0) throw new BadRequestException('Solde wallet insuffisant');
 
     const updated = await this.prisma.sellerWallet.findUniqueOrThrow({ where: { id: wallet.id } });
+    let sub: { plan: { name: string } } | null = null;
+    try {
+      sub = await this.prisma.sellerSubscription.findUnique({
+        where: { id: subscriptionId }, select: { plan: { select: { name: true } } },
+      });
+    } catch { /* description reste générique si la souscription n'est pas retrouvée */ }
     await this.prisma.walletTransaction.create({
       data: {
         walletId: wallet.id,
         type: 'SUBSCRIPTION',
         amount: -amount,
         balanceAfter: updated.balance,
-        description: `Paiement abonnement (wallet)`,
+        description: sub?.plan?.name
+          ? `Paiement de votre abonnement "${sub.plan.name}"`
+          : `Paiement de votre abonnement`,
         reference: subscriptionId,
         status: 'COMPLETED',
       },

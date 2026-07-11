@@ -450,7 +450,7 @@ export class AdsService {
     if (!c.paymentId && remaining > 0) {
       await this.walletService.refundToWallet(
         sellerId, remaining,
-        `Remboursement — campagne "${c.name}" annulée (budget non utilisé)`,
+        `Remboursement du budget non utilisé — campagne "${c.name}" annulée`,
         campaignId,
       );
     }
