@@ -102,10 +102,17 @@ async function bootstrap() {
         /^http:\/\/(192\.168\.|172\.|10\.)/.test(origin)) {
         return callback(null, true);
       }
+      // Domaine temporaire Hostinger (avant pointage du domaine final / staging) —
+      // change à chaque site créé (ex: darkgrey-elephant-608046.hostingersite.com),
+      // donc on autorise le sous-domaine générique plutôt qu'une valeur figée qui
+      // casserait le jour où Hostinger régénère un nouvel alias.
+      if (/^https:\/\/[a-z0-9-]+\.hostingersite\.com$/.test(origin)) {
+        return callback(null, true);
+      }
       callback(new Error(`CORS: origin ${origin} not allowed`));
     },
     methods:        ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'x-viewer-id'],
     credentials:    true,
     maxAge:         86400,
   });
