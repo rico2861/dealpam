@@ -192,7 +192,12 @@ export class ProductsService {
     });
     if (!product) throw new NotFoundException('Produit introuvable');
 
-    await this.registerView(product.id, product.store?.seller?.userId, viewerKey, currentUserId);
+    // Le comptage de vues ne doit JAMAIS faire échouer l'affichage de la fiche
+    // produit — si la table product_views ou la colonne is_limited_edition n'a
+    // pas encore été migrée en base, cet appel échouerait sinon et casserait
+    // TOUTES les pages produit (déjà arrivé : migration donnée à exécuter
+    // manuellement mais backend déjà déployé automatiquement par Render).
+    await this.registerView(product.id, product.store?.seller?.userId, viewerKey, currentUserId).catch(() => {});
     return product;
   }
 
