@@ -62,6 +62,10 @@ function TxRow({ tx }: { tx: any }) {
   const sMeta = STATUS_META[tx.status] ?? STATUS_META['PENDING'];
   const TxIcon = meta.icon;
   const SIcon = sMeta.icon;
+  // Une transaction échouée/annulée n'a jamais eu lieu — jamais en vert/rouge
+  // "montant réel", quel que soit le signe du montant théorique.
+  const failedOrCancelled = tx.status === 'FAILED' || tx.status === 'CANCELLED';
+  const amountColor = failedOrCancelled ? SUB : tx.status === 'PENDING' ? YLW : isCredit ? GRN : RED;
 
   const copy = (val: string) => { navigator.clipboard.writeText(val).catch(() => null); enqueueSnackbar('Copié !', { variant: 'success', autoHideDuration: 1500 }); };
 
@@ -72,8 +76,9 @@ function TxRow({ tx }: { tx: any }) {
         sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 1.8, px: { xs: 1.5, md: 2.5 }, cursor: 'pointer', transition: 'all 0.15s', '&:hover': { bgcolor: 'rgba(15,23,42,0.04)' } }}>
 
         {/* Icon */}
-        <Box sx={{ width: 40, height: 40, borderRadius: '11px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: `${meta.color}15`, border: `1px solid ${meta.color}25` }}>
-          <TxIcon sx={{ fontSize: 18, color: meta.color }} />
+        <Box sx={{ width: 40, height: 40, borderRadius: '11px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          bgcolor: failedOrCancelled ? `${SUB}15` : `${meta.color}15`, border: `1px solid ${failedOrCancelled ? SUB : meta.color}25` }}>
+          <TxIcon sx={{ fontSize: 18, color: failedOrCancelled ? SUB : meta.color }} />
         </Box>
 
         {/* Description + date */}
@@ -93,7 +98,7 @@ function TxRow({ tx }: { tx: any }) {
 
         {/* Amount */}
         <Box sx={{ textAlign: 'right', flexShrink: 0 }}>
-          <Typography fontSize={15} fontWeight={800} color={tx.status === 'PENDING' ? YLW : isCredit ? GRN : RED}>
+          <Typography fontSize={15} fontWeight={800} color={amountColor} sx={failedOrCancelled ? { textDecoration: 'line-through' } : undefined}>
             {isCredit ? '+' : ''}{fmt(tx.amount)}
           </Typography>
           {tx.balanceAfter != null && tx.status === 'COMPLETED' && (
@@ -119,7 +124,7 @@ function TxRow({ tx }: { tx: any }) {
 
             <Box>
               <Typography fontSize={10.5} color={SUB} mb={0.3} textTransform="uppercase" letterSpacing="0.5px">Montant</Typography>
-              <Typography fontSize={13} fontWeight={700} color={isCredit ? GRN : RED}>{isCredit ? '+' : ''}{fmt(tx.amount)}</Typography>
+              <Typography fontSize={13} fontWeight={700} color={amountColor} sx={failedOrCancelled ? { textDecoration: 'line-through' } : undefined}>{isCredit ? '+' : ''}{fmt(tx.amount)}</Typography>
             </Box>
 
             <Box>
