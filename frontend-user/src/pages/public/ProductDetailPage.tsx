@@ -497,10 +497,7 @@ export default function ProductDetailPage() {
 
       {/* ══ CONTENT ═════════════════════════════════════════════════════════ */}
       <Box sx={{ maxWidth:1200, mx:'auto', px:{ xs:0, md:4 } }}>
-        {/* Style éditorial mode (texte à gauche, image à droite) sur desktop — la
-            galerie garde tout son code interne inchangé, seul l'ORDRE visuel change
-            via row-reverse ; sur mobile, la galerie reste en premier comme avant. */}
-        <Box sx={{ display:'flex', gap:{ xs:0, lg:4 }, alignItems:'flex-start', flexWrap:{ xs:'wrap', lg:'nowrap' }, flexDirection:{ xs:'column', lg:'row-reverse' } }}>
+        <Box sx={{ display:'flex', gap:{ xs:0, lg:4 }, alignItems:'flex-start', flexWrap:{ xs:'wrap', lg:'nowrap' } }}>
 
           {/* ── GALLERY COLUMN ────────────────────────────────────────────── */}
           <Box sx={{
