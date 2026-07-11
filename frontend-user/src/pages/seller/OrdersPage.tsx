@@ -92,7 +92,7 @@ function OfferBlock({ order, item }: { order: any; item: any }) {
       <Box sx={{ mx: 2.5, mt: 1.5, mb: 0.5, p: 1.6, borderRadius: '10px',
         bgcolor: 'rgba(59,130,246,0.08)', border: `1px solid ${BLU}40` }}>
         <Typography fontSize={12.5} fontWeight={700} color={BLU}>
-          🔄 Vous avez proposé {fmt(Number(item.counterPrice))} — en attente de la réponse du client.
+          Vous avez proposé {fmt(Number(item.counterPrice))} — en attente de la réponse du client.
         </Typography>
       </Box>
     );
@@ -102,7 +102,7 @@ function OfferBlock({ order, item }: { order: any; item: any }) {
     <Box sx={{ mx: 2.5, mt: 1.5, mb: 0.5, p: 1.6, borderRadius: '10px',
       bgcolor: 'rgba(139,92,246,0.08)', border: `1px solid ${PUR}40` }}>
       <Typography fontSize={12.5} fontWeight={700} color={PUR} mb={0.8}>
-        💬 Offre de prix : {fmt(Number(item.offeredPrice))} (prix catalogue : {fmt(Number(item.product?.price ?? item.unitPrice))})
+        Offre de prix : {fmt(Number(item.offeredPrice))} (prix catalogue : {fmt(Number(item.product?.price ?? item.unitPrice))})
       </Typography>
       <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
         <Button size="small" onClick={() => decideMut.mutate({ action: 'ACCEPT' })} disabled={decideMut.isPending}
@@ -218,7 +218,7 @@ function OrderCard({ order, onUpdate, pendingStatus }: { order: any; onUpdate: (
                 border: `1px solid ${order.paymentTxStatus === 'APPROVED' ? 'rgba(16,185,129,0.3)' : 'rgba(245,158,11,0.3)'}` }}>
                 <Typography fontSize={11} fontWeight={700}
                   color={order.paymentTxStatus === 'APPROVED' ? GRN : YLW}>
-                  {order.paymentTxStatus === 'APPROVED' ? '💳 Payé' : '⏳ Tx soumise'}
+                  {order.paymentTxStatus === 'APPROVED' ? 'Payé' : 'Tx soumise'}
                 </Typography>
               </Box>
             )}
@@ -347,7 +347,7 @@ function OrderCard({ order, onUpdate, pendingStatus }: { order: any; onUpdate: (
         <Collapse in={expanded}>
           <Box sx={{ pb: 1.5, display: 'flex', flexDirection: 'column', gap: 0.8 }}>
             {[
-              order.deliveryType && { k: 'Livraison', v: order.deliveryType === 'DELIVERY' ? '🏠 À domicile' : order.deliveryType === 'PICKUP' ? '🏪 Retrait boutique' : '📞 Contact direct' },
+              order.deliveryType && { k: 'Livraison', v: order.deliveryType === 'DELIVERY' ? 'À domicile' : order.deliveryType === 'PICKUP' ? 'Retrait boutique' : 'Contact direct' },
               order.deliveryType === 'PICKUP' && order.pickupPointName && { k: 'Point retrait', v: `${order.pickupPointName}${order.pickupPointAddress ? ` — ${order.pickupPointAddress}` : ''}` },
               order.address && { k: 'Adresse', v: `${order.address.fullName ? order.address.fullName + ' · ' : ''}${order.address.line1}, ${order.address.city}, ${order.address.department}${order.address.phone ? ` · ${order.address.phone}` : ''}` },
               Number(order.shippingHTG) > 0 && { k: 'Frais livraison', v: fmt(Number(order.shippingHTG)) },
@@ -362,7 +362,7 @@ function OrderCard({ order, onUpdate, pendingStatus }: { order: any; onUpdate: (
             ))}
             {order.notes && (
               <Box sx={{ p: 1.2, borderRadius: '8px', bgcolor: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)', mt: 0.5 }}>
-                <Typography fontSize={12} color={YLW}>💬 {order.notes}</Typography>
+                <Typography fontSize={12} color={YLW}>{order.notes}</Typography>
               </Box>
             )}
           </Box>

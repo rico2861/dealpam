@@ -207,7 +207,7 @@ function OfferStatusBlock({ order, item }: { order: any; item: any }) {
     return (
       <Box sx={{ mt: 1, mb: 1, p: 1.6, borderRadius: '10px', bgcolor: alpha(BLU, 0.08), border: `1px solid ${alpha(BLU, 0.25)}` }}>
         <Typography fontSize={12.5} fontWeight={700} color={BLU} mb={1}>
-          🔄 Le vendeur propose {fmt(Number(item.counterPrice))} au lieu de votre offre de {fmt(Number(item.offeredPrice))}.
+          Le vendeur propose {fmt(Number(item.counterPrice))} au lieu de votre offre de {fmt(Number(item.offeredPrice))}.
         </Typography>
         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
           <Button size="small" disabled={respondMut.isPending} onClick={() => respondMut.mutate({ action: 'ACCEPT' })}

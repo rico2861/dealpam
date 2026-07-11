@@ -336,7 +336,7 @@ function ChatWidget({ store, sellerUserId, open, onClose }: {
               <Box sx={{ maxWidth: '74%' }}>
                 {!mine && (
                   <Typography sx={{ color: isBot ? '#c084fc' : '#aaa', fontSize: 10, mb: 0.2, px: 0.5 }}>
-                    {isBot ? '🤖 Message automatique' : `${m.sender?.firstName ?? ''} ${m.sender?.lastName ?? ''}`.trim()}
+                    {isBot ? 'Message automatique' : `${m.sender?.firstName ?? ''} ${m.sender?.lastName ?? ''}`.trim()}
                   </Typography>
                 )}
                 <Box sx={{
@@ -351,7 +351,9 @@ function ChatWidget({ store, sellerUserId, open, onClose }: {
                   )}
                   {isFile && m.mediaUrl ? (
                     <Typography component="a" href={m.mediaUrl} target="_blank" rel="noopener"
-                      sx={{ color: ORANGE, fontSize: 13, display: 'block' }}>📎 {m.content}</Typography>
+                      sx={{ color: ORANGE, fontSize: 13, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <AttachFileIcon sx={{ fontSize: 14 }} /> {m.content}
+                    </Typography>
                   ) : (
                     <Typography sx={{ color: '#fff', fontSize: 13, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
                       {m.content}

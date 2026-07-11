@@ -8,7 +8,7 @@ import {
 import {
   FilterList, Close, Star, ExpandMore, ExpandLess, Check,
   Verified, LocalShipping, FlashOn, Inventory, LocationOn,
-  MyLocation, FmdGood,
+  MyLocation, FmdGood, SearchOff,
 } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
 import api from '../../api/axios';
@@ -265,7 +265,7 @@ function FilterPanel({ fs, setFs, onClose }: { fs: FilterState; setFs: (v: Filte
             sx={{ fontSize: 11, bgcolor: alpha(ORANGE, 0.1), color: ORANGE, fontWeight: 600 }} />}
           {fs.dept && <Chip label={fs.dept} size="small" onDelete={() => setFs({ ...fs, dept: '' })}
             sx={{ fontSize: 11, bgcolor: '#EEF2FF', color: '#6366F1', fontWeight: 600 }} />}
-          {fs.proximity && userDept && <Chip label={`📍 ${userCity || userDept}`} size="small" onDelete={() => setFs({ ...fs, proximity: false })}
+          {fs.proximity && userDept && <Chip icon={<LocationOn sx={{ fontSize: '14px !important' }} />} label={userCity || userDept} size="small" onDelete={() => setFs({ ...fs, proximity: false })}
             sx={{ fontSize: 11, bgcolor: '#ECFDF5', color: '#059669', fontWeight: 600 }} />}
           {(fs.priceRange[0] > 0 || fs.priceRange[1] < 50000) && (
             <Chip label={`${fs.priceRange[0].toLocaleString()}–${fs.priceRange[1].toLocaleString()} HTG`}
@@ -490,7 +490,7 @@ export default function ProductsPage() {
     ...((fs.priceRange[0] > 0 || fs.priceRange[1] < 50000) ? [{ label: `${fs.priceRange[0].toLocaleString()}–${fs.priceRange[1].toLocaleString()} HTG`, onDelete: () => setFs(f => ({ ...f, priceRange: [0, 50000] })) }] : []),
     ...(fs.verified ? [{ label: 'Vérifié ✓', onDelete: () => setFs(f => ({ ...f, verified: false })) }] : []),
     ...(fs.delivery ? [{ label: 'Livraison', onDelete: () => setFs(f => ({ ...f, delivery: false })) }] : []),
-    ...(fs.onSale ? [{ label: 'Promotion 🔥', onDelete: () => setFs(f => ({ ...f, onSale: false })) }] : []),
+    ...(fs.onSale ? [{ label: 'Promotion', onDelete: () => setFs(f => ({ ...f, onSale: false })) }] : []),
     ...(fs.inStock ? [{ label: 'En stock', onDelete: () => setFs(f => ({ ...f, inStock: false })) }] : []),
     ...(fs.minRating > 0 ? [{ label: `${fs.minRating}★ & +`, onDelete: () => setFs(f => ({ ...f, minRating: 0 })) }] : []),
   ];
@@ -700,7 +700,7 @@ export default function ProductsPage() {
               textAlign: 'center', py: 12, bgcolor: 'white', borderRadius: 3,
               border: '1px solid #E8E8E8', boxShadow: '0 1px 6px rgba(0,0,0,0.05)',
             }}>
-              <Typography fontSize={60} lineHeight={1} mb={2}>🔍</Typography>
+              <SearchOff sx={{ fontSize: 60, mb: 2, color: '#CBD5E1' }} />
               <Typography variant="h6" fontWeight={800} mb={0.8} color="#111827">
                 Aucun produit trouvé
               </Typography>

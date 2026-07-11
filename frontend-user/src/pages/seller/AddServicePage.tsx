@@ -180,10 +180,10 @@ function SubServicesEditor({ data, onChange }: { data: any; onChange: (d: any) =
                 display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
               <Close sx={{ fontSize: 12, color: '#EF4444' }} />
             </Box>
-            <Box sx={{ display: 'flex', gap: 1.2, mb: 1, pr: 3 }}>
-              <TextField fullWidth size="small" label="Nom de la prestation" sx={fieldSx}
+            <Box sx={{ display: 'flex', gap: 1.2, mb: 1, pr: 3, flexWrap: 'wrap' }}>
+              <TextField fullWidth size="small" label="Nom de la prestation" sx={{ ...fieldSx, minWidth: 180 }}
                 value={s.name} onChange={e => change(i, 'name', e.target.value)} placeholder="Ex: Blanchiment dentaire" />
-              <TextField size="small" label="Prix (HTG)" type="number" sx={{ ...fieldSx, minWidth: 130 }}
+              <TextField size="small" label="Prix (HTG)" type="number" sx={{ ...fieldSx, width: { xs: '100%', sm: 130 }, flexShrink: 0 }}
                 value={s.price || ''} onChange={e => change(i, 'price', Number(e.target.value))} />
             </Box>
             <TextField fullWidth size="small" label="Description (optionnel)" sx={fieldSx}

@@ -10,6 +10,9 @@ import {
   FlashOn, LocationOn, KeyboardArrowRight, Person,
   WorkspacePremium, Stars, CheckCircle, Store, Star,
   Handshake, StorefrontOutlined,
+  Checkroom, DevicesOther, Smartphone, Weekend, Spa,
+  SportsSoccer, Restaurant, DirectionsWalk, DirectionsCar, Diamond,
+  LocalFireDepartment,
 } from '@mui/icons-material';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../../api/axios';
@@ -914,7 +917,7 @@ function ProductCard({ p, flash = false, compact = false }: { p: any; flash?: bo
               lineHeight: 1.2,
               letterSpacing: 0.3,
             }}>
-              <Box component="span" sx={{ fontSize: compact ? 7 : 8 }}>📍</Box>
+              <LocationOn sx={{ fontSize: compact ? 8 : 9 }} />
               {nearLabel}
             </Box>
           )}
@@ -1222,7 +1225,7 @@ function DealCard({ p, flash = false }: { p: any; flash?: boolean }) {
               lineHeight: 1.3, letterSpacing: 0.2,
               boxShadow: isNearCity ? '0 2px 8px rgba(5,150,105,0.45)' : '0 2px 8px rgba(14,165,233,0.35)',
             }}>
-              <Box component="span" sx={{ fontSize: 9, lineHeight: 1 }}>📍</Box>
+              <LocationOn sx={{ fontSize: 10 }} />
               {nearLabel}
             </Box>
           )}
@@ -1543,7 +1546,7 @@ function PromoSection({ products, to, loading }: { products: any[]; to: string; 
               boxShadow: '0 4px 16px rgba(255,107,0,0.45)',
               animation: 'dp-pulse 2s ease-in-out infinite',
               '@keyframes dp-pulse': { '0%,100%': { boxShadow: '0 4px 16px rgba(255,107,0,0.35)' }, '50%': { boxShadow: '0 4px 28px rgba(255,107,0,0.7)' } },
-            }}>🔥</Box>
+            }}><LocalFireDepartment sx={{ fontSize: { xs: 19, md: 25 }, color: 'white' }} /></Box>
 
             <Box sx={{ minWidth: 0 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, flexWrap: 'nowrap' }}>
@@ -1556,7 +1559,7 @@ function PromoSection({ products, to, loading }: { products: any[]; to: string; 
                   borderRadius: '20px', px: { xs: '7px', md: '10px' }, py: '3px',
                   boxShadow: '0 2px 8px rgba(239,68,68,0.45)',
                 }}>
-                  <Box component="span" sx={{ fontSize: { xs: 9, md: 10 } }}>⚡</Box>
+                  <FlashOn sx={{ fontSize: { xs: 11, md: 12 }, color: 'white' }} />
                   <Typography fontSize={{ xs: 10, md: 11 }} fontWeight={900} color="white" lineHeight={1} noWrap>
                     {products.length} offres
                   </Typography>
@@ -2081,7 +2084,7 @@ function SponsoredDealCard({ ad, dark }: { ad: any; dark?: boolean }) {
             fontSize: 9, borderRadius: '20px', px: '7px', py: '2.5px',
             maxWidth: '75%',
           }}>
-            <Box component="span" sx={{ fontSize: 10 }}>📍</Box>
+            <LocationOn sx={{ fontSize: 11 }} />
             <Box component="span" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {nearLabel}
             </Box>
@@ -2190,16 +2193,16 @@ function PromoAdSlider({ ads }: { ads: any[] }) {
 
 /* ─── Quick Categories Bar ───────────────────────────────────────────────── */
 const HP_CATS = [
-  { slug: 'mode',         label: 'Mode',          emoji: '👗', color: '#EC4899' },
-  { slug: 'electronique', label: 'Électronique',  emoji: '💻', color: '#3B82F6' },
-  { slug: 'smartphones',  label: 'Smartphones',   emoji: '📱', color: '#22C55E' },
-  { slug: 'maison',       label: 'Maison & Déco', emoji: '🏠', color: '#F97316' },
-  { slug: 'beaute',       label: 'Beauté',        emoji: '💄', color: '#A855F7' },
-  { slug: 'sport',        label: 'Sport',         emoji: '⚽', color: '#10B981' },
-  { slug: 'alimentaire',  label: 'Alimentation',  emoji: '🍎', color: '#059669' },
-  { slug: 'chaussures',   label: 'Chaussures',    emoji: '👟', color: '#F59E0B' },
-  { slug: 'vehicules',    label: 'Véhicules',     emoji: '🚗', color: '#EF4444' },
-  { slug: 'bijoux',       label: 'Bijoux',        emoji: '💍', color: '#D97706' },
+  { slug: 'mode',         label: 'Mode',          Icon: Checkroom,     color: '#EC4899' },
+  { slug: 'electronique', label: 'Électronique',  Icon: DevicesOther,  color: '#3B82F6' },
+  { slug: 'smartphones',  label: 'Smartphones',   Icon: Smartphone,    color: '#22C55E' },
+  { slug: 'maison',       label: 'Maison & Déco', Icon: Weekend,       color: '#F97316' },
+  { slug: 'beaute',       label: 'Beauté',        Icon: Spa,           color: '#A855F7' },
+  { slug: 'sport',        label: 'Sport',         Icon: SportsSoccer,  color: '#10B981' },
+  { slug: 'alimentaire',  label: 'Alimentation',  Icon: Restaurant,    color: '#059669' },
+  { slug: 'chaussures',   label: 'Chaussures',    Icon: DirectionsWalk,color: '#F59E0B' },
+  { slug: 'vehicules',    label: 'Véhicules',     Icon: DirectionsCar, color: '#EF4444' },
+  { slug: 'bijoux',       label: 'Bijoux',        Icon: Diamond,       color: '#D97706' },
 ];
 
 function QuickCategoriesBar() {
@@ -2239,9 +2242,8 @@ function QuickCategoriesBar() {
                 bgcolor: alpha(cat.color, 0.1),
                 border: `1.5px solid ${alpha(cat.color, 0.2)}`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: { xs: 22, md: 26 },
                 transition: 'box-shadow 0.18s',
-              }}>{cat.emoji}</Box>
+              }}><cat.Icon sx={{ fontSize: { xs: 24, md: 28 }, color: cat.color }} /></Box>
               <Typography fontSize={{ xs: 10, md: 11 }} fontWeight={600} color="#374151"
                 textAlign="center" lineHeight={1.2}>
                 {cat.label}
@@ -2480,7 +2482,7 @@ export default function HomePage() {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                 <Box sx={{ width: 4, height: 26, bgcolor: OR, borderRadius: 2 }} />
                 <Typography fontSize={{ xs: 16, md: 19 }} fontWeight={700} color={BG}>
-                  ✨ Recommande pour vous
+                  Recommandé pour vous
                 </Typography>
                 <Chip label={`${recommendedProducts.length} produits`} size="small"
                   sx={{ fontSize: 11, fontWeight: 600, bgcolor: alpha(OR, 0.09), color: OR,

@@ -49,7 +49,7 @@ function buildPlanFeatures(plan: any): string[] {
   }
   f.push(`${plan.maxImages} image${plan.maxImages > 1 ? 's' : ''} par produit`);
   if (plan.maxStores > 1) f.push(`Jusqu'à ${plan.maxStores} boutiques`);
-  if (plan.hasEliteBadge) f.push('Badge Elite 💎');
+  if (plan.hasEliteBadge) f.push('Badge Elite');
   else if (plan.hasVerifiedBadge) f.push('Badge vendeur vérifié ✓');
   if (plan.hasPrioritySearch) f.push('Priorité dans les résultats de recherche');
   if (plan.hasKeywordTargeting) f.push('Mots-clés ciblés pour plus de visibilité');

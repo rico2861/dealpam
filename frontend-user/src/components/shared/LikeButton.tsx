@@ -54,7 +54,7 @@ export default function LikeButton({
         setCount(c => c + 1);
         setAnim(true);
         setTimeout(() => setAnim(false), 700);
-        enqueueSnackbar('Ajouté aux favoris ❤️', { variant: 'success', autoHideDuration: 2000 });
+        enqueueSnackbar('Ajouté aux favoris', { variant: 'success', autoHideDuration: 2000 });
         track({ eventType: 'LIKE', productId, categorySlug });
       }
       // Rafraîchit immédiatement la page Favoris et le badge du header/nav,

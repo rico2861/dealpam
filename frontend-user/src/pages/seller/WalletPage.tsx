@@ -229,7 +229,10 @@ export default function WalletPage() {
 
   const txs: any[] = wallet?.transactions ?? [];
   const completed  = txs.filter((t: any) => t.status !== 'CANCELLED');
-  const totalIn    = completed.filter((t: any) => t.amount > 0 && t.status === 'COMPLETED').reduce((s: number, t: any) => s + t.amount, 0);
+  // "Total rechargé" ne doit compter QUE les recharges réelles (RECHARGE), jamais
+  // les remboursements (REFUND) — un remboursement crédite le wallet mais n'est
+  // pas de l'argent rechargé par le vendeur.
+  const totalIn    = completed.filter((t: any) => t.amount > 0 && t.status === 'COMPLETED' && t.type === 'RECHARGE').reduce((s: number, t: any) => s + t.amount, 0);
   const totalOut   = Math.abs(completed.filter((t: any) => t.amount < 0).reduce((s: number, t: any) => s + t.amount, 0));
   const nbRecharge = completed.filter((t: any) => t.type === 'RECHARGE' && t.status === 'COMPLETED').length;
 

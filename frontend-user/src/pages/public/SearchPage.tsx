@@ -9,7 +9,7 @@ import {
 import {
   Search, Close, Tune, ShoppingCart,
   Favorite, FavoriteBorder, LocationOn, Verified,
-  GridView, ViewList,
+  GridView, ViewList, SearchOff,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import api from '../../api/axios';
@@ -515,7 +515,7 @@ export default function SearchPage() {
             ) : products.length === 0 ? (
               <Box sx={{ bgcolor: 'white', borderRadius: 2, p: { xs: 4, md: 6 }, textAlign: 'center',
                 border: '1px solid #E8E8E8' }}>
-                <Typography fontSize={48} mb={1}>🔍</Typography>
+                <SearchOff sx={{ fontSize: 48, mb: 1, color: '#CBD5E1' }} />
                 <Typography fontSize={20} fontWeight={700} mb={0.5} color="#0F1111">
                   Aucun résultat trouvé
                 </Typography>

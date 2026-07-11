@@ -431,7 +431,7 @@ export default function ProductDetailPage() {
     if (!user||!localStorage.getItem('accessToken')) { navigate('/login'); return; }
     try {
       if (liked) { await api.delete(`/wishlist/${product.id}`); setLiked(false); enqueueSnackbar('Retiré des favoris', { variant:'info' }); }
-      else { await api.post('/wishlist', { productId:product.id }); setLiked(true); setLAnim(true); setTimeout(()=>setLAnim(false),600); enqueueSnackbar('Ajouté aux favoris ❤️', { variant:'success' }); }
+      else { await api.post('/wishlist', { productId:product.id }); setLiked(true); setLAnim(true); setTimeout(()=>setLAnim(false),600); enqueueSnackbar('Ajouté aux favoris', { variant:'success' }); }
     } catch {}
   };
 
@@ -447,7 +447,7 @@ export default function ProductDetailPage() {
           background:'linear-gradient(135deg,rgba(255,107,0,0.12),rgba(255,107,0,0.04))',
           border:`1px solid rgba(255,107,0,0.2)`,
           display:'flex', alignItems:'center', justifyContent:'center' }}>
-          <Box component="span" sx={{ fontSize:52 }}>📦</Box>
+          <Inventory sx={{ fontSize:52, color:'#FF6B00' }}/>
         </Box>
         <Typography sx={{ fontSize:{ xs:22, md:28 }, fontWeight:900, color:TXT, mb:1.5 }}>Produit introuvable</Typography>
         <Typography sx={{ fontSize:15, color:SUB, mb:4, lineHeight:1.7 }}>

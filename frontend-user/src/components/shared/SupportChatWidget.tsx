@@ -6,6 +6,7 @@ import {
 import {
   AttachFile, CheckCircle, Close, CloseFullscreen, DoneAll,
   Headset, HeadsetMic, Send, SmartToy, SmartToyOutlined, SupportAgent,
+  Lock, WarningAmber, LockOutlined,
 } from '@mui/icons-material';
 import { io, Socket } from 'socket.io-client';
 import api from '../../api/axios';
@@ -34,11 +35,11 @@ function avatarLetter(m: any) {
   return (m.sender?.firstName?.[0] ?? '?').toUpperCase();
 }
 function sophiaWelcome(firstName: string) {
-  const greeting = firstName ? `Bonjour ${firstName} 👋` : 'Bonjour 👋';
+  const greeting = firstName ? `Bonjour ${firstName}` : 'Bonjour';
   return {
     id: `local-welcome-${Date.now()}`,
     type: 'BOT',
-    content: `${greeting}\n\nJe suis **${SOPHIA_NAME}**, votre assistante IA DealPam. Je suis là pour répondre à vos questions et résoudre vos problèmes.\n\n💬 Décrivez votre demande et je m'en occupe immédiatement.`,
+    content: `${greeting}\n\nJe suis **${SOPHIA_NAME}**, votre assistante IA DealPam. Je suis là pour répondre à vos questions et résoudre vos problèmes.\n\nDécrivez votre demande et je m'en occupe immédiatement.`,
     senderId: 'bot',
     sender: { firstName: SOPHIA_NAME, lastName: '' },
     createdAt: new Date().toISOString(),
@@ -455,7 +456,7 @@ function SupportChatInner({ user }: { user: any }) {
           {inactiveWarning && !closed && (
             <Box sx={{ px: 2, py: 0.8, bgcolor: 'rgba(255,152,0,0.12)', borderBottom: `1px solid rgba(255,152,0,0.2)` }}>
               <Typography sx={{ color: '#ff9800', fontSize: 12, textAlign: 'center' }}>
-                ⚠️ Fermeture automatique dans 2 min (inactivité). Écrivez pour continuer.
+                Fermeture automatique dans 2 min (inactivité). Écrivez pour continuer.
               </Typography>
             </Box>
           )}
@@ -464,7 +465,7 @@ function SupportChatInner({ user }: { user: any }) {
           {escalated && (
             <Box sx={{ px: 2, py: 0.8, bgcolor: 'rgba(76,175,80,0.1)', borderBottom: `1px solid rgba(76,175,80,0.2)` }}>
               <Typography sx={{ color: SYS_COL, fontSize: 12, textAlign: 'center' }}>
-                ✅ {agentName} a été assigné à votre ticket
+                {agentName} a été assigné à votre ticket
               </Typography>
             </Box>
           )}
@@ -487,8 +488,10 @@ function SupportChatInner({ user }: { user: any }) {
                     ? 'linear-gradient(135deg,#1a1a2e,#16213e)'
                     : 'linear-gradient(135deg,#2d1515,#3d1a1a)',
                   border: `2px solid ${convError === 'SESSION_EXPIRED' ? 'rgba(100,120,255,0.4)' : 'rgba(255,80,80,0.4)'}`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28 }}>
-                  {convError === 'SESSION_EXPIRED' ? '🔐' : '⚠️'}
+                  display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {convError === 'SESSION_EXPIRED'
+                    ? <Lock sx={{ fontSize: 28, color: 'rgba(120,140,255,0.9)' }} />
+                    : <WarningAmber sx={{ fontSize: 28, color: 'rgba(255,120,120,0.9)' }} />}
                 </Box>
                 <Typography sx={{ color: '#fff', fontSize: 15, fontWeight: 800, mb: 0.8 }}>
                   {convError === 'SESSION_EXPIRED' ? 'Session expirée' : 'Connexion impossible'}
@@ -523,7 +526,7 @@ function SupportChatInner({ user }: { user: any }) {
             )}
 
             {closed && (
-              <Chip label="🔒 Conversation fermée" size="small" sx={{ mx: 'auto', color: '#aaa', bgcolor: SURFACE }} />
+              <Chip icon={<LockOutlined sx={{ fontSize: 14 }} />} label="Conversation fermée" size="small" sx={{ mx: 'auto', color: '#aaa', bgcolor: SURFACE }} />
             )}
 
             {messages.map(msg => {
@@ -558,7 +561,7 @@ function SupportChatInner({ user }: { user: any }) {
                   <Box sx={{ maxWidth: '72%' }}>
                     {!isMe && (
                       <Typography sx={{ color: isBot ? '#c084fc' : '#90caf9', fontSize: 10, mb: 0.3, px: 0.5 }}>
-                        {isBot ? `✨ ${SOPHIA_NAME}` : `${msg.sender?.firstName ?? ''} ${msg.sender?.lastName ?? ''}`.trim()}
+                        {isBot ? SOPHIA_NAME : `${msg.sender?.firstName ?? ''} ${msg.sender?.lastName ?? ''}`.trim()}
                       </Typography>
                     )}
 
@@ -583,9 +586,9 @@ function SupportChatInner({ user }: { user: any }) {
                           href={msg.mediaUrl}
                           target="_blank"
                           rel="noopener"
-                          sx={{ color: ACCENT, fontSize: 13, display: 'block' }}
+                          sx={{ color: ACCENT, fontSize: 13, display: 'flex', alignItems: 'center', gap: 0.5 }}
                         >
-                          📎 {msg.content}
+                          <AttachFile sx={{ fontSize: 14 }} /> {msg.content}
                         </Typography>
                       ) : isBot ? (
                         <Typography sx={{ color: '#fff', fontSize: 13, whiteSpace: 'pre-wrap', wordBreak: 'break-word', lineHeight: 1.65 }}

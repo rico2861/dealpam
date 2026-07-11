@@ -9,7 +9,7 @@ import {
   Verified, Star, Store, LocationOn, Phone, WhatsApp, Email,
   ContentCopy, CheckCircle, ShoppingBag, Inventory,
   ArrowBack, Favorite, FavoriteBorder, Diamond, AccessTime, Security, FlashOn,
-  Description, Gavel, BusinessCenter, Badge, OpenInNew,
+  Description, Gavel, BusinessCenter, Badge, OpenInNew, CreditCard,
 } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
@@ -29,10 +29,6 @@ const DOC_LABELS: Record<string, string> = {
 };
 
 const fmtHTG = (v: number) => `${v.toLocaleString('fr-HT')} HTG`;
-
-const PAYMENT_ICONS: Record<string, string> = {
-  MONCASH: '📱', NATCASH: '📲', CASH: '💵', BANK_TRANSFER: '🏦', OTHER: '💳',
-};
 
 const PLAN_COLORS: Record<string, { color: string; label: string }> = {
   STARTER:  { color: '#64748B', label: 'Starter'  },
@@ -323,7 +319,7 @@ export default function StoreDetailPage() {
               sx={{ bgcolor: alpha(RED, 0.07), color: RED, fontWeight: 600, border: `1px solid ${alpha(RED, 0.15)}` }} />
           )}
           {paymentMethods.map((m: string) => (
-            <Chip key={m} label={PAYMENT_ICONS[m] ? `${PAYMENT_ICONS[m]} ${m}` : m} size="small"
+            <Chip key={m} icon={<CreditCard sx={{ fontSize: '14px !important' }} />} label={m} size="small"
               sx={{ bgcolor: '#F8FAFC', color: '#475569', fontSize: 11.5, border: '1px solid #E5E7EB' }} />
           ))}
           {store.email && (

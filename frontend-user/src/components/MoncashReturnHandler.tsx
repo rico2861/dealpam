@@ -50,7 +50,7 @@ export default function MoncashReturnHandler() {
         }
 
         if (data.type === 'wallet') {
-          showToast(`✅ Recharge confirmée — ${data.amount} HTG crédités`, 'success');
+          showToast(`Recharge confirmée — ${data.amount} HTG crédités`, 'success');
           navigate('/seller/wallet');
           return;
         }
@@ -74,12 +74,12 @@ export default function MoncashReturnHandler() {
         }
 
         if (data.type === 'ad_campaign') {
-          showToast('✅ Paiement confirmé — campagne en cours de révision', 'success');
+          showToast('Paiement confirmé — campagne en cours de révision', 'success');
           navigate('/seller/ads');
           return;
         }
 
-        showToast(`✅ Pèman konfime — ${data.amount_htg} HTG`, 'success');
+        showToast(`Pèman konfime — ${data.amount_htg} HTG`, 'success');
       } catch {
         showToast('Erè koneksyon pandan verifikasyon pèman', 'error');
       }

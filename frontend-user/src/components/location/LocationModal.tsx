@@ -290,7 +290,7 @@ export default function LocationModal({ open, onClose }: { open: boolean; onClos
     if (!dept) return;
     setLocation({ department: dept, city: city || undefined, source: gpsState === 'done' ? 'gps' : 'manual' } as LocationData);
     const label = city ? `${city}, ${dept}` : dept;
-    setToast(`📍 Zone mise a jour : ${label}`);
+    setToast(`Zone mise a jour : ${label}`);
     setTimeout(() => setToast(''), 3000);
     onClose();
   };

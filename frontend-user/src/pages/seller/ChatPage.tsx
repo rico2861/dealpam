@@ -737,7 +737,7 @@ export default function SellerChatPage() {
                           {!mine && showAvatar && (
                             <Typography sx={{ fontSize: 10, mb: 0.4, ml: 0.5, fontWeight: 500,
                               color: bot ? alpha(PURPLE, 0.7) : admin ? alpha(ORANGE, 0.7) : SUB }}>
-                              {bot ? '🤖 DealPam IA' : admin ? 'Support DealPam' : `${msg.sender?.firstName ?? ''} ${msg.sender?.lastName ?? ''}`}
+                              {bot ? 'DealPam IA' : admin ? 'Support DealPam' : `${msg.sender?.firstName ?? ''} ${msg.sender?.lastName ?? ''}`}
                             </Typography>
                           )}
 

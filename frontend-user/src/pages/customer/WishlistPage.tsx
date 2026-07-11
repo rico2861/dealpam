@@ -103,8 +103,8 @@ export default function WishlistPage() {
             <Typography fontWeight={800} fontSize={22} color="#0F1111" mb={1}>
               Aucun favori pour l'instant
             </Typography>
-            <Typography color="#64748B" fontSize={15} mb={3}>
-              Cliquez sur ❤️ sur un produit pour l'ajouter a vos favoris
+            <Typography color="#64748B" fontSize={15} mb={3} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.6 }}>
+              Cliquez sur <FavoriteBorder sx={{ fontSize: 16, verticalAlign: 'middle' }} /> sur un produit pour l'ajouter a vos favoris
             </Typography>
             <Button component={Link} to="/products" variant="contained"
               sx={{ bgcolor: BLUE, borderRadius: 2.5, px: 3.5, fontWeight: 700,
