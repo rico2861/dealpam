@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
-import { ThemeProvider, createTheme, CssBaseline, Box, Typography } from '@mui/material';
+import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 import { useCallback, useEffect } from 'react';
 import { useAuthStore } from './store/auth.store';
 import { useInactivityLogout } from './hooks/useInactivityLogout';
@@ -134,27 +134,19 @@ function LoginGuard({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-// Écran neutre affiché le temps que le store d'auth se réhydrate depuis
-// localStorage après un refresh — évite tout flash de mauvais contenu
-// (redirection vers /login, mauvais layout vendeur/client, requêtes lancées
-// avant que `user` soit connu) le temps de quelques millisecondes.
-function BootScreen() {
-  return (
-    <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#F4F5F7' }}>
-      <Typography sx={{ fontWeight: 900, fontSize: 22, letterSpacing: '-0.5px', color: '#111', opacity: 0.35 }}>
-        Deal<span style={{ color: '#FF9900' }}>Pam</span>
-      </Typography>
-    </Box>
-  );
-}
-
 export default function App() {
   const { user, refreshProfile, hasHydrated } = useAuthStore();
 
   // Sync role & profile from server on every app load (handles role upgrades like buyer→seller)
-  useEffect(() => { if (hasHydrated && user) refreshProfile(); }, [hasHydrated]); // eslint-disable-line
+  useEffect(() => { if (user) refreshProfile(); }, []); // eslint-disable-line
 
-  if (!hasHydrated) return <BootScreen />;
+  // NOTE : le gate bloquant sur hasHydrated a été retiré (2026-07) — il a provoqué
+  // un écran de chargement infini en production (BootScreen figé indéfiniment,
+  // site totalement inaccessible) quand le callback onRehydrateStorage de
+  // zustand/persist ne s'est pas déclenché comme prévu dans cet environnement.
+  // `hasHydrated` reste disponible dans le store pour un usage futur non-bloquant,
+  // mais ne doit plus jamais conditionner le rendu de toute l'app.
+  void hasHydrated;
 
   return (
     <ThemeProvider theme={theme}>
