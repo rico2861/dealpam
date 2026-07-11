@@ -17,6 +17,7 @@ import {
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import api from '../../api/axios';
+import { getViewerId } from '../../utils/viewerId';
 import { ProductDetailSkeleton } from '../../components/shared/Skeletons';
 import { useDelayedLoading } from '../../hooks/useDelayedLoading';
 import { useFixedBottomBarOffset } from '../../hooks/useFixedBottomBarOffset';
@@ -242,7 +243,7 @@ export default function ProductDetailPage() {
 
   const { data: product, isLoading } = useQuery({
     queryKey: ['product', slug],
-    queryFn: () => api.get(`/products/${slug}`).then(r => r.data),
+    queryFn: () => api.get(`/products/${slug}`, { headers: { 'x-viewer-id': getViewerId() } }).then(r => r.data),
     staleTime: 60_000,
   });
   const showSkel = useDelayedLoading(isLoading);

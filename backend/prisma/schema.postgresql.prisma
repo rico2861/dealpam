@@ -186,6 +186,7 @@ model User {
   conversations        ConversationUser[]
   assignedConversations Conversation[]     @relation("ConvAssignedAgent")
   appointments          Appointment[]
+  followedStores        StoreFollow[]
 
   createdAt            DateTime  @default(now()) @map("created_at")
   updatedAt            DateTime  @updatedAt @map("updated_at")
@@ -303,11 +304,15 @@ model Store {
   // Booste par une campagne pub "boutique" active tant que cette date est dans le futur —
   // s'auto-expire sans cron : les requêtes de classement vérifient juste adBoostedUntil > now.
   adBoostedUntil   DateTime? @map("ad_boosted_until")
+  // Nombre de clients abonnés à cette boutique (StoreFollow) — dénormalisé pour
+  // affichage rapide, tenu à jour par storesService.follow()/unfollow().
+  followersCount   Int       @default(0) @map("followers_count")
   products     Product[]
   reviews      Review[]
   orders       Order[]
   appointments Appointment[]
   adCampaigns  AdCampaign[]
+  followers    StoreFollow[]
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
 
@@ -316,6 +321,22 @@ model Store {
   @@index([department])
   @@index([adBoostedUntil])
   @@map("stores")
+}
+
+// Abonnement d'un client à une boutique (pas à confondre avec SellerSubscription,
+// qui est l'abonnement payant du VENDEUR à un plan DealPam). Sert à notifier le
+// client des nouveautés de cette boutique et à afficher un compteur d'abonnés.
+model StoreFollow {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  storeId   String   @map("store_id")
+  store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([userId, storeId])
+  @@index([storeId])
+  @@map("store_follows")
 }
 
 model SubscriptionPlan {
@@ -515,6 +536,7 @@ model Product {
   appointments    Appointment[]
   adCampaigns     AdCampaign[]
   flashSaleItems  FlashSaleItem[]
+  viewLogs        ProductView[]
 
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
@@ -534,6 +556,21 @@ model Product {
   @@index([storeId, productType, status])
   @@index([categoryId, status])
   @@map("products")
+}
+
+// Journal des vues produit — sert UNIQUEMENT à dédupliquer Product.viewCount
+// (ne pas recompter la même session dans une courte fenêtre, voir
+// products.service.ts). viewerKey = id anonyme généré côté client (localStorage)
+// pour les visiteurs non connectés, ou userId pour les visiteurs connectés.
+model ProductView {
+  id        String   @id @default(uuid())
+  productId String   @map("product_id")
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  viewerKey String   @map("viewer_key")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([productId, viewerKey, createdAt])
+  @@map("product_views")
 }
 
 model ProductImage {

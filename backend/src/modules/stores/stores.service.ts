@@ -101,8 +101,18 @@ export class StoresService {
     const plan   = seller.subscriptions[0]?.plan;
     const maxStores = (plan as any)?.maxStores ?? DEFAULT_MAX_STORES[(plan as any)?.tier ?? 'STARTER'] ?? 1;
 
+    // Vues cumulées des produits, par boutique — pour affichage "Vues" sur chaque carte.
+    const storesWithViews = await Promise.all(
+      (seller.stores as any[]).map(async (store) => {
+        const viewsAgg = await this.prisma.product.aggregate({
+          where: { storeId: store.id }, _sum: { viewCount: true },
+        });
+        return { ...store, totalViews: viewsAgg._sum.viewCount || 0 };
+      }),
+    );
+
     return {
-      stores:    seller.stores,
+      stores:    storesWithViews,
       maxStores,
       canCreate: (seller.stores as any[]).length < maxStores,
     };
@@ -277,5 +287,58 @@ export class StoresService {
     }
     // Fallback: SHOP + timestamp base36
     return `SHOP-${Date.now().toString(36).toUpperCase().slice(-4)}`;
+  }
+
+  // ── Abonnement client à une boutique ("suivre") ───────────────────────────
+
+  async follow(userId: string, storeId: string) {
+    const store = await this.prisma.store.findUnique({ where: { id: storeId }, select: { id: true } });
+    if (!store) throw new NotFoundException('Boutique introuvable');
+
+    const existing = await this.prisma.storeFollow.findUnique({
+      where: { userId_storeId: { userId, storeId } },
+    });
+    if (existing) return { following: true };
+
+    await this.prisma.$transaction([
+      this.prisma.storeFollow.create({ data: { userId, storeId } }),
+      this.prisma.store.update({ where: { id: storeId }, data: { followersCount: { increment: 1 } } }),
+    ]);
+    return { following: true };
+  }
+
+  async unfollow(userId: string, storeId: string) {
+    const existing = await this.prisma.storeFollow.findUnique({
+      where: { userId_storeId: { userId, storeId } },
+    });
+    if (!existing) return { following: false };
+
+    await this.prisma.$transaction([
+      this.prisma.storeFollow.delete({ where: { id: existing.id } }),
+      this.prisma.store.update({ where: { id: storeId }, data: { followersCount: { decrement: 1 } } }),
+    ]);
+    return { following: false };
+  }
+
+  async getFollowStatus(userId: string, storeId: string) {
+    const existing = await this.prisma.storeFollow.findUnique({
+      where: { userId_storeId: { userId, storeId } },
+      select: { id: true },
+    });
+    return { following: !!existing };
+  }
+
+  // Boutiques suivies par le client — pour une éventuelle page "Mes abonnements".
+  async getFollowedStores(userId: string) {
+    const follows = await this.prisma.storeFollow.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        store: {
+          select: { id: true, name: true, slug: true, logoUrl: true, city: true, department: true, avgRating: true, followersCount: true },
+        },
+      },
+    });
+    return follows.map(f => f.store);
   }
 }

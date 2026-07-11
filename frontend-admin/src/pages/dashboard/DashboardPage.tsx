@@ -1,5 +1,5 @@
 import { Container, Grid, Card, CardContent, Typography, Box, CircularProgress, Chip, alpha } from '@mui/material';
-import { People, Store, Inventory, ShoppingBag, Payment, Pending, TrendingUp, ArrowUpward, ArrowDownward } from '@mui/icons-material';
+import { People, Store, Inventory, ShoppingBag, Payment, Pending, TrendingUp, ArrowUpward, ArrowDownward, VisibilityOutlined } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, Legend } from 'recharts';
 import api from '../../api/axios';
@@ -85,6 +85,9 @@ export default function DashboardPage() {
         </Grid>
         <Grid item xs={6} sm={4} md={2}>
           <StatCard icon={Pending} label="En attente" value={(stats?.pendingSellers || 0) + (stats?.pendingProducts || 0)} sub="Vendeurs + Produits" color="#EF4444" />
+        </Grid>
+        <Grid item xs={6} sm={4} md={2}>
+          <StatCard icon={VisibilityOutlined} label="Vues produits" value={(stats?.totalProductViews || 0).toLocaleString()} sub="Tous vendeurs confondus" color="#8B5CF6" />
         </Grid>
       </Grid>
 

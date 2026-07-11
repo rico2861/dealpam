@@ -176,7 +176,7 @@ export class ProductsService {
     return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
-  async findOne(slug: string) {
+  async findOne(slug: string, viewerKey?: string, currentUserId?: string) {
     const product = await this.prisma.product.findUnique({
       where: { slug },
       include: {
@@ -192,8 +192,35 @@ export class ProductsService {
     });
     if (!product) throw new NotFoundException('Produit introuvable');
 
-    await this.prisma.product.update({ where: { slug }, data: { viewCount: { increment: 1 } } });
+    await this.registerView(product.id, product.store?.seller?.userId, viewerKey, currentUserId);
     return product;
+  }
+
+  // Incrémente viewCount une seule fois par "session" (même viewerKey/userId dans
+  // les 30 dernières minutes) et jamais pour le vendeur qui consulte sa propre
+  // fiche — sinon "vues produit" ne reflète que le nombre de requêtes HTTP, pas
+  // un trafic réel (rafraîchir 10 fois = +10 vues, vérifier sa propre fiche compte
+  // comme un visiteur).
+  private async registerView(productId: string, sellerUserId?: string, viewerKey?: string, currentUserId?: string) {
+    if (currentUserId && sellerUserId && currentUserId === sellerUserId) return;
+
+    const key = currentUserId || viewerKey;
+    if (!key) {
+      // Aucun identifiant fourni (ancien client en cache, requête directe...) —
+      // on ne peut pas dédupliquer, mais on compte quand même pour ne pas perdre la vue.
+      await this.prisma.product.update({ where: { id: productId }, data: { viewCount: { increment: 1 } } });
+      return;
+    }
+
+    const DEDUPE_WINDOW_MS = 30 * 60 * 1000;
+    const recent = await this.prisma.productView.findFirst({
+      where: { productId, viewerKey: key, createdAt: { gte: new Date(Date.now() - DEDUPE_WINDOW_MS) } },
+      select: { id: true },
+    });
+    if (recent) return;
+
+    await this.prisma.productView.create({ data: { productId, viewerKey: key } });
+    await this.prisma.product.update({ where: { id: productId }, data: { viewCount: { increment: 1 } } });
   }
 
   // ── Vendeur : récupérer un de ses produits par id (page d'édition) ────────

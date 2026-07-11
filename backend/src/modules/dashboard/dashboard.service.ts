@@ -8,7 +8,7 @@ export class DashboardService {
   async getAdminStats() {
     // Exclut le staff interne (admin, modérateurs, etc.) — seuls les vrais clients/vendeurs comptent
     const STAFF_ROLES = ['ADMIN', 'SUPER_ADMIN', 'MODERATOR', 'CUSTOMER_CARE', 'PARTNER', 'ACCOUNTANT'];
-    const [totalUsers, totalSellers, pendingSellers, totalProducts, pendingProducts, totalOrders, activeSubscriptions] = await Promise.all([
+    const [totalUsers, totalSellers, pendingSellers, totalProducts, pendingProducts, totalOrders, activeSubscriptions, viewsAgg] = await Promise.all([
       this.prisma.user.count({ where: { role: { notIn: STAFF_ROLES as any } } }),
       this.prisma.seller.count(),
       this.prisma.seller.count({ where: { status: 'PENDING' } }),
@@ -16,15 +16,20 @@ export class DashboardService {
       this.prisma.product.count({ where: { status: 'PENDING_REVIEW' } }),
       this.prisma.order.count(),
       this.prisma.sellerSubscription.count({ where: { isActive: true, endDate: { gt: new Date() } } }),
+      // Vues cumulées sur TOUS les produits de la plateforme, tous vendeurs confondus.
+      this.prisma.product.aggregate({ _sum: { viewCount: true } }),
     ]);
-    return { totalUsers, totalSellers, pendingSellers, totalProducts, pendingProducts, totalOrders, activeSubscriptions };
+    return {
+      totalUsers, totalSellers, pendingSellers, totalProducts, pendingProducts, totalOrders, activeSubscriptions,
+      totalProductViews: viewsAgg._sum.viewCount || 0,
+    };
   }
 
   async getSellerStats(userId: string) {
     const seller = await this.prisma.seller.findUnique({
       where: { userId },
       include: {
-        stores:        { select: { id: true, name: true, isPrimary: true, avgRating: true, totalReviews: true, totalSales: true, isVerified: true } },
+        stores:        { select: { id: true, name: true, isPrimary: true, avgRating: true, totalReviews: true, totalSales: true, isVerified: true, followersCount: true } },
         subscriptions: { where: { isActive: true }, include: { plan: true }, take: 1 },
         documents:     { select: { id: true, type: true, isValid: true } },
       },
@@ -54,12 +59,16 @@ export class DashboardService {
     // Per-store breakdown
     const storeStats = await Promise.all(
       seller.stores.map(async (store: any) => {
-        const [pCount, oCount, rev] = await Promise.all([
+        const [pCount, oCount, rev, viewsAgg] = await Promise.all([
           this.prisma.product.count({ where: { storeId: store.id } }),
           this.prisma.order.count({ where: { storeId: store.id } }),
           this.prisma.order.aggregate({ where: { storeId: store.id, status: 'DELIVERED' }, _sum: { totalHTG: true } }),
+          this.prisma.product.aggregate({ where: { storeId: store.id }, _sum: { viewCount: true } }),
         ]);
-        return { ...store, productCount: pCount, orderCount: oCount, revenue: Number(rev._sum.totalHTG || 0) };
+        return {
+          ...store, productCount: pCount, orderCount: oCount, revenue: Number(rev._sum.totalHTG || 0),
+          totalViews: viewsAgg._sum.viewCount || 0,
+        };
       }),
     );
 

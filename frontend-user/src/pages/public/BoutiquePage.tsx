@@ -15,8 +15,9 @@ import {
   TrendingUp, ThumbUp, Storefront,
   AttachFile as AttachFileIcon, DoneAll as DoneAllIcon,
   SmartToyOutlined as SmartToyIcon,
+  Check, PersonAdd,
 } from '@mui/icons-material';
-import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
+import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import api from '../../api/axios';
 import { useAuthStore } from '../../store/auth.store';
@@ -459,6 +460,7 @@ export default function BoutiquePage() {
   const navigate  = useNavigate();
   const { user }  = useAuthStore();
   const { enqueueSnackbar } = useSnackbar();
+  const qc = useQueryClient();
 
   const [tab,      setTab]      = useState(0);
   const [chatOpen, setChatOpen] = useState(false);
@@ -475,6 +477,23 @@ export default function BoutiquePage() {
     queryKey: ['boutique', slug],
     queryFn:  () => api.get(`/stores/${slug}`).then(r => r.data),
     staleTime: 60_000,
+  });
+
+  // Abonnement à la boutique — uniquement pour un client connecté.
+  const { data: followStatus } = useQuery({
+    queryKey: ['store-follow', store?.id],
+    queryFn:  () => api.get(`/stores/${store.id}/follow-status`).then(r => r.data),
+    enabled:  !!store?.id && !!user,
+  });
+  const followMut = useMutation({
+    mutationFn: () => followStatus?.following
+      ? api.delete(`/stores/${store.id}/follow`).then(r => r.data)
+      : api.post(`/stores/${store.id}/follow`).then(r => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['store-follow', store?.id] });
+      qc.invalidateQueries({ queryKey: ['boutique', slug] });
+    },
+    onError: (e: any) => enqueueSnackbar(e?.response?.data?.message || 'Erreur', { variant: 'error' }),
   });
   const showSkel = useDelayedLoading(isLoading);
 
@@ -623,11 +642,29 @@ export default function BoutiquePage() {
                 </Box>
                 <Chip label={`${store._count?.products ?? 0} produits`} size="small"
                   sx={{ height: 20, fontSize: 11, bgcolor: alpha(ORANGE, 0.08), color: ORANGE, fontWeight: 700 }} />
+                {store.followersCount > 0 && (
+                  <Chip label={`${store.followersCount} abonné${store.followersCount > 1 ? 's' : ''}`} size="small"
+                    sx={{ height: 20, fontSize: 11, bgcolor: alpha('#10B981', 0.08), color: '#10B981', fontWeight: 700 }} />
+                )}
               </Box>
             </Box>
 
             {/* Actions */}
             <Box sx={{ display: 'flex', gap: 1, flexShrink: 0, pb: 0.8 }}>
+              <Button variant={followStatus?.following ? 'outlined' : 'contained'}
+                startIcon={followStatus?.following ? <Check /> : <PersonAdd />}
+                disabled={followMut.isPending}
+                onClick={() => { if (!user) navigate('/login'); else followMut.mutate(); }}
+                sx={followStatus?.following ? {
+                  borderRadius: 2.5, fontWeight: 700, borderColor: alpha('#10B981', 0.4), color: '#10B981',
+                  '&:hover': { borderColor: '#10B981', bgcolor: alpha('#10B981', 0.06) },
+                } : {
+                  background: `linear-gradient(135deg, #0EA271, #10B981)`,
+                  boxShadow: '0 4px 16px rgba(16,185,129,0.35)', borderRadius: 2.5, fontWeight: 700,
+                  '&:hover': { boxShadow: '0 6px 24px rgba(16,185,129,0.5)' },
+                }}>
+                {followStatus?.following ? 'Abonné' : "S'abonner"}
+              </Button>
               <Button variant="contained" startIcon={<Chat />}
                 onClick={() => { if (!user) navigate('/login'); else setChatOpen(p => !p); }}
                 sx={{ background: `linear-gradient(135deg, #E05A00, ${ORANGE})`,

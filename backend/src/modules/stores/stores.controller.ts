@@ -82,6 +82,36 @@ export class StoresController {
     };
   }
 
+  // ── Client : suivre une boutique ────────────────────────────────────────────
+
+  @Post(':id/follow')
+  @ApiBearerAuth() @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: "S'abonner à une boutique" })
+  follow(@CurrentUser() u: any, @Param('id') id: string) {
+    return this.storesService.follow(u.id, id);
+  }
+
+  @Delete(':id/follow')
+  @ApiBearerAuth() @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Se désabonner d\'une boutique' })
+  unfollow(@CurrentUser() u: any, @Param('id') id: string) {
+    return this.storesService.unfollow(u.id, id);
+  }
+
+  @Get(':id/follow-status')
+  @ApiBearerAuth() @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: "Vérifie si le client est abonné à cette boutique" })
+  getFollowStatus(@CurrentUser() u: any, @Param('id') id: string) {
+    return this.storesService.getFollowStatus(u.id, id);
+  }
+
+  @Get('me/followed')
+  @ApiBearerAuth() @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Boutiques suivies par le client connecté' })
+  getFollowedStores(@CurrentUser() u: any) {
+    return this.storesService.getFollowedStores(u.id);
+  }
+
   // ── Seller ────────────────────────────────────────────────────────────────
 
   @Get('me/all')

@@ -3,6 +3,7 @@ import { Response } from 'express';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { ApiTags, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
+import { JwtService } from '@nestjs/jwt';
 import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
 import { RolesGuard } from '../../shared/guards/roles.guard';
 import { Roles } from '../../shared/decorators/roles.decorator';
@@ -23,7 +24,7 @@ const MULTI_UPLOAD = FileFieldsInterceptor(
 @ApiTags('Products')
 @Controller('products')
 export class ProductsController {
-  constructor(private productsService: ProductsService) {}
+  constructor(private productsService: ProductsService, private jwt: JwtService) {}
 
   @Get()
   async findAll(@Query() filter: FilterProductsDto, @Res({ passthrough: true }) res: Response) {
@@ -114,7 +115,18 @@ export class ProductsController {
     return this.productsService.getMyProductById(id, user.id);
   }
 
-  @Get(':slug') findOne(@Param('slug') slug: string) { return this.productsService.findOne(slug); }
+  @Get(':slug')
+  findOne(@Param('slug') slug: string, @Req() req: any) {
+    const viewerKey = req.headers['x-viewer-id'] as string | undefined;
+    let currentUserId: string | undefined;
+    const auth = req.headers['authorization'] as string | undefined;
+    if (auth?.startsWith('Bearer ')) {
+      try {
+        currentUserId = this.jwt.verify(auth.slice(7)).sub;
+      } catch { /* token absent/expiré/invalide — reste anonyme, la route est publique */ }
+    }
+    return this.productsService.findOne(slug, viewerKey, currentUserId);
+  }
 
   @Post()
   @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('SELLER')

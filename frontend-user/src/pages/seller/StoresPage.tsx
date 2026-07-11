@@ -9,7 +9,7 @@ import {
   Add, Edit, Delete, Star, Inventory2Outlined, ShoppingBagOutlined, Verified,
   ContentCopy, OpenInNew, StorefrontOutlined, LocationOnOutlined, ArrowForward,
   PhoneOutlined, LocalShippingOutlined, AccountBalanceWalletOutlined,
-  PlaceOutlined, Close, AccessTimeOutlined,
+  PlaceOutlined, Close, AccessTimeOutlined, VisibilityOutlined, PeopleAltOutlined,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
@@ -462,9 +462,11 @@ function StoreCard({ store, onEdit, onDelete, onCopy }: any) {
             { icon: <Inventory2Outlined sx={{ fontSize: 12, color: OR }} />, val: store._count?.products ?? 0, lbl: 'produits' },
             { icon: <Star sx={{ fontSize: 12, color: '#F59E0B' }} />, val: (store.avgRating ?? 0).toFixed(1), lbl: `(${store.totalReviews ?? 0})` },
             { icon: <ShoppingBagOutlined sx={{ fontSize: 12, color: BLU }} />, val: store.totalSales ?? 0, lbl: 'ventes' },
-          ].map(({ icon, val, lbl }, i) => (
+            { icon: <VisibilityOutlined sx={{ fontSize: 12, color: '#8B5CF6' }} />, val: (store.totalViews ?? 0).toLocaleString(), lbl: 'vues' },
+            { icon: <PeopleAltOutlined sx={{ fontSize: 12, color: GRN }} />, val: (store.followersCount ?? 0).toLocaleString(), lbl: 'abonnés' },
+          ].map(({ icon, val, lbl }, i, arr) => (
             <Box key={i} sx={{ flex: 1, py: 0.9, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5,
-              borderRight: i < 2 ? `1px solid ${BORD}` : 'none' }}>
+              borderRight: i < arr.length - 1 ? `1px solid ${BORD}` : 'none' }}>
               {icon}
               <Typography fontSize={12.5} fontWeight={800} color={TXT}>{val}</Typography>
               <Typography fontSize={10.5} color={SUB}>{lbl}</Typography>

@@ -227,13 +227,17 @@ export default function SellerProductsPage({ mode = 'products' }: { mode?: 'prod
                     )}
                   </Box>
                   {mode !== 'services' && (
-                    <Box sx={{ flex: 1, px: 2, py: 1.2 }}>
+                    <Box sx={{ flex: 1, px: 2, py: 1.2, borderRight: `1px solid ${BORD}` }}>
                       <Typography fontSize={10.5} color={SUB} textTransform="uppercase" letterSpacing="0.4px">Stock</Typography>
                       <Typography fontSize={14} fontWeight={800} color={isOutStock ? RED : isLowStock ? YLW : TXT}>
                         {p.stock}{isOutStock ? ' · rupture' : isLowStock ? ' · faible' : ''}
                       </Typography>
                     </Box>
                   )}
+                  <Box sx={{ flex: 1, px: 2, py: 1.2 }}>
+                    <Typography fontSize={10.5} color={SUB} textTransform="uppercase" letterSpacing="0.4px">Vues</Typography>
+                    <Typography fontSize={14} fontWeight={800} color={TXT}>{(p.viewCount ?? 0).toLocaleString()}</Typography>
+                  </Box>
                 </Box>
 
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, py: 1.5, gap: 1 }}>
