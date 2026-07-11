@@ -5,7 +5,7 @@ import {
   LinearProgress, IconButton, Collapse,
 } from '@mui/material';
 import {
-  AutoAwesome, Lock, TrendingUp, Search, ContentCopy,
+  AutoAwesome, Lock, TrendingUp, Search, ContentCopy, Diamond,
   LightbulbOutlined, Check, KeyboardArrowDown, KeyboardArrowUp,
 } from '@mui/icons-material';
 import { useQuery, useMutation } from '@tanstack/react-query';
@@ -175,10 +175,10 @@ export default function BoosterIaPage() {
                 </Box>
               ))}
             </Box>
-            <Button onClick={() => navigate('/seller/subscription')}
+            <Button onClick={() => navigate('/seller/subscription')} startIcon={<Diamond sx={{ fontSize: 16 }} />}
               sx={{ bgcolor: GLD, color: '#111', borderRadius: '12px', fontWeight: 800, px: 3, py: 1.1,
                 boxShadow: '0 4px 14px rgba(245,158,11,0.35)', '&:hover': { bgcolor: '#D97706' } }}>
-              Passer à Elite ✦
+              Passer à Elite
             </Button>
           </Box>
         )}

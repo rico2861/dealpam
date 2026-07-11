@@ -256,7 +256,9 @@ function OfferStatusBlock({ order, item }: { order: any; item: any }) {
   if (item.offerStatus === 'ACCEPTED') {
     return (
       <Box sx={{ mt: 1, mb: 1, p: 1.4, borderRadius: '10px', bgcolor: alpha(GRN, 0.08), border: `1px solid ${alpha(GRN, 0.25)}` }}>
-        <Typography fontSize={12.5} fontWeight={700} color={GRN}>✓ Offre acceptée à {fmt(Number(item.unitPrice))}.</Typography>
+        <Typography fontSize={12.5} fontWeight={700} color={GRN} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <CheckCircle sx={{ fontSize: 14 }} /> Offre acceptée à {fmt(Number(item.unitPrice))}.
+        </Typography>
       </Box>
     );
   }

@@ -40,7 +40,7 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 function KpiCard({ icon: Icon, label, value, sub, color, to }: {
-  icon: any; label: string; value: any; sub?: string; color: string; to?: string;
+  icon: any; label: string; value: any; sub?: React.ReactNode; color: string; to?: string;
 }) {
   const inner = (
     <Box sx={{ p:2.5, borderRadius:'16px', bgcolor:CARD, border:`1px solid ${BORD}`,
@@ -55,7 +55,7 @@ function KpiCard({ icon: Icon, label, value, sub, color, to }: {
       </Box>
       <Typography fontSize={12} fontWeight={600} color={SUB} mb={0.3}>{label}</Typography>
       <Typography fontWeight={900} color={TXT} sx={{ fontSize:24, lineHeight:1.1, letterSpacing:'-0.5px' }}>{value}</Typography>
-      {sub && <Typography fontSize={11.5} color={SUB} mt={0.5}>{sub}</Typography>}
+      {sub && <Typography fontSize={11.5} color={SUB} mt={0.5} sx={{ display: 'flex', alignItems: 'center', gap: 0.4 }}>{sub}</Typography>}
     </Box>
   );
   return to ? <Box component={Link} to={to} sx={{ textDecoration:'none', display:'block', height:'100%' }}>{inner}</Box> : inner;
@@ -308,7 +308,7 @@ export default function SellerDashboard() {
         <KpiCard icon={Insights}    label="Panier moyen"     value={stats?.orders ? fmtHTG(avgOrderValue) : '—'} color="#06B6D4"/>
         <KpiCard icon={AccountBalanceWallet} label="Solde wallet" value={fmtHTG(Number(wallet?.balance ?? 0))} color={GLD} to="/seller/wallet"/>
         <KpiCard icon={Store}       label="Boutiques"        value={stats?.storeCount ?? 0}         color={OR}
-          sub={stats?.isVerified ? '✓ Vérifié' : undefined} to="/seller/stores"/>
+          sub={stats?.isVerified ? <><CheckCircle sx={{ fontSize: 12 }} /> Vérifié</> : undefined} to="/seller/stores"/>
       </Box>
 
       {/* ── Quick actions ───────────────────────────────────────────────────── */}

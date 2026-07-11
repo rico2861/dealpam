@@ -291,8 +291,8 @@ export default function SellerProductsPage({ mode = 'products' }: { mode?: 'prod
             Êtes-vous sûr de vouloir supprimer <strong style={{ color: TXT }}>"{del.name}"</strong> ?
           </Typography>
           <Box sx={{ mt: 1.5, p: 1.5, borderRadius: '10px', bgcolor: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
-            <Typography fontSize={12.5} color={RED}>
-              ⚠ Cette action est irréversible et supprimera toutes les images associées.
+            <Typography fontSize={12.5} color={RED} sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
+              <Warning sx={{ fontSize: 14 }} /> Cette action est irréversible et supprimera toutes les images associées.
             </Typography>
           </Box>
         </DialogContent>

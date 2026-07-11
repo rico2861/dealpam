@@ -8,7 +8,7 @@ import {
   Add, Campaign, TrendingUp, Visibility, TouchApp, ShoppingCart,
   Pause, PlayArrow, Cancel, BarChart, FlashOn, LocationOn,
   AutoAwesome, Tune, AccountBalanceWallet, Store, Inventory,
-  Search, CheckCircle, OpenInNew, Lock, Insights, PictureAsPdf, TableChart, Download,
+  Search, CheckCircle, OpenInNew, Lock, Insights, PictureAsPdf, TableChart, Download, Close,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
@@ -198,7 +198,7 @@ function MultiSearchableSelector({
                 ? <Avatar src={item.img} variant="rounded" sx={{ width: 20, height: 20, borderRadius: '5px' }} />
                 : <Box sx={{ width: 20, height: 20, borderRadius: '5px', bgcolor: `${OR}20`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Inventory sx={{ fontSize: 11, color: OR }} /></Box>}
               <Typography fontSize={12} fontWeight={600} color={OR} noWrap sx={{ maxWidth: 140 }}>{item.name}</Typography>
-              <Box onClick={() => toggle(item.id)} sx={{ cursor: 'pointer', display: 'flex', color: OR, opacity: 0.7, '&:hover': { opacity: 1 } }}>✕</Box>
+              <Box onClick={() => toggle(item.id)} sx={{ cursor: 'pointer', display: 'flex', color: OR, opacity: 0.7, '&:hover': { opacity: 1 } }}><Close sx={{ fontSize: 13 }} /></Box>
             </Box>
           ))}
         </Box>
@@ -268,8 +268,8 @@ function PayMethodCard({ method, selected, onClick, balance, budget }: { method:
         </Typography>
       </Box>
       {isWallet && balance != null && (
-        <Typography fontSize={12} color={insufficient ? RED : GRN} fontWeight={600}>
-          Solde: {balance.toLocaleString()} HTG {insufficient ? '— insuffisant' : '✓'}
+        <Typography fontSize={12} color={insufficient ? RED : GRN} fontWeight={600} sx={{ display: 'flex', alignItems: 'center', gap: 0.4 }}>
+          Solde: {balance.toLocaleString()} HTG {insufficient ? '— insuffisant' : <CheckCircle sx={{ fontSize: 13 }} />}
         </Typography>
       )}
       {!isWallet && <Typography fontSize={12} color={SUB}>Vous serez redirigé vers MonCash pour payer {budget.toLocaleString()} HTG</Typography>}

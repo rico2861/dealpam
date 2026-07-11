@@ -461,9 +461,9 @@ export default function LocationModal({ open, onClose }: { open: boolean; onClos
               }
             </Box>
             <Box sx={{ flex:1, minWidth:0, textAlign:'left' }}>
-              <Typography fontWeight={700} fontSize={14} color={gpsTitleC} lineHeight={1.25}>
+              <Typography fontWeight={700} fontSize={14} color={gpsTitleC} lineHeight={1.25} sx={{ display:'flex', alignItems:'center', gap:0.5 }}>
                 {gpsIsLoad ? 'Localisation en cours...'
-                 : gpsIsDone ? 'Position détectée ✓'
+                 : gpsIsDone ? <>Position détectée <Check sx={{ fontSize:15, color:gpsTitleC }}/></>
                  : gpsIsError ? 'Erreur GPS'
                  : 'Utiliser ma position GPS'}
               </Typography>

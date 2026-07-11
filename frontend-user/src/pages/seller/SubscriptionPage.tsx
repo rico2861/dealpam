@@ -50,7 +50,7 @@ function buildPlanFeatures(plan: any): string[] {
   f.push(`${plan.maxImages} image${plan.maxImages > 1 ? 's' : ''} par produit`);
   if (plan.maxStores > 1) f.push(`Jusqu'à ${plan.maxStores} boutiques`);
   if (plan.hasEliteBadge) f.push('Badge Elite');
-  else if (plan.hasVerifiedBadge) f.push('Badge vendeur vérifié ✓');
+  else if (plan.hasVerifiedBadge) f.push('Badge vendeur vérifié');
   if (plan.hasPrioritySearch) f.push('Priorité dans les résultats de recherche');
   if (plan.hasKeywordTargeting) f.push('Mots-clés ciblés pour plus de visibilité');
   if (plan.hasHomepageAd) f.push('Encart mis en avant sur la page d\'accueil');
@@ -271,8 +271,9 @@ export default function SellerSubscriptionPage() {
               )}
               {isCurrent && (
                 <Box sx={{ position: 'absolute', top: 18, right: 14, px: 1, py: 0.3, borderRadius: '7px',
-                  bgcolor: alpha(color, 0.14), border: `1px solid ${alpha(color, 0.4)}` }}>
-                  <Typography fontSize={9.5} fontWeight={800} color={color} letterSpacing="0.4px">✓ ACTUEL</Typography>
+                  bgcolor: alpha(color, 0.14), border: `1px solid ${alpha(color, 0.4)}`, display: 'flex', alignItems: 'center', gap: 0.4 }}>
+                  <CheckCircle sx={{ fontSize: 11, color }} />
+                  <Typography fontSize={9.5} fontWeight={800} color={color} letterSpacing="0.4px">ACTUEL</Typography>
                 </Box>
               )}
               {isScheduled && !isCurrent && (

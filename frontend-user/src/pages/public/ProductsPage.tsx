@@ -484,15 +484,15 @@ export default function ProductsPage() {
   ].filter(Boolean).length;
 
   // Active filter chips (excluding category, shown as pills above)
-  const activeFilterChips: Array<{ label: string; onDelete: () => void }> = [
+  const activeFilterChips: Array<{ label: string; onDelete: () => void; icon?: React.ReactElement }> = [
     ...(fs.dept ? [{ label: fs.dept, onDelete: () => setFs(f => ({ ...f, dept: '' })) }] : []),
     ...(fs.proximity && userDept ? [{ label: userCity || userDept, onDelete: () => setFs(f => ({ ...f, proximity: false })) }] : []),
     ...((fs.priceRange[0] > 0 || fs.priceRange[1] < 50000) ? [{ label: `${fs.priceRange[0].toLocaleString()}–${fs.priceRange[1].toLocaleString()} HTG`, onDelete: () => setFs(f => ({ ...f, priceRange: [0, 50000] })) }] : []),
-    ...(fs.verified ? [{ label: 'Vérifié ✓', onDelete: () => setFs(f => ({ ...f, verified: false })) }] : []),
+    ...(fs.verified ? [{ label: 'Vérifié', icon: <Verified sx={{ fontSize: '14px !important' }} />, onDelete: () => setFs(f => ({ ...f, verified: false })) }] : []),
     ...(fs.delivery ? [{ label: 'Livraison', onDelete: () => setFs(f => ({ ...f, delivery: false })) }] : []),
     ...(fs.onSale ? [{ label: 'Promotion', onDelete: () => setFs(f => ({ ...f, onSale: false })) }] : []),
     ...(fs.inStock ? [{ label: 'En stock', onDelete: () => setFs(f => ({ ...f, inStock: false })) }] : []),
-    ...(fs.minRating > 0 ? [{ label: `${fs.minRating}★ & +`, onDelete: () => setFs(f => ({ ...f, minRating: 0 })) }] : []),
+    ...(fs.minRating > 0 ? [{ label: `${fs.minRating} & +`, icon: <Star sx={{ fontSize: '14px !important' }} />, onDelete: () => setFs(f => ({ ...f, minRating: 0 })) }] : []),
   ];
 
   return (
@@ -641,7 +641,7 @@ export default function ProductsPage() {
             }}>
               {activeFilterChips.map((chip, i) => (
                 <Chip
-                  key={i} label={chip.label} size="small"
+                  key={i} label={chip.label} icon={chip.icon} size="small"
                   onDelete={chip.onDelete}
                   sx={{
                     fontSize: 12, fontWeight: 600, borderRadius: '20px',

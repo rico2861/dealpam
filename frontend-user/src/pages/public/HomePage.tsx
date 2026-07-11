@@ -2127,7 +2127,7 @@ function SponsoredDealCard({ ad, dark }: { ad: any; dark?: boolean }) {
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4, mt: '5px' }}>
             <Box sx={{ display: 'flex' }}>
               {[1,2,3,4,5].map(s => (
-                <Box key={s} component="span" sx={{ fontSize: 10, color: s <= Math.round(ad.avgRating) ? '#F59E0B' : (dark ? 'rgba(255,255,255,0.15)' : '#E5E7EB') }}>★</Box>
+                <Star key={s} sx={{ fontSize: 10, color: s <= Math.round(ad.avgRating) ? '#F59E0B' : (dark ? 'rgba(255,255,255,0.15)' : '#E5E7EB') }} />
               ))}
             </Box>
             <Typography fontSize={9.5} color={dark ? 'rgba(255,255,255,0.35)' : '#64748B'}>{ad.avgRating?.toFixed(1)}</Typography>

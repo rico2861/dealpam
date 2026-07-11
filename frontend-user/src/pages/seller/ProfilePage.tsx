@@ -331,8 +331,8 @@ export default function SellerProfilePage() {
         border: `1px solid ${verProgress === 100 ? 'rgba(16,185,129,0.3)' : 'rgba(59,130,246,0.3)'}` }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
           <Box>
-            <Typography fontWeight={800} fontSize={14} color={TXT}>
-              {verProgress === 100 ? '✓ Profil complet — En vérification' : `Compléter votre profil — ${verProgress}%`}
+            <Typography fontWeight={800} fontSize={14} color={TXT} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              {verProgress === 100 ? <><CheckCircle sx={{ fontSize: 15, color: GRN }} /> Profil complet — En vérification</> : `Compléter votre profil — ${verProgress}%`}
             </Typography>
             <Typography fontSize={12} color={SUB}>{uploaded.length}/{required.length} document{required.length > 1 ? 's' : ''} requis uploadé{uploaded.length > 1 ? 's' : ''}</Typography>
           </Box>

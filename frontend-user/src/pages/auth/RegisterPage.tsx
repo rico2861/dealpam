@@ -623,7 +623,9 @@ export default function RegisterPage() {
                 <Typography sx={{ fontSize: 11.5, color: '#F87171', mt: -1.2, px: 0.5 }}>Ce nom d'utilisateur est déjà pris</Typography>
               )}
               {usernameStatus === 'ok' && (
-                <Typography sx={{ fontSize: 11.5, color: '#34D399', mt: -1.2, px: 0.5 }}>Disponible ✓</Typography>
+                <Typography sx={{ fontSize: 11.5, color: '#34D399', mt: -1.2, px: 0.5, display: 'flex', alignItems: 'center', gap: 0.4 }}>
+                  Disponible <CheckCircle sx={{ fontSize: 13 }} />
+                </Typography>
               )}
 
               {/* Email */}
@@ -647,7 +649,9 @@ export default function RegisterPage() {
                   </Typography>
                 )}
                 {emailStatus === 'ok' && (
-                  <Typography sx={{ fontSize: 11.5, color: '#34D399', mt: 0.6, px: 0.5 }}>Email disponible ✓</Typography>
+                  <Typography sx={{ fontSize: 11.5, color: '#34D399', mt: 0.6, px: 0.5, display: 'flex', alignItems: 'center', gap: 0.4 }}>
+                    Email disponible <CheckCircle sx={{ fontSize: 13 }} />
+                  </Typography>
                 )}
               </Box>
 

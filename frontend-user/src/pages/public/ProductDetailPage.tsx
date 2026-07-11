@@ -1130,7 +1130,7 @@ export default function ProductDetailPage() {
                     <Box sx={{ flex:1, minWidth:220, pt:1 }}>
                       {[5,4,3,2,1].map(s=>{ const pct=[65,20,10,3,2][5-s]; return (
                         <Box key={s} sx={{ display:'flex', alignItems:'center', gap:1.5, mb:1 }}>
-                          <Typography fontSize={13} color={SUB} width={36}>{s} ★</Typography>
+                          <Typography fontSize={13} color={SUB} width={36} sx={{ display:'flex', alignItems:'center', gap:0.3 }}>{s} <Star sx={{ fontSize:12 }}/></Typography>
                           <Box sx={{ flex:1, height:6, bgcolor:'rgba(15,23,42,0.07)', borderRadius:4, overflow:'hidden' }}>
                             <Box sx={{ width:`${pct}%`, height:'100%', bgcolor:GLD, borderRadius:4 }}/>
                           </Box>
@@ -1461,7 +1461,7 @@ function ServiceInfoPanel({ product, serviceConfig, chatLoading, contactSeller, 
       <Typography fontSize={13} color={SUB} mb={1.5}>
         {product.category?.name||'Service'}
         {product.avgRating>0
-          ? <> · {product.avgRating.toFixed(1)} ★ ({product.totalReviews} avis)</>
+          ? <> · {product.avgRating.toFixed(1)} <Star sx={{ fontSize:12, verticalAlign:'middle', mb:'2px' }}/> ({product.totalReviews} avis)</>
           : <> — <Box component="span" sx={{ color:OR, cursor:'pointer', '&:hover':{ textDecoration:'underline' } }}>Aucun avis — soyez le premier</Box></>}
       </Typography>
 

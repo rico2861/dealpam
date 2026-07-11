@@ -599,8 +599,8 @@ export default function SellerOrdersPage() {
         <DialogTitle sx={{ fontWeight: 900, fontSize: 17, color: TXT }}>Annuler la commande ?</DialogTitle>
         <DialogContent>
           <Box sx={{ p: 1.5, borderRadius: '10px', bgcolor: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', mb: 1.5 }}>
-            <Typography fontSize={13} color={RED} fontWeight={600}>
-              ⚠ Cette action est irréversible. Le client sera notifié par email.
+            <Typography fontSize={13} color={RED} fontWeight={600} sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
+              <Warning sx={{ fontSize: 15 }} /> Cette action est irréversible. Le client sera notifié par email.
             </Typography>
           </Box>
           <Typography fontSize={13} color={SUB2}>
