@@ -403,7 +403,11 @@ function DeliveryStep({
 
       <Button fullWidth variant="contained" onClick={onNext}
         disabled={
-          (deliveryType === 'DELIVERY' && ((!selectedAddress && addresses.length > 0) || zonesMismatch || (deliveryZones.length > 0 && selectedZone === null && !zonesMismatch && !!selDept))) ||
+          // Une adresse précise est TOUJOURS requise en livraison à domicile — avant ce
+          // correctif, un client sans adresse enregistrée pouvait continuer en s'appuyant
+          // uniquement sur la ville de son profil (bloc "Mon profil" ci-dessus), et le
+          // vendeur recevait une commande "À domicile" sans aucune adresse exploitable.
+          (deliveryType === 'DELIVERY' && (!selectedAddress || zonesMismatch || (deliveryZones.length > 0 && selectedZone === null && !zonesMismatch && !!selDept))) ||
           (deliveryType === 'PICKUP'   && selectedPickup === null)
         }
         sx={{ mt: 1, py: 1.4, borderRadius: '14px', fontWeight: 600, textTransform: 'none', fontSize: 14.5,

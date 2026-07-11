@@ -350,6 +350,10 @@ function OrderCard({ order, onUpdate, pendingStatus }: { order: any; onUpdate: (
               order.deliveryType && { k: 'Livraison', v: order.deliveryType === 'DELIVERY' ? 'À domicile' : order.deliveryType === 'PICKUP' ? 'Retrait boutique' : 'Contact direct' },
               order.deliveryType === 'PICKUP' && order.pickupPointName && { k: 'Point retrait', v: `${order.pickupPointName}${order.pickupPointAddress ? ` — ${order.pickupPointAddress}` : ''}` },
               order.address && { k: 'Adresse', v: `${order.address.fullName ? order.address.fullName + ' · ' : ''}${order.address.line1}, ${order.address.city}, ${order.address.department}${order.address.phone ? ` · ${order.address.phone}` : ''}` },
+              // Anciennes commandes passées avant l'obligation d'une adresse précise —
+              // aucune adresse enregistrée, seule la ville du profil client est connue.
+              order.deliveryType === 'DELIVERY' && !order.address && (order.user?.city || order.user?.department) &&
+                { k: 'Adresse', v: `${[order.user.city, order.user.department].filter(Boolean).join(', ')} (ville du profil — pas d'adresse précise, contactez le client)` },
               Number(order.shippingHTG) > 0 && { k: 'Frais livraison', v: fmt(Number(order.shippingHTG)) },
               order.chosenPaymentMethod && { k: 'Paiement choisi', v: order.chosenPaymentMethod },
               order.paymentTxRef && { k: 'Réf. TX', v: `${order.paymentTxRef} (${order.paymentTxStatus})` },
