@@ -978,7 +978,7 @@ export class ProductsService {
       if (byCity.length >= 1) return {
         products: byCity.slice(0, limit),
         level: 'city' as const,
-        label: `Produits disponibles a ${city}`,
+        label: `Tendances à ${city}`,
         hasLocalVendor,
       };
     }
@@ -988,7 +988,7 @@ export class ProductsService {
     if (byDept.length >= 1) return {
       products: byDept.slice(0, limit),
       level: 'department' as const,
-      label: `Produits disponibles en ${department}`,
+      label: `Tendances dans votre département — ${department}`,
       hasLocalVendor,
     };
 
@@ -996,7 +996,7 @@ export class ProductsService {
     return {
       products: all.slice(0, limit),
       level: 'national' as const,
-      label: 'Produits populaires en Haiti',
+      label: 'Tendances en Haïti',
       hasLocalVendor,
     };
   }

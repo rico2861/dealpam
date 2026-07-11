@@ -1760,10 +1760,10 @@ function NearYouSection({ products, location, onModal, label, level, hasLocalVen
   const city = location?.city || location?.department;
   const sectionTitle = label
     || (location?.city
-      ? `Produits populaires à ${location.city}`
+      ? `Tendances à ${location.city}`
       : location?.department
-        ? `Produits populaires en ${location.department}`
-        : 'Produits près de vous');
+        ? `Tendances dans votre département — ${location.department}`
+        : 'Produits près de chez vous');
   const isFallback = level === 'national';
 
   if (loading) {
@@ -1785,7 +1785,7 @@ function NearYouSection({ products, location, onModal, label, level, hasLocalVen
             <LocationOn sx={{ fontSize: 44, color: '#E2E8F0', mb: 1 }} />
             <Typography color={BG} fontWeight={700} fontSize={16} mb={0.8}>Personnalisez votre expérience</Typography>
             <Typography color="#64748B" fontSize={13.5} mb={2.5}>
-              Choisissez votre zone pour voir les produits disponibles près de vous
+              Choisissez votre zone pour voir les produits près de chez vous
             </Typography>
             <Button variant="contained" onClick={onModal}
               sx={{ bgcolor: OR, color: 'white', fontWeight: 800, borderRadius: 3, px: 4, py: 1.2, textTransform: 'none', fontSize: 14, '&:hover': { bgcolor: '#E55A00' } }}>
