@@ -9,6 +9,7 @@ import {
   Add, ArrowBack, CheckCircle, Schedule, AddPhotoAlternate, Close,
 } from '@mui/icons-material';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useSnackbar } from 'notistack';
 import api from '../../api/axios';
 import { compressImages } from '../../utils/compressImage';
 
@@ -73,9 +74,13 @@ const DEPTS = ['Ouest','Nord','Nord-Est','Nord-Ouest','Artibonite','Centre','Sud
 
 // ── Image picker ───────────────────────────────────────────────────────────
 
-function ImagePicker({ images, onChange }: { images: File[]; onChange: (files: File[]) => void }) {
+function ImagePicker({ images, onChange, existingImages, onDeleteExisting, deletingImageId }: {
+  images: File[]; onChange: (files: File[]) => void;
+  existingImages?: any[]; onDeleteExisting?: (imageId: string) => void; deletingImageId?: string | null;
+}) {
   const inputRef = useRef<HTMLInputElement>(null);
   const previews = images.map(f => URL.createObjectURL(f));
+  const totalCount = (existingImages?.length ?? 0) + images.length;
 
   return (
     <Box>
@@ -83,6 +88,16 @@ function ImagePicker({ images, onChange }: { images: File[]; onChange: (files: F
         Photos du service (max 5)
       </Typography>
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.2 }}>
+        {/* Photos déjà publiées — chargées depuis le serveur en mode édition */}
+        {existingImages?.map(img => (
+          <Box key={img.id} sx={{ position: 'relative', width: 90, height: 90 }}>
+            <Box component="img" src={img.urlThumb || img.urlMedium || img.urlFull} sx={{ width: 90, height: 90, borderRadius: '10px', objectFit: 'cover', border: `1px solid ${BORD}` }} />
+            <Box onClick={() => onDeleteExisting?.(img.id)}
+              sx={{ position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: '50%', bgcolor: '#EF4444', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 6px rgba(15,23,42,0.2)' }}>
+              {deletingImageId === img.id ? <CircularProgress size={11} sx={{ color: '#fff' }} /> : <Close sx={{ fontSize: 12, color: '#fff' }} />}
+            </Box>
+          </Box>
+        ))}
         {previews.map((src, i) => (
           <Box key={i} sx={{ position: 'relative', width: 90, height: 90 }}>
             <Box component="img" src={src} sx={{ width: 90, height: 90, borderRadius: '10px', objectFit: 'cover', border: `1px solid ${BORD}` }} />
@@ -92,7 +107,7 @@ function ImagePicker({ images, onChange }: { images: File[]; onChange: (files: F
             </Box>
           </Box>
         ))}
-        {images.length < 5 && (
+        {totalCount < 5 && (
           <Box onClick={() => inputRef.current?.click()}
             sx={{ width: 90, height: 90, borderRadius: '10px', border: `1.5px dashed ${BORD}`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', gap: 0.5, '&:hover': { borderColor: OR, bgcolor: 'rgba(255,107,0,0.06)' }, transition: 'all 0.15s' }}>
             <AddPhotoAlternate sx={{ fontSize: 22, color: SUB }} />
@@ -106,7 +121,7 @@ function ImagePicker({ images, onChange }: { images: File[]; onChange: (files: F
           e.target.value = '';
           if (!picked.length) return;
           const compressed = await compressImages(picked);
-          onChange([...images, ...compressed].slice(0, 5));
+          onChange([...images, ...compressed].slice(0, 5 - (existingImages?.length ?? 0)));
         }} />
     </Box>
   );
@@ -318,6 +333,7 @@ function FoodForm({ data, onChange }: { data: any; onChange: (d: any) => void })
 export default function AddServicePage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const { enqueueSnackbar } = useSnackbar();
   const { id } = useParams();
   const isEdit = !!id;
   const [step, setStep]           = useState<'type' | 'form'>(isEdit ? 'form' : 'type');
@@ -325,6 +341,8 @@ export default function AddServicePage() {
   const [storeId, setStoreId]     = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [images, setImages]       = useState<File[]>([]);
+  const [existingImages, setExistingImages] = useState<any[]>([]);
+  const [deletingImageId, setDeletingImageId] = useState<string | null>(null);
   const [error, setError]         = useState('');
 
   const [base, setBase] = useState({
@@ -361,7 +379,19 @@ export default function AddServicePage() {
       department:  existing.department || '',
     });
     try { setExtra(existing.serviceConfig ? JSON.parse(existing.serviceConfig) : {}); } catch { setExtra({}); }
+    setExistingImages(existing.images || []);
   }, [existing]);
+
+  const handleDeleteExistingImage = async (imageId: string) => {
+    setDeletingImageId(imageId);
+    try {
+      await api.delete(`/products/images/${imageId}`);
+      setExistingImages(p => p.filter(img => img.id !== imageId));
+      enqueueSnackbar('Photo supprimée', { variant: 'success' });
+    } catch (e: any) {
+      enqueueSnackbar(e.response?.data?.message || 'Erreur lors de la suppression', { variant: 'error' });
+    } finally { setDeletingImageId(null); }
+  };
 
   const mutation = useMutation({
     mutationFn: (fd: FormData) => isEdit
@@ -558,7 +588,8 @@ export default function AddServicePage() {
 
         {/* Photos */}
         <Box sx={{ bgcolor: CARD, border: `1px solid ${BORD}`, borderRadius: '16px', p: 3, mb: 2.5 }}>
-          <ImagePicker images={images} onChange={setImages} />
+          <ImagePicker images={images} onChange={setImages}
+            existingImages={existingImages} onDeleteExisting={handleDeleteExistingImage} deletingImageId={deletingImageId} />
           <Typography fontSize={11} color={SUB} mt={1}>Ajoutez des photos claires de votre service, local, ou réalisations antérieures.</Typography>
         </Box>
 
