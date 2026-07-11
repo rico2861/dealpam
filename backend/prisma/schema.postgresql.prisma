@@ -253,6 +253,9 @@ model BusinessDocument {
   publicId  String   @map("public_id")
   fileName  String   @map("file_name")
   isValid   Boolean? @map("is_valid")
+  // Motif de refus admin — visible par le vendeur uniquement quand isValid = false.
+  // Sert aussi à demander un renvoi ("update") sans rejet définitif du compte.
+  rejectionReason String? @map("rejection_reason")
   createdAt DateTime @default(now()) @map("created_at")
 
   @@index([sellerId])

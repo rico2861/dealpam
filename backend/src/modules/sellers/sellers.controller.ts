@@ -177,8 +177,9 @@ export class SellersController {
     @Param('sellerId') sellerId: string,
     @Param('docId') docId: string,
     @Body('isValid') isValid: boolean,
+    @Body('rejectionReason') rejectionReason: string,
   ) {
-    return this.sellersService.adminValidateDocument(sellerId, docId, isValid);
+    return this.sellersService.adminValidateDocument(sellerId, docId, isValid, rejectionReason);
   }
 
   // Admin: forcer le badge vérifié manuellement

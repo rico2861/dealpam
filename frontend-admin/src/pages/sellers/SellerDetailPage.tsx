@@ -50,6 +50,8 @@ export default function SellerDetailPage() {
   const [activateOpen, setActivateOpen] = useState(false);
   const [activatePlanId, setActivatePlanId] = useState('');
   const [activateReason, setActivateReason] = useState('');
+  const [docRejectId, setDocRejectId] = useState<string | null>(null);
+  const [docRejectReason, setDocRejectReason] = useState('');
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['seller-detail-full', id],
@@ -74,8 +76,13 @@ export default function SellerDetailPage() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['seller-detail-full', id] }); enqueueSnackbar('Vendeur réactivé', { variant: 'success' }); },
   });
   const validateDocMut = useMutation({
-    mutationFn: ({ docId, isValid }: any) => api.patch(`/sellers/${id}/documents/${docId}/validate`, { isValid }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['seller-detail-full', id] }); enqueueSnackbar('Document mis à jour', { variant: 'success' }); },
+    mutationFn: ({ docId, isValid, rejectionReason }: any) => api.patch(`/sellers/${id}/documents/${docId}/validate`, { isValid, rejectionReason }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['seller-detail-full', id] });
+      setDocRejectId(null); setDocRejectReason('');
+      enqueueSnackbar('Document mis à jour', { variant: 'success' });
+    },
+    onError: (e: any) => enqueueSnackbar(e?.response?.data?.message || 'Erreur', { variant: 'error' }),
   });
   const { data: plansData } = useQuery({
     queryKey: ['subscription-plans-admin'],
@@ -266,7 +273,7 @@ export default function SellerDetailPage() {
                 <IconButton size="small" onClick={() => validateDocMut.mutate({ docId: doc.id, isValid: true })} sx={{ color: '#10B981' }}>
                   <CheckCircle sx={{ fontSize: 16 }} />
                 </IconButton>
-                <IconButton size="small" onClick={() => validateDocMut.mutate({ docId: doc.id, isValid: false })} sx={{ color: '#EF4444' }}>
+                <IconButton size="small" onClick={() => { setDocRejectId(doc.id); setDocRejectReason(''); }} sx={{ color: '#EF4444' }}>
                   <Cancel sx={{ fontSize: 16 }} />
                 </IconButton>
               </Box>
@@ -274,6 +281,26 @@ export default function SellerDetailPage() {
           </Stack>
         )}
       </SectionCard>
+
+      {/* Motif de refus d'un document — visible par le vendeur, qui pourra alors le renvoyer */}
+      <Dialog open={!!docRejectId} onClose={() => setDocRejectId(null)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+        <DialogTitle>Motif du refus du document</DialogTitle>
+        <DialogContent>
+          <Typography fontSize={12.5} color="#888" mb={1.5}>
+            Ce motif sera visible par le vendeur, qui pourra alors renvoyer ce document précis.
+          </Typography>
+          <TextField fullWidth multiline rows={3} value={docRejectReason} onChange={e => setDocRejectReason(e.target.value)}
+            placeholder="Ex : document illisible, informations non conformes…" />
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setDocRejectId(null)}>Annuler</Button>
+          <Button variant="contained" color="error"
+            onClick={() => validateDocMut.mutate({ docId: docRejectId, isValid: false, rejectionReason: docRejectReason })}
+            disabled={!docRejectReason.trim() || validateDocMut.isPending} sx={{ borderRadius: 2 }}>
+            {validateDocMut.isPending ? 'Envoi…' : 'Refuser le document'}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Produits */}
       <SectionCard title={`Produits & services (${data.products?.length ?? 0})`} icon={<Inventory2 sx={{ fontSize: 16, color: '#7C3AED' }} />}>

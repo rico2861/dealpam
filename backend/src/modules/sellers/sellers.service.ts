@@ -12,7 +12,7 @@ const IDENTITY_DOC_TYPES = ['IDENTITY', 'SELFIE'];
 // valide et ne doit de toute façon jamais transiter par une réponse JSON.
 // La consultation passe uniquement par getMyDocumentUrl / getAdminDocumentUrl.
 const DOC_SAFE_SELECT = {
-  id: true, sellerId: true, type: true, publicId: true, fileName: true, isValid: true, createdAt: true,
+  id: true, sellerId: true, type: true, publicId: true, fileName: true, isValid: true, rejectionReason: true, createdAt: true,
 } as const;
 
 @Injectable()
@@ -349,10 +349,18 @@ export class SellersService {
   // rétention définie explicitement plus tard). Un vendeur qui s'est trompé
   // soumet simplement un nouveau document — l'historique complet reste consultable.
 
-  async adminValidateDocument(sellerId: string, docId: string, isValid: boolean) {
+  async adminValidateDocument(sellerId: string, docId: string, isValid: boolean, rejectionReason?: string) {
     const doc = await this.prisma.businessDocument.findUnique({ where: { id: docId } });
     if (!doc || doc.sellerId !== sellerId) throw new NotFoundException('Document introuvable');
-    const result = await this.prisma.businessDocument.update({ where: { id: docId }, data: { isValid } });
+    if (!isValid && !rejectionReason?.trim()) {
+      throw new BadRequestException('Un motif est requis pour refuser un document');
+    }
+    const result = await this.prisma.businessDocument.update({
+      where: { id: docId },
+      // Un document validé n'a plus besoin de motif — évite d'afficher un ancien
+      // refus au vendeur après une nouvelle validation.
+      data: { isValid, rejectionReason: isValid ? null : rejectionReason!.trim() },
+    });
     // Re-évaluer la vérification de la boutique après chaque validation doc
     await this._syncStoreVerification(sellerId);
     return result;

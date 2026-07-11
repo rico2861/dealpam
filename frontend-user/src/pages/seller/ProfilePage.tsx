@@ -417,7 +417,8 @@ export default function SellerProfilePage() {
         <SectionHead icon={Description} label="Documents officiels" color={YLW} />
         <Typography fontSize={11.5} color={SUB} mb={2}>
           Vos documents sont strictement confidentiels — consultables uniquement par vous et notre équipe de vérification.
-          Vous pouvez renvoyer un document à tout moment ; l'historique de vos envois précédents reste conservé pour audit.
+          Un document envoyé ne peut être remplacé que s'il est refusé (le motif vous sera indiqué) ; le renvoi n'est pas
+          possible pendant l'examen ni une fois validé.
         </Typography>
 
         <input type="file" ref={fileRef} style={{ display: 'none' }}
@@ -452,6 +453,12 @@ export default function SellerProfilePage() {
                     )}
                   </Box>
                   {fileName && <Typography fontSize={11} color={SUB} noWrap mt={0.2}>{fileName}</Typography>}
+                  {/* Motif de refus admin — le vendeur peut alors renvoyer ce document précis */}
+                  {doc?.isValid === false && doc?.rejectionReason && (
+                    <Typography fontSize={11} color={RED} mt={0.3}>
+                      <strong>Motif du refus :</strong> {doc.rejectionReason}
+                    </Typography>
+                  )}
                 </Box>
                 <Box sx={{ display: 'flex', gap: 0.8, flexShrink: 0 }}>
                   {doc && (
@@ -461,15 +468,20 @@ export default function SellerProfilePage() {
                       {viewingDoc === doc.id ? <CircularProgress size={12} sx={{ color: BLU }} /> : <Visibility sx={{ fontSize: 15, color: BLU }} />}
                     </Box>
                   )}
-                  <Button size="small" onClick={() => { setUploadType(t.value); setTimeout(() => fileRef.current?.click(), 0); }}
-                    disabled={uploading}
-                    startIcon={isUploadingThis ? <CircularProgress size={13} color="inherit" /> : <Upload sx={{ fontSize: 14 }} />}
-                    sx={{ borderRadius: '8px', fontWeight: 700, fontSize: 12, whiteSpace: 'nowrap', textTransform: 'none',
-                      bgcolor: doc ? 'rgba(15,23,42,0.06)' : OR, color: doc ? TXT : '#fff',
-                      '&:hover': { bgcolor: doc ? 'rgba(15,23,42,0.1)' : '#E05A00' },
-                      '&:disabled': { bgcolor: 'rgba(15,23,42,0.04)', color: SUB } }}>
-                    {isUploadingThis ? 'Envoi…' : doc ? 'Remplacer' : t.value === 'SELFIE' ? 'Prendre un selfie' : 'Envoyer'}
-                  </Button>
+                  {/* Un document déjà envoyé ne peut être remplacé que s'il a été refusé
+                      (motif visible ci-dessus) — pas question de le remplacer pendant que
+                      l'équipe l'examine, ni une fois qu'il est validé. */}
+                  {(!doc || doc.isValid === false) && (
+                    <Button size="small" onClick={() => { setUploadType(t.value); setTimeout(() => fileRef.current?.click(), 0); }}
+                      disabled={uploading}
+                      startIcon={isUploadingThis ? <CircularProgress size={13} color="inherit" /> : <Upload sx={{ fontSize: 14 }} />}
+                      sx={{ borderRadius: '8px', fontWeight: 700, fontSize: 12, whiteSpace: 'nowrap', textTransform: 'none',
+                        bgcolor: doc ? 'rgba(239,68,68,0.1)' : OR, color: doc ? RED : '#fff',
+                        '&:hover': { bgcolor: doc ? 'rgba(239,68,68,0.18)' : '#E05A00' },
+                        '&:disabled': { bgcolor: 'rgba(15,23,42,0.04)', color: SUB } }}>
+                      {isUploadingThis ? 'Envoi…' : doc ? 'Renvoyer' : t.value === 'SELFIE' ? 'Prendre un selfie' : 'Envoyer'}
+                    </Button>
+                  )}
                 </Box>
               </Box>
             );
