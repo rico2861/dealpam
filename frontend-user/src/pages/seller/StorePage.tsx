@@ -6,7 +6,7 @@ import {
 } from '@mui/material';
 import {
   Save, Store, Add, Delete, LocationOn, Payments, LocalShipping,
-  ContentCopy, CheckCircle, Info, Edit, Phone, PhotoCamera,
+  ContentCopy, CheckCircle, Info, Edit, Phone, PhotoCamera, Close,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
@@ -505,6 +505,18 @@ export default function SellerStorePage() {
     } finally { setUploadingLogo(false); e.target.value = ''; }
   };
 
+  const handleLogoRemove = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setUploadingLogo(true);
+    try {
+      await api.patch('/stores/me', { logoUrl: null });
+      qc.invalidateQueries({ queryKey: ['sellerMe'] });
+      enqueueSnackbar('Photo de profil retirée', { variant: 'success' });
+    } catch {
+      enqueueSnackbar('Erreur lors de la suppression', { variant: 'error' });
+    } finally { setUploadingLogo(false); }
+  };
+
   const parseArr = (val: any): any[] => {
     if (!val) return [];
     if (Array.isArray(val)) return val;
@@ -554,20 +566,40 @@ export default function SellerStorePage() {
       {/* Header */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3, flexWrap: 'wrap' }}>
         <input type="file" ref={logoInputRef} accept="image/*" style={{ display: 'none' }} onChange={handleLogoUpload} />
-        <Box onClick={() => logoInputRef.current?.click()}
-          sx={{ position: 'relative', width: 56, height: 56, borderRadius: '14px', flexShrink: 0, cursor: 'pointer',
-            '&:hover .logo-overlay': { opacity: 1 } }}>
-          {store?.logoUrl
-            ? <Avatar src={store.logoUrl} variant="rounded" sx={{ width: 56, height: 56, borderRadius: '14px' }} />
-            : <Box sx={{ width: 56, height: 56, borderRadius: '14px', bgcolor: alpha(OR, 0.12), border: `1px solid ${alpha(OR, 0.2)}`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Store sx={{ color: OR, fontSize: 26 }} />
-              </Box>}
-          <Box className="logo-overlay" sx={{ position: 'absolute', inset: 0, borderRadius: '14px',
-            bgcolor: 'rgba(15,23,42,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            opacity: 0, transition: 'opacity 0.15s' }}>
-            {uploadingLogo ? <CircularProgress size={16} sx={{ color: '#fff' }} /> : <PhotoCamera sx={{ fontSize: 18, color: '#fff' }} />}
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.6, flexShrink: 0 }}>
+          <Box onClick={() => !uploadingLogo && logoInputRef.current?.click()}
+            sx={{ position: 'relative', width: 64, height: 64, borderRadius: '16px', cursor: uploadingLogo ? 'default' : 'pointer',
+              transition: 'transform 0.15s', '&:hover': { transform: uploadingLogo ? 'none' : 'scale(1.03)' } }}>
+            {store?.logoUrl
+              ? <Avatar src={store.logoUrl} variant="rounded" sx={{ width: 64, height: 64, borderRadius: '16px', border: `1px solid ${BORD}` }} />
+              : <Box sx={{ width: 64, height: 64, borderRadius: '16px', bgcolor: alpha(OR, 0.12), border: `1.5px dashed ${alpha(OR, 0.35)}`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Store sx={{ color: OR, fontSize: 28 }} />
+                </Box>}
+            {/* Badge appareil photo — toujours visible (pas seulement au survol), pour que
+                ce soit évident au vendeur, y compris sur mobile où il n'y a pas de "hover". */}
+            <Box sx={{
+              position: 'absolute', bottom: -4, right: -4, width: 26, height: 26, borderRadius: '50%',
+              bgcolor: OR, border: '2px solid #fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 2px 8px rgba(255,107,0,0.4)',
+            }}>
+              {uploadingLogo ? <CircularProgress size={12} sx={{ color: '#fff' }} /> : <PhotoCamera sx={{ fontSize: 13, color: '#fff' }} />}
+            </Box>
+            {/* Bouton retirer — visible seulement si une photo est déjà définie */}
+            {store?.logoUrl && !uploadingLogo && (
+              <Box onClick={handleLogoRemove}
+                sx={{
+                  position: 'absolute', top: -6, left: -6, width: 20, height: 20, borderRadius: '50%',
+                  bgcolor: '#EF4444', border: '2px solid #fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  boxShadow: '0 2px 6px rgba(239,68,68,0.4)', '&:hover': { bgcolor: '#DC2626' },
+                }}>
+                <Close sx={{ fontSize: 12, color: '#fff' }} />
+              </Box>
+            )}
           </Box>
+          <Typography fontSize={10} fontWeight={600} color={SUB} sx={{ display: { xs: 'none', sm: 'block' } }}>
+            {store?.logoUrl ? 'Modifier' : 'Ajouter'}
+          </Typography>
         </Box>
         <Box sx={{ minWidth: 0 }}>
           <Typography fontWeight={900} fontSize={{ xs: 20, md: 24 }} color={TXT} letterSpacing="-0.5px">

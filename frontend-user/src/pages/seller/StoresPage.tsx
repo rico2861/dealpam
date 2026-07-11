@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Box, Typography, Button, TextField, Dialog,
   DialogTitle, DialogContent, DialogActions, CircularProgress, Grid,
-  Select, MenuItem, InputLabel, FormControl,
+  Select, MenuItem, InputLabel, FormControl, Avatar,
 } from '@mui/material';
 import {
   Add, Edit, Delete, Star, Inventory2Outlined, ShoppingBagOutlined, Verified,
@@ -408,12 +408,16 @@ function StoreCard({ store, onEdit, onDelete, onCopy }: any) {
       <Box sx={{ p: 2 }}>
         {/* Row 1: avatar + info + actions */}
         <Box sx={{ display: 'flex', gap: 1.2, alignItems: 'center', mb: 1.5 }}>
-          <Box sx={{ width: 40, height: 40, borderRadius: '11px', flexShrink: 0,
-            background: `linear-gradient(135deg,hsl(${hue},50%,25%),hsl(${hue},40%,16%))`,
-            border: `1.5px solid hsl(${hue},40%,30%)`,
-            display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Typography fontWeight={900} fontSize={17} color={`hsl(${hue},80%,72%)`}>{store.name?.[0]?.toUpperCase()}</Typography>
-          </Box>
+          {store.logoUrl ? (
+            <Avatar src={store.logoUrl} variant="rounded" sx={{ width: 40, height: 40, borderRadius: '11px', flexShrink: 0, border: `1px solid ${BORD}` }} />
+          ) : (
+            <Box sx={{ width: 40, height: 40, borderRadius: '11px', flexShrink: 0,
+              background: `linear-gradient(135deg,hsl(${hue},50%,25%),hsl(${hue},40%,16%))`,
+              border: `1.5px solid hsl(${hue},40%,30%)`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Typography fontWeight={900} fontSize={17} color={`hsl(${hue},80%,72%)`}>{store.name?.[0]?.toUpperCase()}</Typography>
+            </Box>
+          )}
 
           <Box sx={{ flex: 1, minWidth: 0 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.7, mb: 0.2 }}>
