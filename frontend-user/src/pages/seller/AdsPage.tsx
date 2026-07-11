@@ -894,18 +894,30 @@ export default function AdsPage() {
 
                 {expanded && stats && (
                   <Box sx={{ px: 2.5, pb: 2.5 }}>
-                    <Box sx={{ p: 2, borderRadius: '12px', bgcolor: 'rgba(15,23,42,0.09)', border: `1px solid ${BORD}` }}>
-                      <Typography fontWeight={700} fontSize={12} color={SUB} mb={1.5} sx={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}>Performance détaillée</Typography>
-                      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 1 }}>
+                    <Box sx={{ p: 2.2, borderRadius: '14px', bgcolor: 'rgba(15,23,42,0.09)', border: `1px solid ${BORD}` }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.8, flexWrap: 'wrap', gap: 1 }}>
+                        <Typography fontWeight={700} fontSize={12} color={SUB} sx={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}>Performance détaillée</Typography>
+                        <Typography fontSize={11} color={SUB}>
+                          {new Date(stats.campaign.startDate).toLocaleDateString('fr-FR')} → {new Date(stats.campaign.endDate).toLocaleDateString('fr-FR')}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2,1fr)', sm: 'repeat(4,1fr)' }, gap: 1.2 }}>
                         {[
-                          { lbl: 'CTR', val: `${stats.ctr}%`, color: PUR },
-                          { lbl: 'CPC moyen', val: `${Number(stats.cpc).toFixed(0)} HTG`, color: GRN },
-                          { lbl: 'Budget restant', val: `${Number(stats.remaining).toLocaleString()} HTG`, color: OR },
-                          { lbl: 'Jours restants', val: `${stats.daysLeft}j`, color: BLU },
-                        ].map(({ lbl, val, color }) => (
-                          <Box key={lbl} sx={{ textAlign: 'center', p: 1.5, borderRadius: '10px', bgcolor: `${color}0d`, border: `1px solid ${color}20` }}>
+                          { lbl: 'Impressions', val: (stats.campaign.impressions ?? 0).toLocaleString(), color: PUR, Icon: Visibility },
+                          { lbl: 'Clics', val: (stats.campaign.clicks ?? 0).toLocaleString(), color: BLU, Icon: TouchApp },
+                          { lbl: 'CTR', val: `${stats.ctr}%`, color: PUR, Icon: TrendingUp },
+                          { lbl: 'CPC moyen', val: `${Number(stats.cpc).toFixed(0)} HTG`, color: GRN, Icon: AccountBalanceWallet },
+                          { lbl: 'Conversions', val: (stats.campaign.conversions ?? 0).toLocaleString(), color: OR, Icon: ShoppingCart },
+                          { lbl: 'Coût / conversion', val: stats.campaign.conversions > 0 ? `${(Number(stats.campaign.spent) / stats.campaign.conversions).toFixed(0)} HTG` : '—', color: OR, Icon: AccountBalanceWallet },
+                          { lbl: 'Budget restant', val: `${Number(stats.remaining).toLocaleString()} HTG`, color: GRN, Icon: AccountBalanceWallet },
+                          { lbl: 'Jours restants', val: `${stats.daysLeft}j`, color: BLU, Icon: FlashOn },
+                        ].map(({ lbl, val, color, Icon }) => (
+                          <Box key={lbl} sx={{ p: 1.5, borderRadius: '12px', bgcolor: `${color}0d`, border: `1px solid ${color}20` }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.4 }}>
+                              <Icon sx={{ fontSize: 13, color }} />
+                              <Typography fontSize={10.5} color={SUB}>{lbl}</Typography>
+                            </Box>
                             <Typography fontWeight={900} fontSize={17} color={color}>{val}</Typography>
-                            <Typography fontSize={10.5} color={SUB}>{lbl}</Typography>
                           </Box>
                         ))}
                       </Box>
