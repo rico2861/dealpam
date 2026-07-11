@@ -175,9 +175,13 @@ function DeliveryStep({
 
   // Un seul point de retrait défini par le vendeur → pas besoin d'obliger le
   // client à cliquer dessus, on le présélectionne (toujours affiché, jamais caché).
+  // Seulement si le client a choisi "Retrait boutique" — sinon selectedPickup
+  // restait présélectionné même en livraison à domicile / contact direct, et
+  // la commande enregistrait un "Point retrait" fantôme (le point du vendeur,
+  // sans rapport avec le mode réellement choisi par le client).
   useEffect(() => {
-    if (pickupPoints.length === 1 && selectedPickup === null) setSelectedPickup(0);
-  }, [pickupPoints.length]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (deliveryType === 'PICKUP' && pickupPoints.length === 1 && selectedPickup === null) setSelectedPickup(0);
+  }, [deliveryType, pickupPoints.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Compute selected address dept for zone-mismatch check
   const selAddr = addresses.find((a: any) => a.id === selectedAddress);
@@ -690,7 +694,10 @@ export default function CheckoutPage() {
     if (items.length === 0) { enqueueSnackbar('Panier vide', { variant: 'error' }); return; }
     setPlacing(true);
     try {
-      const pickupPt = selectedPickup !== null ? pickupPoints[selectedPickup] : null;
+      // Seulement pertinent si le client a réellement choisi "Retrait boutique" —
+      // sinon selectedPickup peut rester présélectionné (voir DeliveryStep) et
+      // enverrait un point de retrait qui n'a rien à voir avec le mode choisi.
+      const pickupPt = deliveryType === 'PICKUP' && selectedPickup !== null ? pickupPoints[selectedPickup] : null;
       const res = await api.post('/orders', {
         addressId:           deliveryType === 'DELIVERY' ? selectedAddress : undefined,
         deliveryType,

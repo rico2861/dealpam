@@ -348,7 +348,7 @@ function OrderCard({ order, onUpdate, pendingStatus }: { order: any; onUpdate: (
           <Box sx={{ pb: 1.5, display: 'flex', flexDirection: 'column', gap: 0.8 }}>
             {[
               order.deliveryType && { k: 'Livraison', v: order.deliveryType === 'DELIVERY' ? '🏠 À domicile' : order.deliveryType === 'PICKUP' ? '🏪 Retrait boutique' : '📞 Contact direct' },
-              order.pickupPointName && { k: 'Point retrait', v: `${order.pickupPointName}${order.pickupPointAddress ? ` — ${order.pickupPointAddress}` : ''}` },
+              order.deliveryType === 'PICKUP' && order.pickupPointName && { k: 'Point retrait', v: `${order.pickupPointName}${order.pickupPointAddress ? ` — ${order.pickupPointAddress}` : ''}` },
               order.address && { k: 'Adresse', v: `${order.address.fullName ? order.address.fullName + ' · ' : ''}${order.address.line1}, ${order.address.city}, ${order.address.department}${order.address.phone ? ` · ${order.address.phone}` : ''}` },
               Number(order.shippingHTG) > 0 && { k: 'Frais livraison', v: fmt(Number(order.shippingHTG)) },
               order.chosenPaymentMethod && { k: 'Paiement choisi', v: order.chosenPaymentMethod },
