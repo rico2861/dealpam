@@ -272,10 +272,10 @@ export default function BecomeSellerPage() {
                 boxShadow: `0 8px 24px ${alpha(ORANGE, 0.38)}`,
                 '&:hover': { transform: 'translateY(-2px)', boxShadow: `0 12px 32px ${alpha(ORANGE, 0.5)}` },
                 '&:active': { transform: 'translateY(0)' },
-                '&.Mui-disabled': { background: alpha(ORANGE, 0.15), color: 'rgba(255,255,255,0.2)' },
+                '&.Mui-disabled': { background: alpha(ORANGE, 0.7), color: '#fff' },
                 transition: 'all 0.22s',
               }}>
-              {loading ? <CircularProgress size={20} sx={{ color: 'rgba(255,255,255,0.5)' }} /> : 'Créer ma boutique'}
+              {loading ? <CircularProgress size={20} sx={{ color: '#fff' }} /> : 'Créer ma boutique'}
             </Button>
           </Box>
         </Box>

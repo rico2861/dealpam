@@ -264,7 +264,7 @@ export default function ProfilePage() {
                   bgcolor: ORANGE, color: 'white', borderRadius: '10px', width: 34, height: 34,
                   boxShadow: `0 4px 14px ${alpha(ORANGE, 0.4)}`,
                   '&:hover': { bgcolor: '#e05e00' },
-                  '&.Mui-disabled': { bgcolor: alpha(ORANGE, 0.25), color: 'rgba(255,255,255,0.6)' },
+                  '&.Mui-disabled': { bgcolor: alpha(ORANGE, 0.7), color: '#fff' },
                 }}>
                   {saving ? <CircularProgress size={14} sx={{ color: 'white' }} /> : <SaveRounded sx={{ fontSize: 16 }} />}
                 </IconButton>

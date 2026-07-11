@@ -748,7 +748,7 @@ export default function RegisterPage() {
                 </Button>
                 <Button type="submit" variant="contained" disabled={loading || !canNext()}
                   sx={{ ...submitSx(accent), flex: 2 }}>
-                  {loading ? <CircularProgress size={20} sx={{ color: 'rgba(255,255,255,0.5)' }} /> : 'Créer mon compte'}
+                  {loading ? <CircularProgress size={20} sx={{ color: '#fff' }} /> : 'Créer mon compte'}
                 </Button>
               </Box>
             </Box>
@@ -773,7 +773,9 @@ const submitSx = (accent: string) => ({
   transition: 'all 0.22s',
   '&:hover': { transform: 'translateY(-2px)', boxShadow: `0 12px 32px ${alpha(accent, 0.48)}` },
   '&:active': { transform: 'translateY(0)' },
-  '&.Mui-disabled': { background: `${alpha(accent, 0.15)}`, color: 'rgba(255,255,255,0.2)' },
+  // Fond bien visible pendant le chargement — pas une couleur presque transparente
+  // avec un texte/spinner quasi invisible dessus (illisible signalé).
+  '&.Mui-disabled': { background: `${alpha(accent, 0.7)}`, color: '#fff' },
 });
 
 const backSx = {

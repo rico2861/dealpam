@@ -283,15 +283,17 @@ export default function LoginPage() {
               endIcon={!loading && <ArrowForward sx={{ fontSize: 18 }} />}
               sx={{
                 py: 1.65, fontWeight: 800, fontSize: 15, borderRadius: '14px', textTransform: 'none',
-                background: loading ? alpha(ORANGE, 0.3) : `linear-gradient(135deg, ${ORANGE} 0%, #d45800 100%)`,
-                color: loading ? 'rgba(255,255,255,0.4)' : '#fff',
+                background: loading ? alpha(ORANGE, 0.7) : `linear-gradient(135deg, ${ORANGE} 0%, #d45800 100%)`,
+                color: '#fff',
                 boxShadow: loading ? 'none' : `0 8px 28px ${alpha(ORANGE, 0.45)}`,
                 transition: 'all 0.2s',
                 '&:hover': { transform: 'translateY(-2px)', boxShadow: `0 14px 36px ${alpha(ORANGE, 0.55)}` },
                 '&:active': { transform: 'translateY(0)' },
-                '&.Mui-disabled': { background: alpha(ORANGE, 0.15), color: 'rgba(255,255,255,0.2)' },
+                // Fond bien visible pendant le chargement — pas un orange presque
+                // transparent avec un spinner quasi invisible dessus (illisible signalé).
+                '&.Mui-disabled': { background: alpha(ORANGE, 0.7), color: '#fff' },
               }}>
-              {loading ? <CircularProgress size={20} sx={{ color: 'rgba(255,255,255,0.5)' }} /> : 'Se connecter'}
+              {loading ? <CircularProgress size={20} sx={{ color: '#fff' }} /> : 'Se connecter'}
             </Button>
             {slowServer && (
               <Typography sx={{ fontSize: 12.5, color: '#64748B', textAlign: 'center', mt: -1 }}>

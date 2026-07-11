@@ -214,7 +214,9 @@ export default function ForgotPasswordPage() {
     boxShadow: '0 8px 24px rgba(255,107,0,0.35)',
     '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 12px 32px rgba(255,107,0,0.48)' },
     '&:active': { transform: 'translateY(0)' },
-    '&.Mui-disabled': { background: alpha(ORANGE, 0.15), color: 'rgba(255,255,255,0.2)' },
+    // Fond bien visible pendant le chargement — pas un orange presque transparent
+    // avec un texte/spinner quasi invisible dessus (illisible signalé).
+    '&.Mui-disabled': { background: alpha(ORANGE, 0.7), color: '#fff' },
   };
 
   return (
@@ -330,9 +332,10 @@ export default function ForgotPasswordPage() {
 
             <Box sx={{ mt: 3.5, textAlign: 'center' }}>
               <Button onClick={handleResend} disabled={countdown > 0 || loading}
-                sx={{ fontSize: 13, textTransform: 'none', color: countdown > 0 ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.5)', fontWeight: 500,
+                sx={{ fontSize: 13, textTransform: 'none', color: 'rgba(255,255,255,0.5)', fontWeight: 500,
                   '&:hover': { color: 'rgba(255,255,255,0.8)', bgcolor: 'transparent' },
-                  '&.Mui-disabled': { color: 'rgba(255,255,255,0.18)' } }}>
+                  // Assez visible pour lire le décompte, sans pour autant ressembler à un lien actif.
+                  '&.Mui-disabled': { color: 'rgba(255,255,255,0.45)' } }}>
                 {countdown > 0 ? `Renvoyer le code dans ${countdown}s` : 'Renvoyer le code'}
               </Button>
             </Box>
