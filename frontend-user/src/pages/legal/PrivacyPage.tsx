@@ -68,7 +68,7 @@ Pour exercer ces droits, contactez-nous à privacy@dealpam.com ou via notre form
 DealPam – Service Privacy
 Port-au-Prince, Haïti
 E-mail : privacy@dealpam.com
-Téléphone : +509 XXXX-XXXX`,
+Téléphone : +509 34 54 6896`,
   },
 ];
 

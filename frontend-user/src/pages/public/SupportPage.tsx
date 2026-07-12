@@ -52,9 +52,9 @@ export default function SupportPage() {
           </Box>
 
           {[
-            { icon: WhatsApp, color: '#25D366', bg: '#F0FDF4', title: 'WhatsApp', value: '+509 XXXX-XXXX', sub: 'Réponse rapide · Lun–Sam 8h–20h', href: 'https://wa.me/509XXXXXXXX' },
+            { icon: WhatsApp, color: '#25D366', bg: '#F0FDF4', title: 'WhatsApp', value: '+509 34 54 6896', sub: 'Réponse rapide · Lun–Sam 8h–20h', href: 'https://wa.me/50934546896' },
             { icon: Email,    color: ORANGE,    bg: '#FFF7ED', title: 'Email',    value: 'support@dealpam.com', sub: 'Réponse sous 24h', href: 'mailto:support@dealpam.com' },
-            { icon: Phone,    color: '#6366F1', bg: '#F5F3FF', title: 'Téléphone', value: '+509 XXXX-XXXX', sub: 'Lun–Ven 8h–17h', href: 'tel:+509XXXXXXXX' },
+            { icon: Phone,    color: '#6366F1', bg: '#F5F3FF', title: 'Téléphone', value: '+509 34 54 6896', sub: 'Lun–Ven 8h–17h', href: 'tel:+50934546896' },
             { icon: LocationOn, color: '#64748B', bg: '#F8FAFC', title: 'Adresse', value: 'Port-au-Prince, Haïti', sub: 'Siège social DealPam', href: '#' },
           ].map(({ icon: Icon, color, bg, title, value, sub, href }, i, arr) => (
             <Box key={title} component="a" href={href} sx={{

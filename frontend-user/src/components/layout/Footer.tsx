@@ -270,7 +270,7 @@ export default function Footer() {
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.8, mb: 3.5 }}>
               {[
                 { icon: LocationOn, text: 'Port-au-Prince, Haïti' },
-                { icon: Phone,      text: '+509 XXXX-XXXX' },
+                { icon: Phone,      text: '+509 34 54 6896' },
                 { icon: Email,      text: 'support@dealpam.com' },
               ].map(({ icon: Icon, text }, i) => (
                 <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>

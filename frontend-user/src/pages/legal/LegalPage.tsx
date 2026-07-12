@@ -16,7 +16,7 @@ Capital social : [Information confidentielle]
 Directeur de la publication : Direction Générale DealPam
 
 E-mail de contact : contact@dealpam.com
-Téléphone : +509 XXXX-XXXX`,
+Téléphone : +509 34 54 6896`,
   },
   {
     title: 'Hébergement',
@@ -69,7 +69,7 @@ Les présentes mentions légales sont régies par le droit haïtien.`,
 Service juridique DealPam
 Port-au-Prince, Haïti
 E-mail : legal@dealpam.com
-Téléphone : +509 XXXX-XXXX
+Téléphone : +509 34 54 6896
 Horaires : Lundi – Vendredi, 8h00 – 17h00 (heure de Port-au-Prince)`,
   },
 ];
