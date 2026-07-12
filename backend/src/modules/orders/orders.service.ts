@@ -28,8 +28,13 @@ export class OrdersService {
     deliveryType?: string;
     pickupPointName?: string;
     pickupPointAddress?: string;
+    shippingCost?: number;
   }) {
     const { addressId, notes, chosenPaymentMethod, deliveryType, pickupPointName, pickupPointAddress } = body;
+    // Le champ shippingHTG existait deja dans le schema mais n'etait jamais
+    // renseigne ici — le total de la commande ignorait totalement les frais
+    // de livraison calcules et affiches au client pendant le checkout.
+    const shippingCost = Math.max(0, Number(body.shippingCost) || 0);
 
     let address = null;
     if (addressId) {
@@ -110,7 +115,8 @@ export class OrdersService {
             pickupPointName:     pickupPointName || null,
             pickupPointAddress:  pickupPointAddress || null,
             subtotalHTG: subtotal,
-            totalHTG:    subtotal,
+            shippingHTG: shippingCost,
+            totalHTG:    subtotal + shippingCost,
             items: {
               create: items.map((i, idx) => ({
                 productId:   i.productId,
@@ -151,8 +157,22 @@ export class OrdersService {
   }
 
   private async sendOrderEmails(userId: string, orders: any[]): Promise<void> {
-    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { email: true, firstName: true, lastName: true } });
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { email: true, firstName: true, lastName: true, phone: true } });
     for (const order of orders) {
+      // Le vendeur ne recevait jamais le telephone du client (toujours envoye
+      // vide) ni sa vraie adresse de livraison (seul le nom du point de
+      // retrait etait utilise, meme pour une livraison a domicile) — corrige
+      // en utilisant l'adresse liee a la commande (order.address, incluse a
+      // la creation) avec repli sur le telephone du compte utilisateur.
+      const addr = (order as any).address;
+      const customerPhone = addr?.phone || user?.phone || '';
+      const customerAddress =
+        order.deliveryType === 'PICKUP'
+          ? (order.pickupPointName ? `Retrait : ${order.pickupPointName}${order.pickupPointAddress ? ` (${order.pickupPointAddress})` : ''}` : '')
+          : addr
+            ? `${addr.line1}, ${addr.city}, ${addr.department}`
+            : (order.deliveryType === 'CONTACT' ? 'Contact direct — adresse à convenir avec le client' : '');
+
       // Notify seller
       const sellerUser = await this.prisma.user.findFirst({
         where:  { seller: { stores: { some: { id: order.storeId } } } },
@@ -162,9 +182,9 @@ export class OrdersService {
         await this.mail.sendNewOrderToSeller(sellerUser.email, sellerUser.firstName, {
           number:          order.id.slice(-8).toUpperCase(),
           customerName:    `${user?.firstName} ${user?.lastName}`,
-          customerPhone:   '',
+          customerPhone,
           customerEmail:   user?.email || '',
-          customerAddress: order.pickupPointName || '',
+          customerAddress,
           total:           Number(order.totalHTG),
           items:           order.items.map((i: any) => ({ name: i.productName, qty: i.quantity, price: Number(i.unitPrice) })),
         }).catch(() => {});

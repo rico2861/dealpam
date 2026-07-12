@@ -18,6 +18,9 @@ import { useAuthStore } from '../../store/auth.store';
 
 const ORANGE  = '#FF6B00';
 const PURPLE  = '#8B5CF6';
+// Validation email plus stricte que ".includes('@')" — refuse au moins les
+// formats grossierement invalides ("a@b", "test@", "@test.com"...).
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const STEPS   = ['Rôle', 'Informations', 'Finalisation'];
 
 /* ── Password rules ── */
@@ -413,7 +416,7 @@ export default function RegisterPage() {
     if (step === 0) return true;
     if (step === 1) return (
       form.firstName.length >= 2 && form.lastName.length >= 2 &&
-      form.email.includes('@') && isPasswordValid(form.password) &&
+      EMAIL_RE.test(form.email) && isPasswordValid(form.password) &&
       form.phone.replace(/\D/g, '').length >= 8 &&
       emailStatus !== 'taken' && emailStatus !== 'checking' &&
       usernameStatus !== 'taken'

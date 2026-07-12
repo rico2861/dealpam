@@ -231,6 +231,22 @@ function ProductThankYou({ state, firstName }: { state: any; firstName: string }
                 </Box>
               ))}
               <Divider sx={{ borderColor: BORD, mt: 1.2, mb: 1 }} />
+              {Number(firstOrder.subtotalHTG) > 0 && (
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.6 }}>
+                  <Typography fontSize={13} color="#64748B">Sous-total</Typography>
+                  <Typography fontSize={13} color="#0F172A">
+                    {Number(firstOrder.subtotalHTG).toLocaleString()} HTG
+                  </Typography>
+                </Box>
+              )}
+              {Number(firstOrder.shippingHTG) > 0 && (
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.6 }}>
+                  <Typography fontSize={13} color="#64748B">Livraison</Typography>
+                  <Typography fontSize={13} color="#0F172A">
+                    {Number(firstOrder.shippingHTG).toLocaleString()} HTG
+                  </Typography>
+                </Box>
+              )}
               <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                 <Typography fontWeight={800} fontSize={14} color="#0F172A">Total</Typography>
                 <Typography fontWeight={900} fontSize={16} color={OR}>

@@ -715,6 +715,7 @@ export default function CheckoutPage() {
         chosenPaymentMethod: selectedPayment   || undefined,
         notes:               notes             || undefined,
         couponCode:          storeDetail?.isPlatformStore && couponCode ? couponCode : undefined,
+        shippingCost:        deliveryType === 'DELIVERY' ? shippingCost : 0,
       });
       const orders = Array.isArray(res.data) ? res.data : [res.data];
       await fetchCount();

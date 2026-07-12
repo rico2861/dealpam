@@ -39,7 +39,12 @@ export function useGeolocation() {
         setLoading(false);
       },
       () => setLoading(false),
-      { timeout: 6000, maximumAge: 3600000 }
+      // enableHighAccuracy force l'utilisation du vrai GPS (au lieu de la
+      // position approximative WiFi/IP, tres imprecise en Haiti faute de
+      // donnees WiFi cartographiees — c'etait la cause du "Jeremie" pour
+      // quelqu'un reellement a Petionville). maximumAge reduit pour eviter
+      // de servir une position en cache d'il y a 1h.
+      { timeout: 10000, maximumAge: 60000, enableHighAccuracy: true }
     );
   };
 

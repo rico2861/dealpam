@@ -1,4 +1,21 @@
+import { useEffect } from 'react';
 import { Box, Typography } from '@mui/material';
+
+// Sur certains navigateurs mobiles (Chrome/Safari Android/iOS), la petite icone
+// calendrier native de <input type="date"> peut s'afficher blanche (suivant le
+// mode sombre du systeme) meme quand color-scheme:light est force sur l'input
+// lui-meme — elle devient alors invisible sur le fond blanc du champ. Cette
+// regle force l'icone a un gris visible, quel que soit le mode systeme.
+function injectDateInputCss() {
+  if (typeof document === 'undefined' || document.getElementById('dp-date-input-css')) return;
+  const el = document.createElement('style');
+  el.id = 'dp-date-input-css';
+  el.textContent = `
+    input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.5); opacity: 1; cursor: pointer; }
+    input[type="date"] { color-scheme: light; }
+  `;
+  document.head.appendChild(el);
+}
 
 interface DateRangeFilterProps {
   from: string;
@@ -21,6 +38,8 @@ export default function DateRangeFilter({
   from, to, onFromChange, onToChange, onReset,
   textColor = '#0F172A', subColor = '#64748B', borderColor = 'rgba(15,23,42,0.09)',
 }: DateRangeFilterProps) {
+  useEffect(() => { injectDateInputCss(); }, []);
+
   const inputStyle: React.CSSProperties = {
     fontSize: 13, color: textColor, border: `1px solid ${borderColor}`, borderRadius: 8,
     padding: '8px 10px', background: '#FFFFFF', colorScheme: 'light',

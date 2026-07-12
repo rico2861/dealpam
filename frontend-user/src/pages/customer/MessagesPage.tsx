@@ -185,7 +185,11 @@ export default function MessagesPage() {
       const { scrollTop, scrollHeight, clientHeight } = msgBoxRef.current;
       const nearBottom = scrollHeight - scrollTop - clientHeight < 120;
       if (force || nearBottom) {
-        bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+        // scrollIntoView() peut faire defiler TOUTE la page (pas seulement la
+        // zone de chat) si le conteneur n'est pas parfaitement contraint en
+        // hauteur — on manipule directement scrollTop du conteneur du chat,
+        // ce qui ne touche jamais au scroll de la fenetre/page.
+        msgBoxRef.current.scrollTo({ top: msgBoxRef.current.scrollHeight, behavior: 'smooth' });
         setShowScrollBtn(false);
       } else {
         setShowScrollBtn(true);
