@@ -49,11 +49,15 @@ function sophiaWelcome(firstName: string) {
 
 /* ── Wrapper: guard for unauthenticated users ───────────────────────────── */
 
-// Must stay above MobileBottomNav (56px) on mobile.
+// Must stay above MobileBottomNav (56px) on mobile, ET au-dessus de la zone
+// d'encoche/home-indicator (safe-area-inset-bottom) — sans ca le bouton se
+// retrouvait parfois colle au bord/chevauchant sur certains appareils.
 // Pages with their own extra fixed bottom bar (e.g. the mobile buy bar on
 // ProductDetailPage) push --dp-fab-extra-bottom higher so the FAB clears it too.
-const FAB_BOTTOM   = { xs: 'calc(72px + var(--dp-fab-extra-bottom, 0px))', md: 24 };
-const PANEL_BOTTOM = { xs: 'calc(140px + var(--dp-fab-extra-bottom, 0px))', md: 90 };
+const FAB_BOTTOM   = { xs: 'calc(72px + env(safe-area-inset-bottom, 0px) + var(--dp-fab-extra-bottom, 0px))', md: 24 };
+const PANEL_BOTTOM = { xs: 'calc(140px + env(safe-area-inset-bottom, 0px) + var(--dp-fab-extra-bottom, 0px))', md: 90 };
+const FAB_RIGHT    = { xs: 14, md: 24 };
+const FAB_SIZE     = { xs: 52, md: 58 };
 
 export default function SupportChatWidget() {
   const user = useAuthStore(s => s.user);
@@ -65,18 +69,18 @@ export default function SupportChatWidget() {
   if (!user || !hasToken) {
     return (
       <Fab
-        size="large"
         onClick={() => navigate(`/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`)}
         sx={{
-          position: 'fixed', bottom: FAB_BOTTOM, right: 20, zIndex: 1400,
+          position: 'fixed', bottom: FAB_BOTTOM, right: FAB_RIGHT, zIndex: 1400,
+          width: FAB_SIZE, height: FAB_SIZE, minHeight: 'unset',
           background: 'linear-gradient(135deg,#00c2ff,#7b2ff7)',
-          boxShadow: '0 4px 24px rgba(0,194,255,0.45)',
-          '&:hover': { transform: 'scale(1.08)' },
-          transition: 'transform 0.2s',
+          boxShadow: '0 8px 28px rgba(0,194,255,0.4), 0 0 0 1px rgba(255,255,255,0.12) inset',
+          '&:hover': { transform: 'translateY(-2px) scale(1.05)', boxShadow: '0 12px 36px rgba(0,194,255,0.55), 0 0 0 1px rgba(255,255,255,0.18) inset' },
+          transition: 'all 0.22s cubic-bezier(0.34,1.56,0.64,1)',
           color: '#fff',
         }}
       >
-        <Headset />
+        <Headset sx={{ fontSize: { xs: 24, md: 27 } }} />
       </Fab>
     );
   }
@@ -368,17 +372,17 @@ function SupportChatInner({ user }: { user: any }) {
     <>
       {/* FAB */}
       <Fab
-        size="large"
         onClick={() => setOpen(v => !v)}
         sx={{
-          position: 'fixed', bottom: FAB_BOTTOM, right: 20, zIndex: 1400,
+          position: 'fixed', bottom: FAB_BOTTOM, right: FAB_RIGHT, zIndex: 1400,
+          width: FAB_SIZE, height: FAB_SIZE, minHeight: 'unset',
           background: 'linear-gradient(135deg,#00c2ff,#7b2ff7)',
-          boxShadow: '0 4px 24px rgba(0,194,255,0.45)',
-          '&:hover': { transform: 'scale(1.08)' },
-          transition: 'transform 0.2s',
+          boxShadow: '0 8px 28px rgba(0,194,255,0.4), 0 0 0 1px rgba(255,255,255,0.12) inset',
+          '&:hover': { transform: 'translateY(-2px) scale(1.05)', boxShadow: '0 12px 36px rgba(0,194,255,0.55), 0 0 0 1px rgba(255,255,255,0.18) inset' },
+          transition: 'all 0.22s cubic-bezier(0.34,1.56,0.64,1)',
         }}
       >
-        {open ? <Close sx={{ color: '#fff' }} /> : <Headset sx={{ color: '#fff' }} />}
+        {open ? <Close sx={{ color: '#fff', fontSize: { xs: 22, md: 25 } }} /> : <Headset sx={{ color: '#fff', fontSize: { xs: 24, md: 27 } }} />}
       </Fab>
 
       {/* Chat panel */}
@@ -386,7 +390,7 @@ function SupportChatInner({ user }: { user: any }) {
         <Box sx={{
           position: 'fixed',
           bottom: PANEL_BOTTOM,
-          right: 20,
+          right: FAB_RIGHT,
           zIndex: 1300,
           width: 'min(390px, calc(100vw - 24px))',
           height: { xs: 'min(520px, calc(100dvh - 160px))', md: 'min(580px, calc(100dvh - 110px))' },
