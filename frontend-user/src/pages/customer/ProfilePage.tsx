@@ -4,7 +4,7 @@ import {
   EditRounded, SaveRounded, CloseRounded, PersonOutlined,
   EmailOutlined, PhoneOutlined, LocationOnOutlined, LogoutRounded,
   ShoppingBagOutlined, FavoriteBorderOutlined, ArrowForward,
-  LockOutlined, StorefrontOutlined, AdminPanelSettingsOutlined,
+  LockOutlined, StorefrontOutlined,
   CheckCircleOutlined, CameraAltOutlined,
 } from '@mui/icons-material';
 import { useNavigate, Link } from 'react-router-dom';
@@ -18,15 +18,6 @@ const ORANGE = '#FF6B00';
 const GREEN  = '#10B981';
 const BLUE   = '#3B82F6';
 const PURPLE = '#8B5CF6';
-const PINK   = '#EC4899';
-
-const ROLE_META: Record<string, { label: string; color: string; Icon: any }> = {
-  BUYER:       { label: 'Acheteur',    color: BLUE,   Icon: PersonOutlined },
-  SELLER:      { label: 'Vendeur',     color: ORANGE, Icon: StorefrontOutlined },
-  ADMIN:       { label: 'Admin',       color: PURPLE, Icon: AdminPanelSettingsOutlined },
-  SUPER_ADMIN: { label: 'Super Admin', color: PINK,   Icon: AdminPanelSettingsOutlined },
-  MODERATOR:   { label: 'Modérateur',  color: GREEN,  Icon: AdminPanelSettingsOutlined },
-};
 
 function Field({ label, value, onChange, Icon, placeholder, disabled }: {
   label: string; value: string; onChange?: (v: string) => void;
@@ -93,8 +84,6 @@ export default function ProfilePage() {
   if (!user) { navigate('/login'); return null; }
 
   const initials = `${user.firstName?.[0] ?? ''}${user.lastName?.[0] ?? ''}`.toUpperCase();
-  const roleMeta = ROLE_META[user.role] ?? ROLE_META.BUYER;
-  const RoleIcon = roleMeta.Icon;
 
   const handleSave = async () => {
     setSaving(true);
@@ -161,7 +150,7 @@ export default function ProfilePage() {
           boxShadow: '0 8px 32px rgba(15,23,42,0.08)',
         }}>
           {/* Colored top strip */}
-          <Box sx={{ height: 4, background: `linear-gradient(90deg, ${roleMeta.color}, ${alpha(roleMeta.color, 0.3)})` }} />
+          <Box sx={{ height: 4, background: `linear-gradient(90deg, ${ORANGE}, ${alpha(ORANGE, 0.25)})` }} />
 
           <Box sx={{ p: { xs: 2.5, sm: 3 } }}>
             <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: { xs: 2, sm: 2.5 }, flexWrap: 'wrap' }}>
@@ -170,15 +159,16 @@ export default function ProfilePage() {
               <Box sx={{ position: 'relative', flexShrink: 0 }}>
                 <Avatar sx={{
                   width: { xs: 72, sm: 84 }, height: { xs: 72, sm: 84 },
-                  bgcolor: ORANGE, fontSize: { xs: 26, sm: 30 }, fontWeight: 900, color: 'white',
-                  border: `3px solid ${alpha(ORANGE, 0.3)}`,
-                  boxShadow: `0 8px 28px ${alpha(ORANGE, 0.4)}`,
+                  background: `linear-gradient(145deg, ${ORANGE}, #E05A00)`,
+                  fontSize: { xs: 24, sm: 28 }, fontWeight: 800, color: 'white',
+                  letterSpacing: '0.5px',
+                  boxShadow: `0 10px 30px ${alpha(ORANGE, 0.35)}`,
                 }}>
                   {initials || <PersonOutlined />}
                 </Avatar>
                 {/* Online dot */}
-                <Box sx={{ position: 'absolute', bottom: 2, right: 2,
-                  width: 16, height: 16, borderRadius: '50%',
+                <Box sx={{ position: 'absolute', bottom: 3, right: 3,
+                  width: 15, height: 15, borderRadius: '50%',
                   bgcolor: GREEN, border: '2.5px solid #FFFFFF',
                   boxShadow: `0 0 8px ${alpha(GREEN, 0.6)}` }} />
                 {/* Camera overlay */}
@@ -193,20 +183,10 @@ export default function ProfilePage() {
 
               {/* Info */}
               <Box sx={{ flex: 1, minWidth: 0, pt: 0.5 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, mb: 0.5, flexWrap: 'wrap' }}>
-                  <Typography sx={{ fontWeight: 900, fontSize: { xs: 20, sm: 24 }, color: '#0F172A', letterSpacing: '-0.5px', lineHeight: 1.1 }}>
-                    {user.firstName} {user.lastName}
-                  </Typography>
-                  <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.6,
-                    px: 1.2, py: 0.35, borderRadius: '20px',
-                    bgcolor: alpha(roleMeta.color, 0.12), border: `1px solid ${alpha(roleMeta.color, 0.28)}` }}>
-                    <RoleIcon sx={{ fontSize: 11, color: roleMeta.color }} />
-                    <Typography sx={{ fontSize: 10.5, fontWeight: 800, color: roleMeta.color, letterSpacing: '0.3px' }}>
-                      {roleMeta.label}
-                    </Typography>
-                  </Box>
-                </Box>
-                <Typography noWrap sx={{ fontSize: 13, color: '#64748B', mb: 1.5 }}>{user.email}</Typography>
+                <Typography sx={{ fontWeight: 800, fontSize: { xs: 19, sm: 22 }, color: '#0F172A', letterSpacing: '-0.4px', lineHeight: 1.2, mb: 0.4 }}>
+                  {user.firstName} {user.lastName}
+                </Typography>
+                <Typography noWrap sx={{ fontSize: 13, color: '#64748B', mb: 1.8 }}>{user.email}</Typography>
 
                 {/* Stats row */}
                 <Box sx={{ display: 'flex', gap: 1 }}>
@@ -215,13 +195,13 @@ export default function ProfilePage() {
                     { label: 'Favoris',   value: wishCount   ?? '—', color: PURPLE, to: '/account/wishlist' },
                   ].map(({ label, value, color, to }) => (
                     <Box key={label} component={Link} to={to} sx={{
-                      textDecoration: 'none', px: 1.8, py: 1, borderRadius: '12px',
-                      bgcolor: alpha(color, 0.08), border: `1px solid ${alpha(color, 0.18)}`,
+                      textDecoration: 'none', px: 2, py: 1.1, borderRadius: '14px',
+                      bgcolor: alpha(color, 0.07), border: `1px solid ${alpha(color, 0.16)}`,
                       transition: 'all 0.18s',
-                      '&:hover': { bgcolor: alpha(color, 0.15), borderColor: alpha(color, 0.35) },
+                      '&:hover': { bgcolor: alpha(color, 0.13), borderColor: alpha(color, 0.32), transform: 'translateY(-1px)' },
                     }}>
-                      <Typography sx={{ fontWeight: 900, fontSize: 18, color: '#0F172A', lineHeight: 1 }}>{value}</Typography>
-                      <Typography sx={{ fontSize: 11, color: alpha(color, 0.8), fontWeight: 600, mt: 0.2 }}>{label}</Typography>
+                      <Typography sx={{ fontWeight: 800, fontSize: 19, color: '#0F172A', lineHeight: 1 }}>{value}</Typography>
+                      <Typography sx={{ fontSize: 11, color: alpha(color, 0.85), fontWeight: 700, mt: 0.3 }}>{label}</Typography>
                     </Box>
                   ))}
                 </Box>
