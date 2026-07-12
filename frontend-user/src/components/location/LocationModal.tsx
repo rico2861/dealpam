@@ -112,15 +112,6 @@ export default function LocationModal({ open, onClose }: { open: boolean; onClos
     return () => document.removeEventListener('keydown', onKey);
   }, [open, onClose]);
 
-  // Bloque le scroll de la page derriere le modal (surtout important en plein
-  // ecran mobile, sinon on peut scroller la page ET le modal en meme temps).
-  useEffect(() => {
-    if (!open) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = prev; };
-  }, [open]);
-
   const cities = dept ? getCitiesForDept(dept).map(c => c.name) : [];
 
   const handleDeptChange = (d: string) => {

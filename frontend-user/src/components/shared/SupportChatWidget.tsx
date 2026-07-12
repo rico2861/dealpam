@@ -39,7 +39,7 @@ function sophiaWelcome(firstName: string) {
   return {
     id: `local-welcome-${Date.now()}`,
     type: 'BOT',
-    content: `${greeting}\n\nJe suis **${SOPHIA_NAME}**, votre assistante IA DealPam. Je suis là pour répondre à vos questions et résoudre vos problèmes.\n\nDécrivez votre demande et je m'en occupe immédiatement.`,
+    content: `${greeting}\n\nJe suis **${SOPHIA_NAME}**, votre assistante IA DealPam. Je suis là pour répondre à vos questions et résoudre vos problèmes.\n\nDécrivez votre demande et je m'en occupe immédiatement. Si vous préférez parler directement à un agent humain, cliquez sur l'icône 🎧 en haut de cette fenêtre, à tout moment.`,
     senderId: 'bot',
     sender: { firstName: SOPHIA_NAME, lastName: '' },
     createdAt: new Date().toISOString(),
@@ -102,6 +102,7 @@ function SupportChatInner({ user }: { user: any }) {
   const [conv, setConv]               = useState<any>(null);
   const [typing, setTyping]           = useState(false);
   const [escalated, setEscalated]     = useState(false);
+  const [escalating, setEscalating]   = useState(false);
   const [closed, setClosed]           = useState(false);
   const [inactiveWarning, setInactiveWarning] = useState(false);
   const [convError, setConvError]     = useState<string | null>(null);
@@ -211,6 +212,12 @@ function SupportChatInner({ user }: { user: any }) {
     if (!open || convId) return;
     setLoading(true);
     setConvError(null);
+    // Affiche le message d'accueil immediatement (optimiste), sans attendre
+    // les deux allers-retours reseau (creer/recuperer la conversation, puis
+    // charger son historique) — la connexion pouvait prendre plusieurs
+    // secondes (cold start Render inclus) pendant lesquelles le panneau
+    // restait vide. Sera remplace par le vrai historique une fois charge.
+    setMessages([sophiaWelcome(user.firstName)]);
     api.post('/chat/support')
       .then(({ data }) => {
         setConv(data);
@@ -326,7 +333,11 @@ function SupportChatInner({ user }: { user: any }) {
   /* ── Escalate ─────────────────────────────────────────────────────────── */
 
   const escalate = useCallback(async () => {
-    if (!convId) return;
+    if (!convId || escalating) return;
+    // Retour visuel immediat (le bouton se desactive/affiche un spinner) —
+    // sans ca, un reseau lent (cold start Render inclus) donnait l'impression
+    // que le clic n'avait rien fait pendant plusieurs secondes.
+    setEscalating(true);
     try {
       const { data } = await api.post(`/chat/conversations/${convId}/escalate`);
       setEscalated(true);
@@ -334,8 +345,8 @@ function SupportChatInner({ user }: { user: any }) {
         setMessages(prev => [...prev, data]);
         if (data.assignedAgent) setConv((c: any) => ({ ...c, assignedAgent: data.assignedAgent }));
       }
-    } catch {}
-  }, [convId]);
+    } catch {} finally { setEscalating(false); }
+  }, [convId, escalating]);
 
   /* ── Close ────────────────────────────────────────────────────────────── */
 
@@ -438,8 +449,8 @@ function SupportChatInner({ user }: { user: any }) {
             <Stack direction="row">
               {!escalated && !closed && (
                 <Tooltip title="Parler à un agent humain">
-                  <IconButton size="small" onClick={escalate} sx={{ color: '#aaa' }}>
-                    <HeadsetMic fontSize="small" />
+                  <IconButton size="small" onClick={escalate} disabled={escalating} sx={{ color: '#aaa' }}>
+                    {escalating ? <CircularProgress size={16} sx={{ color: ACCENT }} /> : <HeadsetMic fontSize="small" />}
                   </IconButton>
                 </Tooltip>
               )}
@@ -477,7 +488,7 @@ function SupportChatInner({ user }: { user: any }) {
           {/* Messages */}
           <Box sx={{ flex: 1, overflowY: 'auto', p: 2, display: 'flex', flexDirection: 'column', gap: 1,
             '&::-webkit-scrollbar': { width: 4 }, '&::-webkit-scrollbar-thumb': { bgcolor: '#2a3550', borderRadius: 2 } }}>
-            {loading && (
+            {loading && messages.length === 0 && (
               <Box sx={{ textAlign: 'center', pt: 5 }}>
                 <CircularProgress size={28} sx={{ color: ACCENT }} />
                 <Typography sx={{ color: '#666', fontSize: 12, mt: 1 }}>Connexion en cours…</Typography>
