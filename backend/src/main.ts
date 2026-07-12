@@ -43,23 +43,42 @@ async function bootstrap() {
   });
 
   // ── Security Headers ──────────────────────────────────────────────────────
-  app.use(
-    helmet({
-      contentSecurityPolicy: {
-        directives: {
-          defaultSrc: ["'self'"],
-          scriptSrc:  ["'self'", "'unsafe-inline'"],
-          styleSrc:   ["'self'", "'unsafe-inline'"],
-          imgSrc:     ["'self'", 'data:', 'https:'],
-          connectSrc: ["'self'", 'wss:', 'ws:', 'https:', 'http:'],
-          fontSrc:    ["'self'", 'https:', 'data:'],
-          objectSrc:  ["'none'"],
-          frameSrc:   ["'none'"],
-        },
+  // 'unsafe-inline' affaiblissait la protection XSS de la CSP sur TOUTE l'API
+  // (defense-in-depth utile même pour une API JSON, en cas de contenu reflete
+  // dans une reponse HTML par erreur). Seule /api/docs (Swagger UI, qui injecte
+  // des styles/scripts inline dans son bundle) en a reellement besoin — le
+  // reste de l'API n'en a jamais eu besoin.
+  const strictCsp = helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc:  ["'self'"],
+        styleSrc:   ["'self'"],
+        imgSrc:     ["'self'", 'data:', 'https:'],
+        connectSrc: ["'self'", 'wss:', 'ws:', 'https:', 'http:'],
+        fontSrc:    ["'self'", 'https:', 'data:'],
+        objectSrc:  ["'none'"],
+        frameSrc:   ["'none'"],
       },
-      crossOriginEmbedderPolicy: false,
-    }),
-  );
+    },
+    crossOriginEmbedderPolicy: false,
+  });
+  const swaggerCsp = helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc:  ["'self'", "'unsafe-inline'"],
+        styleSrc:   ["'self'", "'unsafe-inline'"],
+        imgSrc:     ["'self'", 'data:', 'https:'],
+        connectSrc: ["'self'", 'https:', 'http:'],
+        fontSrc:    ["'self'", 'https:', 'data:'],
+      },
+    },
+    crossOriginEmbedderPolicy: false,
+  });
+  app.use((req, res, next) => {
+    (req.path.startsWith('/api/docs') ? swaggerCsp : strictCsp)(req, res, next);
+  });
 
   // ── Compression ───────────────────────────────────────────────────────────
   app.use(compression());
