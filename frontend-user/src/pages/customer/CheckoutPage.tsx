@@ -668,7 +668,12 @@ export default function CheckoutPage() {
     try {
       const m = storeOptions?.acceptedPaymentMethods;
       if (Array.isArray(m)) return m;
-      return JSON.parse(m || '[]');
+      // Certaines boutiques ont une valeur stockee corrompue/heritee non-tableau
+      // (ex: "{}" au lieu de "[]") — JSON.parse reussit alors sans erreur mais
+      // renvoie un objet, pas un tableau, et .map() plantait plus loin sans que
+      // ce try/catch ne l'attrape (ce n'est pas une exception JSON.parse).
+      const parsed = JSON.parse(m || '[]');
+      return Array.isArray(parsed) ? parsed : [];
     } catch { return []; }
   })();
 
