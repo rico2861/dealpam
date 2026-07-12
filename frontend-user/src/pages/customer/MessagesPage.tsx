@@ -319,7 +319,7 @@ export default function MessagesPage() {
       sender: { id: user!.id, firstName: user!.firstName ?? '', lastName: user!.lastName ?? '', role: user?.role },
     };
     setMessages(p => [...p, opt]);
-    scrollBottom(true);
+    scrollBottom();
 
     let payload = content;
     const conv = conversations.find(c => c.id === active);
@@ -367,7 +367,7 @@ export default function MessagesPage() {
         sender: { id: user!.id, firstName: user!.firstName ?? '', lastName: user!.lastName ?? '', role: user?.role },
       };
       setMessages(p => [...p, opt]);
-      scrollBottom(true);
+      scrollBottom();
       socketRef.current?.emit('chat:send', { conversationId: active, content: file.name, type, mediaUrl: mediaRef });
     } catch { /* ignore */ }
     finally { setUploadPct(null); }
@@ -689,7 +689,15 @@ export default function MessagesPage() {
                   {gMsgs.map((msg, idx) => {
                     const mine   = isMine(msg);
                     const admin  = isAdmin(msg);
-                    const bot    = msg.type === 'BOT';
+                    // Deux cas distincts partagent type==='BOT' : le vrai assistant IA
+                    // (compte dealpam_ai, role MODERATOR, uniquement en support) et le
+                    // message d'absence auto d'un vendeur (senderId = le vendeur
+                    // lui-meme cote backend) — ce dernier doit s'afficher comme un
+                    // message normal du vendeur, juste avec un badge "Reponse auto",
+                    // pas sous une fausse identite "DealPam IA".
+                    const aiBot  = msg.type === 'BOT' && msg.sender?.role === 'MODERATOR';
+                    const awayBot = msg.type === 'BOT' && !aiBot;
+                    const bot    = aiBot;
                     const system = msg.type === 'SYSTEM';
                     const showAvatar = !mine && (idx === 0 || gMsgs[idx - 1]?.senderId !== msg.senderId);
                     const isLast = mine && (idx === gMsgs.length - 1 || gMsgs[idx + 1]?.senderId !== msg.senderId);
@@ -722,10 +730,19 @@ export default function MessagesPage() {
 
                         <Box sx={{ maxWidth: { xs: '80%', sm: '65%' }, display: 'flex', flexDirection: 'column', alignItems: mine ? 'flex-end' : 'flex-start' }}>
                           {!mine && showAvatar && (
-                            <Typography sx={{ fontSize: 10, mb: 0.4, ml: 0.5, fontWeight: 500,
-                              color: bot ? alpha(PURPLE, 0.7) : admin ? alpha(ORANGE, 0.7) : SUB }}>
-                              {bot ? 'DealPam IA' : admin ? 'Support DealPam' : `${msg.sender?.firstName ?? ''} ${msg.sender?.lastName ?? ''}`}
-                            </Typography>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6, mb: 0.4, ml: 0.5 }}>
+                              <Typography sx={{ fontSize: 10, fontWeight: 500,
+                                color: bot ? alpha(PURPLE, 0.7) : admin ? alpha(ORANGE, 0.7) : SUB }}>
+                                {bot ? 'DealPam IA' : admin ? 'Support DealPam' : `${msg.sender?.firstName ?? ''} ${msg.sender?.lastName ?? ''}`}
+                              </Typography>
+                              {awayBot && (
+                                <Box sx={{ px: 0.7, py: 0.1, borderRadius: '6px', bgcolor: alpha(SUB, 0.12) }}>
+                                  <Typography sx={{ fontSize: 9, fontWeight: 700, color: SUB2, letterSpacing: '0.2px' }}>
+                                    Réponse auto
+                                  </Typography>
+                                </Box>
+                              )}
+                            </Box>
                           )}
 
                           <Box sx={{
