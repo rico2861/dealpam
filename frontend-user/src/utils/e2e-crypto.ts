@@ -1,12 +1,20 @@
 // ECDH P-256 + AES-GCM end-to-end encryption
-// Key pair is generated per-session and the public key is uploaded to the server.
-// Encrypted messages are base64-encoded for transport over socket/HTTP.
+// Key pair is generated once per device/browser and the public key is uploaded
+// to the server. Encrypted messages are base64-encoded for transport over socket/HTTP.
 
 const EC_ALGO  = { name: 'ECDH', namedCurve: 'P-256' } as const;
 const AES_ALGO = 'AES-GCM';
 const AES_LEN  = 256;
 
-// ─── persist keys in sessionStorage (ephemeral per tab) ────────────────────
+// ─── persist keys in localStorage ───────────────────────────────────────────
+// AVANT : stockées en sessionStorage ("ephemeral per tab") — la clé privée
+// disparaissait à chaque fermeture d'onglet/navigateur, régénérant une PAIRE
+// ENTIÈREMENT NOUVELLE à la session suivante et écrasant la clé publique côté
+// serveur. Résultat : tout message chiffré avec l'ancienne clé (envoyé OU
+// reçu) devenait indéchiffrable pour toujours dès la session suivante — la
+// clé privée nécessaire à la dérivation ECDH n'existait plus nulle part. En
+// localStorage, la paire persiste tant que l'utilisateur ne vide pas son
+// navigateur, donc les anciens messages restent déchiffrables normalement.
 const PRIV_KEY = 'e2e_priv';
 const PUB_KEY  = 'e2e_pub';
 
@@ -24,22 +32,22 @@ export async function generateKeyPair(): Promise<string> {
   const rawPriv = await crypto.subtle.exportKey('pkcs8', pair.privateKey);
   const rawPub  = await crypto.subtle.exportKey('spki',  pair.publicKey);
 
-  sessionStorage.setItem(PRIV_KEY, b64(rawPriv));
+  localStorage.setItem(PRIV_KEY, b64(rawPriv));
   const pubB64 = b64(rawPub);
-  sessionStorage.setItem(PUB_KEY, pubB64);
+  localStorage.setItem(PUB_KEY, pubB64);
   return pubB64; // return to upload to server
 }
 
 // ─── Return our own public key (generate if missing) ───────────────────────
 export async function getOrCreatePublicKey(): Promise<string> {
-  const cached = sessionStorage.getItem(PUB_KEY);
+  const cached = localStorage.getItem(PUB_KEY);
   if (cached) return cached;
   return generateKeyPair();
 }
 
 // ─── Derive a shared AES key from our private key + peer public key ─────────
 async function deriveShared(peerPubB64: string): Promise<CryptoKey> {
-  const privRaw = sessionStorage.getItem(PRIV_KEY);
+  const privRaw = localStorage.getItem(PRIV_KEY);
   if (!privRaw) throw new Error('No private key — call generateKeyPair() first');
 
   const privKey = await crypto.subtle.importKey('pkcs8', unb64(privRaw), EC_ALGO, false, ['deriveKey', 'deriveBits']);
