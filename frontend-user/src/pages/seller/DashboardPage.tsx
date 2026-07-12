@@ -123,6 +123,28 @@ export default function SellerDashboard() {
     enabled: !!localStorage.getItem('accessToken'),
   });
 
+  // Verifie que la boutique a au moins un moyen de paiement et au moins un
+  // mode de fulfillment (livraison ou retrait) configure — sans ca, un client
+  // peut se retrouver bloque au checkout (voir bug HaiTech: acceptedPaymentMethods
+  // vide/corrompu empechait de finaliser une commande).
+  const { data: sellerData } = useQuery({
+    queryKey: ['sellerMe'],
+    queryFn: () => api.get('/sellers/me').then(r => r.data),
+    enabled: !!localStorage.getItem('accessToken'),
+  });
+  const parseArr = (val: any): any[] => {
+    if (!val) return [];
+    if (Array.isArray(val)) return val;
+    try { const p = JSON.parse(val); return Array.isArray(p) ? p : []; } catch { return []; }
+  };
+  const stores: any[] = sellerData?.stores ?? [];
+  const primaryStore = stores.find((s: any) => s.isPrimary) ?? stores[0];
+  const hasPayment  = primaryStore && parseArr(primaryStore.acceptedPaymentMethods).length > 0;
+  const hasFulfillment = primaryStore && (
+    parseArr(primaryStore.deliveryZones).length > 0 || parseArr(primaryStore.pickupPoints).length > 0
+  );
+  const storeIncomplete = !!primaryStore && (!hasPayment || !hasFulfillment);
+
   const sub          = stats?.subscription;
   const daysLeft     = sub ? Math.max(0, Math.ceil((new Date(sub.endDate).getTime() - Date.now()) / 86400000)) : 0;
   // Durée réelle du cycle (mensuel/annuel) plutôt qu'un 30 jours codé en dur —
@@ -142,6 +164,10 @@ export default function SellerDashboard() {
   if (stats?.lowStockCount > 0) actionItems.push({ text: `${stats.lowStockCount} produit${stats.lowStockCount>1?'s':''} en stock faible`, color: RED });
   if (!sub) actionItems.push({ text: 'Aucun abonnement actif', color: GLD });
   else if (expiring) actionItems.push({ text: `Abonnement expire dans ${daysLeft} jour(s)`, color: GLD });
+  // Sans ca, les clients peuvent se retrouver bloques au checkout (commande
+  // impossible a finaliser faute de mode de paiement/livraison configure).
+  if (primaryStore && !hasPayment) actionItems.push({ text: 'Aucun moyen de paiement configuré', color: RED });
+  if (primaryStore && !hasFulfillment) actionItems.push({ text: 'Aucune zone de livraison ni point de retrait configuré', color: RED });
 
   if (isLoading) return showSkel ? (
     <Box sx={{ p:{ xs:2, md:3 }, bgcolor:BG, minHeight:'100vh' }}>
@@ -210,6 +236,13 @@ export default function SellerDashboard() {
               sx={{ borderRadius:'8px', border:`1px solid ${BORD}`, color:SUB2, fontSize:12, px:1.5, py:0.5, flexShrink:0,
                 '&:hover':{ bgcolor:'rgba(15,23,42,0.09)' } }}>
               Voir les stocks
+            </Button>
+          )}
+          {storeIncomplete && (
+            <Button component={Link} to="/seller/store" size="small"
+              sx={{ borderRadius:'8px', border:`1px solid ${RED}30`, color:RED, fontSize:12, px:1.5, py:0.5, flexShrink:0,
+                '&:hover':{ bgcolor:`${RED}10` } }}>
+              Compléter ma boutique
             </Button>
           )}
         </Box>
