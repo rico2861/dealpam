@@ -1,6 +1,7 @@
 import { Suspense, lazy, useCallback } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider, createTheme, CssBaseline, Box, CircularProgress } from '@mui/material';
+import { frFR } from '@mui/x-data-grid';
 import { useAdminStore } from './store/admin.store';
 import { useInactivityLogout } from './hooks/useInactivityLogout';
 
@@ -51,6 +52,9 @@ function RouteFallback() {
   );
 }
 
+// frFR traduit les textes par défaut du DataGrid ("No rows", "Rows per page"...)
+// — sans ça, une liste vide (filtre sans résultat, aucune donnée) affichait un
+// texte anglais générique au milieu d'une interface entièrement en français.
 const theme = createTheme({
   palette: {
     mode: 'light',
@@ -65,7 +69,7 @@ const theme = createTheme({
     // @ts-ignore
     MuiDataGrid: { styleOverrides: { root: { border: 'none', borderRadius: 12, '& .MuiDataGrid-columnHeaders': { backgroundColor: '#f8f9fa' } } } },
   },
-});
+}, frFR);
 
 // ── Role-based access map ─────────────────────────────────────────────────
 
