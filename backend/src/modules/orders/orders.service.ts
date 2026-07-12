@@ -158,7 +158,11 @@ export class OrdersService {
 
   private async sendOrderEmails(userId: string, orders: any[]): Promise<void> {
     const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { email: true, firstName: true, lastName: true, phone: true } });
-    for (const order of orders) {
+    // Déjà en tâche de fond (non attendu par la réponse HTTP), mais une commande
+    // groupant plusieurs boutiques traitait chaque boutique en série (un aller-
+    // retour DB + SMTP après l'autre) — parallélisé, sans changer le comportement
+    // fire-and-forget côté appelant.
+    await Promise.all(orders.map(async (order) => {
       // Le vendeur ne recevait jamais le telephone du client (toujours envoye
       // vide) ni sa vraie adresse de livraison (seul le nom du point de
       // retrait etait utilise, meme pour une livraison a domicile) — corrige
@@ -206,7 +210,7 @@ export class OrdersService {
           sellerPhone: (order.store as any)?.phone || undefined,
         }).catch(() => {});
       }
-    }
+    }));
   }
 
   // ── Client : mes commandes ────────────────────────────────────────────────

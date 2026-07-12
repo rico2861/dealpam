@@ -56,21 +56,27 @@ export class DashboardService {
       this.prisma.product.count({ where: { storeId: { in: storeIds }, stock: { lte: 5 }, status: 'PUBLISHED' } }),
     ]);
 
-    // Per-store breakdown
-    const storeStats = await Promise.all(
-      seller.stores.map(async (store: any) => {
-        const [pCount, oCount, rev, viewsAgg] = await Promise.all([
-          this.prisma.product.count({ where: { storeId: store.id } }),
-          this.prisma.order.count({ where: { storeId: store.id } }),
-          this.prisma.order.aggregate({ where: { storeId: store.id, status: 'DELIVERED' }, _sum: { totalHTG: true } }),
-          this.prisma.product.aggregate({ where: { storeId: store.id }, _sum: { viewCount: true } }),
-        ]);
-        return {
-          ...store, productCount: pCount, orderCount: oCount, revenue: Number(rev._sum.totalHTG || 0),
-          totalViews: viewsAgg._sum.viewCount || 0,
-        };
-      }),
-    );
+    // Per-store breakdown — une requête groupBy par métrique au lieu d'un
+    // aller-retour DB par boutique (4 x N requêtes avant, pour N boutiques
+    // du même vendeur — visible dès 2-3 boutiques sur le dashboard, page
+    // ouverte à chaque connexion).
+    const [productCounts, orderCounts, revenueByStore, viewsByStore] = await Promise.all([
+      this.prisma.product.groupBy({ by: ['storeId'], where: { storeId: { in: storeIds } }, _count: { _all: true } }),
+      this.prisma.order.groupBy({ by: ['storeId'], where: { storeId: { in: storeIds } }, _count: { _all: true } }),
+      this.prisma.order.groupBy({ by: ['storeId'], where: { storeId: { in: storeIds }, status: 'DELIVERED' }, _sum: { totalHTG: true } }),
+      this.prisma.product.groupBy({ by: ['storeId'], where: { storeId: { in: storeIds } }, _sum: { viewCount: true } }),
+    ]);
+    const pCountMap = new Map(productCounts.map(r => [r.storeId, r._count._all]));
+    const oCountMap = new Map(orderCounts.map(r => [r.storeId, r._count._all]));
+    const revMap    = new Map(revenueByStore.map(r => [r.storeId, Number(r._sum.totalHTG || 0)]));
+    const viewsMap  = new Map(viewsByStore.map(r => [r.storeId, r._sum.viewCount || 0]));
+    const storeStats = seller.stores.map((store: any) => ({
+      ...store,
+      productCount: pCountMap.get(store.id) || 0,
+      orderCount:   oCountMap.get(store.id) || 0,
+      revenue:      revMap.get(store.id) || 0,
+      totalViews:   viewsMap.get(store.id) || 0,
+    }));
 
     // Monthly revenue — last 6 months
     const sixMonthsAgo = new Date();

@@ -102,14 +102,16 @@ export class StoresService {
     const maxStores = (plan as any)?.maxStores ?? DEFAULT_MAX_STORES[(plan as any)?.tier ?? 'STARTER'] ?? 1;
 
     // Vues cumulées des produits, par boutique — pour affichage "Vues" sur chaque carte.
-    const storesWithViews = await Promise.all(
-      (seller.stores as any[]).map(async (store) => {
-        const viewsAgg = await this.prisma.product.aggregate({
-          where: { storeId: store.id }, _sum: { viewCount: true },
-        });
-        return { ...store, totalViews: viewsAgg._sum.viewCount || 0 };
-      }),
-    );
+    // Un seul groupBy au lieu d'un aggregate par boutique (N requêtes pour N
+    // boutiques du même vendeur, sur une page consultée à chaque connexion).
+    const storeIds = (seller.stores as any[]).map(s => s.id);
+    const viewsByStore = await this.prisma.product.groupBy({
+      by: ['storeId'], where: { storeId: { in: storeIds } }, _sum: { viewCount: true },
+    });
+    const viewsMap = new Map(viewsByStore.map(r => [r.storeId, r._sum.viewCount || 0]));
+    const storesWithViews = (seller.stores as any[]).map((store) => ({
+      ...store, totalViews: viewsMap.get(store.id) || 0,
+    }));
 
     return {
       stores:    storesWithViews,
