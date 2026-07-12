@@ -5,6 +5,7 @@ import Header from './Header';
 import Footer from './Footer';
 import MobileBottomNav from './MobileBottomNav';
 import SupportChatWidget from '../shared/SupportChatWidget';
+import SilentErrorBoundary from '../shared/SilentErrorBoundary';
 import { useAuthStore } from '../../store/auth.store';
 import { useCartStore } from '../../store/cart.store';
 
@@ -28,7 +29,11 @@ export default function MainLayout() {
       </Box>
       <Footer />
       <MobileBottomNav />
-      <SupportChatWidget />
+      {/* Isole les erreurs : ce widget flottant est monte sur toutes les
+          pages, une exception ici ne doit jamais casser checkout/panier/etc. */}
+      <SilentErrorBoundary>
+        <SupportChatWidget />
+      </SilentErrorBoundary>
     </Box>
   );
 }

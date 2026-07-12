@@ -24,6 +24,7 @@ import { useGeolocation } from '../../hooks/useGeolocation';
 import api from '../../api/axios';
 import { useLocationState } from '../../hooks/useLocationState';
 import LocationModal from '../location/LocationModal';
+import SilentErrorBoundary from '../shared/SilentErrorBoundary';
 
 // ─── Brand tokens ──────────────────────────────────────────────────────────────
 const ORANGE   = '#FF6B00';
@@ -1221,11 +1222,15 @@ export default function Header() {
         </Box>
       </Drawer>
 
-      {/* Location modal */}
-      <LocationModal
-        open={locationModalOpen}
-        onClose={closeLocationModal}
-      />
+      {/* Location modal — isole les erreurs : un crash ici ne doit jamais
+          faire planter le reste de la page (checkout, panier...) puisque
+          Header est monte sur absolument toutes les pages. */}
+      <SilentErrorBoundary>
+        <LocationModal
+          open={locationModalOpen}
+          onClose={closeLocationModal}
+        />
+      </SilentErrorBoundary>
     </>
   );
 }
