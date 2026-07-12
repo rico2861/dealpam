@@ -1,6 +1,6 @@
-import { useCallback } from 'react';
+import { Suspense, lazy, useCallback } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
+import { ThemeProvider, createTheme, CssBaseline, Box, CircularProgress } from '@mui/material';
 import { useAdminStore } from './store/admin.store';
 import { useInactivityLogout } from './hooks/useInactivityLogout';
 
@@ -8,36 +8,48 @@ const INACTIVITY_TIMEOUT_MS = 15 * 60 * 1000; // 15 min — panel admin (KYC, pa
 import AdminLayout from './components/layout/AdminLayout';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/dashboard/DashboardPage';
-import UsersPage from './pages/users/UsersPage';
-import SellersPage from './pages/sellers/SellersPage';
-import SellerDetailPage from './pages/sellers/SellerDetailPage';
-import ProductsPage from './pages/products/ProductsPage';
-import OrdersPage from './pages/orders/OrdersPage';
-import PaymentsPage from './pages/payments/PaymentsPage';
-import MoncashTransactionsPage from './pages/payments/MoncashTransactionsPage';
-import SubscriptionsPage from './pages/subscriptions/SubscriptionsPage';
-import PlansPage from './pages/subscriptions/PlansPage';
-import CouponsPage from './pages/coupons/CouponsPage';
-import CategoriesPage from './pages/categories/CategoriesPage';
-import BrandsPage from './pages/brands/BrandsPage';
-import ReviewsPage from './pages/reviews/ReviewsPage';
-import SettingsPage from './pages/settings/SettingsPage';
-import PromotionsPage from './pages/promotions/PromotionsPage';
-import AdsAdminPage from './pages/ads/AdsAdminPage';
-import TagsPage from './pages/tags/TagsPage';
-import LabelsPage from './pages/labels/LabelsPage';
-import FlashSalePage from './pages/flash-sale/FlashSalePage';
-import BannersPage from './pages/banners/BannersPage';
-import ChatMonitorPage from './pages/chat/ChatMonitorPage';
-import BoutiquePage from './pages/boutique/BoutiquePage';
-import StaffPage from './pages/staff/StaffPage';
-import PartnerPage from './pages/partner/PartnerPage';
+
+// Le reste des ~30 pages (staff/admin uniquement, jamais vues par un simple
+// visiteur) passe en React.lazy — auparavant tout chargeait dans le bundle
+// initial, y compris des pages n'affectant qu'un seul rôle (ex: ACCOUNTANT).
+const UsersPage               = lazy(() => import('./pages/users/UsersPage'));
+const SellersPage             = lazy(() => import('./pages/sellers/SellersPage'));
+const SellerDetailPage        = lazy(() => import('./pages/sellers/SellerDetailPage'));
+const ProductsPage            = lazy(() => import('./pages/products/ProductsPage'));
+const OrdersPage              = lazy(() => import('./pages/orders/OrdersPage'));
+const PaymentsPage            = lazy(() => import('./pages/payments/PaymentsPage'));
+const MoncashTransactionsPage = lazy(() => import('./pages/payments/MoncashTransactionsPage'));
+const SubscriptionsPage       = lazy(() => import('./pages/subscriptions/SubscriptionsPage'));
+const PlansPage               = lazy(() => import('./pages/subscriptions/PlansPage'));
+const CouponsPage             = lazy(() => import('./pages/coupons/CouponsPage'));
+const CategoriesPage          = lazy(() => import('./pages/categories/CategoriesPage'));
+const BrandsPage              = lazy(() => import('./pages/brands/BrandsPage'));
+const ReviewsPage             = lazy(() => import('./pages/reviews/ReviewsPage'));
+const SettingsPage            = lazy(() => import('./pages/settings/SettingsPage'));
+const PromotionsPage          = lazy(() => import('./pages/promotions/PromotionsPage'));
+const AdsAdminPage            = lazy(() => import('./pages/ads/AdsAdminPage'));
+const TagsPage                = lazy(() => import('./pages/tags/TagsPage'));
+const LabelsPage              = lazy(() => import('./pages/labels/LabelsPage'));
+const FlashSalePage           = lazy(() => import('./pages/flash-sale/FlashSalePage'));
+const BannersPage             = lazy(() => import('./pages/banners/BannersPage'));
+const ChatMonitorPage         = lazy(() => import('./pages/chat/ChatMonitorPage'));
+const BoutiquePage            = lazy(() => import('./pages/boutique/BoutiquePage'));
+const StaffPage               = lazy(() => import('./pages/staff/StaffPage'));
+const PartnerPage             = lazy(() => import('./pages/partner/PartnerPage'));
 import InvestorLayout from './components/layout/InvestorLayout';
-import ChangePasswordPage from './pages/ChangePasswordPage';
-import InvestorSellersPage from './pages/partner/InvestorSellersPage';
-import InvestorAdsPage from './pages/partner/InvestorAdsPage';
-import InvestorClientsPage from './pages/partner/InvestorClientsPage';
-import InvestorOrdersPage from './pages/partner/InvestorOrdersPage';
+const ChangePasswordPage      = lazy(() => import('./pages/ChangePasswordPage'));
+const InvestorSellersPage     = lazy(() => import('./pages/partner/InvestorSellersPage'));
+const InvestorAdsPage         = lazy(() => import('./pages/partner/InvestorAdsPage'));
+const InvestorClientsPage     = lazy(() => import('./pages/partner/InvestorClientsPage'));
+const InvestorOrdersPage      = lazy(() => import('./pages/partner/InvestorOrdersPage'));
+
+function RouteFallback() {
+  return (
+    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
+      <CircularProgress size={32} sx={{ color: '#FF9900' }} />
+    </Box>
+  );
+}
 
 const theme = createTheme({
   palette: {
@@ -147,6 +159,7 @@ export default function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <BrowserRouter>
+        <Suspense fallback={<RouteFallback />}>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/change-password" element={<AuthGuard><ChangePasswordPage /></AuthGuard>} />
@@ -187,6 +200,7 @@ export default function App() {
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </Suspense>
       </BrowserRouter>
     </ThemeProvider>
   );
