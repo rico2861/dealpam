@@ -21,14 +21,14 @@ export class BannersController {
   // ── ADMIN ─────────────────────────────────────────────────────────────────
   @Get('admin')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'SUPER_ADMIN')
   getAll() {
     return this.svc.getAll();
   }
 
   @Post('admin')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'SUPER_ADMIN')
   create(@Body() dto: {
     position?: string; tag?: string; title?: string; subtitle?: string; ctaText?: string; catFilter?: string;
     imageUrl: string; targetUrl: string; sortOrder?: number; startsAt?: string; endsAt?: string;
@@ -38,14 +38,14 @@ export class BannersController {
 
   @Patch('admin/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'SUPER_ADMIN')
   update(@Param('id') id: string, @Body() dto: any) {
     return this.svc.update(id, dto);
   }
 
   @Delete('admin/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'SUPER_ADMIN')
   remove(@Param('id') id: string) {
     return this.svc.remove(id);
   }
