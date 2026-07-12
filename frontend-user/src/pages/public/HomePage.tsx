@@ -214,19 +214,12 @@ function MiniCard({ p, visible, isMobile }: { p: any; visible: boolean; isMobile
   );
 }
 
-/* ─── Side banners ────────────────────────────────────────────────────────── */
-const LEFT_BANNERS = [
-  { label: 'Ventes Flash', img: 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=400&q=80', to: '/ventes-flash' },
-  { label: 'Nouveautés',   img: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=400&q=80', to: '/products?sort=latest' },
-  { label: 'Tendances',    img: 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=400&q=80', to: '/products?sort=views' },
-];
-const RIGHT_BANNERS = [
-  { label: 'Restaurant',     img: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400&q=80', to: '/products?category=restaurants' },
-  { label: 'Maison',         img: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400&q=80', to: '/products?category=maison' },
-  { label: 'Service',        img: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&q=80', to: '/products?category=services' },
-];
+/* ─── Side banners — pilotées par l'admin (page "Pubs Homepage", position
+   SIDE_LEFT / SIDE_RIGHT) — masquées si l'admin n'en a configuré aucune. ──── */
+type SideBanner = { label: string; img: string; to: string };
 
-function SideBanners({ banners }: { banners: typeof LEFT_BANNERS }) {
+function SideBanners({ banners }: { banners: SideBanner[] }) {
+  if (banners.length === 0) return null;
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, width: 180, flexShrink: 0 }}>
       {banners.map((b, i) => (
@@ -480,7 +473,9 @@ function CentralCarousel({ allProducts, slides }: { allProducts: any[]; slides: 
 }
 
 /* ─── Hero wrapper ───────────────────────────────────────────────────────── */
-function HeroSection({ allProducts, slides }: { allProducts: any[]; slides: HeroSlide[] }) {
+function HeroSection({ allProducts, slides, leftBanners, rightBanners }: {
+  allProducts: any[]; slides: HeroSlide[]; leftBanners: SideBanner[]; rightBanners: SideBanner[];
+}) {
   // Aucune bannière configurée par l'admin ("Pubs Homepage") : on n'affiche
   // plus de contenu marketing statique par défaut, la section est simplement
   // masquée jusqu'à ce qu'au moins une bannière soit ajoutée.
@@ -536,15 +531,19 @@ function HeroSection({ allProducts, slides }: { allProducts: any[]; slides: Hero
           alignItems: 'stretch',
         }}>
           {/* Left banners — large desktop only */}
-          <Box sx={{ display: { xs: 'none', lg: 'flex' } }}>
-            <SideBanners banners={LEFT_BANNERS} />
-          </Box>
+          {leftBanners.length > 0 && (
+            <Box sx={{ display: { xs: 'none', lg: 'flex' } }}>
+              <SideBanners banners={leftBanners} />
+            </Box>
+          )}
           {/* Carousel */}
           <CentralCarousel allProducts={allProducts} slides={slides} />
           {/* Right banners — large desktop only */}
-          <Box sx={{ display: { xs: 'none', lg: 'flex' } }}>
-            <SideBanners banners={RIGHT_BANNERS} />
-          </Box>
+          {rightBanners.length > 0 && (
+            <Box sx={{ display: { xs: 'none', lg: 'flex' } }}>
+              <SideBanners banners={rightBanners} />
+            </Box>
+          )}
         </Box>
       </Container>
     </Box>
@@ -560,7 +559,7 @@ function TrustBar() {
     { Icon: SupportAgent,      title: 'Support 7j/7',       sub: 'Aide acheteurs et vendeurs' },
   ];
   return (
-    <Box sx={{ bgcolor: 'white', borderBottom: '1px solid #F0F0F0' }}>
+    <Box sx={{ display: { xs: 'none', md: 'block' }, bgcolor: 'white', borderBottom: '1px solid #F0F0F0' }}>
       <Container maxWidth="xl" sx={{ px: { xs: 1.5, md: 2 } }}>
         <Box sx={{
           display: 'grid',
@@ -2432,18 +2431,28 @@ export default function HomePage() {
   // choisies par l'admin (isFeatured) — jamais de faux produits inventés.
   const carouselPool = apiPool.length >= 4 ? apiPool : (featured as any[]);
 
-  // Grand carousel hero — entièrement piloté par l'admin (page "Pubs Homepage").
-  // Plus de contenu marketing statique en dur : si l'admin n'a configuré aucune
-  // bannière, la section hero ne s'affiche simplement pas (voir HeroSection).
-  const heroSlides = (banners as any[]).map((b) => ({
-    img: b.imageUrl,
-    tag: b.tag || '',
-    title: b.title || '',
-    sub: b.subtitle || '',
-    cta: b.ctaText || 'Découvrir',
-    to: b.targetUrl,
-    catFilter: b.catFilter || null,
-  }));
+  // Grand carousel hero + bannières laterales — entièrement piloté par l'admin
+  // (page "Pubs Homepage", un même modèle avec un champ "position"). Plus de
+  // contenu marketing statique en dur : si l'admin n'a configuré aucune
+  // bannière pour une position donnée, la section correspondante ne s'affiche
+  // simplement pas (voir HeroSection / SideBanners).
+  const heroSlides = (banners as any[])
+    .filter((b) => (b.position || 'HERO') === 'HERO')
+    .map((b) => ({
+      img: b.imageUrl,
+      tag: b.tag || '',
+      title: b.title || '',
+      sub: b.subtitle || '',
+      cta: b.ctaText || 'Découvrir',
+      to: b.targetUrl,
+      catFilter: b.catFilter || null,
+    }));
+  const leftBanners = (banners as any[])
+    .filter((b) => b.position === 'SIDE_LEFT')
+    .map((b) => ({ label: b.title || b.tag || '', img: b.imageUrl, to: b.targetUrl }));
+  const rightBanners = (banners as any[])
+    .filter((b) => b.position === 'SIDE_RIGHT')
+    .map((b) => ({ label: b.title || b.tag || '', img: b.imageUrl, to: b.targetUrl }));
 
   // Produits recommandés : mix des 3 catégories les plus vues, dédupliqués
   const recommendedProducts = (() => {
@@ -2464,7 +2473,7 @@ export default function HomePage() {
 
 
       {/* 1 — Hero */}
-      <HeroSection allProducts={carouselPool} slides={heroSlides} />
+      <HeroSection allProducts={carouselPool} slides={heroSlides} leftBanners={leftBanners} rightBanners={rightBanners} />
 
       {/* 2 — Trust bar */}
       <TrustBar />

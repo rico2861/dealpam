@@ -1194,6 +1194,9 @@ model CouponRedemption {
 
 model HomepageBanner {
   id          String   @id @default(uuid())
+  // HERO = grand carrousel central, SIDE_LEFT / SIDE_RIGHT = colonnes de
+  // bannières a cote du carrousel (desktop large uniquement).
+  position    String   @default("HERO") @map("position")
   tag         String?  // ex: "MODE & STYLE", badge affiché au-dessus du titre
   title       String?
   subtitle    String?  // texte descriptif sous le titre
@@ -1209,6 +1212,7 @@ model HomepageBanner {
   updatedAt   DateTime @updatedAt @map("updated_at")
 
   @@index([isActive, sortOrder])
+  @@index([position])
   @@map("homepage_banners")
 }
 

@@ -30,7 +30,7 @@ export class BannersController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   create(@Body() dto: {
-    tag?: string; title?: string; subtitle?: string; ctaText?: string; catFilter?: string;
+    position?: string; tag?: string; title?: string; subtitle?: string; ctaText?: string; catFilter?: string;
     imageUrl: string; targetUrl: string; sortOrder?: number; startsAt?: string; endsAt?: string;
   }) {
     return this.svc.create(dto);

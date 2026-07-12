@@ -59,7 +59,13 @@ export class StoresController {
   @Get(':slug/options')
   @ApiOperation({ summary: 'Points de retrait + zones de livraison (public)' })
   async getDeliveryOptions(@Param('slug') slug: string, @Res({ passthrough: true }) res: Response) {
-    res.setHeader('Cache-Control', 'public, max-age=120, stale-while-revalidate=600');
+    // Données utilisées pour bloquer/autoriser le checkout (zones de livraison,
+    // points de retrait) — un cache de plusieurs minutes faisait apparaitre un
+    // faux blocage "ce vendeur ne livre pas dans votre region" pendant jusqu'a
+    // 10 min apres qu'un vendeur ait modifie ses zones, force a faire un hard
+    // refresh pour voir la vraie donnee. Cache tres court, la correction prime
+    // ici sur la performance.
+    res.setHeader('Cache-Control', 'no-cache');
     const store = await this.storesService.findBySlug(slug);
     let pickupPoints: any[] = [];
     let deliveryZones: any[] = [];

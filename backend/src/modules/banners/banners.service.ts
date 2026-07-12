@@ -27,11 +27,12 @@ export class BannersService {
   }
 
   create(dto: {
-    tag?: string; title?: string; subtitle?: string; ctaText?: string; catFilter?: string;
+    position?: string; tag?: string; title?: string; subtitle?: string; ctaText?: string; catFilter?: string;
     imageUrl: string; targetUrl: string; sortOrder?: number; startsAt?: string; endsAt?: string;
   }) {
     return (this.prisma as any).homepageBanner.create({
       data: {
+        position:  dto.position || 'HERO',
         tag:       dto.tag || null,
         title:     dto.title || null,
         subtitle:  dto.subtitle || null,
@@ -48,6 +49,7 @@ export class BannersService {
 
   update(id: string, dto: any) {
     const data: any = {};
+    if (dto.position  !== undefined) data.position  = dto.position;
     if (dto.tag       !== undefined) data.tag       = dto.tag;
     if (dto.title     !== undefined) data.title     = dto.title;
     if (dto.subtitle  !== undefined) data.subtitle  = dto.subtitle;
