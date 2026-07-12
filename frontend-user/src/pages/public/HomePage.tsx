@@ -1453,16 +1453,6 @@ function FlashSection({ products, to, loading }: { products: any[]; to: string; 
   }
   if (!products.length || ended) return null;
 
-  // Quand il y a peu d'offres, le panneau ne doit pas s'étirer sur toute la
-  // largeur derrière une seule carte, avec une carte perdue au milieu d'un
-  // grand vide — on borne sa largeur au contenu réel. Le plancher ne sert
-  // qu'à laisser la place à l'en-tête (titre + bouton "tout voir"), jamais
-  // pour forcer un vide artificiel autour d'une seule carte.
-  const CARD_W = 260, GAP = 20, PAD = 64;
-  const visible = Math.min(products.length, 5);
-  const contentWidth = visible * CARD_W + Math.max(0, visible - 1) * GAP + PAD;
-  const panelMaxWidth = Math.max(420, contentWidth);
-
   return (
     <Container maxWidth="xl" sx={{ px: { xs: 1.5, md: 2 }, py: { xs: 2, md: 3 } }}>
       <Box sx={{
@@ -1472,8 +1462,7 @@ function FlashSection({ products, to, loading }: { products: any[]; to: string; 
         border: `1px solid ${FS_BORDER}`,
         boxShadow: '0 2px 10px rgba(15,27,46,0.05)',
         p: { xs: '18px', md: '22px 24px' },
-        maxWidth: { xs: '100%', md: panelMaxWidth },
-        mx: { md: 'auto' },
+        width: '100%',
       }}>
         {/* Header */}
         <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' },

@@ -857,7 +857,7 @@ export default function Header() {
           </Box>
 
           {/* Search bar */}
-          <Box ref={sBoxRef} sx={{ flex: 1, position: 'relative', minWidth: 0 }}>
+          <Box ref={sBoxRef} sx={{ flex: 1, maxWidth: 680, position: 'relative', minWidth: 0 }}>
             <Box component="form" onSubmit={doSearch} sx={{
               display: 'flex', alignItems: 'center', height: 46, borderRadius: '12px',
               bgcolor: 'rgba(255,255,255,0.07)', border: '1.5px solid rgba(255,255,255,0.1)', transition: 'all 0.2s',

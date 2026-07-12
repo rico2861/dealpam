@@ -151,7 +151,7 @@ export default function LocationModal({ open, onClose }: { open: boolean; onClos
       err => {
         setGpsState('error');
         setGpsMsg(
-          err.code === 1 ? 'Accès GPS refusé — autorisez la localisation'
+          err.code === 1 ? 'Accès GPS refusé — cliquez sur l\'icône 🔒/ⓘ à côté de l\'URL, autorisez "Position" puis rechargez la page'
           : err.code === 2 ? 'Position introuvable'
           : 'Délai dépassé — réessayez',
         );
