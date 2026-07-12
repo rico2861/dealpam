@@ -2004,33 +2004,6 @@ function NearYouSection({ products, location, onModal, label, level, hasLocalVen
 }
 
 /* ─── Admin banner ───────────────────────────────────────────────────────── */
-function AdminBanner({ banners, loading }: { banners: any[]; loading?: boolean }) {
-  if (loading) {
-    return (
-      <Box sx={{ bgcolor: PG, py: 1.5 }}>
-        <Container maxWidth="xl" sx={{ px: { xs: 2, md: 2 } }}>
-          <SkelBox sx={{ width: '100%', height: 200, borderRadius: '10px' }} />
-        </Container>
-      </Box>
-    );
-  }
-  if (!banners.length) return null;
-  const b = banners[0];
-  return (
-    <Box sx={{ bgcolor: PG, py: 1.5 }}>
-      <Container maxWidth="xl" sx={{ px: { xs: 2, md: 2 } }}>
-        <Box component={Link} to={b.targetUrl || '/products'}
-          sx={{ display: 'block', borderRadius: 2.5, overflow: 'hidden',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.09)', transition: 'transform 0.2s',
-            '&:hover': { transform: 'scale(1.005)' } }}>
-          <img src={b.imageUrl} alt={b.title || ''}
-            style={{ width: '100%', maxHeight: 200, objectFit: 'cover', display: 'block' }} />
-        </Box>
-      </Container>
-    </Box>
-  );
-}
-
 /* ─── Deal Card — carte promotion vendeur ────────────────────────────────── */
 function SponsoredDealCard({ ad, dark }: { ad: any; dark?: boolean }) {
   const navigate = useNavigate();
@@ -2562,9 +2535,6 @@ export default function HomePage() {
           products={phones as any[]} count={(phones as any[]).length}
           loading={phonesLoading} skelCount={8} />
       )}
-
-      {/* 11 — Admin banner */}
-      <AdminBanner banners={banners as any[]} loading={bannersLoading} />
 
       {/* 12 — Top vendus */}
       {(topSellersLoading || (topSellers as any[]).length > 0) && (
