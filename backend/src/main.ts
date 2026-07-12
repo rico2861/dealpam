@@ -102,13 +102,13 @@ async function bootstrap() {
         /^http:\/\/(192\.168\.|172\.|10\.)/.test(origin)) {
         return callback(null, true);
       }
-      // Domaine temporaire Hostinger (avant pointage du domaine final / staging) —
-      // change à chaque site créé (ex: darkgrey-elephant-608046.hostingersite.com),
-      // donc on autorise le sous-domaine générique plutôt qu'une valeur figée qui
-      // casserait le jour où Hostinger régénère un nouvel alias.
-      if (/^https:\/\/[a-z0-9-]+\.hostingersite\.com$/.test(origin)) {
-        return callback(null, true);
-      }
+      // Le domaine final dealpam.com est pointé et en production — le repli
+      // sur *.hostingersite.com (utile avant le pointage du domaine) est
+      // retiré : avec credentials:true, il aurait accordé un accès cross-
+      // origin authentifié à n'importe quel site Hostinger temporaire créé
+      // par un tiers. Si un nouveau sous-domaine de staging est nécessaire,
+      // l'ajouter explicitement à allowedOrigins (via FRONTEND_URL/ADMIN_URL
+      // ou une entrée dédiée) plutôt que par un motif générique.
       callback(new Error(`CORS: origin ${origin} not allowed`));
     },
     methods:        ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
