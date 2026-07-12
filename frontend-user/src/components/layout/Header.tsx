@@ -23,6 +23,7 @@ import { useCartStore } from '../../store/cart.store';
 import { useGeolocation } from '../../hooks/useGeolocation';
 import api from '../../api/axios';
 import { useLocationState } from '../../hooks/useLocationState';
+import { useUnreadMessagesCount } from '../../hooks/useNotifications';
 import LocationModal from '../location/LocationModal';
 import SilentErrorBoundary from '../shared/SilentErrorBoundary';
 
@@ -467,6 +468,7 @@ function AccountDropdown({ user, isSeller, navigate, onClose, logout }: any) {
 export default function Header() {
   const { user, logout } = useAuthStore();
   const { count } = useCartStore();
+  const unreadMessages = useUnreadMessagesCount();
   const navigate    = useNavigate();
   const theme       = useTheme();
   const isMobile    = useMediaQuery(theme.breakpoints.down('md'));
@@ -930,7 +932,10 @@ export default function Header() {
             <Tooltip title="Mes messages">
               <IconButton component={Link} to={isSeller ? '/seller/chat' : '/account/messages'}
                 sx={{ color: 'rgba(255,255,255,0.6)', borderRadius: '10px', border: '1px solid transparent', flexShrink: 0, '&:hover': { color: ORANGE, border: `1px solid ${BORDER}`, bgcolor: 'rgba(255,255,255,0.04)' } }}>
-                <ChatBubbleOutline sx={{ fontSize: 21 }} />
+                <Badge badgeContent={unreadMessages} max={99}
+                  sx={{ '& .MuiBadge-badge': { bgcolor: '#EF4444', color: 'white', fontSize: 10, fontWeight: 700, minWidth: 16, height: 16, top: 2, right: 2 } }}>
+                  <ChatBubbleOutline sx={{ fontSize: 21 }} />
+                </Badge>
               </IconButton>
             </Tooltip>
           )}

@@ -1,10 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { Box, Drawer, List, ListItem, ListItemIcon, ListItemText, Typography, AppBar, Toolbar, IconButton, Avatar, Chip, Divider, useMediaQuery, useTheme, Badge, Tooltip, alpha } from '@mui/material';
 import { Dashboard, People, Store, Inventory, ShoppingBag, Payment, Subscriptions, Category, BrandingWatermark, Reviews, Settings, Menu as MenuIcon, Logout, Notifications, FlashOn, Campaign, Tag, Label, Timer, ViewCarousel, SupportAgent, Storefront, AdminPanelSettings, Handshake, WorkspacePremium, LocalOffer, TravelExplore } from '@mui/icons-material';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { io } from 'socket.io-client';
 import { useAdminStore } from '../../store/admin.store';
 import api from '../../api/axios';
+
+const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
 // Roles that each menu item is visible to (empty = all staff roles allowed)
 type MenuItem = { path: string; label: string; icon: any; exact?: boolean; roles?: string[] };
@@ -54,12 +57,30 @@ export default function AdminLayout() {
   const [open, setOpen] = useState(false);
 
   // Badge notifications = vraies conversations support ouvertes (avant : "3" codé en dur, sans lien avec les données réelles).
+  const qc = useQueryClient();
   const { data: unreadCount = 0 } = useQuery({
     queryKey: ['admin-chat-unread'],
     queryFn: () => api.get('/chat/admin/unread-count').then(r => r.data),
     enabled: !!admin,
     refetchInterval: 30_000,
   });
+
+  // Rafraichissement en temps reel (pas seulement du polling 30s) : les
+  // sockets admin/moderateur rejoignent automatiquement la room
+  // 'admin:monitor' a la connexion (voir chat.gateway.ts handleConnection),
+  // qui recoit deja 'chat:message' pour CHAQUE message envoye (support ou p2p).
+  useEffect(() => {
+    if (!admin) return;
+    const socket = io(`${API_URL.replace('/v1', '')}/chat`, {
+      auth: (cb: (o: object) => void) => cb({ token: localStorage.getItem('admin_token') }),
+      transports: ['websocket', 'polling'],
+      reconnectionAttempts: 5,
+    });
+    const refresh = () => qc.invalidateQueries({ queryKey: ['admin-chat-unread'] });
+    socket.on('chat:message', refresh);
+    return () => { socket.disconnect(); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [!!admin]);
 
   const isActive = (path: string, exact?: boolean) =>
     exact ? location.pathname === path : location.pathname === path || location.pathname.startsWith(path + '/');

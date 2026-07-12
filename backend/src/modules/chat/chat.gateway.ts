@@ -84,6 +84,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     this.server.to(`conv:${data.conversationId}`).emit('chat:message', msg);
     this.server.to('admin:monitor').emit('chat:message', { ...msg, conversationId: data.conversationId });
+    this.notifyUnreadChanged(data.conversationId, socket.data.userId);
 
     // Trigger AI only for non-bot text messages on non-escalated support convs
     if (data.type !== 'BOT' && data.type !== 'SYSTEM') {
@@ -106,6 +107,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   async markRead(@ConnectedSocket() socket: Socket, @MessageBody() { conversationId }: { conversationId: string }) {
     await this.chatService.markRead(socket.data.userId, conversationId);
     this.server.to(`conv:${conversationId}`).emit('chat:read', { conversationId, userId: socket.data.userId });
+    // Le badge de messages non lus (Header, tous roles) doit se rafraichir
+    // immediatement quand SOI-meme on marque une conversation comme lue.
+    this.server.to(`user:${socket.data.userId}`).emit('chat:unread-changed');
   }
 
   @SubscribeMessage('chat:typing')
@@ -139,7 +143,23 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     );
     this.server.to(`conv:${data.conversationId}`).emit('chat:message', msg);
     this.server.to('admin:monitor').emit('chat:message', { ...msg, conversationId: data.conversationId });
+    this.notifyUnreadChanged(data.conversationId, socket.data.userId);
     return msg;
+  }
+
+  // Prevenir chaque participant (sauf l'expediteur) via sa room personnelle
+  // `user:${id}` — necessaire pour le badge de messages non lus dans le
+  // Header, qui n'a pas rejoint la room `conv:${id}` de chaque conversation.
+  private async notifyUnreadChanged(conversationId: string, excludeUserId?: string) {
+    try {
+      const participants = await this.prisma.conversationUser.findMany({
+        where: { conversationId },
+        select: { userId: true },
+      });
+      for (const p of participants) {
+        if (p.userId !== excludeUserId) this.server.to(`user:${p.userId}`).emit('chat:unread-changed');
+      }
+    } catch { /* ignore */ }
   }
 
   isOnline(userId: string): boolean {
@@ -192,6 +212,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
             include: { sender: { select: { id: true, firstName: true, lastName: true, avatar: true, role: true } } },
           });
           this.server.to(`conv:${conv.id}`).emit('chat:message', away);
+          this.notifyUnreadChanged(conv.id, u.id);
         }
       } catch { /* ignore */ }
     })();
@@ -210,6 +231,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         const botMsg = await this.chatService.sendBotMessage(conversationId, aiContent);
         this.server.to(`conv:${conversationId}`).emit('chat:message', botMsg);
         this.server.to('admin:monitor').emit('chat:message', { ...botMsg, conversationId });
+        this.notifyUnreadChanged(conversationId);
       } catch { /* silently ignore */ }
     })();
   }

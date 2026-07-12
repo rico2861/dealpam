@@ -18,6 +18,12 @@ export class ChatController {
     return this.chatService.getUserConversations(req.user.id);
   }
 
+  @Get('unread-count')
+  @ApiOperation({ summary: 'Total de messages non lus (acheteur, vendeur ou admin)' })
+  getUnreadCount(@Req() req: any) {
+    return this.chatService.getUnreadCount(req.user.id);
+  }
+
   @Post('support')
   @ApiOperation({ summary: 'Démarrer ou récupérer la conversation support (Sophia / agent)' })
   getOrCreateSupport(@Req() req: any, @Body('topic') topic?: string) {
