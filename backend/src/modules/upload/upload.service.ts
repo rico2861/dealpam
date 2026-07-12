@@ -100,6 +100,17 @@ export class UploadService {
     if (!ALLOWED_DOC_MIME.includes(file.mimetype)) throw new BadRequestException('Seuls PDF et images (JPG, PNG) sont acceptés');
     const ext = path.extname(file.originalname).toLowerCase();
     if (!ALLOWED_DOC_EXT.includes(ext)) throw new BadRequestException('Extension de fichier non autorisée');
+
+    // Le mimetype/extension ci-dessus viennent du client et sont falsifiables
+    // (ex: un .html renommé en .pdf avec Content-Type: application/pdf).
+    // On vérifie les "magic bytes" réels du contenu — seule garantie fiable
+    // du type de fichier effectivement stocké (documents KYC vendeur).
+    const { fileTypeFromBuffer } = await import('file-type');
+    const detected = await fileTypeFromBuffer(file.buffer);
+    if (!detected || !ALLOWED_DOC_MIME.includes(detected.mime)) {
+      throw new BadRequestException('Le contenu du fichier ne correspond pas à son type déclaré');
+    }
+
     const publicId = this.generateId();
     const key = `${folder}/${publicId}${ext}`;
 
