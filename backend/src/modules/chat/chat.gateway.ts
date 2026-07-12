@@ -8,6 +8,7 @@ import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ChatService } from './chat.service';
 import { AiChatService } from './ai-chat.service';
+import { chatSendLimiter } from '../../shared/utils/account-rate-limiter';
 
 const ADMIN_ROLES = ['ADMIN', 'SUPER_ADMIN', 'MODERATOR'];
 
@@ -74,6 +75,12 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() socket: Socket,
     @MessageBody() data: { conversationId: string; content: string; type?: string; mediaUrl?: string },
   ) {
+    // @Throttle (HTTP) ne s'applique jamais aux WebSockets — sans cette limite,
+    // le chat n'avait AUCUN rate-limit, ni par IP ni par compte.
+    if (chatSendLimiter.isLimited(socket.data.userId)) {
+      socket.emit('chat:error', { message: 'Trop de messages envoyés. Ralentissez un instant.' });
+      return;
+    }
     const msg = await this.chatService.sendMessage(
       socket.data.userId,
       data.conversationId,

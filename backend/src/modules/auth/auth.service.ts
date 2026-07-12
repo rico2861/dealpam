@@ -15,6 +15,7 @@ import { MailService } from '../mail/mail.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { otpRequestLimiter, otpVerifyLimiter } from '../../shared/utils/account-rate-limiter';
 
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCK_DURATION_MS    = 30 * 60 * 1000; // 30 min
@@ -221,7 +222,14 @@ export class AuthService {
   // ── Password flows ──────────────────────────────────────────────────────────
 
   async forgotPassword(email: string) {
-    const user = await this.prisma.user.findUnique({ where: { email: email.toLowerCase() } });
+    const normalizedEmail = email.toLowerCase();
+    // Limite par compte : @Throttle protège déjà par IP au niveau du contrôleur,
+    // mais un botnet distribué peut rotationner les IPs tout en visant le même
+    // compte — bloque après 5 demandes de code / 15 min pour CE compte.
+    if (otpRequestLimiter.isLimited(normalizedEmail)) {
+      throw new BadRequestException('Trop de demandes de code pour ce compte. Réessayez dans quelques minutes.');
+    }
+    const user = await this.prisma.user.findUnique({ where: { email: normalizedEmail } });
     if (!user || !user.isActive) {
       throw new NotFoundException("Aucun compte DealPam n'est associé à cette adresse email.");
     }
@@ -239,7 +247,14 @@ export class AuthService {
 
   async verifyResetCode(email: string, code: string) {
     if (!email || !code || code.length !== 6) throw new BadRequestException('Code invalide');
-    const user = await this.prisma.user.findUnique({ where: { email: email.toLowerCase() } });
+    const normalizedEmail = email.toLowerCase();
+    // Un code à 6 chiffres n'a que 1M de combinaisons — sans limite par compte,
+    // un attaquant tournant sur plusieurs IPs pourrait le brute-forcer avant
+    // son expiration (15 min) malgré le @Throttle par IP.
+    if (otpVerifyLimiter.isLimited(normalizedEmail)) {
+      throw new BadRequestException('Trop de tentatives pour ce compte. Demandez un nouveau code.');
+    }
+    const user = await this.prisma.user.findUnique({ where: { email: normalizedEmail } });
     if (!user) throw new BadRequestException('Code invalide ou expiré');
 
     const codeHash = crypto.createHash('sha256').update(code).digest('hex');

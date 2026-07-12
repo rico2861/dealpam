@@ -352,7 +352,8 @@ export class MailService {
   async sendNewOrderToSeller(to: string, sellerName: string, order: {
     number: string; customerName: string; customerPhone: string; customerEmail: string;
     customerAddress: string; items: { name: string; qty: number; price: number }[];
-    total: number; comment?: string;
+    subtotal: number; shipping: number; total: number; comment?: string;
+    paymentMethod?: string; deliveryType?: string; status?: string;
   }): Promise<void> {
     const itemsHtml = order.items.map(i => `
       <tr>
@@ -360,6 +361,14 @@ export class MailService {
         <td style="padding:10px 14px;font-size:13.5px;color:${BRAND.muted};text-align:center;border-bottom:1px solid ${BRAND.border};">×${i.qty}</td>
         <td style="padding:10px 14px;font-size:13.5px;font-weight:700;color:${BRAND.dark};text-align:right;border-bottom:1px solid ${BRAND.border};">${(i.price * i.qty).toLocaleString()} HTG</td>
       </tr>`).join('');
+
+    const deliveryLabel = order.deliveryType === 'PICKUP' ? 'Retrait en point de vente'
+      : order.deliveryType === 'CONTACT' ? 'Contact direct avec le client'
+      : 'Livraison à domicile';
+    const statusLabel = order.status === 'ACCEPTED' ? 'Acceptée'
+      : order.status === 'CANCELLED' ? 'Annulée'
+      : order.status === 'DELIVERED' ? 'Livrée'
+      : 'En attente';
 
     const body = `
       ${this.hero('🛒', '#FFF8EC', 'Nouvelle commande reçue !', `Commande #${this.esc(order.number)}`)}
@@ -371,7 +380,10 @@ export class MailService {
         ['Nom', order.customerName],
         ['Téléphone', order.customerPhone],
         ['Email', order.customerEmail],
+        ['Statut', statusLabel],
+        ['Livraison', deliveryLabel],
         ['Adresse', order.customerAddress],
+        ['Paiement choisi', order.paymentMethod || 'Non précisé'],
         ...(order.comment ? [['Commentaire', order.comment]] as [string,string][] : []),
       ])}
 
@@ -383,10 +395,20 @@ export class MailService {
           <th style="padding:10px 14px;background:#F9FAFB;font-size:12px;color:${BRAND.muted};text-align:right;border-bottom:1px solid ${BRAND.border};">Sous-total</th>
         </tr></thead>
         <tbody>${itemsHtml}</tbody>
-        <tfoot><tr>
-          <td colspan="2" style="padding:12px 14px;font-size:14px;font-weight:700;color:${BRAND.dark};">TOTAL</td>
-          <td style="padding:12px 14px;font-size:18px;font-weight:900;color:${BRAND.orange};text-align:right;">${order.total.toLocaleString()} HTG</td>
-        </tr></tfoot>
+        <tfoot>
+          <tr>
+            <td colspan="2" style="padding:8px 14px;font-size:13px;color:${BRAND.muted};">Sous-total produits</td>
+            <td style="padding:8px 14px;font-size:13px;color:${BRAND.dark};text-align:right;">${order.subtotal.toLocaleString()} HTG</td>
+          </tr>
+          <tr>
+            <td colspan="2" style="padding:8px 14px;font-size:13px;color:${BRAND.muted};border-bottom:1px solid ${BRAND.border};">Frais de livraison</td>
+            <td style="padding:8px 14px;font-size:13px;color:${BRAND.dark};text-align:right;border-bottom:1px solid ${BRAND.border};">${order.shipping.toLocaleString()} HTG</td>
+          </tr>
+          <tr>
+            <td colspan="2" style="padding:12px 14px;font-size:14px;font-weight:700;color:${BRAND.dark};">TOTAL DÛ PAR LE CLIENT</td>
+            <td style="padding:12px 14px;font-size:18px;font-weight:900;color:${BRAND.orange};text-align:right;">${order.total.toLocaleString()} HTG</td>
+          </tr>
+        </tfoot>
       </table>
       ${this.btn('Gérer cette commande →', `${BRAND.url}/seller/orders`)}
       ${this.alert('⚡ Répondez rapidement ! Les vendeurs qui traitent leurs commandes en moins de 2h reçoivent un badge <strong>"Réponse Rapide"</strong>.', 'info')}
@@ -399,7 +421,7 @@ export class MailService {
   async sendOrderConfirmationToCustomer(to: string, customerName: string, order: {
     number: string; sellerName: string; sellerPhone?: string; sellerEmail?: string;
     items: { name: string; qty: number; price: number }[];
-    total: number;
+    subtotal: number; shipping: number; total: number;
   }): Promise<void> {
     const itemsHtml = order.items.map(i => `
       <tr>
@@ -418,10 +440,20 @@ export class MailService {
           <th colspan="3" style="padding:12px 14px;background:#F9FAFB;font-size:12px;color:${BRAND.muted};text-align:left;border-bottom:1px solid ${BRAND.border};text-transform:uppercase;letter-spacing:0.5px;">Récapitulatif</th>
         </tr></thead>
         <tbody>${itemsHtml}</tbody>
-        <tfoot><tr>
-          <td colspan="2" style="padding:12px 14px;font-weight:700;color:${BRAND.dark};">TOTAL</td>
-          <td style="padding:12px 14px;font-size:18px;font-weight:900;color:${BRAND.orange};text-align:right;">${order.total.toLocaleString()} HTG</td>
-        </tr></tfoot>
+        <tfoot>
+          <tr>
+            <td colspan="2" style="padding:8px 14px;font-size:13px;color:${BRAND.muted};">Sous-total produits</td>
+            <td style="padding:8px 14px;font-size:13px;color:${BRAND.dark};text-align:right;">${order.subtotal.toLocaleString()} HTG</td>
+          </tr>
+          <tr>
+            <td colspan="2" style="padding:8px 14px;font-size:13px;color:${BRAND.muted};border-bottom:1px solid ${BRAND.border};">Frais de livraison</td>
+            <td style="padding:8px 14px;font-size:13px;color:${BRAND.dark};text-align:right;border-bottom:1px solid ${BRAND.border};">${order.shipping.toLocaleString()} HTG</td>
+          </tr>
+          <tr>
+            <td colspan="2" style="padding:12px 14px;font-weight:700;color:${BRAND.dark};">TOTAL</td>
+            <td style="padding:12px 14px;font-size:18px;font-weight:900;color:${BRAND.orange};text-align:right;">${order.total.toLocaleString()} HTG</td>
+          </tr>
+        </tfoot>
       </table>
 
       <h3 style="margin:0 0 10px;color:${BRAND.dark};font-size:14px;font-weight:700;">Coordonnées du vendeur</h3>

@@ -11,6 +11,22 @@ const imgFilter = (_req: any, file: Express.Multer.File, cb: any) => {
   else cb(new BadRequestException('Seules les images sont acceptées'), false);
 };
 
+// Documents vendeur (CIN, patente...) et pièces jointes de chat non-image —
+// n'acceptaient auparavant AUCUN filtre, contrairement aux uploads d'images :
+// un exécutable ou une page HTML pouvait être envoyé et potentiellement
+// reservi. Whitelist explicite des formats légitimement attendus ici.
+const DOC_MIME_WHITELIST = new Set([
+  'application/pdf',
+  'image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'text/plain',
+]);
+const docFilter = (_req: any, file: Express.Multer.File, cb: any) => {
+  if (DOC_MIME_WHITELIST.has(file.mimetype)) cb(null, true);
+  else cb(new BadRequestException('Type de fichier non accepté (PDF, image, Word ou texte uniquement)'), false);
+};
+
 @ApiTags('Upload')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
@@ -38,7 +54,7 @@ export class UploadController {
   @Post('document')
   @ApiOperation({ summary: 'Upload document (PDF, image)' })
   @ApiConsumes('multipart/form-data')
-  @UseInterceptors(FileInterceptor('file', { storage, limits: { fileSize: 10 * 1024 * 1024 } }))
+  @UseInterceptors(FileInterceptor('file', { storage, fileFilter: docFilter, limits: { fileSize: 10 * 1024 * 1024 } }))
   uploadDocument(@UploadedFile() file: Express.Multer.File) {
     return this.uploadService.uploadDocument(file, 'documents');
   }
@@ -58,7 +74,7 @@ export class UploadController {
   @Post('chat-file')
   @ApiOperation({ summary: 'Upload un fichier de chat non-image (bucket privé, URL signée à la lecture)' })
   @ApiConsumes('multipart/form-data')
-  @UseInterceptors(FileInterceptor('file', { storage, limits: { fileSize: 10 * 1024 * 1024 } }))
+  @UseInterceptors(FileInterceptor('file', { storage, fileFilter: docFilter, limits: { fileSize: 10 * 1024 * 1024 } }))
   async uploadChatFile(@UploadedFile() file: Express.Multer.File) {
     const result = await this.uploadService.uploadDocument(file, 'chat-files');
     return { publicId: result.publicId, fileName: file.originalname };

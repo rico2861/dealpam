@@ -185,7 +185,12 @@ export class OrdersService {
           customerPhone,
           customerEmail:   user?.email || '',
           customerAddress,
+          subtotal:        Number(order.subtotalHTG),
+          shipping:        Number(order.shippingHTG),
           total:           Number(order.totalHTG),
+          paymentMethod:   order.chosenPaymentMethod || undefined,
+          deliveryType:    order.deliveryType,
+          status:          order.status,
           items:           order.items.map((i: any) => ({ name: i.productName, qty: i.quantity, price: Number(i.unitPrice) })),
         }).catch(() => {});
       }
@@ -194,6 +199,8 @@ export class OrdersService {
         await this.mail.sendOrderConfirmationToCustomer(user.email, user.firstName, {
           number:     order.id.slice(-8).toUpperCase(),
           sellerName: order.store?.name || '',
+          subtotal:   Number(order.subtotalHTG),
+          shipping:   Number(order.shippingHTG),
           total:      Number(order.totalHTG),
           items:      order.items.map((i: any) => ({ name: i.productName, qty: i.quantity, price: Number(i.unitPrice) })),
           sellerPhone: (order.store as any)?.phone || undefined,
