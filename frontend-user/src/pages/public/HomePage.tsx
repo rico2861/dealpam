@@ -485,6 +485,43 @@ function HeroSection({ allProducts, slides }: { allProducts: any[]; slides: Hero
   // plus de contenu marketing statique par défaut, la section est simplement
   // masquée jusqu'à ce qu'au moins une bannière soit ajoutée.
   if (slides.length === 0) return null;
+
+  // Sur mobile, ce conteneur a un fond marine plein (#0F172A) pendant que
+  // l'image du slide (chargée en CSS background-image, donc de façon
+  // asynchrone) télécharge — ce qui produisait au refresh un aplat marine nu
+  // visible quelques centaines de ms avant l'apparition du vrai carrousel.
+  // On précharge l'image du premier slide et on affiche un skeleton clair
+  // (au lieu du marine plein) tant qu'elle n'est pas prête.
+  const [ready, setReady] = useState(false);
+  const firstImg = slides[0]?.img;
+  useEffect(() => {
+    setReady(false);
+    if (!firstImg) return;
+    const img = new Image();
+    img.onload = () => setReady(true);
+    img.onerror = () => setReady(true);
+    img.src = firstImg;
+    if (img.complete) setReady(true);
+  }, [firstImg]);
+
+  if (!ready) {
+    return (
+      <Box sx={{
+        bgcolor: PG,
+        mt: { xs: '-60px', md: 0 },
+        pt: { xs: 0, md: 1.5 },
+        pb: { xs: 0, md: 1.5 },
+      }}>
+        <Container maxWidth="xl" sx={{ px: { xs: 0, md: 2 } }}>
+          <SkelBox sx={{
+            height: { xs: 320, sm: 360, md: 340, lg: 400 },
+            borderRadius: { xs: 0, md: '16px' },
+          }} />
+        </Container>
+      </Box>
+    );
+  }
+
   return (
     <Box sx={{
       bgcolor: { xs: '#0F172A', md: PG },
