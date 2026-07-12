@@ -269,8 +269,8 @@ export class ChatService {
     }
     await this.prisma.conversation.update({ where: { id: conversationId }, data: updates as any });
 
-    const agentName = agent ? `${agent.firstName} ${agent.lastName}` : 'notre équipe';
-    const content = `🙋 Connexion avec un agent humain — ${agentName} va vous rejoindre.`;
+    const agentName = agent ? agent.firstName : 'Un membre de notre équipe';
+    const content = `${agentName} rejoint la conversation.`;
     const escalateMsg = await this.prisma.message.create({
       data: { conversationId, senderId: userId, content, type: 'SYSTEM' },
       include: { sender: { select: { id: true, firstName: true, lastName: true, avatar: true, role: true } } },
