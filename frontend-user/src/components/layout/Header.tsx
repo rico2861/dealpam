@@ -47,7 +47,11 @@ const GLOBAL_CSS = `
 /* iOS global fixes */
 * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
 html { overflow-x: hidden; }
-body { background-color: #0F172A; overscroll-behavior-y: none; -webkit-text-size-adjust: 100%; }
+/* Le site est a fond clair (#F7F8FA / #FAFAFA) — un fond marine ici
+   s'affichait un court instant sur TOUT le site (PC et mobile) au chargement
+   initial de la page, avant que React ne monte et que le fond clair de MUI
+   ne recouvre le body. */
+body { background-color: #F7F8FA; overscroll-behavior-y: none; -webkit-text-size-adjust: 100%; }
 button, a, [role=button] { touch-action: manipulation; }
 img { -webkit-user-drag: none; user-select: none; }
 `;
