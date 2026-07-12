@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, ReactNode } from 'react';
 import {
   Container, Typography, Card, CardContent, TextField, Button, Grid, Box,
   Alert, CircularProgress, Divider, Chip, IconButton, Switch, FormControlLabel,
-  alpha, Tabs, Tab, Select, MenuItem, InputLabel, FormControl, Tooltip, Avatar,
+  alpha, Tabs, Tab, Select, MenuItem, FormControl, Tooltip, Avatar,
 } from '@mui/material';
 import {
   Save, Store, Add, Delete, LocationOn, Payments, LocalShipping,
@@ -54,6 +54,19 @@ interface PickupPoint {
 
 function TabPanel({ children, value, index }: any) {
   return value === index ? <Box sx={{ pt: 3 }}>{children}</Box> : null;
+}
+
+// Le label flottant MUI ne calcule pas toujours correctement la largeur de
+// l'encoche de la bordure, faisant deborder/mal aligner le texte du label —
+// legende fixe au-dessus a la place, plus robuste (meme pattern qu'ailleurs
+// dans l'app : BoutiquePage.tsx, LocationModal.tsx, ProfilePage.tsx vendeur).
+function FieldLabel({ children }: { children: ReactNode }) {
+  return (
+    <Typography sx={{ fontSize: 11, fontWeight: 700, color: SUB, textTransform: 'uppercase',
+      letterSpacing: '0.4px', mb: 0.5 }}>
+      {children}
+    </Typography>
+  );
 }
 
 // ── Delivery Zones Tab ──────────────────────────────────────────────────────
@@ -126,21 +139,25 @@ function DeliveryZonesTab({ storeId, initialZones }: { storeId: string; initialZ
               </Box>
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={6}>
-                  <TextField fullWidth size="small" label="Nom de la zone" placeholder="ex: Port-au-Prince"
+                  <FieldLabel>Nom de la zone</FieldLabel>
+                  <TextField fullWidth size="small" placeholder="ex: Port-au-Prince"
                     value={zone.name} onChange={e => updateZone(zone.id, 'name', e.target.value)} />
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <TextField fullWidth size="small" label="Prix de livraison (HTG)" type="number"
+                  <FieldLabel>Prix de livraison (HTG)</FieldLabel>
+                  <TextField fullWidth size="small" type="number"
                     value={zone.price} onChange={e => updateZone(zone.id, 'price', Number(e.target.value))}
                     InputProps={{ inputProps: { min: 0 } }} />
                 </Grid>
                 <Grid item xs={6}>
-                  <TextField fullWidth size="small" label="Délai min (jours)" type="number"
+                  <FieldLabel>Délai min (jours)</FieldLabel>
+                  <TextField fullWidth size="small" type="number"
                     value={zone.minDays} onChange={e => updateZone(zone.id, 'minDays', Number(e.target.value))}
                     InputProps={{ inputProps: { min: 1 } }} />
                 </Grid>
                 <Grid item xs={6}>
-                  <TextField fullWidth size="small" label="Délai max (jours)" type="number"
+                  <FieldLabel>Délai max (jours)</FieldLabel>
+                  <TextField fullWidth size="small" type="number"
                     value={zone.maxDays} onChange={e => updateZone(zone.id, 'maxDays', Number(e.target.value))}
                     InputProps={{ inputProps: { min: 1 } }} />
                 </Grid>
@@ -244,19 +261,23 @@ function PickupPointsTab({ storeId, initialPoints }: { storeId: string; initialP
               </Box>
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={6}>
-                  <TextField fullWidth size="small" label="Nom du point" placeholder="ex: Boutique principale"
+                  <FieldLabel>Nom du point</FieldLabel>
+                  <TextField fullWidth size="small" placeholder="ex: Boutique principale"
                     value={pt.name} onChange={e => updatePoint(pt.id, 'name', e.target.value)} />
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <TextField fullWidth size="small" label="Telephone" placeholder="+509..."
+                  <FieldLabel>Téléphone</FieldLabel>
+                  <TextField fullWidth size="small" placeholder="+509..."
                     value={pt.phone} onChange={e => updatePoint(pt.id, 'phone', e.target.value)} />
                 </Grid>
                 <Grid item xs={12}>
-                  <TextField fullWidth size="small" label="Adresse complete" placeholder="Rue, quartier, ville..."
+                  <FieldLabel>Adresse complète</FieldLabel>
+                  <TextField fullWidth size="small" placeholder="Rue, quartier, ville..."
                     value={pt.address} onChange={e => updatePoint(pt.id, 'address', e.target.value)} />
                 </Grid>
                 <Grid item xs={12}>
-                  <TextField fullWidth size="small" label="Horaires d'ouverture" placeholder="ex: Lun-Sam 8h-18h"
+                  <FieldLabel>Horaires d'ouverture</FieldLabel>
+                  <TextField fullWidth size="small" placeholder="ex: Lun-Sam 8h-18h"
                     value={pt.hours} onChange={e => updatePoint(pt.id, 'hours', e.target.value)} />
                 </Grid>
               </Grid>
@@ -368,27 +389,33 @@ function PaymentMethodsTab({ storeId, store }: { storeId: string; store: any }) 
           </Typography>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
             {accepted.includes('MONCASH') && (
-              <TextField fullWidth label="Numéro MonCash" placeholder="+509 XXXX-XXXX"
-                value={moncashPhone} onChange={e => setMoncashPhone(e.target.value)}
-                size="small"
-                InputProps={{
-                  startAdornment: <Phone sx={{ fontSize: 16, color: '#FF3C00', mr: 1 }} />,
-                  endAdornment: moncashPhone ? (
-                    <Tooltip title={copied ? 'Copié !' : 'Copier'}>
-                      <IconButton size="small" onClick={() => copyPhone(moncashPhone)}>
-                        {copied ? <CheckCircle sx={{ fontSize: 15, color: '#007600' }} /> : <ContentCopy sx={{ fontSize: 15, color: '#64748B' }} />}
-                      </IconButton>
-                    </Tooltip>
-                  ) : null,
-                }}
-              />
+              <Box>
+                <FieldLabel>Numéro MonCash</FieldLabel>
+                <TextField fullWidth placeholder="+509 XXXX-XXXX"
+                  value={moncashPhone} onChange={e => setMoncashPhone(e.target.value)}
+                  size="small"
+                  InputProps={{
+                    startAdornment: <Phone sx={{ fontSize: 16, color: '#FF3C00', mr: 1 }} />,
+                    endAdornment: moncashPhone ? (
+                      <Tooltip title={copied ? 'Copié !' : 'Copier'}>
+                        <IconButton size="small" onClick={() => copyPhone(moncashPhone)}>
+                          {copied ? <CheckCircle sx={{ fontSize: 15, color: '#007600' }} /> : <ContentCopy sx={{ fontSize: 15, color: '#64748B' }} />}
+                        </IconButton>
+                      </Tooltip>
+                    ) : null,
+                  }}
+                />
+              </Box>
             )}
             {accepted.includes('NATCASH') && (
-              <TextField fullWidth label="Numéro NatCash" placeholder="+509 XXXX-XXXX"
-                value={natcashPhone} onChange={e => setNatcashPhone(e.target.value)}
-                size="small"
-                InputProps={{ startAdornment: <Phone sx={{ fontSize: 16, color: '#003087', mr: 1 }} /> }}
-              />
+              <Box>
+                <FieldLabel>Numéro NatCash</FieldLabel>
+                <TextField fullWidth placeholder="+509 XXXX-XXXX"
+                  value={natcashPhone} onChange={e => setNatcashPhone(e.target.value)}
+                  size="small"
+                  InputProps={{ startAdornment: <Phone sx={{ fontSize: 16, color: '#003087', mr: 1 }} /> }}
+                />
+              </Box>
             )}
           </Box>
         </>
@@ -400,18 +427,19 @@ function PaymentMethodsTab({ storeId, store }: { storeId: string; store: any }) 
         Choisissez la devise par défaut de vos prix et votre propre taux de change. Les clients pourront basculer l'affichage entre HTG et USD sur la page produit.
       </Typography>
       <Grid container spacing={1.5}>
-        <Grid item xs={6}>
+        <Grid item xs={12} sm={6}>
+          <FieldLabel>Devise par défaut</FieldLabel>
           <FormControl fullWidth size="small">
-            <InputLabel shrink>Devise par défaut</InputLabel>
-            <Select label="Devise par défaut" value={currency} onChange={e => setCurrency(e.target.value)}>
+            <Select value={currency} onChange={e => setCurrency(e.target.value)}>
               <MenuItem value="HTG">Gourdes (HTG)</MenuItem>
               <MenuItem value="USD">Dollars US (USD)</MenuItem>
             </Select>
           </FormControl>
         </Grid>
-        <Grid item xs={6}>
+        <Grid item xs={12} sm={6}>
+          <FieldLabel>Taux de change (HTG pour 1 USD)</FieldLabel>
           <TextField
-            fullWidth size="small" type="number" label="Taux de change (HTG pour 1 USD)"
+            fullWidth size="small" type="number"
             placeholder="ex: 132.5" value={exchangeRate}
             onChange={e => setExchangeRate(e.target.value)}
             inputProps={{ min: 0, step: 0.01 }}
@@ -649,34 +677,43 @@ export default function SellerStorePage() {
             <Box sx={{ borderRadius: '16px', bgcolor: CARD, border: `1px solid ${BORD}`, boxShadow: '0 4px 16px rgba(15,23,42,0.06)' }}>
               <Box sx={{ p: { xs: 2, md: 3 } }}>
                 <Typography fontWeight={800} fontSize={15} color={TXT} mb={2.5}>Informations principales</Typography>
-                <TextField fullWidth label="Nom de la boutique" value={form.name} onChange={f('name')}
-                  size="small" sx={{ mb: 2 }} />
-                <TextField fullWidth label="Description" value={form.description} onChange={f('description')}
-                  size="small" multiline rows={4} sx={{ mb: 2 }}
-                  helperText="Decrivez votre boutique, vos produits, votre histoire..." />
+                <Box sx={{ mb: 2 }}>
+                  <FieldLabel>Nom de la boutique</FieldLabel>
+                  <TextField fullWidth value={form.name} onChange={f('name')} size="small" />
+                </Box>
+                <Box sx={{ mb: 2 }}>
+                  <FieldLabel>Description</FieldLabel>
+                  <TextField fullWidth value={form.description} onChange={f('description')}
+                    size="small" multiline rows={4}
+                    helperText="Decrivez votre boutique, vos produits, votre histoire..." />
+                </Box>
                 <Divider sx={{ my: 2.5, borderColor: BORD }} />
                 <Typography fontWeight={700} fontSize={13.5} mb={2} color={SUB2}>Coordonnees publiques</Typography>
                 <Grid container spacing={2}>
                   <Grid item xs={12} sm={6}>
+                    <FieldLabel>Département</FieldLabel>
                     <FormControl fullWidth size="small">
-                      <InputLabel shrink>Departement</InputLabel>
-                      <Select value={form.department} onChange={e => setForm(p => ({ ...p, department: e.target.value }))} label="Departement">
+                      <Select value={form.department} onChange={e => setForm(p => ({ ...p, department: e.target.value }))}>
                         {DEPARTMENTS.map(d => <MenuItem key={d} value={d} sx={{ fontSize: 13.5 }}>{d}</MenuItem>)}
                       </Select>
                     </FormControl>
                   </Grid>
                   <Grid item xs={12} sm={6}>
-                    <TextField fullWidth size="small" label="Ville" value={form.city} onChange={f('city')} />
+                    <FieldLabel>Ville</FieldLabel>
+                    <TextField fullWidth size="small" value={form.city} onChange={f('city')} />
                   </Grid>
                   <Grid item xs={12} sm={6}>
-                    <TextField fullWidth size="small" label="Telephone" value={form.phone} onChange={f('phone')}
+                    <FieldLabel>Téléphone</FieldLabel>
+                    <TextField fullWidth size="small" value={form.phone} onChange={f('phone')}
                       placeholder="+509 XXXX-XXXX" />
                   </Grid>
                   <Grid item xs={12} sm={6}>
-                    <TextField fullWidth size="small" label="Email boutique" type="email" value={form.email} onChange={f('email')} />
+                    <FieldLabel>Email boutique</FieldLabel>
+                    <TextField fullWidth size="small" type="email" value={form.email} onChange={f('email')} />
                   </Grid>
                   <Grid item xs={12}>
-                    <TextField fullWidth size="small" label="Adresse complete" value={form.address} onChange={f('address')}
+                    <FieldLabel>Adresse complète</FieldLabel>
+                    <TextField fullWidth size="small" value={form.address} onChange={f('address')}
                       placeholder="Rue, quartier, ville..." />
                   </Grid>
                 </Grid>

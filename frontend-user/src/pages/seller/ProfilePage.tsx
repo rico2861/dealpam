@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, ReactNode } from 'react';
 import {
   Box, Typography, Button, TextField, CircularProgress,
   LinearProgress,
@@ -76,6 +76,19 @@ const fieldSx = {
   '& .MuiFormHelperText-root': { color: SUB },
   '& .MuiSelect-icon': { color: SUB },
 };
+
+// Le label flottant MUI ("shrink: true") ne calculait pas toujours
+// correctement la largeur de l'encoche de la bordure, faisant deborder/mal
+// aligner le texte du label sur la bordure du champ — legende fixe au-dessus
+// a la place, plus robuste (meme pattern que BoutiquePage.tsx/LocationModal).
+function FieldLabel({ children }: { children: ReactNode }) {
+  return (
+    <Typography sx={{ fontSize: 11, fontWeight: 700, color: SUB, textTransform: 'uppercase',
+      letterSpacing: '0.4px', mb: 0.5 }}>
+      {children}
+    </Typography>
+  );
+}
 
 function SectionHead({ icon, label, color = OR }: { icon: any; label: string; color?: string }) {
   const Icon = icon;
@@ -169,9 +182,12 @@ function AwayMessageSection({ canUse, planName }: { canUse: boolean; planName?: 
         <Typography fontSize={13} fontWeight={600} color={enabled ? TXT : SUB}>{enabled ? 'Activé' : 'Désactivé'}</Typography>
       </Box>
       {enabled && (
-        <TextField fullWidth multiline minRows={3} maxRows={5} label="Message automatique" value={message}
-          onChange={e => setMessage(e.target.value)} inputProps={{ maxLength: 500 }}
-          helperText={`${message.length}/500`} sx={{ ...fieldSx, mb: 2 }} />
+        <Box sx={{ mb: 2 }}>
+          <FieldLabel>Message automatique</FieldLabel>
+          <TextField fullWidth multiline minRows={3} maxRows={5} value={message}
+            onChange={e => setMessage(e.target.value)} inputProps={{ maxLength: 500 }}
+            helperText={`${message.length}/500`} sx={fieldSx} />
+        </Box>
       )}
       <Button onClick={save} disabled={saving} startIcon={saving ? <CircularProgress size={14} color="inherit" /> : <Save sx={{ fontSize: 16 }} />}
         sx={{ bgcolor: OR, color: '#fff', borderRadius: '10px', fontWeight: 700, px: 2.5,
@@ -356,24 +372,45 @@ export default function SellerProfilePage() {
         <Box sx={{ borderRadius: '16px', bgcolor: CARD, border: `1px solid ${BORD}`, p: 2.5 }}>
           <SectionHead icon={Business} label="Informations professionnelles" color={BLU} />
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-            <TextField select label="Type d'activité" value={profile.businessType} onChange={pf('businessType')}
-              SelectProps={{ native: true }} InputLabelProps={{ shrink: true }} fullWidth sx={fieldSx}>
-              <option value="">-- Choisir --</option>
-              {BUSINESS_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-            </TextField>
+            <Box>
+              <FieldLabel>Type d'activité</FieldLabel>
+              <TextField select value={profile.businessType} onChange={pf('businessType')}
+                SelectProps={{ native: true }} fullWidth sx={fieldSx}>
+                <option value="">-- Choisir --</option>
+                {BUSINESS_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+              </TextField>
+            </Box>
             {profile.businessType === 'OTHER' && (
-              <TextField label="Précisez votre activité *" value={profile.businessTypeOther} onChange={pf('businessTypeOther')}
-                placeholder="Ex: Location de matériel événementiel" InputLabelProps={{ shrink: true }} fullWidth sx={fieldSx} />
+              <Box>
+                <FieldLabel>Précisez votre activité *</FieldLabel>
+                <TextField value={profile.businessTypeOther} onChange={pf('businessTypeOther')}
+                  placeholder="Ex: Location de matériel événementiel" fullWidth sx={fieldSx} />
+              </Box>
             )}
-            <TextField label="Ville principale" value={profile.businessCity} onChange={pf('businessCity')} InputLabelProps={{ shrink: true }} fullWidth sx={fieldSx} />
-            <TextField select label="Département" value={profile.businessDept} onChange={pf('businessDept')} SelectProps={{ native: true }} InputLabelProps={{ shrink: true }} fullWidth sx={fieldSx}>
-              <option value="">-- Choisir --</option>
-              {DEPTS.map(d => <option key={d} value={d}>{d}</option>)}
-            </TextField>
-            <TextField label="Adresse professionnelle" value={profile.businessAddress} onChange={pf('businessAddress')} multiline rows={2} InputLabelProps={{ shrink: true }} fullWidth sx={fieldSx} />
+            <Box>
+              <FieldLabel>Ville principale</FieldLabel>
+              <TextField value={profile.businessCity} onChange={pf('businessCity')} fullWidth sx={fieldSx} />
+            </Box>
+            <Box>
+              <FieldLabel>Département</FieldLabel>
+              <TextField select value={profile.businessDept} onChange={pf('businessDept')} SelectProps={{ native: true }} fullWidth sx={fieldSx}>
+                <option value="">-- Choisir --</option>
+                {DEPTS.map(d => <option key={d} value={d}>{d}</option>)}
+              </TextField>
+            </Box>
+            <Box>
+              <FieldLabel>Adresse professionnelle</FieldLabel>
+              <TextField value={profile.businessAddress} onChange={pf('businessAddress')} multiline rows={2} fullWidth sx={fieldSx} />
+            </Box>
             <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
-              <TextField label="CIN (numéro d'identité)" value={profile.cin} onChange={pf('cin')} InputLabelProps={{ shrink: true }} fullWidth sx={fieldSx} />
-              <TextField label="NIF (numéro fiscal)" value={profile.nif} onChange={pf('nif')} InputLabelProps={{ shrink: true }} fullWidth sx={fieldSx} />
+              <Box>
+                <FieldLabel>CIN (numéro d'identité)</FieldLabel>
+                <TextField value={profile.cin} onChange={pf('cin')} fullWidth sx={fieldSx} />
+              </Box>
+              <Box>
+                <FieldLabel>NIF (numéro fiscal)</FieldLabel>
+                <TextField value={profile.nif} onChange={pf('nif')} fullWidth sx={fieldSx} />
+              </Box>
             </Box>
           </Box>
           {profileTouched && (
