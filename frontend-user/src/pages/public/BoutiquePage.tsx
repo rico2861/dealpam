@@ -559,41 +559,50 @@ export default function BoutiquePage() {
   return (
     <Box sx={{ bgcolor: BG, minHeight: '100vh', pb: { xs: 10, md: 6 } }}>
 
-      {/* ── HERO ──────────────────────────────────────────────────────────── */}
-      <Box sx={{ position: 'relative', height: { xs: 220, md: 320 }, overflow: 'hidden', bgcolor: '#0F172A', borderRadius: { xs: 0, md: '0 0 28px 28px' } }}>
-        {store.bannerUrl ? (
+      {/* ── HERO — uniquement si le vendeur a defini une image de banniere ──
+          Sans image, un aplat marine plein etait affiche pour rien (peu pro,
+          espace perdu) — on passe directement a une barre d'action fine. ── */}
+      {store.bannerUrl ? (
+        <Box sx={{ position: 'relative', height: { xs: 220, md: 320 }, overflow: 'hidden', bgcolor: '#0F172A', borderRadius: { xs: 0, md: '0 0 28px 28px' } }}>
           <Box component="img" src={store.bannerUrl} alt="banner"
             sx={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.75 }} />
-        ) : (
-          <Box sx={{
-            width: '100%', height: '100%',
-            background: 'linear-gradient(135deg, #0F172A 0%, #1E293B 55%, #2D1B00 100%)',
-          }}>
-            <Box sx={{ position: 'absolute', right: -80, top: -80, width: 320, height: 320, borderRadius: '50%',
-              background: `radial-gradient(circle,${alpha(ORANGE, 0.25)},transparent 70%)` }} />
-          </Box>
-        )}
-        <Box sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.75) 0%, transparent 55%)' }} />
+          <Box sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.75) 0%, transparent 55%)' }} />
 
-        {/* Back */}
-        <IconButton onClick={() => navigate(-1)}
-          sx={{ position: 'absolute', top: 16, left: 16, bgcolor: 'rgba(0,0,0,0.4)', color: 'white', backdropFilter: 'blur(6px)',
-            '&:hover': { bgcolor: 'rgba(0,0,0,0.6)' } }}>
-          <ArrowBack />
-        </IconButton>
+          {/* Back */}
+          <IconButton onClick={() => navigate(-1)}
+            sx={{ position: 'absolute', top: 16, left: 16, bgcolor: 'rgba(0,0,0,0.4)', color: 'white', backdropFilter: 'blur(6px)',
+              '&:hover': { bgcolor: 'rgba(0,0,0,0.6)' } }}>
+            <ArrowBack />
+          </IconButton>
 
-        {/* Share */}
-        <IconButton onClick={share}
-          sx={{ position: 'absolute', top: 16, right: 16, bgcolor: 'rgba(0,0,0,0.4)', color: 'white', backdropFilter: 'blur(6px)',
-            '&:hover': { bgcolor: 'rgba(0,0,0,0.6)' } }}>
-          {copied ? <CheckCircleIcon /> : <Share />}
-        </IconButton>
-      </Box>
+          {/* Share */}
+          <IconButton onClick={share}
+            sx={{ position: 'absolute', top: 16, right: 16, bgcolor: 'rgba(0,0,0,0.4)', color: 'white', backdropFilter: 'blur(6px)',
+              '&:hover': { bgcolor: 'rgba(0,0,0,0.6)' } }}>
+            {copied ? <CheckCircleIcon /> : <Share />}
+          </IconButton>
+        </Box>
+      ) : (
+        <Box sx={{ bgcolor: 'white', borderBottom: '1px solid #E5E7EB' }}>
+          <Container maxWidth="xl">
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 1.5 }}>
+              <IconButton onClick={() => navigate(-1)}
+                sx={{ bgcolor: '#F7F8FA', color: '#0F172A', '&:hover': { bgcolor: '#EEF0F3' } }}>
+                <ArrowBack />
+              </IconButton>
+              <IconButton onClick={share}
+                sx={{ bgcolor: '#F7F8FA', color: '#0F172A', '&:hover': { bgcolor: '#EEF0F3' } }}>
+                {copied ? <CheckCircleIcon /> : <Share />}
+              </IconButton>
+            </Box>
+          </Container>
+        </Box>
+      )}
 
       {/* ── STORE IDENTITY ────────────────────────────────────────────────── */}
       <Box sx={{ bgcolor: 'white', borderBottom: '1px solid #E5E7EB' }}>
         <Container maxWidth="xl">
-          <Box sx={{ display: 'flex', gap: 2.5, alignItems: 'flex-end', pb: 2.5, mt: -6, position: 'relative', flexWrap: 'wrap' }}>
+          <Box sx={{ display: 'flex', gap: 2.5, alignItems: 'flex-end', pb: 2.5, mt: store.bannerUrl ? -6 : 0, pt: store.bannerUrl ? 0 : 1, position: 'relative', flexWrap: 'wrap' }}>
             {/* Logo */}
             <Box sx={{ width: { xs: 84, md: 108 }, height: { xs: 84, md: 108 }, borderRadius: '22px',
               border: '4px solid white', overflow: 'hidden', flexShrink: 0, boxShadow: '0 8px 24px rgba(0,0,0,0.18)', bgcolor: 'white' }}>
