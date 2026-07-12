@@ -1,6 +1,8 @@
-﻿import { useState, useEffect, useCallback, useRef } from 'react';
-import { Box, Typography, IconButton, alpha } from '@mui/material';
-import { Close, MyLocation, LocationOn, KeyboardArrowDown, Check, GpsFixed, Refresh } from '@mui/icons-material';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import {
+  Box, Typography, IconButton, alpha, Select, MenuItem, Autocomplete, TextField,
+} from '@mui/material';
+import { Close, MyLocation, LocationOn, Check, GpsFixed, Refresh } from '@mui/icons-material';
 import { HAITI_DEPARTMENTS, getCitiesForDept, findNearestCity } from '../../data/haiti-locations';
 import { useLocationStore, LocationData } from '../../store/location.store';
 
@@ -15,11 +17,6 @@ const CSS = `
 @keyframes lm-spin    { to{transform:rotate(360deg)} }
 @keyframes lm-pulse   { 0%,100%{box-shadow:0 0 0 0 rgba(255,107,0,.3)}70%{box-shadow:0 0 0 8px rgba(255,107,0,0)} }
 @keyframes lm-toast   { from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)} }
-@keyframes lm-expand  { from{opacity:0;transform:scaleY(.97);transform-origin:top}to{opacity:1;transform:scaleY(1)} }
-.lm-list::-webkit-scrollbar{width:8px}
-.lm-list::-webkit-scrollbar-thumb{background:rgba(255,107,0,.7);border-radius:8px;border:2px solid white}
-.lm-list::-webkit-scrollbar-track{background:#F3F4F6;border-radius:8px}
-.lm-list::-webkit-scrollbar-thumb:hover{background:rgba(255,107,0,1)}
 .lm-body::-webkit-scrollbar{width:0}
 @media(prefers-reduced-motion:reduce){*{animation-duration:0ms!important;transition-duration:0ms!important}}
 `;
@@ -46,157 +43,18 @@ function Toast({ msg }: { msg: string }) {
   );
 }
 
-/* ─── AccordionSelect — liste inline, AUCUN positionnement absolu ─────
-   Quand la liste est ouverte elle pousse le contenu vers le bas.
-   Le parent body est scrollable donc Confirmer reste accessible.
-────────────────────────────────────────────────────────────────────── */
-function AccordionSelect({
-  label, placeholder, value, options, onChange,
-  disabled, searchable, isOpen, onToggle,
-}: {
-  label: string; placeholder: string; value: string;
-  options: string[]; onChange: (v: string) => void;
-  disabled?: boolean; searchable?: boolean;
-  isOpen: boolean; onToggle: () => void;
-}) {
-  const [search, setSearch] = useState('');
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (isOpen && searchable) setTimeout(() => inputRef.current?.focus(), 50);
-    if (!isOpen) setSearch('');
-  }, [isOpen, searchable]);
-
-  const filtered = searchable && search
-    ? options.filter(o => o.toLowerCase().includes(search.toLowerCase()))
-    : options;
-
-  return (
-    <Box>
-      <Typography fontSize={10.5} fontWeight={800} color="#64748B" letterSpacing={1.1}
-        sx={{ textTransform:'uppercase', mb:0.8 }}>
-        {label}
-      </Typography>
-
-      {/* Trigger */}
-      <Box
-        component="button"
-        type="button"
-        onClick={() => { if (!disabled) onToggle(); }}
-        disabled={disabled}
-        sx={{
-          width:'100%', height:50,
-          display:'flex', alignItems:'center', gap:1.2,
-          px:2, border:'none', fontFamily:'inherit',
-          cursor: disabled ? 'not-allowed' : 'pointer',
-          background: disabled ? '#F8FAFC' : isOpen ? '#FFFAF7' : 'white',
-          outline:`${isOpen ? '2px' : '1.5px'} solid ${isOpen ? OR : disabled ? '#F1F5F9' : '#E2E8F0'}`,
-          outlineOffset:'-1px',
-          borderRadius: isOpen ? '14px 14px 0 0' : '14px',
-          transition:'border-radius 0s, outline .12s, background .12s',
-        }}>
-        <LocationOn sx={{ fontSize:16, color:value ? OR : '#CBD5E1', flexShrink:0 }} />
-        <Typography flex={1} fontSize={14.5} fontWeight={value ? 600 : 400} textAlign="left"
-          color={disabled ? '#CBD5E1' : value ? BG : '#64748B'}
-          sx={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-          {value || placeholder}
-        </Typography>
-        <KeyboardArrowDown sx={{
-          fontSize:20, color:disabled ? '#E5E7EB' : OR, flexShrink:0,
-          transform:isOpen ? 'rotate(180deg)' : 'none', transition:'transform .18s',
-        }} />
-      </Box>
-
-      {/* Liste inline — PAS de position:absolute, pas d'overflow:hidden wrapper */}
-      {isOpen && (
-        <Box sx={{
-          border:`2px solid ${OR}`,
-          borderTop:'none',
-          borderRadius:'0 0 14px 14px',
-          bgcolor:'white',
-          boxShadow:'0 6px 20px rgba(0,0,0,.1)',
-          animation:'lm-expand .15s ease both',
-        }}>
-          {/* Barre recherche */}
-          {searchable && (
-            <Box sx={{ px:1.5, py:1, borderBottom:'1px solid #F1F5F9' }}>
-              <Box sx={{
-                display:'flex', alignItems:'center', gap:1,
-                bgcolor:'#F8FAFC', borderRadius:'10px', px:1.4, py:0.7,
-              }}>
-                <MyLocation sx={{ fontSize:14, color:'#64748B', flexShrink:0 }} />
-                <input
-                  ref={inputRef}
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  placeholder="Rechercher..."
-                  style={{
-                    border:'none', outline:'none', background:'transparent',
-                    fontSize:13.5, color:BG, width:'100%', fontFamily:'inherit',
-                  }}
-                />
-                {search && (
-                  <Box onClick={() => { setSearch(''); inputRef.current?.focus(); }}
-                    sx={{ cursor:'pointer', color:'#64748B', display:'flex', '&:hover':{ color:'#64748B' } }}>
-                    <Close sx={{ fontSize:13 }} />
-                  </Box>
-                )}
-              </Box>
-            </Box>
-          )}
-
-          {/* Options — scroll interne avec borderRadius sur le dernier élément */}
-          <Box
-            className="lm-list"
-            sx={{
-              maxHeight: 200,
-              overflowY: 'auto',
-              borderRadius: '0 0 12px 12px',
-            }}>
-            {filtered.length === 0
-              ? <Box sx={{ py:2.5, textAlign:'center' }}>
-                  <Typography fontSize={13} color="#64748B">Aucun résultat</Typography>
-                </Box>
-              : filtered.map((opt, idx) => (
-                <Box
-                  key={opt}
-                  component="button"
-                  type="button"
-                  onMouseDown={e => {
-                    e.preventDefault();
-                    onChange(opt);
-                  }}
-                  sx={{
-                    width:'100%', px:2, py:1.4,
-                    display:'flex', alignItems:'center', justifyContent:'space-between',
-                    background:opt === value ? '#FFF4ED' : 'transparent',
-                    border:'none',
-                    borderLeft:`3px solid ${opt === value ? OR : 'transparent'}`,
-                    cursor:'pointer', fontFamily:'inherit',
-                    borderRadius: idx === filtered.length - 1 ? '0 0 12px 12px' : 0,
-                    '&:hover':{ background:opt === value ? '#FFF4ED' : '#F8FAFC' },
-                  }}>
-                  <Typography fontSize={14} fontWeight={opt === value ? 700 : 400}
-                    color={opt === value ? OR : '#374151'}>
-                    {opt}
-                  </Typography>
-                  {opt === value && (
-                    <Box sx={{
-                      width:22, height:22, borderRadius:'50%', bgcolor:OR, flexShrink:0,
-                      display:'flex', alignItems:'center', justifyContent:'center',
-                    }}>
-                      <Check sx={{ fontSize:13, color:'white' }} />
-                    </Box>
-                  )}
-                </Box>
-              ))
-            }
-          </Box>
-        </Box>
-      )}
-    </Box>
-  );
-}
+// Styles partagés pour les champs — natifs MUI, donc accessibles au clavier,
+// support tactile natif (picker natif sur mobile), et comportement standard
+// que les utilisateurs connaissent déjà (contrairement à l'ancien accordéon
+// maison, difficile à utiliser sur PC comme sur mobile).
+const fieldSx = {
+  '& .MuiOutlinedInput-root': {
+    borderRadius: '14px', bgcolor: 'white', fontSize: 14.5,
+    '& fieldset': { borderColor: '#E2E8F0', borderWidth: '1.5px' },
+    '&:hover fieldset': { borderColor: alpha(OR, 0.5) },
+    '&.Mui-focused fieldset': { borderColor: OR, borderWidth: '2px' },
+  },
+};
 
 /* ─── Main Modal ─────────────────────────────────────────────────────── */
 export default function LocationModal({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -207,63 +65,45 @@ export default function LocationModal({ open, onClose }: { open: boolean; onClos
   const [gpsState,  setGpsState]  = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
   const [gpsMsg,    setGpsMsg]    = useState('');
   const [toast,     setToast]     = useState('');
-  const [openKey,   setOpenKey]   = useState<'dept' | 'ville' | null>(null);
 
-  // Ref for scrolling to ville dropdown after dept selection
   const villeRef = useRef<HTMLDivElement>(null);
   const bodyRef  = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { injectCss('lm-css5', CSS); }, []);
+  useEffect(() => { injectCss('lm-css6', CSS); }, []);
 
   useEffect(() => {
     if (open) {
       setDept(current?.department ?? '');
       setCity(current?.city ?? '');
-      setGpsState('idle'); setGpsMsg(''); setOpenKey(null);
+      setGpsState('idle'); setGpsMsg('');
     }
   }, [open, current]);
 
   /* Escape */
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        if (openKey) setOpenKey(null);
-        else onClose();
-      }
-    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [open, openKey, onClose]);
+  }, [open, onClose]);
 
   const cities = dept ? getCitiesForDept(dept).map(c => c.name) : [];
 
   const handleDeptChange = (d: string) => {
     setDept(d); setCity('');
-    setOpenKey(null);
-    // Ouvrir ville après 320ms et scroller vers elle
-    setTimeout(() => {
-      setOpenKey('ville');
-      setTimeout(() => {
-        villeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      }, 80);
-    }, 320);
+    setTimeout(() => villeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
   };
 
-  const handleCityChange = (c: string) => {
-    setCity(c);
-    setOpenKey(null);
-    // Scroller vers le footer pour voir Confirmer
-    setTimeout(() => {
-      bodyRef.current?.scrollTo({ top: bodyRef.current.scrollHeight, behavior: 'smooth' });
-    }, 80);
+  const handleCityChange = (c: string | null) => {
+    setCity(c || '');
+    setTimeout(() => bodyRef.current?.scrollTo({ top: bodyRef.current.scrollHeight, behavior: 'smooth' }), 80);
   };
 
   const handleGps = useCallback(() => {
     if (!navigator.geolocation) {
       setGpsState('error'); setGpsMsg('GPS non disponible sur cet appareil'); return;
     }
-    setGpsState('loading'); setGpsMsg(''); setOpenKey(null);
+    setGpsState('loading'); setGpsMsg('');
     navigator.geolocation.getCurrentPosition(
       pos => {
         const found = findNearestCity(pos.coords.latitude, pos.coords.longitude);
@@ -423,7 +263,7 @@ export default function LocationModal({ open, onClose }: { open: boolean; onClos
           className="lm-body"
           sx={{
             flex:1,
-            overflowY:'auto',   /* ← scrollable : Confirmer toujours accessible */
+            overflowY:'auto',
             overflowX:'hidden',
             bgcolor:'#F9FAFB',
             px:{ xs:2, sm:2.5 },
@@ -494,33 +334,55 @@ export default function LocationModal({ open, onClose }: { open: boolean; onClos
             <Box sx={{ flex:1, height:'1px', bgcolor:'#E2E8F0' }} />
           </Box>
 
-          {/* Carte selects */}
+          {/* Carte selects — composants MUI natifs, accessibles clavier + tactile */}
           <Box sx={{
             bgcolor:'white', borderRadius:'18px',
             p:{ xs:1.5, sm:2 }, border:'1px solid #F0F0F0',
-            display:'flex', flexDirection:'column', gap:1.5,
+            display:'flex', flexDirection:'column', gap:1.8,
           }}>
-            <AccordionSelect
-              label="Département"
-              placeholder="Choisir un département"
-              value={dept}
-              options={HAITI_DEPARTMENTS.map(d => d.name)}
-              onChange={handleDeptChange}
-              isOpen={openKey === 'dept'}
-              onToggle={() => setOpenKey(openKey === 'dept' ? null : 'dept')}
-            />
+            <Box>
+              <Typography fontSize={10.5} fontWeight={800} color="#64748B" letterSpacing={1.1}
+                sx={{ textTransform:'uppercase', mb:0.8 }}>
+                Département
+              </Typography>
+              <Select
+                fullWidth
+                displayEmpty
+                value={dept}
+                onChange={e => handleDeptChange(e.target.value)}
+                MenuProps={{ PaperProps: { sx: { maxHeight: 320 } } }}
+                sx={fieldSx}
+                renderValue={(v) => (
+                  <Box sx={{ display:'flex', alignItems:'center', gap:1 }}>
+                    <LocationOn sx={{ fontSize:16, color: v ? OR : '#CBD5E1' }} />
+                    <Typography fontSize={14.5} fontWeight={v ? 600 : 400} color={v ? BG : '#64748B'}>
+                      {v || 'Choisir un département'}
+                    </Typography>
+                  </Box>
+                )}>
+                {HAITI_DEPARTMENTS.map(d => (
+                  <MenuItem key={d.name} value={d.name}>{d.name}</MenuItem>
+                ))}
+              </Select>
+            </Box>
 
             <Box ref={villeRef}>
-              <AccordionSelect
-                label="Ville / Commune"
-                placeholder={dept ? 'Choisir une ville / commune' : "Sélectionnez d'abord un département"}
-                value={city}
-                options={cities}
-                onChange={handleCityChange}
+              <Typography fontSize={10.5} fontWeight={800} color="#64748B" letterSpacing={1.1}
+                sx={{ textTransform:'uppercase', mb:0.8 }}>
+                Ville / Commune
+              </Typography>
+              <Autocomplete
+                fullWidth
                 disabled={!dept}
-                searchable
-                isOpen={openKey === 'ville'}
-                onToggle={() => setOpenKey(openKey === 'ville' ? null : 'ville')}
+                options={cities}
+                value={city || null}
+                onChange={(_, v) => handleCityChange(v)}
+                noOptionsText="Aucun résultat"
+                renderInput={(params) => (
+                  <TextField {...params}
+                    placeholder={dept ? 'Choisir une ville / commune' : "Sélectionnez d'abord un département"}
+                    sx={fieldSx} />
+                )}
               />
             </Box>
           </Box>
