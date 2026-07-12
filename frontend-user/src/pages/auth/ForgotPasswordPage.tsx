@@ -142,6 +142,7 @@ export default function ForgotPasswordPage() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading]       = useState(false);
   const [error, setError]           = useState('');
+  const [emailNotFound, setEmailNotFound] = useState(false);
   const [countdown, setCountdown]   = useState(0);
 
   useEffect(() => {
@@ -153,15 +154,17 @@ export default function ForgotPasswordPage() {
   /* ── Step 1: send code ── */
   const handleSendCode = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true); setError('');
+    setLoading(true); setError(''); setEmailNotFound(false);
     try {
       await api.post('/auth/forgot-password', { email });
       setStage('code');
       setCountdown(60);
-    } catch {
-      // Silent — never reveal if email exists
-      setStage('code');
-      setCountdown(60);
+    } catch (err: any) {
+      if (err.response?.status === 404) {
+        setEmailNotFound(true);
+      } else {
+        setError("Une erreur est survenue. Merci de réessayer dans quelques instants.");
+      }
     } finally {
       setLoading(false);
     }
@@ -258,14 +261,14 @@ export default function ForgotPasswordPage() {
               Mot de passe oublié ?
             </Typography>
             <Typography fontSize={14} color={SUB} mb={3.5} lineHeight={1.7}>
-              Saisissez votre adresse email. Si un compte existe, vous recevrez un code valable <strong style={{ color: TXT }}>15 minutes</strong>.
+              Saisissez votre adresse email. Vous recevrez un code valable <strong style={{ color: TXT }}>15 minutes</strong>.
             </Typography>
 
             <Field
               label="Adresse email"
               type="email"
               value={email}
-              onChange={e => setEmail(e.target.value)}
+              onChange={e => { setEmail(e.target.value); setEmailNotFound(false); setError(''); }}
               placeholder="Ex : vous@exemple.com"
               autoFocus
               endIcon={<EmailOutlined sx={{ fontSize: 19 }} />}
@@ -273,6 +276,25 @@ export default function ForgotPasswordPage() {
 
             {error && (
               <Typography sx={{ fontSize: 12.5, color: '#EF4444', mt: 1.5, px: 0.5 }}>{error}</Typography>
+            )}
+
+            {emailNotFound && (
+              <Box sx={{
+                mt: 2, p: 2, borderRadius: '14px',
+                bgcolor: alpha('#6366F1', 0.06), border: `1px solid ${alpha('#6366F1', 0.18)}`,
+              }}>
+                <Typography sx={{ fontSize: 13, color: TXT, fontWeight: 700, mb: 0.4 }}>
+                  Aucun compte associé à cette adresse
+                </Typography>
+                <Typography sx={{ fontSize: 12.5, color: SUB, lineHeight: 1.6, mb: 1.2 }}>
+                  Vérifiez l'orthographe de votre email, ou créez un compte DealPam en quelques secondes.
+                </Typography>
+                <Button component={Link} to="/register" size="small"
+                  sx={{ fontSize: 12.5, fontWeight: 700, textTransform: 'none', color: '#6366F1', p: 0,
+                    '&:hover': { bgcolor: 'transparent', color: '#4F46E5' } }}>
+                  Créer un compte →
+                </Button>
+              </Box>
             )}
 
             <Button fullWidth type="submit" disabled={loading || !email} variant="contained"

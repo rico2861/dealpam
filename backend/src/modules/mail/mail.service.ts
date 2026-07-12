@@ -98,10 +98,10 @@ export class MailService {
 
   <!-- FOOTER -->
   <tr><td style="padding:24px 0 8px;text-align:center;">
-    <p style="margin:0 0 6px;color:#9CA3AF;font-size:12px;line-height:1.7;">
-      © 2025 DealPam · Haïti · <a href="mailto:${BRAND.support}" style="color:#9CA3AF;">${BRAND.support}</a>
+    <p style="margin:0 0 6px;color:#64748B;font-size:12.5px;line-height:1.7;">
+      © ${new Date().getFullYear()} DealPam · Haïti · <a href="mailto:${BRAND.support}" style="color:#64748B;text-decoration:underline;">${BRAND.support}</a>
     </p>
-    <p style="margin:0;color:#CBD5E1;font-size:11px;">Cet email est envoyé automatiquement — merci de ne pas y répondre directement.</p>
+    <p style="margin:0;color:#94A3B8;font-size:11.5px;">Cet email vous a été envoyé automatiquement — merci de ne pas y répondre directement.</p>
   </td></tr>
 
 </table>
@@ -187,7 +187,7 @@ export class MailService {
       ${this.divider()}
       <p style="margin:0;color:${BRAND.muted};font-size:12.5px;text-align:center;">Des questions ? Contactez-nous à <a href="mailto:${BRAND.support}">${BRAND.support}</a></p>
     `;
-    await this.send(to, `🎉 Bienvenue sur DealPam, ${firstName} !`, this.layout('Bienvenue', `Bienvenue ${firstName} ! Votre compte DealPam est prêt.`, body), 'client');
+    await this.send(to, `Bienvenue sur DealPam, ${firstName}`, this.layout('Bienvenue', `Bienvenue ${firstName} ! Votre compte DealPam est prêt.`, body), 'client');
   }
 
   // ── 1bis. SELLER WELCOME + 30-DAY FREE TRIAL ────────────────────────────────
@@ -236,7 +236,7 @@ export class MailService {
       ${this.alert('⏱️ Ce lien est valable <strong>24 heures</strong>. Si vous n\'avez pas créé de compte, ignorez cet email.', 'info')}
       ${this.linkNote(verifyUrl)}
     `;
-    await this.send(to, '📧 Confirmez votre adresse email — DealPam', this.layout('Confirmation email', 'Confirmez votre email pour activer votre compte DealPam.', body), 'client');
+    await this.send(to, 'Confirmez votre adresse email — DealPam', this.layout('Confirmation email', 'Confirmez votre email pour activer votre compte DealPam.', body), 'client');
   }
 
   // ── 3. SELLER ACCOUNT APPROVED ─────────────────────────────────────────────
@@ -251,7 +251,7 @@ export class MailService {
       ${this.divider()}
       <p style="margin:0;color:${BRAND.muted};font-size:13px;text-align:center;">Besoin d'aide pour démarrer ? Consultez notre guide vendeur ou contactez-nous.</p>
     `;
-    await this.send(to, `✅ Votre boutique "${storeName}" est approuvée — DealPam`, this.layout('Boutique approuvée', `Votre boutique ${storeName} est validée et prête à vendre.`, body), 'seller');
+    await this.send(to, `Votre boutique "${storeName}" est approuvée — DealPam`, this.layout('Boutique approuvée', `Votre boutique ${storeName} est validée et prête à vendre.`, body), 'seller');
   }
 
   // ── 3b. SELLER DOCS SUBMITTED / RESUBMITTED — awaiting review ─────────────
@@ -281,7 +281,7 @@ export class MailService {
       ${this.divider()}
       ${this.para(`Si vous pensez que cette décision est une erreur, contactez notre support à <a href="mailto:${BRAND.support}">${BRAND.support}</a>.`)}
     `;
-    await this.send(to, '❌ Vérification refusée — DealPam', this.layout('Vérification refusée', 'Votre dossier vendeur n\'a pas pu être validé.', body), 'seller');
+    await this.send(to, 'Vérification refusée — DealPam', this.layout('Vérification refusée', 'Votre dossier vendeur n\'a pas pu être validé.', body), 'seller');
   }
 
   // ── 5. PASSWORD RESET (code 6 chiffres) ───────────────────────────────────
@@ -318,7 +318,7 @@ export class MailService {
       ${this.alert('⚠️ Pour des raisons de sécurité, <strong>changez ce mot de passe immédiatement</strong> après votre connexion. Ce mot de passe temporaire expire dans <strong>24 heures</strong>.', 'warning')}
       ${this.btn('Se connecter maintenant', `${BRAND.url}/login`)}
     `;
-    await this.send(to, '🛡️ Votre mot de passe a été réinitialisé — DealPam', this.layout('Reset par admin', 'Un administrateur a réinitialisé votre mot de passe DealPam.', body), as);
+    await this.send(to, 'Votre mot de passe a été réinitialisé — DealPam', this.layout('Reset par admin', 'Un administrateur a réinitialisé votre mot de passe DealPam.', body), as);
   }
 
   // ── 7. ACCOUNT LOCKED ─────────────────────────────────────────────────────
@@ -331,7 +331,7 @@ export class MailService {
       ${this.alert('⚠️ Si ce n\'était pas vous, votre mot de passe a peut-être été compromis. Réinitialisez-le immédiatement.', 'error')}
       ${this.btn('Réinitialiser mon mot de passe', resetUrl)}
     `;
-    await this.send(to, '🔒 Compte bloqué — DealPam', this.layout('Compte bloqué', 'Votre compte DealPam a été temporairement bloqué.', body), as);
+    await this.send(to, 'Compte temporairement bloqué — DealPam', this.layout('Compte bloqué', 'Votre compte DealPam a été temporairement bloqué.', body), as);
   }
 
   // ── 8. PASSWORD CHANGED ───────────────────────────────────────────────────
@@ -344,7 +344,7 @@ export class MailService {
       ${this.para(`Votre mot de passe DealPam a été modifié le <strong>${now}</strong>.`)}
       ${this.alert(`⚠️ Si vous n'avez pas effectué cette action, contactez immédiatement <a href="mailto:${BRAND.support}">${BRAND.support}</a>`, 'error')}
     `;
-    await this.send(to, '✅ Mot de passe modifié — DealPam', this.layout('Mot de passe modifié', 'Votre mot de passe DealPam a été changé.', body), as);
+    await this.send(to, 'Mot de passe modifié — DealPam', this.layout('Mot de passe modifié', 'Votre mot de passe DealPam a été changé.', body), as);
   }
 
   // ── 9. NEW ORDER (to seller) ───────────────────────────────────────────────
@@ -391,7 +391,7 @@ export class MailService {
       ${this.btn('Gérer cette commande →', `${BRAND.url}/seller/orders`)}
       ${this.alert('⚡ Répondez rapidement ! Les vendeurs qui traitent leurs commandes en moins de 2h reçoivent un badge <strong>"Réponse Rapide"</strong>.', 'info')}
     `;
-    await this.send(to, `🛒 Nouvelle commande #${order.number} — DealPam`, this.layout('Nouvelle commande', `Nouvelle commande #${order.number} reçue sur DealPam.`, body), 'seller');
+    await this.send(to, `Nouvelle commande #${order.number} — DealPam`, this.layout('Nouvelle commande', `Nouvelle commande #${order.number} reçue sur DealPam.`, body), 'seller');
   }
 
   // ── 10. ORDER CONFIRMATION (to customer) ──────────────────────────────────
@@ -432,7 +432,7 @@ export class MailService {
       ])}
       ${this.btn('Suivre ma commande', `${BRAND.url}/orders`)}
     `;
-    await this.send(to, `📦 Commande #${order.number} confirmée — DealPam`, this.layout('Commande confirmée', `Votre commande #${order.number} sur DealPam est confirmée.`, body), 'client');
+    await this.send(to, `Commande #${order.number} confirmée — DealPam`, this.layout('Commande confirmée', `Votre commande #${order.number} sur DealPam est confirmée.`, body), 'client');
   }
 
   // ── 11. ORDER STATUS UPDATE ───────────────────────────────────────────────
@@ -453,7 +453,7 @@ export class MailService {
       ${detail ? this.alert(detail, 'info') : ''}
       ${status === 'DELIVERED' ? this.btn('Laisser un avis', `${BRAND.url}/orders`) : this.btn('Voir ma commande', `${BRAND.url}/orders`)}
     `;
-    await this.send(to, `${s.icon} Commande #${orderNumber} — ${s.title} — DealPam`, this.layout(s.title, s.msg, body), 'client');
+    await this.send(to, `Commande #${orderNumber} — ${s.title} — DealPam`, this.layout(s.title, s.msg, body), 'client');
   }
 
   // ── 11bis. PRICE OFFER DECISION (accept/reject by seller) ─────────────────
@@ -487,8 +487,8 @@ export class MailService {
         ${reason ? this.alert(this.esc(reason), 'warning') : ''}
         ${this.para('Vous pouvez soumettre une nouvelle offre à un montant plus élevé directement depuis la fiche produit.')}
       `;
-    const subject = isAccepted ? `🎉 Offre acceptée pour ${productName} — DealPam`
-      : isCountered ? `🔄 Contre-offre du vendeur pour ${productName} — DealPam`
+    const subject = isAccepted ? `Offre acceptée pour ${productName} — DealPam`
+      : isCountered ? `Contre-offre du vendeur pour ${productName} — DealPam`
       : `Offre refusée pour ${productName} — DealPam`;
     const title = isAccepted ? 'Offre acceptée' : isCountered ? 'Contre-offre du vendeur' : 'Offre refusée';
     const preheader = isAccepted ? 'Votre offre de prix a été acceptée.'
@@ -508,7 +508,7 @@ export class MailService {
       </div>
       ${this.btn('Répondre au message', chatUrl)}
     `;
-    await this.send(to, `💬 Nouveau message de ${senderName} — DealPam`, this.layout('Nouveau message', `Nouveau message de ${senderName} sur DealPam.`, body), as);
+    await this.send(to, `Nouveau message de ${senderName} — DealPam`, this.layout('Nouveau message', `Nouveau message de ${senderName} sur DealPam.`, body), as);
   }
 
   // ── 13. SUBSCRIPTION EXPIRY REMINDER ─────────────────────────────────────
@@ -526,7 +526,7 @@ export class MailService {
         : this.alert('💡 Renouvelez maintenant pour continuer à vendre sans interruption.', 'warning')}
       ${this.btn('Renouveler mon abonnement', renewUrl)}
     `;
-    await this.send(to, `${isUrgent ? '⚠️' : '🔔'} Votre abonnement expire dans ${daysLeft}j — DealPam`, this.layout('Expiration abonnement', `Votre abonnement ${planName} expire dans ${daysLeft} jours.`, body), 'seller');
+    await this.send(to, `Votre abonnement expire dans ${daysLeft} jour${daysLeft > 1 ? 's' : ''} — DealPam`, this.layout('Expiration abonnement', `Votre abonnement ${planName} expire dans ${daysLeft} jours.`, body), 'seller');
   }
 
   // ── 14. SUBSCRIPTION EXPIRED ──────────────────────────────────────────────
@@ -539,7 +539,7 @@ export class MailService {
       ${this.alert('📦 Vos produits et données sont conservés. Renouvelez votre abonnement pour les réactiver immédiatement.', 'warning')}
       ${this.btn('Renouveler et réactiver ma boutique', renewUrl)}
     `;
-    await this.send(to, '⛔ Abonnement expiré — Réactivez votre boutique DealPam', this.layout('Abonnement expiré', `Votre abonnement ${planName} a expiré sur DealPam.`, body), 'seller');
+    await this.send(to, 'Abonnement expiré — Réactivez votre boutique DealPam', this.layout('Abonnement expiré', `Votre abonnement ${planName} a expiré sur DealPam.`, body), 'seller');
   }
 
   // ── 15. SUBSCRIPTION RENEWED ──────────────────────────────────────────────
@@ -553,7 +553,7 @@ export class MailService {
       ${this.table([['Plan', planName], ['Actif jusqu\'au', end]])}
       ${this.btn('Gérer ma boutique', `${BRAND.url}/seller`)}
     `;
-    await this.send(to, `🎊 Abonnement ${planName} renouvelé — DealPam`, this.layout('Abonnement renouvelé', `Votre abonnement DealPam a été renouvelé jusqu'au ${end}.`, body), 'seller');
+    await this.send(to, `Abonnement ${planName} renouvelé — DealPam`, this.layout('Abonnement renouvelé', `Votre abonnement DealPam a été renouvelé jusqu'au ${end}.`, body), 'seller');
   }
 
   // ── 16. NEWSLETTER WELCOME ────────────────────────────────────────────────

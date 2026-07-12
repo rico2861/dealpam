@@ -5,6 +5,7 @@ import {
   ConflictException,
   BadRequestException,
   ForbiddenException,
+  NotFoundException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
@@ -221,18 +222,19 @@ export class AuthService {
 
   async forgotPassword(email: string) {
     const user = await this.prisma.user.findUnique({ where: { email: email.toLowerCase() } });
-    if (user?.isActive) {
-      // Generate 6-digit numeric code
-      const code      = Math.floor(100000 + Math.random() * 900000).toString();
-      const codeHash  = crypto.createHash('sha256').update(code).digest('hex');
-      const expires   = new Date(Date.now() + RESET_TOKEN_EXPIRES);
-      await this.prisma.user.update({
-        where: { id: user.id },
-        data: { passwordResetToken: codeHash, passwordResetExpires: expires, lockedUntil: null, failedLoginAttempts: 0 },
-      });
-      this.mailService.sendPasswordResetCode(user.email, user.firstName, code, MailService.accountForRole(user.role)).catch(() => null);
+    if (!user || !user.isActive) {
+      throw new NotFoundException("Aucun compte DealPam n'est associé à cette adresse email.");
     }
-    return { message: 'Si cet email existe, un code de vérification vous a été envoyé.' };
+    // Generate 6-digit numeric code
+    const code      = Math.floor(100000 + Math.random() * 900000).toString();
+    const codeHash  = crypto.createHash('sha256').update(code).digest('hex');
+    const expires   = new Date(Date.now() + RESET_TOKEN_EXPIRES);
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { passwordResetToken: codeHash, passwordResetExpires: expires, lockedUntil: null, failedLoginAttempts: 0 },
+    });
+    this.mailService.sendPasswordResetCode(user.email, user.firstName, code, MailService.accountForRole(user.role)).catch(() => null);
+    return { message: 'Un code de vérification vous a été envoyé.' };
   }
 
   async verifyResetCode(email: string, code: string) {
@@ -273,6 +275,7 @@ export class AuthService {
               failedLoginAttempts: 0, lockedUntil: null },
     });
     await this.prisma.refreshToken.deleteMany({ where: { userId: user.id } });
+    this.mailService.sendPasswordChanged(user.email, user.firstName, MailService.accountForRole(user.role)).catch(() => null);
     return { message: 'Mot de passe réinitialisé. Vous pouvez vous connecter.' };
   }
 
