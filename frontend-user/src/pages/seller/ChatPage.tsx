@@ -744,9 +744,9 @@ export default function SellerChatPage() {
                           <Box sx={{ width: 30, flexShrink: 0 }}>
                             {showAvatar && (
                               <Avatar src={msg.sender?.avatar ?? undefined} sx={{ width: 30, height: 30,
-                                bgcolor: bot ? alpha(PURPLE, 0.18) : admin ? alpha(ORANGE, 0.18) : '#FFFFFF',
-                                fontSize: 12, fontWeight: 500,
-                                border: `1px solid ${bot ? alpha(PURPLE, 0.3) : admin ? alpha(ORANGE, 0.25) : 'rgba(15,23,42,0.09)'}` }}>
+                                bgcolor: bot ? alpha(PURPLE, 0.18) : admin ? alpha(ORANGE, 0.18) : 'rgba(15,23,42,0.09)',
+                                fontSize: 12, fontWeight: 700, color: bot ? PURPLE : admin ? ORANGE : NAVY,
+                                border: `1px solid ${bot ? alpha(PURPLE, 0.3) : admin ? alpha(ORANGE, 0.25) : 'rgba(15,23,42,0.15)'}` }}>
                                 {bot ? <SmartToyOutlined sx={{ fontSize: 14, color: PURPLE }} />
                                      : admin ? <SupportAgent sx={{ fontSize: 14, color: ORANGE }} />
                                      : (msg.sender?.firstName?.[0] ?? '?')}
