@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
-import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
-import { useCallback, useEffect } from 'react';
+import { ThemeProvider, createTheme, CssBaseline, Box, CircularProgress } from '@mui/material';
+import { Suspense, lazy, useCallback, useEffect } from 'react';
 import { useAuthStore } from './store/auth.store';
 import { useInactivityLogout } from './hooks/useInactivityLogout';
 
@@ -37,65 +37,80 @@ import MainLayout from './components/layout/MainLayout';
 import SellerLayout from './components/layout/SellerLayout';
 import AuthLayout from './components/layout/AuthLayout';
 
-// Public pages
+// MainLayout/SellerLayout/AuthLayout et HomePage restent en chargement immédiat
+// (premier écran affiché à l'utilisateur) ; toutes les ~45 autres pages passent
+// en React.lazy — auparavant tout (vendeur, admin, légal...) partait dans le
+// même bundle initial, alourdissant le premier chargement pour tout le monde.
 import HomePage from './pages/public/HomePage';
-import ProductsPage from './pages/public/ProductsPage';
-import ProductDetailPage from './pages/public/ProductDetailPage';
-import CategoriesPage from './pages/public/CategoriesPage';
-import StoresPage from './pages/public/StoresPage';
-import StoreDetailPage from './pages/public/StoreDetailPage';
-import BoutiquePage from './pages/public/BoutiquePage';
-import SearchPage from './pages/public/SearchPage';
-import FlashSalePage from './pages/public/FlashSalePage';
-import SupportPage from './pages/public/SupportPage';
-import UnsubscribePage from './pages/public/UnsubscribePage';
-import NotFoundPage from './pages/public/NotFoundPage';
-
-// Legal pages
-import PrivacyPage from './pages/legal/PrivacyPage';
-import TermsPage from './pages/legal/TermsPage';
-import CookiesPage from './pages/legal/CookiesPage';
-import LegalPage from './pages/legal/LegalPage';
-
-// Auth pages
-import LoginPage from './pages/auth/LoginPage';
-import RegisterPage from './pages/auth/RegisterPage';
-import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
-import ResetPasswordPage from './pages/auth/ResetPasswordPage';
-
-// Customer pages
-import CustomerDashboard from './pages/customer/DashboardPage';
-import OrdersPage from './pages/customer/OrdersPage';
-import OrderDetailPage from './pages/customer/OrderDetailPage';
-import MessagesPage from './pages/customer/MessagesPage';
-import WishlistPage from './pages/account/WishlistPage';
-import ProfilePage from './pages/customer/ProfilePage';
-import BecomeSellerPage from './pages/customer/BecomeSellerPage';
-import CartPage from './pages/customer/CartPage';
-import CheckoutPage from './pages/customer/CheckoutPage';
-import OrderSuccessPage from './pages/customer/OrderSuccessPage';
-import ThankYouPage from './pages/customer/ThankYouPage';
 import MoncashReturnHandler from './components/MoncashReturnHandler';
 import CookieConsentBanner from './components/shared/CookieConsentBanner';
 import ScrollToTop from './components/ScrollToTop';
 
+// Public pages
+const ProductsPage       = lazy(() => import('./pages/public/ProductsPage'));
+const ProductDetailPage  = lazy(() => import('./pages/public/ProductDetailPage'));
+const CategoriesPage     = lazy(() => import('./pages/public/CategoriesPage'));
+const StoresPage         = lazy(() => import('./pages/public/StoresPage'));
+const StoreDetailPage    = lazy(() => import('./pages/public/StoreDetailPage'));
+const BoutiquePage       = lazy(() => import('./pages/public/BoutiquePage'));
+const SearchPage         = lazy(() => import('./pages/public/SearchPage'));
+const FlashSalePage      = lazy(() => import('./pages/public/FlashSalePage'));
+const SupportPage        = lazy(() => import('./pages/public/SupportPage'));
+const UnsubscribePage    = lazy(() => import('./pages/public/UnsubscribePage'));
+const NotFoundPage       = lazy(() => import('./pages/public/NotFoundPage'));
+
+// Legal pages
+const PrivacyPage = lazy(() => import('./pages/legal/PrivacyPage'));
+const TermsPage   = lazy(() => import('./pages/legal/TermsPage'));
+const CookiesPage = lazy(() => import('./pages/legal/CookiesPage'));
+const LegalPage   = lazy(() => import('./pages/legal/LegalPage'));
+
+// Auth pages
+const LoginPage          = lazy(() => import('./pages/auth/LoginPage'));
+const RegisterPage       = lazy(() => import('./pages/auth/RegisterPage'));
+const ForgotPasswordPage = lazy(() => import('./pages/auth/ForgotPasswordPage'));
+const ResetPasswordPage  = lazy(() => import('./pages/auth/ResetPasswordPage'));
+
+// Customer pages
+const CustomerDashboard = lazy(() => import('./pages/customer/DashboardPage'));
+const OrdersPage        = lazy(() => import('./pages/customer/OrdersPage'));
+const OrderDetailPage   = lazy(() => import('./pages/customer/OrderDetailPage'));
+const MessagesPage      = lazy(() => import('./pages/customer/MessagesPage'));
+const WishlistPage      = lazy(() => import('./pages/account/WishlistPage'));
+const ProfilePage       = lazy(() => import('./pages/customer/ProfilePage'));
+const BecomeSellerPage  = lazy(() => import('./pages/customer/BecomeSellerPage'));
+const CartPage          = lazy(() => import('./pages/customer/CartPage'));
+const CheckoutPage      = lazy(() => import('./pages/customer/CheckoutPage'));
+const OrderSuccessPage  = lazy(() => import('./pages/customer/OrderSuccessPage'));
+const ThankYouPage      = lazy(() => import('./pages/customer/ThankYouPage'));
+
 // Seller pages
-import SellerDashboard from './pages/seller/DashboardPage';
-import SellerProductsPage from './pages/seller/ProductsPage';
-import AddProductPage from './pages/seller/AddProductPage';
-import EditProductPage from './pages/seller/EditProductPage';
-import SellerOrdersPage from './pages/seller/OrdersPage';
-import SellerSubscriptionPage from './pages/seller/SubscriptionPage';
-import SellerStorePage from './pages/seller/StorePage';
-import SellerAdsPage from './pages/seller/AdsPage';
-import BoosterIaPage from './pages/seller/BoosterIaPage';
-import SellerStoresPage from './pages/seller/StoresPage';
-import SellerProfilePage from './pages/seller/ProfilePage';
-import SellerChatPage from './pages/seller/ChatPage';
-import SellerWalletPage from './pages/seller/WalletPage';
-import StatisticsPage from './pages/seller/StatisticsPage';
-import AddServicePage from './pages/seller/AddServicePage';
-import AppointmentsPage from './pages/seller/AppointmentsPage';
+const SellerDashboard       = lazy(() => import('./pages/seller/DashboardPage'));
+const SellerProductsPage    = lazy(() => import('./pages/seller/ProductsPage'));
+const AddProductPage        = lazy(() => import('./pages/seller/AddProductPage'));
+const EditProductPage       = lazy(() => import('./pages/seller/EditProductPage'));
+const SellerOrdersPage      = lazy(() => import('./pages/seller/OrdersPage'));
+const SellerSubscriptionPage = lazy(() => import('./pages/seller/SubscriptionPage'));
+const SellerStorePage       = lazy(() => import('./pages/seller/StorePage'));
+const SellerAdsPage         = lazy(() => import('./pages/seller/AdsPage'));
+const BoosterIaPage         = lazy(() => import('./pages/seller/BoosterIaPage'));
+const SellerStoresPage      = lazy(() => import('./pages/seller/StoresPage'));
+const SellerProfilePage     = lazy(() => import('./pages/seller/ProfilePage'));
+const SellerChatPage        = lazy(() => import('./pages/seller/ChatPage'));
+const SellerWalletPage      = lazy(() => import('./pages/seller/WalletPage'));
+const StatisticsPage        = lazy(() => import('./pages/seller/StatisticsPage'));
+const AddServicePage        = lazy(() => import('./pages/seller/AddServicePage'));
+const AppointmentsPage      = lazy(() => import('./pages/seller/AppointmentsPage'));
+
+// Fallback minimal pendant le chargement d'une page en lazy — un centre d'écran
+// simple suffit, la page a déjà layout/header/footer chargés autour d'elle.
+function RouteFallback() {
+  return (
+    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
+      <CircularProgress size={32} sx={{ color: '#FF9900' }} />
+    </Box>
+  );
+}
 
 const theme = createTheme({
   palette: {
@@ -157,6 +172,7 @@ export default function App() {
         <MoncashReturnHandler />
         <CookieConsentBanner />
 
+        <Suspense fallback={<RouteFallback />}>
         <Routes>
           {/* Public */}
           <Route path="/" element={<MainLayout />}>
@@ -230,6 +246,7 @@ export default function App() {
 
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
+        </Suspense>
       </BrowserRouter>
     </ThemeProvider>
   );
