@@ -156,6 +156,24 @@ export default function SellerChatPage() {
     enabled: !!token,
     refetchInterval: 30_000,
   });
+  // Ref toujours à jour pour la lecture dans les handlers socket (useEffect [token]
+  // seulement, sinon `conversations` y serait figé sur sa valeur au montage).
+  const conversationsRef = useRef<Conv[]>([]);
+  useEffect(() => { conversationsRef.current = conversations; }, [conversations]);
+
+  // Clé publique du destinataire de la conversation — c'est TOUJOURS celle-ci
+  // qu'il faut utiliser pour dériver le secret ECDH partagé, que le message
+  // affiché ait été envoyé par nous ou par le correspondant (le secret ECDH est
+  // symétrique : notre_priv+leur_pub == leur_priv+notre_pub). Utiliser
+  // `getPeerPub(msg.senderId)` pour nos propres messages récupérait par erreur
+  // NOTRE PROPRE clé publique au lieu de celle du correspondant, ce qui
+  // affichait le chiffré brut comme un second message en double.
+  const getConvPeerId = useCallback((convId: string | null): string | null => {
+    if (!convId) return null;
+    const conv = conversationsRef.current.find(c => c.id === convId);
+    const peer = conv?.participants?.find(p => p.userId !== user?.id);
+    return peer?.userId ?? null;
+  }, [user?.id]);
   const showConvsSkel = useDelayedLoading(convsLoading);
   const showMsgsSkel  = useDelayedLoading(loadingMsgs);
 
@@ -195,13 +213,16 @@ export default function SellerChatPage() {
       const msgConvId = (msg as any).conversationId;
       if (msgConvId && msgConvId !== activeRef.current) return;
 
-      // Decrypt if encrypted and it's a P2P TEXT message from the peer
+      // Decrypt if encrypted, qu'on soit l'expediteur ou le destinataire (ECDH symetrique)
       let decrypted = msg;
-      if (msg.type === 'TEXT' && msg.senderId !== user?.id && isEncrypted(msg.content)) {
-        try {
-          const peerPub = await getPeerPub(msg.senderId);
-          if (peerPub) decrypted = { ...msg, content: await decryptMsg(msg.content, peerPub) };
-        } catch { /* leave ciphertext if decrypt fails */ }
+      if (msg.type === 'TEXT' && isEncrypted(msg.content)) {
+        const peerId = getConvPeerId(msgConvId ?? activeRef.current);
+        if (peerId) {
+          try {
+            const peerPub = await getPeerPub(peerId);
+            if (peerPub) decrypted = { ...msg, content: await decryptMsg(msg.content, peerPub) };
+          } catch { /* leave ciphertext if decrypt fails */ }
+        }
       }
 
       setMessages(prev => {
@@ -248,10 +269,11 @@ export default function SellerChatPage() {
       const r = await api.get(`/chat/conversations/${convId}/messages`);
       const raw: Msg[] = r.data.data ?? [];
       // Decrypt E2E messages
+      const peerId = getConvPeerId(convId);
       const decrypted = await Promise.all(raw.map(async (msg) => {
-        if (msg.type !== 'TEXT' || msg.senderId === user?.id || !isEncrypted(msg.content)) return msg;
+        if (msg.type !== 'TEXT' || !peerId || !isEncrypted(msg.content)) return msg;
         try {
-          const peerPub = await getPeerPub(msg.senderId);
+          const peerPub = await getPeerPub(peerId);
           if (peerPub) return { ...msg, content: await decryptMsg(msg.content, peerPub) };
         } catch { /* return original on failure */ }
         return msg;
@@ -854,12 +876,12 @@ export default function SellerChatPage() {
 
               <IconButton onClick={sendMsg} disabled={!text.trim() || sending} sx={{
                 width: 40, height: 40, borderRadius: '10px', flexShrink: 0,
-                background: text.trim() ? ORANGE : '#FFFFFF',
+                background: text.trim() ? ORANGE : '#F1F5F9',
                 color: text.trim() ? 'white' : SUB,
                 boxShadow: text.trim() ? '0 4px 14px rgba(245,113,26,0.35)' : 'none',
                 transition: 'all 0.18s',
                 '&:hover': { transform: text.trim() ? 'scale(1.06)' : 'none', boxShadow: text.trim() ? '0 6px 18px rgba(245,113,26,0.45)' : 'none' },
-                '&.Mui-disabled': { background: '#FFFFFF', color: '#FFFFFF' },
+                '&.Mui-disabled': { background: '#F1F5F9', color: SUB },
               }}>
                 {sending ? <CircularProgress size={15} sx={{ color: SUB2 }} /> : <Send sx={{ fontSize: 17 }} />}
               </IconButton>
