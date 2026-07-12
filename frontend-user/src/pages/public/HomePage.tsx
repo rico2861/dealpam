@@ -6,7 +6,7 @@ import {
 } from '@mui/material';
 import {
   ArrowForwardIos, ArrowBackIos, FavoriteBorder, Favorite,
-  SupportAgent, Verified, LocalShipping,
+  SupportAgent, Verified,
   FlashOn, LocationOn, KeyboardArrowRight, Person,
   WorkspacePremium, Stars, CheckCircle, Store, Star,
   Handshake, StorefrontOutlined,
@@ -1756,13 +1756,6 @@ function SignInCta() {
   );
 }
 
-/* ─── Delivery estimate by geo level ────────────────────────────────────── */
-function getDeliveryEstimate(level: 'city' | 'department' | 'national'): string {
-  if (level === 'city')       return 'Livraison 1-2 jours';
-  if (level === 'department') return 'Livraison 2-4 jours';
-  return 'Livraison 5-7 jours';
-}
-
 /* ─── Distance badge by level ────────────────────────────────────────────── */
 function LevelBadge({ level }: { level?: string }) {
   if (level === 'city') {
@@ -1981,11 +1974,6 @@ function NearYouSection({ products, location, onModal, label, level, hasLocalVen
             <Box sx={{ width: 4, height: 26, bgcolor: OR, borderRadius: 2 }} />
             <Typography fontSize={{ xs: 16, md: 19 }} fontWeight={700} color={BG}>{sectionTitle}</Typography>
             <LevelBadge level={level} />
-            {level && level !== 'national' && (
-              <Chip label={getDeliveryEstimate(level as 'city' | 'department' | 'national')} size="small"
-                icon={<LocalShipping sx={{ fontSize: '12px !important', color: '#64748B !important' }} />}
-                sx={{ fontSize: 10.5, fontWeight: 600, bgcolor: '#F8FAFC', color: '#64748B', border: '1px solid #E2E8F0', height: 20 }} />
-            )}
             <Chip label={city || 'Choisir zone'} size="small" onClick={onModal}
               icon={<LocationOn sx={{ fontSize: 13, color: `${OR}!important` }} />}
               sx={{ fontSize: 11.5, fontWeight: 600, bgcolor: alpha(OR, 0.09), color: OR, border: `1px solid ${alpha(OR, 0.22)}`, cursor: 'pointer', height: 22, '&:hover': { bgcolor: alpha(OR, 0.16) } }} />

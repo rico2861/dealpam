@@ -389,12 +389,12 @@ export default function RegisterPage() {
     setLoading(true); setError('');
     try {
       const payload: any = { ...form, role };
-      ['phone', 'storeName', 'storeDescription', 'nif', 'username'].forEach(k => { if (!payload[k]) delete payload[k]; });
+      ['storeName', 'storeDescription', 'nif', 'username'].forEach(k => { if (!payload[k]) delete payload[k]; });
       const { data } = await api.post('/auth/register', payload);
       setUser(data.user, data.accessToken, data.refreshToken);
       if (role === 'SELLER') {
-        enqueueSnackbar('Compte créé. Votre essai de 30 jours sur le plan Business a commencé.', { variant: 'success' });
-        navigate('/seller');
+        enqueueSnackbar('Compte créé. Votre essai de 30 jours sur le plan Business a commencé. Complétez votre profil pour faire vérifier votre compte.', { variant: 'success' });
+        navigate('/seller/profile');
       } else {
         enqueueSnackbar('Compte créé. Bienvenue sur DealPam.', { variant: 'success' });
         navigate('/account');
@@ -414,6 +414,7 @@ export default function RegisterPage() {
     if (step === 1) return (
       form.firstName.length >= 2 && form.lastName.length >= 2 &&
       form.email.includes('@') && isPasswordValid(form.password) &&
+      form.phone.replace(/\D/g, '').length >= 8 &&
       emailStatus !== 'taken' && emailStatus !== 'checking' &&
       usernameStatus !== 'taken'
     );
@@ -656,7 +657,7 @@ export default function RegisterPage() {
               </Box>
 
               {/* Téléphone */}
-              <Field label="Téléphone" value={form.phone} onChange={f('phone')} placeholder="+509 XXXX-XXXX"
+              <Field label="Téléphone *" value={form.phone} onChange={f('phone')} placeholder="+509 XXXX-XXXX"
                 accentColor={accent} startIcon={<PhoneOutlined sx={{ fontSize: 18 }} />} />
 
               {/* Mot de passe */}

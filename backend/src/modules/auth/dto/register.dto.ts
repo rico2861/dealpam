@@ -41,12 +41,11 @@ export class RegisterDto {
   @Transform(({ value }) => value?.trim())
   lastName: string;
 
-  @ApiProperty({ required: false })
-  @IsOptional()
+  @ApiProperty()
   @IsString()
   @MaxLength(20, { message: 'Téléphone trop long' })
   @Matches(/^[+\d\s()-]{7,20}$/, { message: 'Numéro de téléphone invalide' })
-  phone?: string;
+  phone: string;
 
   @ApiProperty({ enum: ['CUSTOMER', 'SELLER'], default: 'CUSTOMER', required: false })
   @IsOptional()
