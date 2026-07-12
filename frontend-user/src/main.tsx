@@ -35,6 +35,23 @@ if ('caches' in window) {
   }).catch(() => {});
 }
 
+// Avec le code-splitting (React.lazy), chaque route non encore visitée charge
+// son propre fichier JS avec un nom haché (ex: index-CJTlUJ4z.js). Si un nouveau
+// déploiement écrase les anciens fichiers pendant qu'un onglet reste ouvert (ou
+// après un retour arrière depuis une page externe comme MonCash), ce fichier
+// n'existe plus — le serveur renvoie sa page HTML de secours à la place, et le
+// navigateur refuse de l'exécuter comme script ("MIME type text/html"), page
+// blanche garantie, qu'un simple refresh ne corrige pas car rien ne dit au
+// navigateur d'aller chercher le NOUVEL index.html avec les bons noms de
+// fichiers. Vite émet 'vite:preloadError' précisément dans ce cas — on force
+// alors un rechargement complet (une seule fois, pour éviter une boucle si le
+// problème persiste pour une autre raison).
+window.addEventListener('vite:preloadError', () => {
+  if (sessionStorage.getItem('reloaded-after-preload-error')) return;
+  sessionStorage.setItem('reloaded-after-preload-error', '1');
+  window.location.reload();
+});
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -49,6 +66,11 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+// Le flag n'est utile que pour éviter une boucle immédiate après le reload
+// forcé ci-dessus — une fois l'app relancée avec succès, on le retire pour
+// qu'un futur (nouveau) déploiement puisse déclencher le même rechargement.
+sessionStorage.removeItem('reloaded-after-preload-error');
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
