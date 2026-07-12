@@ -155,7 +155,7 @@ export default function LocationModal({ open, onClose }: { open: boolean; onClos
       <Box
         onClick={onClose}
         sx={{
-          position:'fixed', inset:0, zIndex:1200,
+          position:'fixed', inset:0, zIndex:1400,
           bgcolor:'rgba(15,23,42,0.72)', backdropFilter:'blur(4px)',
           animation:'lm-fadeIn .2s ease both',
         }}
@@ -168,7 +168,7 @@ export default function LocationModal({ open, onClose }: { open: boolean; onClos
         aria-label="Sélection de zone de livraison"
         onClick={e => e.stopPropagation()}
         sx={{
-          position:'fixed', zIndex:1201,
+          position:'fixed', zIndex:1401,
           top:{ xs:'auto', sm:'50%' },
           left:{ xs:0, sm:'50%' },
           right:{ xs:0, sm:'auto' },
