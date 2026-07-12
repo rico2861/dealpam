@@ -4,7 +4,7 @@ import { io as socketIo } from 'socket.io-client';
 import {
   Container, Grid, Box, Typography, Button, Chip, Avatar, Rating,
   Tabs, Tab, alpha, IconButton, Tooltip, TextField,
-  CircularProgress, Divider, MenuItem, Select, FormControl, InputLabel,
+  CircularProgress, Divider, MenuItem, Select,
   Collapse, LinearProgress,
 } from '@mui/material';
 import {
@@ -482,7 +482,7 @@ export default function BoutiquePage() {
   });
 
   // Abonnement à la boutique — uniquement pour un client connecté.
-  const { data: followStatus } = useQuery({
+  const { data: followStatus, isLoading: followLoading } = useQuery({
     queryKey: ['store-follow', store?.id],
     queryFn:  () => api.get(`/stores/${store.id}/follow-status`).then(r => r.data),
     enabled:  !!store?.id && !!user,
@@ -662,20 +662,27 @@ export default function BoutiquePage() {
 
             {/* Actions */}
             <Box sx={{ display: 'flex', gap: 1, flexShrink: 0, pb: 0.8 }}>
-              <Button variant={followStatus?.following ? 'outlined' : 'contained'}
-                startIcon={followStatus?.following ? <Check /> : <PersonAdd />}
-                disabled={followMut.isPending}
-                onClick={() => { if (!user) navigate('/login'); else followMut.mutate(); }}
-                sx={followStatus?.following ? {
-                  borderRadius: 2.5, fontWeight: 700, borderColor: alpha('#10B981', 0.4), color: '#10B981',
-                  '&:hover': { borderColor: '#10B981', bgcolor: alpha('#10B981', 0.06) },
-                } : {
-                  background: `linear-gradient(135deg, #0EA271, #10B981)`,
-                  boxShadow: '0 4px 16px rgba(16,185,129,0.35)', borderRadius: 2.5, fontWeight: 700,
-                  '&:hover': { boxShadow: '0 6px 24px rgba(16,185,129,0.5)' },
-                }}>
-                {followStatus?.following ? 'Abonné' : "S'abonner"}
-              </Button>
+              {/* Tant que le statut d'abonnement (utilisateur connecté) n'est pas
+                  encore charge, ne pas afficher "S'abonner" par defaut — ca
+                  clignotait en "Abonne" une fois la vraie donnee arrivee. */}
+              {user && followLoading ? (
+                <Box sx={{ width: 118, height: 36.5, borderRadius: 2.5, bgcolor: '#F1F5F9' }} />
+              ) : (
+                <Button variant={followStatus?.following ? 'outlined' : 'contained'}
+                  startIcon={followStatus?.following ? <Check /> : <PersonAdd />}
+                  disabled={followMut.isPending}
+                  onClick={() => { if (!user) navigate('/login'); else followMut.mutate(); }}
+                  sx={followStatus?.following ? {
+                    borderRadius: 2.5, fontWeight: 700, borderColor: alpha('#10B981', 0.4), color: '#10B981',
+                    '&:hover': { borderColor: '#10B981', bgcolor: alpha('#10B981', 0.06) },
+                  } : {
+                    background: `linear-gradient(135deg, #0EA271, #10B981)`,
+                    boxShadow: '0 4px 16px rgba(16,185,129,0.35)', borderRadius: 2.5, fontWeight: 700,
+                    '&:hover': { boxShadow: '0 6px 24px rgba(16,185,129,0.5)' },
+                  }}>
+                  {followStatus?.following ? 'Abonné' : "S'abonner"}
+                </Button>
+              )}
               <Button variant="contained" startIcon={<Chat />}
                 onClick={() => { if (!user) navigate('/login'); else setChatOpen(p => !p); }}
                 sx={{ background: `linear-gradient(135deg, #E05A00, ${ORANGE})`,
@@ -860,13 +867,20 @@ export default function BoutiquePage() {
                 { label: 'Trier', val: filterSort, set: setFilterSort,
                   opts: [['newest', 'Plus récents'], ['price_asc', 'Prix ↑'], ['price_desc', 'Prix ↓'], ['rating', 'Mieux notés'], ['popular', 'Plus vendus']] },
               ].map(({ label, val, set, opts }) => (
-                <FormControl key={label} size="small" sx={{ minWidth: 130 }}>
-                  <InputLabel sx={{ fontSize: 12.5 }}>{label}</InputLabel>
-                  <Select value={val} label={label} onChange={e => set(e.target.value as string)}
+                // Pas de label flottant MUI ici (son calcul de largeur d'encoche de
+                // bordure ne matchait pas toujours le texte, faisant deborder/mal
+                // aligner le texte) — legende fixe au-dessus, plus robuste.
+                <Box key={label} sx={{ minWidth: 130 }}>
+                  <Typography sx={{ fontSize: 10.5, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase',
+                    letterSpacing: '0.4px', mb: 0.4, ml: 0.3 }}>
+                    {label}
+                  </Typography>
+                  <Select fullWidth size="small" value={val} displayEmpty
+                    onChange={e => set(e.target.value as string)}
                     sx={{ fontSize: 12.5, borderRadius: 2 }}>
                     {opts.map(([v, l]) => <MenuItem key={v} value={v} sx={{ fontSize: 12.5 }}>{l}</MenuItem>)}
                   </Select>
-                </FormControl>
+                </Box>
               ))}
             </Box>
 
