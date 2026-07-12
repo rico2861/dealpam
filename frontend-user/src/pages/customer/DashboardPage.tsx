@@ -226,7 +226,7 @@ export default function DashboardPage() {
                         bgcolor: '#F1F5F9', border: '1px solid rgba(15,23,42,0.09)',
                         overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         {(firstItem?.product?.images?.[0]?.urlThumb || firstItem?.product?.images?.[0]?.urlMedium)
-                          ? <Box component="img" src={firstItem.product.images[0].urlThumb || firstItem.product.images[0].urlMedium} alt="" sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          ? <Box component="img" src={firstItem.product.images[0].urlThumb || firstItem.product.images[0].urlMedium} alt={firstItem.product.name ?? ''} sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                           : <ShoppingBagOutlined sx={{ fontSize: 20, color: '#CBD5E1' }} />}
                       </Box>
 

@@ -463,7 +463,7 @@ export default function AddProductPage() {
               )}
               {mainPreviews.map((src, i) => (
                 <Box key={i} sx={{ width: 96, height: 96, borderRadius: '12px', overflow: 'hidden', position: 'relative', border: `2px solid ${i === 0 ? OR : BORD}`, flexShrink: 0 }}>
-                  <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <img src={src} alt={form.name ? `${form.name} — photo ${i + 1}` : `Photo produit ${i + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   {i === 0 && (
                     <Box sx={{ position: 'absolute', bottom: 0, left: 0, right: 0, bgcolor: 'rgba(255,107,0,0.88)', py: 0.4, textAlign: 'center' }}>
                       <Typography fontSize={9} fontWeight={800} color="#fff">PRINCIPALE</Typography>

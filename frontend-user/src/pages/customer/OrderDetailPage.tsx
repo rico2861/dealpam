@@ -479,7 +479,7 @@ export default function OrderDetailPage() {
                       border: `1px solid ${BORD}`, flexShrink: 0, overflow: 'hidden',
                       display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       {item.imageUrl
-                        ? <Box component="img" src={item.imageUrl} alt="" sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ? <Box component="img" src={item.imageUrl} alt={item.productName ?? ''} sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         : <ShoppingBag sx={{ fontSize: 22, color: '#64748B' }} />}
                     </Box>
                     <Box sx={{ flex: 1, minWidth: 0 }}>

@@ -252,7 +252,8 @@ function OrderCard({ order, onUpdate, pendingStatus }: { order: any; onUpdate: (
               <Tooltip title="Contacter ce client">
                 <IconButton size="small" onClick={() => navigate(`/seller/chat?userId=${order.user.id}`)}
                   sx={{ color: BLU, bgcolor: 'rgba(59,130,246,0.1)', borderRadius: '8px',
-                    border: '1px solid rgba(59,130,246,0.2)', '&:hover': { bgcolor: 'rgba(59,130,246,0.2)' } }}>
+                    border: '1px solid rgba(59,130,246,0.2)', '&:hover': { bgcolor: 'rgba(59,130,246,0.2)' } }}
+                  aria-label="Contacter ce client">
                   <Chat sx={{ fontSize: 13 }}/>
                 </IconButton>
               </Tooltip>
@@ -261,7 +262,8 @@ function OrderCard({ order, onUpdate, pendingStatus }: { order: any; onUpdate: (
               <Tooltip title={`Appeler ${order.user.phone}`}>
                 <IconButton size="small" component="a" href={`tel:${order.user.phone}`}
                   sx={{ color: GRN, bgcolor: 'rgba(16,185,129,0.1)', borderRadius: '8px',
-                    border: '1px solid rgba(16,185,129,0.2)', '&:hover': { bgcolor: 'rgba(16,185,129,0.2)' } }}>
+                    border: '1px solid rgba(16,185,129,0.2)', '&:hover': { bgcolor: 'rgba(16,185,129,0.2)' } }}
+                  aria-label={`Appeler ${order.user.phone}`}>
                   <Phone sx={{ fontSize: 13 }}/>
                 </IconButton>
               </Tooltip>
@@ -310,7 +312,7 @@ function OrderCard({ order, onUpdate, pendingStatus }: { order: any; onUpdate: (
             <Box sx={{ width: 34, height: 34, borderRadius: '8px', overflow: 'hidden', flexShrink: 0,
               bgcolor: 'rgba(15,23,42,0.09)', border: `1px solid ${BORD}` }}>
               {item.product?.images?.[0]?.urlThumb && (
-                <Box component="img" src={item.product.images[0].urlThumb} alt=""
+                <Box component="img" src={item.product.images[0].urlThumb} alt={item.product?.name ?? item.productName ?? ''}
                   sx={{ width: '100%', height: '100%', objectFit: 'cover' }}/>
               )}
             </Box>

@@ -15,6 +15,7 @@ import {
 import { useSnackbar } from 'notistack';
 import api from '../../api/axios';
 import { useAuthStore } from '../../store/auth.store';
+import { friendlyApiError } from '../../utils/apiError';
 
 const ORANGE  = '#FF6B00';
 const PURPLE  = '#8B5CF6';
@@ -404,10 +405,7 @@ export default function RegisterPage() {
       }
     } catch (err: any) {
       const net = !err.response || err.code === 'ERR_NETWORK';
-      setError(net ? 'Impossible de joindre le serveur.' :
-        (Array.isArray(err.response?.data?.message)
-          ? err.response.data.message.join(', ')
-          : err.response?.data?.message || "Erreur lors de l'inscription"));
+      setError(net ? 'Impossible de joindre le serveur.' : friendlyApiError(err, "Erreur lors de l'inscription"));
       setLoading(false);
     }
   };

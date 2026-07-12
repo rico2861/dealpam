@@ -590,7 +590,7 @@ function SupportChatInner({ user }: { user: any }) {
                         <Box
                           component="img"
                           src={msg.mediaUrl}
-                          alt=""
+                          alt="Image envoyée dans la conversation"
                           onClick={() => window.open(msg.mediaUrl, '_blank')}
                           sx={{ maxWidth: '100%', borderRadius: 1, mb: msg.content ? 0.5 : 0, display: 'block', cursor: 'pointer' }}
                         />

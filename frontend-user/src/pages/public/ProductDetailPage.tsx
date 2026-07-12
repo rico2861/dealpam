@@ -518,7 +518,7 @@ export default function ProductDetailPage() {
                         outline:`2px solid ${i===idx?OR:'transparent'}`, outlineOffset:2,
                         opacity:i===idx?1:0.6,
                         transition:'all 0.15s', '&:hover':{ outlineColor:'rgba(255,107,0,0.5)', opacity:1 } }}>
-                      <img src={im.urlThumb||im.urlMedium||im.urlFull} alt="" loading="lazy" decoding="async"
+                      <img src={im.urlThumb||im.urlMedium||im.urlFull} alt={`${product.name} — photo ${i + 1}`} loading="lazy" decoding="async"
                         style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }}/>
                     </Box>
                   ))}
@@ -605,7 +605,7 @@ export default function ProductDetailPage() {
                       bgcolor:'rgba(15,23,42,0.05)',
                       outline:`2px solid ${i===idx?OR:'transparent'}`, outlineOffset:2,
                       transition:'all 0.15s', '&:hover':{ outlineColor:'rgba(255,107,0,0.5)' } }}>
-                    <img src={im.urlThumb||im.urlMedium||im.urlFull} alt="" loading="lazy" decoding="async"
+                    <img src={im.urlThumb||im.urlMedium||im.urlFull} alt={`${product.name} — photo ${i + 1}`} loading="lazy" decoding="async"
                       style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }}/>
                   </Box>
                 ))}
@@ -1202,7 +1202,7 @@ export default function ProductDetailPage() {
                 {miniCart.items.slice(0,4).map((it:any,i:number)=>(
                   <Box key={it.id||i} sx={{ width:40, height:40, borderRadius:'8px', overflow:'hidden', bgcolor:'rgba(15,23,42,0.04)', border:`1px solid ${BORD}`, flexShrink:0 }}>
                     <Box component="img" src={it.product?.images?.[0]?.urlThumb||it.product?.images?.[0]?.urlMedium||'https://placehold.co/80x80/F1F5F9/94A3B8?text=+'}
-                      alt="" sx={{ width:'100%', height:'100%', objectFit:'cover' }}/>
+                      alt={it.product?.name ?? ''} sx={{ width:'100%', height:'100%', objectFit:'cover' }}/>
                   </Box>
                 ))}
                 {miniCart.items.length>4&&(

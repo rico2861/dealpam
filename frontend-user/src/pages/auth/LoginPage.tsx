@@ -12,6 +12,7 @@ import {
 import { useSnackbar } from 'notistack';
 import api from '../../api/axios';
 import { useAuthStore } from '../../store/auth.store';
+import { friendlyApiError } from '../../utils/apiError';
 
 const ORANGE = '#FF6B00';
 
@@ -92,7 +93,7 @@ export default function LoginPage() {
       const net = !err.response || err.code === 'ERR_NETWORK';
       if (net) { setError('Serveur inaccessible — vérifiez votre connexion'); setErrorType('generic'); }
       else {
-        const msg: string = err.response?.data?.message || 'Email ou mot de passe incorrect';
+        const msg: string = friendlyApiError(err, 'Email ou mot de passe incorrect');
         const isBanned  = /désactivé|banni|banned|suspended|suspendu|disabled/i.test(msg);
         const isLocked  = /bloqué|bloqu/i.test(msg) && !isBanned;
         setError(msg);

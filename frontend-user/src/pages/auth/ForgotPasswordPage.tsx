@@ -10,6 +10,7 @@ import {
 } from '@mui/icons-material';
 import api from '../../api/axios';
 import { isPasswordValid, PASSWORD_RULES } from './RegisterPage';
+import { friendlyApiError } from '../../utils/apiError';
 
 const ORANGE = '#FF6B00';
 const ORD    = '#E05A00';
@@ -189,7 +190,7 @@ export default function ForgotPasswordPage() {
       setResetToken(data.resetToken);
       setStage('password');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Code invalide ou expiré');
+      setError(friendlyApiError(err, 'Code invalide ou expiré'));
     } finally {
       setLoading(false);
     }
@@ -209,7 +210,7 @@ export default function ForgotPasswordPage() {
       await api.post('/auth/reset-password', { token: resetToken, password });
       navigate('/login', { state: { message: 'Mot de passe mis à jour. Connectez-vous.' } });
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Erreur lors de la réinitialisation');
+      setError(friendlyApiError(err, 'Erreur lors de la réinitialisation'));
     } finally {
       setLoading(false);
     }

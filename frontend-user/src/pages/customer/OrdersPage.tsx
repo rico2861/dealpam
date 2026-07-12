@@ -191,7 +191,7 @@ export default function OrdersPage() {
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}>
                     {firstItem?.imageUrl
-                      ? <Box component="img" src={firstItem.imageUrl} alt=""
+                      ? <Box component="img" src={firstItem.imageUrl} alt={firstItem.productName ?? ''}
                           sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       : <ShoppingBagOutlined sx={{ fontSize: 24, color: '#CBD5E1' }} />
                     }

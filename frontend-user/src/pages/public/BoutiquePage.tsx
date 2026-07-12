@@ -346,7 +346,7 @@ function ChatWidget({ store, sellerUserId, open, onClose }: {
                   border: isBot ? '1px solid rgba(160,80,255,0.3)' : mine ? `1px solid rgba(255,107,0,0.3)` : 'none',
                 }}>
                   {isImg && m.mediaUrl && (
-                    <Box component="img" src={m.mediaUrl} alt="" onClick={() => window.open(m.mediaUrl, '_blank')}
+                    <Box component="img" src={m.mediaUrl} alt="Image envoyée dans la conversation" onClick={() => window.open(m.mediaUrl, '_blank')}
                       sx={{ maxWidth: '100%', borderRadius: 1, display: 'block', cursor: 'pointer', mb: 0.5 }} />
                   )}
                   {isFile && m.mediaUrl ? (

@@ -628,7 +628,8 @@ export default function Header() {
             {mSearch ? (
               <>
                 <IconButton onClick={() => { setMSearch(false); setSearch(''); setSuggs([]); }}
-                  sx={{ color: 'rgba(255,255,255,0.8)', flexShrink: 0, borderRadius: '10px' }}>
+                  sx={{ color: 'rgba(255,255,255,0.8)', flexShrink: 0, borderRadius: '10px' }}
+                  aria-label="Fermer la recherche">
                   <Close sx={{ fontSize: 20 }} />
                 </IconButton>
                 <Box sx={{ flex: 1 }}>
@@ -692,13 +693,13 @@ export default function Header() {
                 </Box>
 
                 <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 0 }}>
-                  <IconButton onClick={() => openLocationModal()} sx={{ borderRadius: '10px', width: 36, height: 36 }}>
+                  <IconButton onClick={() => openLocationModal()} sx={{ borderRadius: '10px', width: 40, height: 40 }} aria-label="Choisir ma localisation">
                     <MyLocation sx={{ fontSize: 19, color: dpLocation ? ORANGE : 'rgba(255,255,255,0.45)', animation: dpLocation?.source === 'gps' ? 'dp-pulse 2s ease infinite' : 'none' }} />
                   </IconButton>
-                  <IconButton onClick={() => setMSearch(true)} sx={{ color: 'rgba(255,255,255,0.8)', borderRadius: '10px', width: 36, height: 36 }}>
+                  <IconButton onClick={() => setMSearch(true)} sx={{ color: 'rgba(255,255,255,0.8)', borderRadius: '10px', width: 40, height: 40 }} aria-label="Rechercher">
                     <Search sx={{ fontSize: 21 }} />
                   </IconButton>
-                  <IconButton component={Link} to="/cart" sx={{ color: 'white', borderRadius: '10px', width: 36, height: 36 }}>
+                  <IconButton component={Link} to="/cart" sx={{ color: 'white', borderRadius: '10px', width: 40, height: 40 }} aria-label={`Panier (${count} article${count === 1 ? '' : 's'})`}>
                     <Badge badgeContent={count > 99 ? '99+' : count} max={999}
                       sx={{ '& .MuiBadge-badge': { bgcolor: ORANGE, color: 'white', fontWeight: 900, fontSize: 9, minWidth: 17, height: 17, border: `2px solid ${BG}` } }}>
                       <ShoppingCart sx={{ fontSize: 21 }} />
@@ -790,7 +791,7 @@ export default function Header() {
               {/* Account */}
               {user ? (
                 <Box ref={accountRef} sx={{ position: 'relative' }}>
-                  <IconButton onClick={() => setShowAccount(o => !o)} sx={{ color: 'white', borderRadius: '10px', width: 40, height: 40, '&:hover': { bgcolor: 'rgba(255,255,255,0.07)' } }}>
+                  <IconButton onClick={() => setShowAccount(o => !o)} sx={{ color: 'white', borderRadius: '10px', width: 40, height: 40, '&:hover': { bgcolor: 'rgba(255,255,255,0.07)' } }} aria-label="Mon compte">
                     <Avatar sx={{ width: 28, height: 28, bgcolor: ORANGE, fontSize: 12, fontWeight: 900 }}>{user.firstName?.[0]}</Avatar>
                   </IconButton>
                   {showAccount && <AccountDropdown user={user} isSeller={isSeller} navigate={navigate} onClose={() => setShowAccount(false)} logout={logout} />}
@@ -802,7 +803,7 @@ export default function Header() {
               )}
 
               {/* Cart */}
-              <IconButton component={Link} to="/cart" sx={{ color: 'white', borderRadius: '10px', width: 42, height: 42 }}>
+              <IconButton component={Link} to="/cart" sx={{ color: 'white', borderRadius: '10px', width: 42, height: 42 }} aria-label={`Panier (${count} article${count === 1 ? '' : 's'})`}>
                 <Badge badgeContent={count > 99 ? '99+' : count} max={999}
                   sx={{ '& .MuiBadge-badge': { bgcolor: ORANGE, color: 'white', fontWeight: 900, fontSize: 9, minWidth: 17, height: 17, border: `2px solid ${BG}` } }}>
                   <ShoppingCart sx={{ fontSize: 22 }} />
@@ -931,7 +932,8 @@ export default function Header() {
           {user && (
             <Tooltip title="Mes messages">
               <IconButton component={Link} to={isSeller ? '/seller/chat' : '/account/messages'}
-                sx={{ color: 'rgba(255,255,255,0.6)', borderRadius: '10px', border: '1px solid transparent', flexShrink: 0, '&:hover': { color: ORANGE, border: `1px solid ${BORDER}`, bgcolor: 'rgba(255,255,255,0.04)' } }}>
+                sx={{ color: 'rgba(255,255,255,0.6)', borderRadius: '10px', border: '1px solid transparent', flexShrink: 0, '&:hover': { color: ORANGE, border: `1px solid ${BORDER}`, bgcolor: 'rgba(255,255,255,0.04)' } }}
+                aria-label={`Mes messages${unreadMessages ? ` (${unreadMessages} non lus)` : ''}`}>
                 <Badge badgeContent={unreadMessages} max={99}
                   sx={{ '& .MuiBadge-badge': { bgcolor: '#EF4444', color: 'white', fontSize: 10, fontWeight: 700, minWidth: 16, height: 16, top: 2, right: 2 } }}>
                   <ChatBubbleOutline sx={{ fontSize: 21 }} />
@@ -942,13 +944,13 @@ export default function Header() {
 
           {/* Wishlist */}
           {user && (
-            <IconButton component={Link} to="/account/wishlist" sx={{ color: 'rgba(255,255,255,0.6)', borderRadius: '10px', border: '1px solid transparent', flexShrink: 0, '&:hover': { color: '#EC4899', border: `1px solid ${BORDER}`, bgcolor: 'rgba(255,255,255,0.04)' } }}>
+            <IconButton component={Link} to="/account/wishlist" sx={{ color: 'rgba(255,255,255,0.6)', borderRadius: '10px', border: '1px solid transparent', flexShrink: 0, '&:hover': { color: '#EC4899', border: `1px solid ${BORDER}`, bgcolor: 'rgba(255,255,255,0.04)' } }} aria-label="Ma liste de favoris">
               <FavoriteBorder sx={{ fontSize: 22 }} />
             </IconButton>
           )}
 
           {/* Cart */}
-          <IconButton component={Link} to="/cart" sx={{ color: 'white', borderRadius: '10px', border: '1px solid transparent', flexShrink: 0, '&:hover': { border: `1px solid ${BORDER}`, bgcolor: 'rgba(255,255,255,0.04)' } }}>
+          <IconButton component={Link} to="/cart" sx={{ color: 'white', borderRadius: '10px', border: '1px solid transparent', flexShrink: 0, '&:hover': { border: `1px solid ${BORDER}`, bgcolor: 'rgba(255,255,255,0.04)' } }} aria-label={`Panier (${count} article${count === 1 ? '' : 's'})`}>
             <Badge badgeContent={count > 99 ? '99+' : count} max={999}
               sx={{ '& .MuiBadge-badge': { bgcolor: ORANGE, color: 'white', fontWeight: 900, fontSize: 10, minWidth: 18, height: 18, border: `2px solid ${BG}` } }}>
               <ShoppingCart sx={{ fontSize: 26 }} />
@@ -1071,7 +1073,7 @@ export default function Header() {
             <Typography sx={{ fontWeight: 900, fontSize: 22, letterSpacing: '-0.5px', color: 'white', lineHeight: 1 }}>
               Deal<span style={{ color: ORANGE }}>Pam</span>
             </Typography>
-            <IconButton onClick={() => setDrawerOpen(false)} size="small" sx={{ color: 'rgba(255,255,255,0.45)', bgcolor: 'rgba(255,255,255,0.07)', borderRadius: '10px', width: 34, height: 34, '&:hover': { bgcolor: 'rgba(255,255,255,0.12)', color: 'white' } }}>
+            <IconButton onClick={() => setDrawerOpen(false)} size="small" sx={{ color: 'rgba(255,255,255,0.45)', bgcolor: 'rgba(255,255,255,0.07)', borderRadius: '10px', width: 34, height: 34, '&:hover': { bgcolor: 'rgba(255,255,255,0.12)', color: 'white' } }} aria-label="Fermer le menu">
               <Close sx={{ fontSize: 16 }} />
             </IconButton>
           </Box>
