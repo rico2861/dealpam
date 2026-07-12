@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
-import * as nodemailer from 'nodemailer';
-import { MailAccountType, getMailAccounts, getSmtpTransportConfig } from './mail.config';
+import { Resend } from 'resend';
+import { MailAccountType, getMailAccounts } from './mail.config';
 
 const BRAND = {
   name: 'DealPam',
@@ -17,25 +17,12 @@ const BRAND = {
 @Injectable()
 export class MailService {
   private readonly logger = new Logger(MailService.name);
-  private readonly transporters = new Map<MailAccountType, nodemailer.Transporter>();
   private readonly accounts = getMailAccounts();
-
-  constructor() {
-    const transportConfig = getSmtpTransportConfig();
-    for (const type of Object.keys(this.accounts) as MailAccountType[]) {
-      const account = this.accounts[type];
-      this.transporters.set(
-        type,
-        nodemailer.createTransport({
-          host: transportConfig.host,
-          port: transportConfig.port,
-          secure: transportConfig.secure,
-          auth: { user: account.user, pass: account.pass },
-          tls: { rejectUnauthorized: false },
-        }),
-      );
-    }
-  }
+  // SMTP direct vers Hostinger timeoutait systématiquement depuis Render (voir
+  // investigation 2026-07) : le port 465/587 ne passe jamais depuis les IP de
+  // sortie de Render, quel que soit le réglage. Resend envoie via HTTPS (443),
+  // jamais bloqué, donc on utilise leur API au lieu d'un transport SMTP.
+  private readonly resend = new Resend(process.env.RESEND_API_KEY);
 
   // ── API publique réutilisable ────────────────────────────────────────────
   // Point d'entrée simple pour tout nouveau template : on précise juste le
@@ -54,7 +41,7 @@ export class MailService {
   }
 
   // ── Alertes internes équipe (litiges, rapports, notifications système) ──
-  async sendTeamAlert(subject: string, message: string, to = process.env.SMTP_TEAM_USER || ''): Promise<void> {
+  async sendTeamAlert(subject: string, message: string, to = process.env.MAIL_FROM_ADMIN || 'team@dealpam.com'): Promise<void> {
     const body = `
       ${this.hero('🔔', '#EFF6FF', subject)}
       <div style="color:${BRAND.text};font-size:14.5px;line-height:1.75;">${message}</div>
@@ -628,14 +615,14 @@ export class MailService {
       this.logger.log(`[DRY-RUN dev] Email non envoyé (compte=${as}, NODE_ENV≠production) → ${to}: ${subject}`);
       return;
     }
-    const transporter = this.transporters.get(as);
-    const account = this.accounts[as];
-    if (!transporter || !account?.user) {
-      this.logger.error(`Compte mail "${as}" non configuré — email à ${to} non envoyé (${subject})`);
+    if (!process.env.RESEND_API_KEY) {
+      this.logger.error(`RESEND_API_KEY manquant — email à ${to} non envoyé (${subject})`);
       return;
     }
+    const account = this.accounts[as];
     try {
-      await transporter.sendMail({ from: account.from, to, subject, html });
+      const { error } = await this.resend.emails.send({ from: account.from, to, subject, html });
+      if (error) throw new Error(error.message);
       this.logger.log(`Email sent (compte=${as}) to ${to}: ${subject}`);
     } catch (err) {
       this.logger.error(`Failed to send email (compte=${as}) to ${to}: ${err.message}`);
