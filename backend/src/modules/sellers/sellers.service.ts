@@ -473,7 +473,7 @@ export class SellersService {
       return (v / (v + M)) * R + (M / (v + M)) * C;
     };
 
-    return candidates
+    const ranked = candidates
       .sort((a: any, b: any) => {
         // Vendeurs locaux (même département) en premier si department fourni
         if (deptNorm) {
@@ -507,5 +507,41 @@ export class SellersService {
           productCount: s.stores[0]._count?.products ?? 0,
         },
       }));
+
+    // Exception : la boutique officielle DealPam n'est pas un vendeur classique
+    // (pas de Seller/abonnement associé), donc jamais éligible via la logique
+    // ci-dessus — on l'épingle toujours en tête, peu importe son statut.
+    const platformStore = await this.prisma.store.findFirst({
+      where: { isPlatformStore: true, isActive: true },
+      select: {
+        id: true, name: true, slug: true, logoUrl: true, bannerUrl: true,
+        isVerified: true, avgRating: true, totalReviews: true, totalSales: true,
+        address: true, city: true, department: true,
+        _count: { select: { products: true } },
+      },
+    });
+    if (!platformStore) return ranked;
+
+    const pinned = {
+      id: `platform-${platformStore.id}`,
+      tier: 'ELITE',
+      planName: 'DealPam',
+      store: {
+        id:           platformStore.id,
+        name:         platformStore.name,
+        slug:         platformStore.slug,
+        logoUrl:      platformStore.logoUrl ?? null,
+        bannerUrl:    platformStore.bannerUrl ?? null,
+        isVerified:   true,
+        avgRating:    platformStore.avgRating,
+        totalReviews: platformStore.totalReviews,
+        totalSales:   platformStore.totalSales ?? 0,
+        address:      platformStore.address ?? null,
+        city:         platformStore.city,
+        department:   platformStore.department,
+        productCount: platformStore._count?.products ?? 0,
+      },
+    };
+    return [pinned, ...ranked.filter((s: any) => s.store.id !== platformStore.id)].slice(0, limit);
   }
 }
