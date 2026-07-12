@@ -274,6 +274,30 @@ export class ProductsService {
 
     if (!store) throw new ForbiddenException('Boutique introuvable');
 
+    // Boutique incomplète : un client ne doit jamais pouvoir se retrouver
+    // bloqué au checkout faute de moyen de paiement ou de mode de livraison/
+    // retrait configuré (voir bug HaiTech — acceptedPaymentMethods vide/
+    // corrompu empêchait de finaliser une commande). On bloque la publication
+    // en amont plutôt que de laisser le client découvrir le problème.
+    const parseJsonArr = (val: any): any[] => {
+      if (!val) return [];
+      if (Array.isArray(val)) return val;
+      try { const p = JSON.parse(val); return Array.isArray(p) ? p : []; } catch { return []; }
+    };
+    const hasPayment = parseJsonArr((store as any).acceptedPaymentMethods).length > 0;
+    const hasFulfillment =
+      parseJsonArr((store as any).deliveryZones).length > 0 ||
+      parseJsonArr((store as any).pickupPoints).length > 0;
+    if (!hasPayment || !hasFulfillment) {
+      const missing = [
+        !hasPayment && 'un moyen de paiement',
+        !hasFulfillment && 'une zone de livraison ou un point de retrait',
+      ].filter(Boolean).join(' et ');
+      throw new ForbiddenException(
+        `Votre boutique doit avoir au moins ${missing} configuré avant de publier un produit. Rendez-vous dans "Ma boutique" pour compléter votre configuration.`,
+      );
+    }
+
     // Quota séparé produits vs services — un plan peut limiter les deux différemment
     const isService = (dto as any).productType === 'SERVICE';
     if (isService) {
