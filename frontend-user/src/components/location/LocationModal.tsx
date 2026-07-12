@@ -1,8 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import {
-  Box, Typography, IconButton, alpha, Select, MenuItem, Autocomplete, TextField,
-} from '@mui/material';
-import { Close, MyLocation, LocationOn, Check, GpsFixed, Refresh } from '@mui/icons-material';
+import { Box, Typography, IconButton, alpha } from '@mui/material';
+import { Close, MyLocation, LocationOn, Check, GpsFixed, Refresh, KeyboardArrowDown } from '@mui/icons-material';
 import { HAITI_DEPARTMENTS, getCitiesForDept, findNearestCity } from '../../data/haiti-locations';
 import { useLocationStore, LocationData } from '../../store/location.store';
 
@@ -18,6 +16,13 @@ const CSS = `
 @keyframes lm-pulse   { 0%,100%{box-shadow:0 0 0 0 rgba(255,107,0,.3)}70%{box-shadow:0 0 0 8px rgba(255,107,0,0)} }
 @keyframes lm-toast   { from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)} }
 .lm-body::-webkit-scrollbar{width:0}
+.lm-select{
+  width:100%; height:52px; border-radius:14px; font-size:14.5px; font-family:inherit;
+  background:white; border:1.5px solid #E2E8F0; color:#0F172A; padding:0 40px 0 44px;
+  appearance:none; -webkit-appearance:none; cursor:pointer;
+}
+.lm-select:focus{ outline:none; border-color:${OR}; border-width:2px; }
+.lm-select:disabled{ background:#F8FAFC; color:#94A3B8; cursor:not-allowed; }
 @media(prefers-reduced-motion:reduce){*{animation-duration:0ms!important;transition-duration:0ms!important}}
 `;
 function injectCss(id: string, css: string) {
@@ -43,18 +48,38 @@ function Toast({ msg }: { msg: string }) {
   );
 }
 
-// Styles partagés pour les champs — natifs MUI, donc accessibles au clavier,
-// support tactile natif (picker natif sur mobile), et comportement standard
-// que les utilisateurs connaissent déjà (contrairement à l'ancien accordéon
-// maison, difficile à utiliser sur PC comme sur mobile).
-const fieldSx = {
-  '& .MuiOutlinedInput-root': {
-    borderRadius: '14px', bgcolor: 'white', fontSize: 14.5,
-    '& fieldset': { borderColor: '#E2E8F0', borderWidth: '1.5px' },
-    '&:hover fieldset': { borderColor: alpha(OR, 0.5) },
-    '&.Mui-focused fieldset': { borderColor: OR, borderWidth: '2px' },
-  },
-};
+// <select> HTML natif plutôt que MUI Select/Autocomplete : garantit un picker
+// géré par l'OS (toujours accessible/tactile, jamais de souci de z-index ou
+// de menu tronqué par le conteneur), exactement comme les <input type="date">
+// natifs utilisés ailleurs dans l'app (DateRangeFilter.tsx).
+function NativeSelect({
+  value, onChange, options, placeholder, disabled,
+}: {
+  value: string; onChange: (v: string) => void; options: string[];
+  placeholder: string; disabled?: boolean;
+}) {
+  return (
+    <Box sx={{ position: 'relative' }}>
+      <LocationOn sx={{
+        position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)',
+        fontSize: 18, color: disabled ? '#CBD5E1' : value ? OR : '#94A3B8', pointerEvents: 'none',
+      }} />
+      <select
+        className="lm-select"
+        value={value}
+        disabled={disabled}
+        onChange={e => onChange(e.target.value)}
+      >
+        <option value="">{placeholder}</option>
+        {options.map(o => <option key={o} value={o}>{o}</option>)}
+      </select>
+      <KeyboardArrowDown sx={{
+        position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
+        fontSize: 20, color: disabled ? '#CBD5E1' : OR, pointerEvents: 'none',
+      }} />
+    </Box>
+  );
+}
 
 /* ─── Main Modal ─────────────────────────────────────────────────────── */
 export default function LocationModal({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -69,7 +94,7 @@ export default function LocationModal({ open, onClose }: { open: boolean; onClos
   const villeRef = useRef<HTMLDivElement>(null);
   const bodyRef  = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { injectCss('lm-css6', CSS); }, []);
+  useEffect(() => { injectCss('lm-css7', CSS); }, []);
 
   useEffect(() => {
     if (open) {
@@ -87,6 +112,15 @@ export default function LocationModal({ open, onClose }: { open: boolean; onClos
     return () => document.removeEventListener('keydown', onKey);
   }, [open, onClose]);
 
+  // Bloque le scroll de la page derriere le modal (surtout important en plein
+  // ecran mobile, sinon on peut scroller la page ET le modal en meme temps).
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, [open]);
+
   const cities = dept ? getCitiesForDept(dept).map(c => c.name) : [];
 
   const handleDeptChange = (d: string) => {
@@ -94,8 +128,8 @@ export default function LocationModal({ open, onClose }: { open: boolean; onClos
     setTimeout(() => villeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
   };
 
-  const handleCityChange = (c: string | null) => {
-    setCity(c || '');
+  const handleCityChange = (c: string) => {
+    setCity(c);
     setTimeout(() => bodyRef.current?.scrollTo({ top: bodyRef.current.scrollHeight, behavior: 'smooth' }), 80);
   };
 
@@ -161,7 +195,9 @@ export default function LocationModal({ open, onClose }: { open: boolean; onClos
         }}
       />
 
-      {/* Modal */}
+      {/* Modal — plein ecran sur mobile (pas juste une feuille ancree en bas
+          qui laissait un espace vide et prenait moins de place), fenetre
+          centree sur desktop. */}
       <Box
         role="dialog"
         aria-modal
@@ -169,37 +205,30 @@ export default function LocationModal({ open, onClose }: { open: boolean; onClos
         onClick={e => e.stopPropagation()}
         sx={{
           position:'fixed', zIndex:1401,
-          top:{ xs:'auto', sm:'50%' },
+          top:{ xs:0, sm:'50%' },
           left:{ xs:0, sm:'50%' },
           right:{ xs:0, sm:'auto' },
           bottom:{ xs:0, sm:'auto' },
           transform:{ xs:'none', sm:'translate(-50%,-50%)' },
           width:{ xs:'100%', sm:'min(560px, 94vw)' },
-          maxHeight:{ xs:'90vh', sm:'85vh' },
-          borderRadius:{ xs:'20px 20px 0 0', sm:'20px' },
+          height:{ xs:'100dvh', sm:'auto' },
+          maxHeight:{ xs:'100dvh', sm:'85vh' },
+          borderRadius:{ xs:0, sm:'20px' },
           overflow:'hidden',
           display:'flex',
           flexDirection:'column',
           boxShadow:'0 24px 64px rgba(0,0,0,.28)',
           animation:{
-            xs:'lm-slideUp .32s cubic-bezier(.32,.72,0,1) both',
+            xs:'lm-fadeIn .22s ease both',
             sm:'lm-scale .2s ease both',
           },
         }}>
-
-        {/* Handle bar mobile */}
-        <Box sx={{
-          display:{ xs:'block', sm:'none' },
-          bgcolor:BG, textAlign:'center', pt:1.2, flexShrink:0,
-        }}>
-          <Box sx={{ width:40, height:4, bgcolor:'rgba(255,255,255,.25)', borderRadius:2, mx:'auto' }} />
-        </Box>
 
         {/* ── HEADER ── */}
         <Box sx={{
           flexShrink:0,
           background:`linear-gradient(145deg,${BG} 0%,#1A2D45 100%)`,
-          px:{ xs:2.5, sm:3 }, pt:{ xs:1.5, sm:2.5 }, pb:2.2,
+          px:{ xs:2.5, sm:3 }, pt:{ xs:2.2, sm:2.5 }, pb:2.2,
           position:'relative', overflow:'hidden',
         }}>
           <Box sx={{
@@ -229,12 +258,12 @@ export default function LocationModal({ open, onClose }: { open: boolean; onClos
             </Box>
             <IconButton onClick={onClose} size="small" aria-label="Fermer"
               sx={{
-                width:32, height:32, bgcolor:'rgba(255,255,255,.1)',
+                width:36, height:36, bgcolor:'rgba(255,255,255,.1)',
                 color:'rgba(255,255,255,.65)',
                 '&:hover':{ bgcolor:'rgba(255,255,255,.2)', color:'white' },
                 mt:-0.5, mr:-0.5,
               }}>
-              <Close sx={{ fontSize:18 }} />
+              <Close sx={{ fontSize:20 }} />
             </IconButton>
           </Box>
 
@@ -257,7 +286,7 @@ export default function LocationModal({ open, onClose }: { open: boolean; onClos
           )}
         </Box>
 
-        {/* ── BODY — scrollable ── */}
+        {/* ── BODY — scrollable, occupe tout l'espace restant ── */}
         <Box
           ref={bodyRef}
           className="lm-body"
@@ -334,7 +363,7 @@ export default function LocationModal({ open, onClose }: { open: boolean; onClos
             <Box sx={{ flex:1, height:'1px', bgcolor:'#E2E8F0' }} />
           </Box>
 
-          {/* Carte selects — composants MUI natifs, accessibles clavier + tactile */}
+          {/* Carte selects — <select> HTML natifs, toujours accessibles */}
           <Box sx={{
             bgcolor:'white', borderRadius:'18px',
             p:{ xs:1.5, sm:2 }, border:'1px solid #F0F0F0',
@@ -345,25 +374,12 @@ export default function LocationModal({ open, onClose }: { open: boolean; onClos
                 sx={{ textTransform:'uppercase', mb:0.8 }}>
                 Département
               </Typography>
-              <Select
-                fullWidth
-                displayEmpty
+              <NativeSelect
                 value={dept}
-                onChange={e => handleDeptChange(e.target.value)}
-                MenuProps={{ PaperProps: { sx: { maxHeight: 320 } } }}
-                sx={fieldSx}
-                renderValue={(v) => (
-                  <Box sx={{ display:'flex', alignItems:'center', gap:1 }}>
-                    <LocationOn sx={{ fontSize:16, color: v ? OR : '#CBD5E1' }} />
-                    <Typography fontSize={14.5} fontWeight={v ? 600 : 400} color={v ? BG : '#64748B'}>
-                      {v || 'Choisir un département'}
-                    </Typography>
-                  </Box>
-                )}>
-                {HAITI_DEPARTMENTS.map(d => (
-                  <MenuItem key={d.name} value={d.name}>{d.name}</MenuItem>
-                ))}
-              </Select>
+                onChange={handleDeptChange}
+                options={HAITI_DEPARTMENTS.map(d => d.name)}
+                placeholder="Choisir un département"
+              />
             </Box>
 
             <Box ref={villeRef}>
@@ -371,18 +387,12 @@ export default function LocationModal({ open, onClose }: { open: boolean; onClos
                 sx={{ textTransform:'uppercase', mb:0.8 }}>
                 Ville / Commune
               </Typography>
-              <Autocomplete
-                fullWidth
-                disabled={!dept}
+              <NativeSelect
+                value={city}
+                onChange={handleCityChange}
                 options={cities}
-                value={city || null}
-                onChange={(_, v) => handleCityChange(v)}
-                noOptionsText="Aucun résultat"
-                renderInput={(params) => (
-                  <TextField {...params}
-                    placeholder={dept ? 'Choisir une ville / commune' : "Sélectionnez d'abord un département"}
-                    sx={fieldSx} />
-                )}
+                disabled={!dept}
+                placeholder={dept ? 'Choisir une ville / commune' : "Sélectionnez d'abord un département"}
               />
             </Box>
           </Box>
@@ -393,6 +403,7 @@ export default function LocationModal({ open, onClose }: { open: boolean; onClos
         <Box sx={{
           flexShrink:0,
           px:{ xs:2, sm:2.5 }, py:2,
+          pb: { xs: 'calc(16px + env(safe-area-inset-bottom, 0px))', sm: 2 },
           borderTop:'1px solid #F1F5F9',
           bgcolor:'white',
         }}>
