@@ -6,6 +6,7 @@ import Footer from './Footer';
 import MobileBottomNav from './MobileBottomNav';
 import SupportChatWidget from '../shared/SupportChatWidget';
 import SilentErrorBoundary from '../shared/SilentErrorBoundary';
+import FlyToCartLayer from '../shared/FlyToCartLayer';
 import { useAuthStore } from '../../store/auth.store';
 import { useCartStore } from '../../store/cart.store';
 
@@ -33,6 +34,9 @@ export default function MainLayout() {
           pages, une exception ici ne doit jamais casser checkout/panier/etc. */}
       <SilentErrorBoundary>
         <SupportChatWidget />
+      </SilentErrorBoundary>
+      <SilentErrorBoundary>
+        <FlyToCartLayer />
       </SilentErrorBoundary>
     </Box>
   );

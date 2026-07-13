@@ -19,6 +19,8 @@ import { useSnackbar } from 'notistack';
 import api from '../../api/axios';
 import { getViewerId } from '../../utils/viewerId';
 import { discountPercent } from '../../utils/discount';
+import { triggerFlyToCart } from '../../utils/flyToCart';
+import { motion } from 'framer-motion';
 import { ProductDetailSkeleton } from '../../components/shared/Skeletons';
 import { useDelayedLoading } from '../../hooks/useDelayedLoading';
 import { useFixedBottomBarOffset } from '../../hooks/useFixedBottomBarOffset';
@@ -357,6 +359,7 @@ export default function ProductDetailPage() {
       await fetchCount();
       qc.invalidateQueries({ queryKey:['cart'] });
       setInCart(true);
+      triggerFlyToCart(zoomWrapRef.current, ci?.urlThumb || ci?.urlMedium);
       enqueueSnackbar('Ajouté au panier !', { variant:'success' });
     } catch(err:any) {
       if (err?.response?.status === 401) navigate(`/login?next=${encodeURIComponent(window.location.pathname)}`);
@@ -963,17 +966,19 @@ export default function ProductDetailPage() {
                   </Box>
                 )}
 
-                <Button fullWidth onClick={addToCart} disabled={ctaDisabled}
-                  startIcon={loading ? <CircularProgress size={16} color="inherit"/> : <ShoppingCart sx={{ fontSize:18 }}/>}
-                  sx={{ py:1.3, borderRadius:'8px', fontWeight:500, fontSize:14, color:NAVY, letterSpacing:0,
-                    bgcolor:'transparent', border:`1px solid ${ctaDisabled?BORD:NAVY}`,
-                    transition:'background 0.15s ease, transform 0.1s ease',
-                    '&:hover:not(:disabled)':{ bgcolor:'rgba(15,27,46,0.05)' },
-                    '&:active:not(:disabled)':{ transform:'scale(0.98)' },
-                    '&:focus-visible':{ outline:`2px solid ${NAVY}`, outlineOffset:2 },
-                    '&:disabled':{ color:SUB, borderColor:BORD } }}>
-                  {loading ? 'ajout…' : stock===0 ? 'épuisé' : needsColor ? 'choisir' : 'ajouter au panier'}
-                </Button>
+                <motion.div whileTap={!ctaDisabled ? { scale: 0.96 } : undefined}>
+                  <Button fullWidth onClick={addToCart} disabled={ctaDisabled}
+                    startIcon={loading ? <CircularProgress size={16} color="inherit"/> : <ShoppingCart sx={{ fontSize:18 }}/>}
+                    sx={{ py:1.3, borderRadius:'8px', fontWeight:500, fontSize:14, color:NAVY, letterSpacing:0,
+                      bgcolor:'transparent', border:`1px solid ${ctaDisabled?BORD:NAVY}`,
+                      transition:'background 0.15s ease, transform 0.1s ease',
+                      '&:hover:not(:disabled)':{ bgcolor:'rgba(15,27,46,0.05)' },
+                      '&:active:not(:disabled)':{ transform:'scale(0.98)' },
+                      '&:focus-visible':{ outline:`2px solid ${NAVY}`, outlineOffset:2 },
+                      '&:disabled':{ color:SUB, borderColor:BORD } }}>
+                    {loading ? 'ajout…' : stock===0 ? 'épuisé' : needsColor ? 'choisir' : 'ajouter au panier'}
+                  </Button>
+                </motion.div>
 
                 {product.allowOffers && (
                   <Button fullWidth onClick={()=>setOfferOpen(true)}
@@ -1278,16 +1283,18 @@ export default function ProductDetailPage() {
             Votre produit
           </Typography>
         ) : !inCart ? (
-          <Button size="small"
-            onClick={needsColor ? ()=>document.getElementById('color-picker')?.scrollIntoView({behavior:'smooth',block:'center'}) : addToCart}
-            disabled={loading||stock===0}
-            startIcon={loading ? <CircularProgress size={13} color="inherit"/> : <ShoppingCart sx={{ fontSize:15 }}/>}
-            sx={{ py:1.2, borderRadius:'10px', fontWeight:900, fontSize:13, px:2.2, color:'#fff', flexShrink:0,
-              background: stock===0 ? undefined : `linear-gradient(135deg,#C84D00,${OR})`,
-              boxShadow: stock>0 ? '0 3px 14px rgba(255,107,0,0.4)' : undefined,
-              '&:disabled':{ bgcolor:'rgba(15,23,42,0.07)', color:SUB, boxShadow:'none' } }}>
-            {loading?'Ajout…':stock===0?'Épuisé':needsColor?'Couleur':'Ajouter'}
-          </Button>
+          <motion.div whileTap={!(loading||stock===0) ? { scale: 0.94 } : undefined}>
+            <Button size="small"
+              onClick={needsColor ? ()=>document.getElementById('color-picker')?.scrollIntoView({behavior:'smooth',block:'center'}) : addToCart}
+              disabled={loading||stock===0}
+              startIcon={loading ? <CircularProgress size={13} color="inherit"/> : <ShoppingCart sx={{ fontSize:15 }}/>}
+              sx={{ py:1.2, borderRadius:'10px', fontWeight:900, fontSize:13, px:2.2, color:'#fff', flexShrink:0,
+                background: stock===0 ? undefined : `linear-gradient(135deg,#C84D00,${OR})`,
+                boxShadow: stock>0 ? '0 3px 14px rgba(255,107,0,0.4)' : undefined,
+                '&:disabled':{ bgcolor:'rgba(15,23,42,0.07)', color:SUB, boxShadow:'none' } }}>
+              {loading?'Ajout…':stock===0?'Épuisé':needsColor?'Couleur':'Ajouter'}
+            </Button>
+          </motion.div>
         ) : (
           <Button size="small" onClick={placeOrder}
             endIcon={<ArrowForward sx={{ fontSize:15 }}/>}

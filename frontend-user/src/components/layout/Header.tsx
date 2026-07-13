@@ -26,6 +26,7 @@ import { useLocationState } from '../../hooks/useLocationState';
 import { useUnreadMessagesCount } from '../../hooks/useNotifications';
 import LocationModal from '../location/LocationModal';
 import SilentErrorBoundary from '../shared/SilentErrorBoundary';
+import { motion, useAnimation } from 'framer-motion';
 
 // ─── Brand tokens ──────────────────────────────────────────────────────────────
 const ORANGE   = '#FF6B00';
@@ -486,6 +487,16 @@ export default function Header() {
   const openLocationModal  = () => { const p = new URLSearchParams(searchParams.toString()); p.set('modal', 'location'); navigate('?' + p, { replace: true }); };
   const closeLocationModal = () => { const p = new URLSearchParams(searchParams.toString()); p.delete('modal'); navigate('?' + p, { replace: true }); };
 
+  // Petit "pulse" de l'icône panier — déclenché par FlyToCartLayer une fois
+  // l'animation de vol terminée (voir utils/flyToCart.ts), pour confirmer
+  // visuellement l'arrivée de l'article sans dépendre d'un re-render du compteur.
+  const cartPulse = useAnimation();
+  useEffect(() => {
+    const handler = () => { cartPulse.start({ scale: [1, 1.35, 1], transition: { duration: 0.4, ease: 'easeOut' } }); };
+    window.addEventListener('dp:cart-pulse', handler);
+    return () => window.removeEventListener('dp:cart-pulse', handler);
+  }, [cartPulse]);
+
   // Label affiché dans le chip (ville si dispo, sinon département)
   const displayCity = dpLocation?.city || dpLocation?.department || city;
   // Params API corrects — toujours utiliser les vrais champs
@@ -510,6 +521,7 @@ export default function Header() {
   const [mSearch,     setMSearch]    = useState(false);
   const [suggs,       setSuggs]      = useState<any[]>([]);
   const [showSuggs,   setShowSuggs]  = useState(false);
+  const [searchFocused, setSearchFocused] = useState(false);
   const [activeCategory, setActiveCategory] = useState('');
   const [scrolled, setScrolled] = useState(false);
 
@@ -699,11 +711,13 @@ export default function Header() {
                   <IconButton onClick={() => setMSearch(true)} sx={{ color: 'rgba(255,255,255,0.8)', borderRadius: '10px', width: 40, height: 40 }} aria-label="Rechercher">
                     <Search sx={{ fontSize: 21 }} />
                   </IconButton>
-                  <IconButton component={Link} to="/cart" sx={{ color: 'white', borderRadius: '10px', width: 40, height: 40 }} aria-label={`Panier (${count} article${count === 1 ? '' : 's'})`}>
-                    <Badge badgeContent={count > 99 ? '99+' : count} max={999}
-                      sx={{ '& .MuiBadge-badge': { bgcolor: ORANGE, color: 'white', fontWeight: 900, fontSize: 9, minWidth: 17, height: 17, border: `2px solid ${BG}` } }}>
-                      <ShoppingCart sx={{ fontSize: 21 }} />
-                    </Badge>
+                  <IconButton id="header-cart-icon" component={Link} to="/cart" sx={{ color: 'white', borderRadius: '10px', width: 40, height: 40 }} aria-label={`Panier (${count} article${count === 1 ? '' : 's'})`}>
+                    <motion.div animate={cartPulse} style={{ display: 'flex' }}>
+                      <Badge badgeContent={count > 99 ? '99+' : count} max={999}
+                        sx={{ '& .MuiBadge-badge': { bgcolor: ORANGE, color: 'white', fontWeight: 900, fontSize: 9, minWidth: 17, height: 17, border: `2px solid ${BG}` } }}>
+                        <ShoppingCart sx={{ fontSize: 21 }} />
+                      </Badge>
+                    </motion.div>
                   </IconButton>
                 </Box>
               </>
@@ -803,11 +817,13 @@ export default function Header() {
               )}
 
               {/* Cart */}
-              <IconButton component={Link} to="/cart" sx={{ color: 'white', borderRadius: '10px', width: 42, height: 42 }} aria-label={`Panier (${count} article${count === 1 ? '' : 's'})`}>
-                <Badge badgeContent={count > 99 ? '99+' : count} max={999}
-                  sx={{ '& .MuiBadge-badge': { bgcolor: ORANGE, color: 'white', fontWeight: 900, fontSize: 9, minWidth: 17, height: 17, border: `2px solid ${BG}` } }}>
-                  <ShoppingCart sx={{ fontSize: 22 }} />
-                </Badge>
+              <IconButton id="header-cart-icon" component={Link} to="/cart" sx={{ color: 'white', borderRadius: '10px', width: 42, height: 42 }} aria-label={`Panier (${count} article${count === 1 ? '' : 's'})`}>
+                <motion.div animate={cartPulse} style={{ display: 'flex' }}>
+                  <Badge badgeContent={count > 99 ? '99+' : count} max={999}
+                    sx={{ '& .MuiBadge-badge': { bgcolor: ORANGE, color: 'white', fontWeight: 900, fontSize: 9, minWidth: 17, height: 17, border: `2px solid ${BG}` } }}>
+                    <ShoppingCart sx={{ fontSize: 22 }} />
+                  </Badge>
+                </motion.div>
               </IconButton>
             </Box>
           </Box>
@@ -857,12 +873,28 @@ export default function Header() {
             </Box>
           </Box>
 
-          {/* Search bar */}
+          {/* Search bar — anneau degrade anime derriere le champ, visible uniquement au focus */}
           <Box ref={sBoxRef} sx={{ flex: 1, maxWidth: 680, position: 'relative', minWidth: 0 }}>
-            <Box component="form" onSubmit={doSearch} sx={{
+            <motion.div
+              aria-hidden
+              animate={searchFocused ? { opacity: 1, rotate: 360 } : { opacity: 0 }}
+              transition={searchFocused ? { rotate: { duration: 3, repeat: Infinity, ease: 'linear' }, opacity: { duration: 0.2 } } : { duration: 0.2 }}
+              style={{
+                position: 'absolute', inset: -2, borderRadius: 14, zIndex: 0,
+                background: `conic-gradient(from 0deg, ${ORANGE}, #FFD166, ${ORANGE}, #FF8C38, ${ORANGE})`,
+                pointerEvents: 'none',
+              }}
+            />
+            <Box component="form" onSubmit={doSearch}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setSearchFocused(false)}
+              sx={{
+              position: 'relative', zIndex: 1,
               display: 'flex', alignItems: 'center', height: 46, borderRadius: '12px',
-              bgcolor: 'rgba(255,255,255,0.07)', border: '1.5px solid rgba(255,255,255,0.1)', transition: 'all 0.2s',
-              '&:focus-within': { bgcolor: 'white', border: `1.5px solid ${ORANGE}`, boxShadow: `0 0 0 4px ${alpha(ORANGE, 0.15)}`, '& input': { color: '#0F172A' }, '& input::placeholder': { color: '#64748B' } },
+              bgcolor: searchFocused ? 'white' : 'rgba(255,255,255,0.07)',
+              border: `1.5px solid ${searchFocused ? 'transparent' : 'rgba(255,255,255,0.1)'}`, transition: 'background 0.2s, border-color 0.2s',
+              '& input': { color: searchFocused ? '#0F172A' : 'rgba(255,255,255,0.92)' },
+              '& input::placeholder': { color: searchFocused ? '#64748B' : 'rgba(255,255,255,0.3)' },
             }}>
               {activeCategory && !search && (
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, ml: 1.5, pl: 1, pr: 0.5, py: 0.3, bgcolor: alpha(ORANGE, 0.18), borderRadius: '20px', border: `1px solid ${alpha(ORANGE, 0.35)}`, flexShrink: 0 }}>
@@ -877,7 +909,7 @@ export default function Header() {
                 value={search}
                 onChange={e => onType(e.target.value)}
                 onFocus={() => search.length >= 2 && setShowSuggs(true)}
-                sx={{ flex: 1, px: 1.5, fontSize: 14, '& input': { color: 'rgba(255,255,255,0.92)', transition: 'color 0.2s' }, '& input::placeholder': { color: 'rgba(255,255,255,0.3)', opacity: 1, transition: 'color 0.2s' } }}
+                sx={{ flex: 1, px: 1.5, fontSize: 14, '& input': { transition: 'color 0.2s' }, '& input::placeholder': { opacity: 1, transition: 'color 0.2s' } }}
               />
               <Button type="submit" disableElevation sx={{ bgcolor: ORANGE, color: 'white', borderRadius: '0 10px 10px 0', minWidth: 52, height: '100%', '&:hover': { bgcolor: ORANGE_D } }}>
                 <Search sx={{ fontSize: 20 }} />
@@ -950,11 +982,13 @@ export default function Header() {
           )}
 
           {/* Cart */}
-          <IconButton component={Link} to="/cart" sx={{ color: 'white', borderRadius: '10px', border: '1px solid transparent', flexShrink: 0, '&:hover': { border: `1px solid ${BORDER}`, bgcolor: 'rgba(255,255,255,0.04)' } }} aria-label={`Panier (${count} article${count === 1 ? '' : 's'})`}>
-            <Badge badgeContent={count > 99 ? '99+' : count} max={999}
-              sx={{ '& .MuiBadge-badge': { bgcolor: ORANGE, color: 'white', fontWeight: 900, fontSize: 10, minWidth: 18, height: 18, border: `2px solid ${BG}` } }}>
-              <ShoppingCart sx={{ fontSize: 26 }} />
-            </Badge>
+          <IconButton id="header-cart-icon" component={Link} to="/cart" sx={{ color: 'white', borderRadius: '10px', border: '1px solid transparent', flexShrink: 0, '&:hover': { border: `1px solid ${BORDER}`, bgcolor: 'rgba(255,255,255,0.04)' } }} aria-label={`Panier (${count} article${count === 1 ? '' : 's'})`}>
+            <motion.div animate={cartPulse} style={{ display: 'flex' }}>
+              <Badge badgeContent={count > 99 ? '99+' : count} max={999}
+                sx={{ '& .MuiBadge-badge': { bgcolor: ORANGE, color: 'white', fontWeight: 900, fontSize: 10, minWidth: 18, height: 18, border: `2px solid ${BG}` } }}>
+                <ShoppingCart sx={{ fontSize: 26 }} />
+              </Badge>
+            </motion.div>
           </IconButton>
         </Box>
         )}

@@ -13,6 +13,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import api from '../../api/axios';
 import { compressImages, compressImage } from '../../utils/compressImage';
+import { motion } from 'framer-motion';
 
 // ── Palette ────────────────────────────────────────────────────────────────
 
@@ -462,7 +463,11 @@ export default function AddProductPage() {
                 </Box>
               )}
               {mainPreviews.map((src, i) => (
-                <Box key={i} sx={{ width: 96, height: 96, borderRadius: '12px', overflow: 'hidden', position: 'relative', border: `2px solid ${i === 0 ? OR : BORD}`, flexShrink: 0 }}>
+                <motion.div key={i}
+                  initial={{ opacity: 0, scale: 0.75 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ type: 'spring', stiffness: 380, damping: 22 }}
+                  style={{ width: 96, height: 96, borderRadius: 12, overflow: 'hidden', position: 'relative', border: `2px solid ${i === 0 ? OR : BORD}`, flexShrink: 0 }}>
                   <img src={src} alt={form.name ? `${form.name} — photo ${i + 1}` : `Photo produit ${i + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   {i === 0 && (
                     <Box sx={{ position: 'absolute', bottom: 0, left: 0, right: 0, bgcolor: 'rgba(255,107,0,0.88)', py: 0.4, textAlign: 'center' }}>
@@ -473,7 +478,7 @@ export default function AddProductPage() {
                     sx={{ position: 'absolute', top: 3, right: 3, bgcolor: 'rgba(0,0,0,0.6)', p: '3px', '&:hover': { bgcolor: 'rgba(239,68,68,0.85)' } }}>
                     <Close sx={{ fontSize: 11, color: '#fff' }} />
                   </IconButton>
-                </Box>
+                </motion.div>
               ))}
               {mainImages.length === 0 && (
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 2, py: 1.5, borderRadius: '12px', bgcolor: 'rgba(255,107,0,0.06)', border: `1px solid ${OR}20`, flex: 1, minWidth: 200 }}>
