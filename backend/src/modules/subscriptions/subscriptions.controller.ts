@@ -5,6 +5,8 @@ import { RolesGuard } from '../../shared/guards/roles.guard';
 import { Roles } from '../../shared/decorators/roles.decorator';
 import { CurrentUser } from '../../shared/decorators/current-user.decorator';
 import { SubscriptionsService } from './subscriptions.service';
+import { CreatePlanDto } from './dto/create-plan.dto';
+import { UpdatePlanDto } from './dto/update-plan.dto';
 
 // Le paiement des abonnements est géré par POST /payments/subscription/initiate
 // Ce controller expose la lecture des plans, l'abonnement actif, l'essai gratuit,
@@ -58,11 +60,11 @@ export class SubscriptionsController {
 
   @Post('plans/admin')
   @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('ADMIN', 'SUPER_ADMIN')
-  createPlan(@Body() dto: any) { return this.ss.createPlan(dto); }
+  createPlan(@Body() dto: CreatePlanDto) { return this.ss.createPlan(dto); }
 
   @Patch('plans/admin/:id')
   @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('ADMIN', 'SUPER_ADMIN')
-  updatePlan(@Param('id') id: string, @Body() dto: any) { return this.ss.updatePlan(id, dto); }
+  updatePlan(@Param('id') id: string, @Body() dto: UpdatePlanDto) { return this.ss.updatePlan(id, dto); }
 
   @Delete('plans/admin/:id')
   @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('ADMIN', 'SUPER_ADMIN')

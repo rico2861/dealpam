@@ -1,5 +1,7 @@
 import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { CreatePlanDto } from './dto/create-plan.dto';
+import { UpdatePlanDto } from './dto/update-plan.dto';
 
 const TRIAL_DURATION_MS = 30 * 24 * 60 * 60 * 1000; // 30 jours
 const TRIAL_TIER = 'BUSINESS'; // plan "standard" offert pendant l'essai gratuit
@@ -24,10 +26,10 @@ export class SubscriptionsService {
     return this.prisma.subscriptionPlan.findMany({ orderBy: { priceHTG: 'asc' } });
   }
 
-  createPlan(dto: any) {
+  createPlan(dto: CreatePlanDto) {
     return this.prisma.subscriptionPlan.create({
       data: {
-        tier:                  dto.tier,
+        tier:                  dto.tier as any,
         name:                  dto.name,
         priceHTG:              dto.priceHTG,
         maxProducts:           dto.maxProducts ?? null,
@@ -52,7 +54,7 @@ export class SubscriptionsService {
     });
   }
 
-  updatePlan(id: string, dto: any) {
+  updatePlan(id: string, dto: UpdatePlanDto) {
     const data: any = {};
     for (const key of [
       'name', 'priceHTG', 'maxProducts', 'maxServices', 'maxImages', 'maxStores',

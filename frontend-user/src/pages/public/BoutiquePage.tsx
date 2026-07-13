@@ -20,6 +20,7 @@ import {
 import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import api from '../../api/axios';
+import { discountPercent } from '../../utils/discount';
 import { useAuthStore } from '../../store/auth.store';
 import { SkelBox, SkelText, ProductCardSkeletonGrid } from '../../components/shared/Skeletons';
 import { useDelayedLoading } from '../../hooks/useDelayedLoading';
@@ -45,7 +46,7 @@ const fmtDate = (d: string) => new Date(d).toLocaleDateString('fr-FR', { year: '
 function ProductCard({ p }: { p: any }) {
   const img  = p.images?.[0]?.urlMedium || p.images?.[0]?.urlThumb;
   const sale = p.salePrice && Number(p.salePrice) < Number(p.price);
-  const disc = sale ? Math.round((1 - Number(p.salePrice) / Number(p.price)) * 100) : 0;
+  const disc = discountPercent(p.price, p.salePrice);
   return (
     <Box component={Link} to={`/products/${p.slug}`} sx={{ textDecoration: 'none', display: 'block', height: '100%' }}>
       <Box sx={{ bgcolor: 'white', borderRadius: 2.5, border: '1px solid #E5E7EB', overflow: 'hidden', height: '100%',

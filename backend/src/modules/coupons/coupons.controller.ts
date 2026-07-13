@@ -5,6 +5,8 @@ import { RolesGuard } from '../../shared/guards/roles.guard';
 import { Roles } from '../../shared/decorators/roles.decorator';
 import { CurrentUser } from '../../shared/decorators/current-user.decorator';
 import { CouponsService } from './coupons.service';
+import { CreateCouponDto } from './dto/create-coupon.dto';
+import { UpdateCouponDto } from './dto/update-coupon.dto';
 
 @ApiTags('Coupons')
 @Controller('coupons')
@@ -25,11 +27,11 @@ export class CouponsController {
 
   @Post('admin')
   @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('ADMIN', 'SUPER_ADMIN')
-  create(@Body() dto: any) { return this.cs.create(dto); }
+  create(@Body() dto: CreateCouponDto) { return this.cs.create(dto); }
 
   @Patch('admin/:id')
   @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('ADMIN', 'SUPER_ADMIN')
-  update(@Param('id') id: string, @Body() dto: any) { return this.cs.update(id, dto); }
+  update(@Param('id') id: string, @Body() dto: UpdateCouponDto) { return this.cs.update(id, dto); }
 
   @Delete('admin/:id')
   @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('ADMIN', 'SUPER_ADMIN')

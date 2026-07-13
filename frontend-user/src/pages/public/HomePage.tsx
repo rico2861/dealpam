@@ -16,6 +16,7 @@ import {
 } from '@mui/icons-material';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../../api/axios';
+import { discountPercent } from '../../utils/discount';
 import { useAuthStore } from '../../store/auth.store';
 import { getSessionId } from '../../hooks/useEventTracker';
 import { useLocationState } from '../../hooks/useLocationState';
@@ -1987,7 +1988,7 @@ function SponsoredDealCard({ ad, dark }: { ad: any; dark?: boolean }) {
   const { location: locData } = useLocationState();
   const img     = ad.images?.[0]?.urlFull || ad.images?.[0]?.urlMedium || ad.images?.[0]?.url || '';
   const hasSale = ad.salePrice && Number(ad.salePrice) < Number(ad.price);
-  const off     = hasSale ? Math.round((1 - Number(ad.salePrice) / Number(ad.price)) * 100) : 0;
+  const off     = discountPercent(ad.price, ad.salePrice);
   const price   = Number(hasSale ? ad.salePrice : ad.price);
   const orig    = Number(ad.price);
   // Strip seeding suffixes like "— FLASH" from display name

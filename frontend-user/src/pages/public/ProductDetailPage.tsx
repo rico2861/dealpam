@@ -18,6 +18,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import api from '../../api/axios';
 import { getViewerId } from '../../utils/viewerId';
+import { discountPercent } from '../../utils/discount';
 import { ProductDetailSkeleton } from '../../components/shared/Skeletons';
 import { useDelayedLoading } from '../../hooks/useDelayedLoading';
 import { useFixedBottomBarOffset } from '../../hooks/useFixedBottomBarOffset';
@@ -122,7 +123,7 @@ function saveHist(p: any) {
 function MCard({ p, fluid }: { p: any; fluid?: boolean }) {
   const pr = Number(p.salePrice||p.price);
   const or = Number(p.price);
-  const dc = p.salePrice&&pr<or ? Math.round((1-pr/or)*100) : 0;
+  const dc = discountPercent(p.price, p.salePrice);
   return (
     <Box component={Link} to={`/products/${p.slug}`}
       sx={fluid

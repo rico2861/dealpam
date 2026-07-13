@@ -1,5 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { CreateCouponDto } from './dto/create-coupon.dto';
+import { UpdateCouponDto } from './dto/update-coupon.dto';
 
 export type CouponContext = 'SUBSCRIPTION' | 'PLATFORM_PRODUCT';
 
@@ -12,7 +14,7 @@ export class CouponsService {
     return this.prisma.coupon.findMany({ orderBy: { createdAt: 'desc' } });
   }
 
-  create(dto: any) {
+  create(dto: CreateCouponDto) {
     return this.prisma.coupon.create({
       data: {
         code:           dto.code.trim().toUpperCase(),
@@ -31,7 +33,7 @@ export class CouponsService {
     });
   }
 
-  update(id: string, dto: any) {
+  update(id: string, dto: UpdateCouponDto) {
     const data: any = {};
     for (const key of [
       'description', 'discountType', 'discountValue', 'appliesTo', 'minAmountHTG',
