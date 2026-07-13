@@ -545,26 +545,33 @@ function TrustBar() {
     { Icon: SupportAgent,      title: 'Support 7j/7',       sub: 'Aide acheteurs et vendeurs' },
   ];
   return (
-    <Box sx={{ display: { xs: 'none', md: 'block' }, bgcolor: 'white', borderBottom: '1px solid #F0F0F0' }}>
+    <Box sx={{ display: { xs: 'none', md: 'block' }, bgcolor: 'transparent', py: 1.5 }}>
       <Container maxWidth="xl" sx={{ px: { xs: 1.5, md: 2 } }}>
         <Box sx={{
           display: 'grid',
-          gridTemplateColumns: { xs: '1fr 1fr', md: 'repeat(4,1fr)' },
-          gap: 0,
+          gridTemplateColumns: 'repeat(4,1fr)',
+          gap: 1.5,
+          bgcolor: 'white',
+          borderRadius: '18px',
+          boxShadow: '0 12px 36px rgba(15,23,42,0.09)',
+          border: '1px solid rgba(15,23,42,0.05)',
+          p: 0.5,
         }}>
           {items.map(({ Icon, title, sub }, i) => (
             <Box key={i} sx={{
-              display: 'flex', alignItems: 'center', gap: { xs: 1, md: 1.2 },
-              px: { xs: 1, md: 2.5 }, py: { xs: 1.2, md: 1.8 },
-              borderRight: { xs: i % 2 === 0 ? '1px solid #F0F0F0' : 'none', md: i < 3 ? '1px solid #F0F0F0' : 'none' },
-              borderBottom: { xs: i < 2 ? '1px solid #F0F0F0' : 'none', md: 'none' },
+              display: 'flex', alignItems: 'center', gap: 1.4,
+              px: 2, py: 2,
+              borderRadius: '14px',
+              transition: 'background-color 0.2s ease, transform 0.2s ease',
+              animation: `dp-fadeSlide 0.45s ${0.06 * i}s ease both`,
+              '&:hover': { bgcolor: 'rgba(255,107,0,0.045)', transform: 'translateY(-2px)' },
             }}>
-              <Box sx={{ width: { xs: 34, md: 42 }, height: { xs: 34, md: 42 }, borderRadius: { xs: 2, md: 2.5 }, bgcolor: alpha(OR, 0.09), display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <Icon sx={{ fontSize: { xs: 18, md: 22 }, color: OR }} />
+              <Box sx={{ width: 44, height: 44, borderRadius: '13px', bgcolor: alpha(OR, 0.1), display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Icon sx={{ fontSize: 22, color: OR }} />
               </Box>
               <Box sx={{ minWidth: 0 }}>
-                <Typography fontWeight={700} fontSize={{ xs: 12, md: 13.5 }} color={BG} lineHeight={1.3}>{title}</Typography>
-                <Typography fontSize={{ xs: 10.5, md: 12 }} color="#64748B" lineHeight={1.3}>{sub}</Typography>
+                <Typography fontWeight={700} fontSize={13.5} color={BG} lineHeight={1.3}>{title}</Typography>
+                <Typography fontSize={12} color="#64748B" lineHeight={1.3}>{sub}</Typography>
               </Box>
             </Box>
           ))}
