@@ -628,7 +628,9 @@ function SellerCard({ s }: { s: any }) {
         scrollSnapAlign: { xs: 'start', md: 'none' },
         textDecoration: 'none',
         display: 'flex', flexDirection: 'column', alignItems: 'center',
-        '&:hover .sc-avatar': { transform: 'scale(1.04)' },
+        transition: 'transform 0.22s ease',
+        '&:hover': { transform: 'translateY(-3px)' },
+        '&:hover .sc-avatar': { transform: 'scale(1.04)', boxShadow: '0 10px 26px rgba(15,27,46,0.16)' },
         '&:hover .sc-visit': { bgcolor: FS_ORANGE, color: '#fff', borderColor: FS_ORANGE },
       }}>
       <Box sx={{ position: 'relative', width: '100%' }}>
@@ -636,7 +638,8 @@ function SellerCard({ s }: { s: any }) {
           width: '100%', aspectRatio: '1 / 1', borderRadius: '28px',
           bgcolor: '#F1F5F9', overflow: 'hidden', flexShrink: 0,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          transition: 'transform 0.2s ease',
+          transition: 'transform 0.22s ease, box-shadow 0.22s ease',
+          boxShadow: '0 2px 10px rgba(15,27,46,0.06)',
           color: FS_ORANGE, fontWeight: 800, fontSize: 22,
         }}>
           {hasImg
@@ -668,9 +671,9 @@ function SellerCard({ s }: { s: any }) {
       )}
 
       <Box className="sc-visit" sx={{
-        mt: 1, px: 1.4, py: 0.5, borderRadius: '8px', fontSize: 11.5, fontWeight: 700,
+        mt: 1.2, px: 1.6, py: 0.55, borderRadius: '20px', fontSize: 11.5, fontWeight: 700,
         bgcolor: 'transparent', color: FS_NAVY, border: `1.5px solid ${FS_BORDER}`,
-        transition: 'background 0.18s ease, color 0.18s ease, border-color 0.18s ease',
+        transition: 'background 0.2s ease, color 0.2s ease, border-color 0.2s ease',
         whiteSpace: 'nowrap',
       }}>
         Voir la boutique
@@ -750,10 +753,10 @@ function FeaturedSellersSection({ sellers, loading }: { sellers: any[]; loading?
         {/* Header */}
         <Box sx={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', mb: { xs: 2, md: 2.5 } }}>
           <Box>
-            <Typography fontSize={12} fontWeight={600} color={FS_ORANGE} textTransform="uppercase" letterSpacing="0.06em" lineHeight={1.4}>
+            <Typography fontSize={12} fontWeight={700} color={FS_ORANGE} textTransform="uppercase" letterSpacing="0.08em" lineHeight={1.4}>
               Sélection DealPam
             </Typography>
-            <Typography fontSize={22} fontWeight={500} color={FS_NAVY} letterSpacing="-0.2px" lineHeight={1.25}>
+            <Typography fontSize={23} fontWeight={700} color={FS_NAVY} letterSpacing="-0.4px" lineHeight={1.25}>
               Boutiques vedettes
             </Typography>
           </Box>
