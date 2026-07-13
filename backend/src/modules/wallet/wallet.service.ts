@@ -25,9 +25,10 @@ export class WalletService {
 
     // Rattrapage passif : une recharge MonCash "en attente" jamais confirmée (navigateur
     // fermé avant le retour, réseau coupé...) restait bloquée indéfiniment sur ce statut,
-    // sans jamais se résoudre. Toute recharge encore PENDING après 2h est considérée
-    // abandonnée et marquée FAILED — vérifié à chaque consultation du wallet, sans cron.
-    const STALE_AFTER_MS = 2 * 60 * 60 * 1000;
+    // sans jamais se résoudre. Un paiement MonCash se conclut normalement en quelques
+    // minutes — toute recharge encore PENDING après 30 min est considérée abandonnée
+    // et marquée FAILED — vérifié à chaque consultation du wallet, sans cron.
+    const STALE_AFTER_MS = 30 * 60 * 1000;
     await this.prisma.walletTransaction.updateMany({
       where: { walletId: w.id, type: 'RECHARGE_PENDING', status: 'PENDING', createdAt: { lt: new Date(Date.now() - STALE_AFTER_MS) } },
       data: { status: 'FAILED', description: 'Recharge MonCash échouée — non confirmée' },

@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box, Typography, Button, Grid, LinearProgress,
   Dialog, DialogTitle, DialogContent, DialogActions, TextField,
@@ -280,6 +281,7 @@ function PayMethodCard({ method, selected, onClick, balance, budget }: { method:
 // ── Main ────────────────────────────────────────────────────────────────────
 
 export default function AdsPage() {
+  const navigate = useNavigate();
   const qc = useQueryClient();
   const { enqueueSnackbar } = useSnackbar();
   const [open, setOpen]     = useState(false);
@@ -1210,11 +1212,16 @@ export default function AdsPage() {
                   </Box>
                   <Box>
                     <Typography fontSize={13} fontWeight={800} color={YLW} mb={0.3}>Solde Wallet insuffisant</Typography>
-                    <Typography fontSize={12.5} color={SUB2} lineHeight={1.55}>
+                    <Typography fontSize={12.5} color={SUB2} lineHeight={1.55} mb={1}>
                       Vous disposez de <strong style={{ color: TXT }}>{walletBalance.toLocaleString()} HTG</strong> sur un budget de{' '}
                       <strong style={{ color: TXT }}>{form.totalBudget.toLocaleString()} HTG</strong>. Votre campagne sera enregistrée en{' '}
                       <strong style={{ color: TXT }}>brouillon</strong> — rechargez votre wallet puis lancez le paiement depuis la liste de vos campagnes.
                     </Typography>
+                    <Button size="small" onClick={() => navigate('/seller/wallet')}
+                      startIcon={<AccountBalanceWallet sx={{ fontSize: 15 }} />}
+                      sx={{ bgcolor: YLW, color: '#1a1200', fontWeight: 700, borderRadius: '9px', textTransform: 'none', px: 1.6, '&:hover': { bgcolor: '#D97706' } }}>
+                      Recharger mon wallet
+                    </Button>
                   </Box>
                 </Box>
               )}
@@ -1247,8 +1254,13 @@ export default function AdsPage() {
             <PayMethodCard method="MONCASH" selected={payMethod === 'MONCASH'} onClick={() => setPayMethod('MONCASH')} budget={payingCampaign?.totalBudget ?? 0} />
           </Box>
           {payMethod === 'WALLET' && payingCampaign && walletBalance < payingCampaign.totalBudget && (
-            <Box sx={{ mt: 1, p: 1.5, borderRadius: '10px', bgcolor: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)' }}>
+            <Box sx={{ mt: 1, p: 1.5, borderRadius: '10px', bgcolor: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', display: 'flex', flexDirection: 'column', gap: 1 }}>
               <Typography fontSize={12.5} color={YLW}>Solde insuffisant. Rechargez votre wallet d'abord.</Typography>
+              <Button size="small" onClick={() => navigate('/seller/wallet')}
+                startIcon={<AccountBalanceWallet sx={{ fontSize: 15 }} />}
+                sx={{ alignSelf: 'flex-start', bgcolor: YLW, color: '#1a1200', fontWeight: 700, borderRadius: '9px', textTransform: 'none', px: 1.6, '&:hover': { bgcolor: '#D97706' } }}>
+                Recharger mon wallet
+              </Button>
             </Box>
           )}
         </DialogContent>

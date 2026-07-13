@@ -26,6 +26,12 @@ describe('WalletService', () => {
         updateMany: jest.fn(),
       },
     };
+    // $transaction([...]) (array form) exécute chaque promesse telle quelle ;
+    // $transaction(async tx => ...) (callback form) reçoit le même mock prisma
+    // en guise de "tx" — suffisant pour tester la logique sans vraie DB.
+    prisma.$transaction = jest.fn((arg: any) =>
+      typeof arg === 'function' ? arg(prisma) : Promise.all(arg)
+    );
     moncash = { verifyByTransactionId: jest.fn() };
     moncashTx = {
       record: jest.fn().mockResolvedValue({}),

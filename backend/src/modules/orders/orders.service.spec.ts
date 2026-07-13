@@ -3,11 +3,13 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 describe('OrdersService', () => {
   let service: OrdersService;
   let prisma: any;
   let mail: any;
+  let notifications: any;
 
   beforeEach(async () => {
     prisma = {
@@ -15,12 +17,14 @@ describe('OrdersService', () => {
       address: { findFirst: jest.fn() },
     };
     mail = { sendOrderStatusUpdate: jest.fn().mockResolvedValue(undefined) };
+    notifications = { create: jest.fn().mockResolvedValue(undefined) };
 
     const moduleRef = await Test.createTestingModule({
       providers: [
         OrdersService,
         { provide: PrismaService, useValue: prisma },
         { provide: MailService, useValue: mail },
+        { provide: NotificationsService, useValue: notifications },
       ],
     }).compile();
 
