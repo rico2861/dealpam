@@ -48,25 +48,26 @@ export class SubscriptionCron {
 
     for (const sub of expired) {
       try {
-        // Mark subscription as inactive
-        await this.prisma.sellerSubscription.update({
-          where: { id: sub.id },
-          data: { isActive: false },
-        });
-
         // Un changement de plan a été programmé et payé pour cette période ?
         // On l'active à la place de suspendre — c'est la continuité normale.
+        // Recherché AVANT de désactiver l'ancien abonnement, puis les deux
+        // écritures (désactiver l'ancien / activer le nouveau) sont regroupées
+        // dans une transaction : un crash entre les deux aurait sinon pu laisser
+        // un vendeur ayant payé son changement de plan SANS AUCUN abonnement
+        // actif — la requête du lendemain ne le rattrape jamais (l'ancien n'est
+        // plus isActive:true, le nouveau reste orphelin en isActive:false).
         const scheduled = await this.prisma.sellerSubscription.findFirst({
           where: { sellerId: sub.sellerId, isActive: false, startDate: { lte: now } },
           include: { payment: true, plan: true },
           orderBy: { startDate: 'desc' },
         });
+        const switchingPlan = scheduled && (scheduled.payment?.status === 'COMPLETED' || Number(scheduled.plan.priceHTG) === 0);
 
-        if (scheduled && (scheduled.payment?.status === 'COMPLETED' || Number(scheduled.plan.priceHTG) === 0)) {
-          await this.prisma.sellerSubscription.update({
-            where: { id: scheduled.id },
-            data:  { isActive: true },
-          });
+        if (switchingPlan) {
+          await this.prisma.$transaction([
+            this.prisma.sellerSubscription.update({ where: { id: sub.id }, data: { isActive: false } }),
+            this.prisma.sellerSubscription.update({ where: { id: scheduled.id }, data: { isActive: true } }),
+          ]);
           const user = sub.seller.user;
           if (user?.email) {
             await this.mail.sendRaw(
@@ -90,20 +91,23 @@ export class SubscriptionCron {
           continue;
         }
 
-        // Pas de changement programmé (expiration naturelle ou annulation demandée) → suspendre
+        // Pas de changement programmé (expiration naturelle ou annulation demandée) → suspendre.
+        // Désactivation de l'abonnement + suspension boutique/produits regroupées
+        // dans une transaction pour la même raison que ci-dessus.
         const primaryStore = (sub.seller as any).stores?.[0];
-        if (primaryStore) {
-          await this.prisma.product.updateMany({
-            where: { storeId: primaryStore.id, status: 'PUBLISHED' },
-            data: { status: 'SUSPENDED' },
-          });
-
-          // Deactivate store
-          await this.prisma.store.update({
-            where: { id: primaryStore.id },
-            data: { isActive: false },
-          });
-        }
+        await this.prisma.$transaction([
+          this.prisma.sellerSubscription.update({ where: { id: sub.id }, data: { isActive: false } }),
+          ...(primaryStore ? [
+            this.prisma.product.updateMany({
+              where: { storeId: primaryStore.id, status: 'PUBLISHED' },
+              data: { status: 'SUSPENDED' },
+            }),
+            this.prisma.store.update({
+              where: { id: primaryStore.id },
+              data: { isActive: false },
+            }),
+          ] : []),
+        ]);
 
         // Send expiry email to seller
         const user = sub.seller.user;
