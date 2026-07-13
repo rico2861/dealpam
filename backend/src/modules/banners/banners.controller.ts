@@ -6,6 +6,8 @@ import { BannersService } from './banners.service';
 import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
 import { RolesGuard } from '../../shared/guards/roles.guard';
 import { Roles } from '../../shared/decorators/roles.decorator';
+import { CreateBannerDto } from './dto/create-banner.dto';
+import { UpdateBannerDto } from './dto/update-banner.dto';
 
 @Controller('banners')
 export class BannersController {
@@ -29,17 +31,14 @@ export class BannersController {
   @Post('admin')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN', 'SUPER_ADMIN')
-  create(@Body() dto: {
-    position?: string; tag?: string; title?: string; subtitle?: string; ctaText?: string; catFilter?: string;
-    imageUrl: string; targetUrl: string; sortOrder?: number; startsAt?: string; endsAt?: string;
-  }) {
+  create(@Body() dto: CreateBannerDto) {
     return this.svc.create(dto);
   }
 
   @Patch('admin/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN', 'SUPER_ADMIN')
-  update(@Param('id') id: string, @Body() dto: any) {
+  update(@Param('id') id: string, @Body() dto: UpdateBannerDto) {
     return this.svc.update(id, dto);
   }
 
