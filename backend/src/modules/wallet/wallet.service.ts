@@ -133,29 +133,37 @@ export class WalletService {
     const claimed = await this.moncashTx.claimCredit(payment.transaction_id);
     if (!claimed) throw new ConflictException('Transaction déjà créditée');
 
-    // Marquer le pending comme consommé de façon atomique (empêche une double confirmation
-    // concurrente de la même demande) — si 0 ligne affectée, une autre requête l'a déjà traité.
-    const claimedPending = await this.prisma.walletTransaction.updateMany({
-      where: { id: pending.id, status: 'PENDING' },
-      data: { status: 'CANCELLED', description: 'Demande de rechargement remplacée par la confirmation ci-dessous' },
-    });
-    if (claimedPending.count === 0) throw new ConflictException('Transaction déjà en cours de traitement');
+    // Les 3 écritures suivantes (marquer le pending consommé, créditer le solde,
+    // journaliser la transaction) sont regroupées dans une transaction Prisma —
+    // avant, un crash entre l'increment et le walletTransaction.create aurait pu
+    // créditer le solde sans laisser de trace dans l'historique du vendeur (ou
+    // inversement), avec de l'argent réel en jeu et le verrou claimCredit déjà
+    // posé empêchant toute nouvelle tentative de rejouer l'opération.
+    const { updated } = await this.prisma.$transaction(async (tx) => {
+      // Marquer le pending comme consommé de façon atomique (empêche une double confirmation
+      // concurrente de la même demande) — si 0 ligne affectée, une autre requête l'a déjà traité.
+      const claimedPending = await tx.walletTransaction.updateMany({
+        where: { id: pending.id, status: 'PENDING' },
+        data: { status: 'CANCELLED', description: 'Demande de rechargement remplacée par la confirmation ci-dessous' },
+      });
+      if (claimedPending.count === 0) throw new ConflictException('Transaction déjà en cours de traitement');
 
-    // Créditer de façon atomique (increment Prisma, pas de lecture+écriture séparée)
-    const updated = await this.prisma.sellerWallet.update({
-      where: { id: pending.walletId },
-      data: { balance: { increment: amount } },
-    });
-    await this.prisma.walletTransaction.create({
-      data: {
-        walletId: pending.walletId,
-        type: 'RECHARGE',
-        amount,
-        balanceAfter: updated.balance,
-        description: `Votre wallet a été rechargé avec succès`,
-        reference: payment.transaction_id,
-        status: 'COMPLETED',
-      },
+      const updated = await tx.sellerWallet.update({
+        where: { id: pending.walletId },
+        data: { balance: { increment: amount } },
+      });
+      await tx.walletTransaction.create({
+        data: {
+          walletId: pending.walletId,
+          type: 'RECHARGE',
+          amount,
+          balanceAfter: updated.balance,
+          description: `Votre wallet a été rechargé avec succès`,
+          reference: payment.transaction_id,
+          status: 'COMPLETED',
+        },
+      });
+      return { updated };
     });
 
     return { type: 'wallet', balance: updated.balance, amount, message: 'Recharge effectuée avec succès' };
@@ -167,49 +175,58 @@ export class WalletService {
   async refundToWallet(sellerId: string, amount: number, description: string, reference: string) {
     if (amount <= 0) return null;
     const wallet = await this.ensureWallet(sellerId);
-    const updated = await this.prisma.sellerWallet.update({
-      where: { id: wallet.id },
-      data: { balance: { increment: amount } },
-    });
-    await this.prisma.walletTransaction.create({
-      data: {
-        walletId: wallet.id,
-        type: 'REFUND',
-        amount,
-        balanceAfter: updated.balance,
-        description,
-        reference,
-        status: 'COMPLETED',
-      },
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.sellerWallet.update({
+        where: { id: wallet.id },
+        data: { balance: { increment: amount } },
+      });
+      await tx.walletTransaction.create({
+        data: {
+          walletId: wallet.id,
+          type: 'REFUND',
+          amount,
+          balanceAfter: updated.balance,
+          description,
+          reference,
+          status: 'COMPLETED',
+        },
+      });
+      return updated;
     });
     return { balance: updated.balance };
   }
 
   async deductForCampaign(sellerId: string, campaignId: string, amount: number) {
     const wallet = await this.ensureWallet(sellerId);
-
-    // Décrément atomique conditionné sur le solde actuel — empêche deux débits
-    // concurrents de dépasser le solde disponible (race condition lost-update).
-    const result = await this.prisma.sellerWallet.updateMany({
-      where: { id: wallet.id, balance: { gte: amount } },
-      data: { balance: { decrement: amount } },
-    });
-    if (result.count === 0) throw new BadRequestException('Solde insuffisant');
-
-    const updated = await this.prisma.sellerWallet.findUniqueOrThrow({ where: { id: wallet.id } });
     const campaignName = await this.getCampaignName(campaignId);
-    await this.prisma.walletTransaction.create({
-      data: {
-        walletId: wallet.id,
-        type: 'CAMPAIGN_PAYMENT',
-        amount: -amount,
-        balanceAfter: updated.balance,
-        description: campaignName
-          ? `Paiement pour le lancement de la campagne "${campaignName}"`
-          : `Paiement pour le lancement d'une campagne publicitaire`,
-        reference: campaignId,
-        status: 'COMPLETED',
-      },
+
+    // Décrément + journalisation dans une seule transaction — avant, un crash
+    // entre les deux aurait pu débiter le solde sans laisser de trace dans
+    // l'historique du vendeur (aucun moyen de tracer/rembourser un débit muet).
+    const updated = await this.prisma.$transaction(async (tx) => {
+      // Décrément atomique conditionné sur le solde actuel — empêche deux débits
+      // concurrents de dépasser le solde disponible (race condition lost-update).
+      const result = await tx.sellerWallet.updateMany({
+        where: { id: wallet.id, balance: { gte: amount } },
+        data: { balance: { decrement: amount } },
+      });
+      if (result.count === 0) throw new BadRequestException('Solde insuffisant');
+
+      const updated = await tx.sellerWallet.findUniqueOrThrow({ where: { id: wallet.id } });
+      await tx.walletTransaction.create({
+        data: {
+          walletId: wallet.id,
+          type: 'CAMPAIGN_PAYMENT',
+          amount: -amount,
+          balanceAfter: updated.balance,
+          description: campaignName
+            ? `Paiement pour le lancement de la campagne "${campaignName}"`
+            : `Paiement pour le lancement d'une campagne publicitaire`,
+          reference: campaignId,
+          status: 'COMPLETED',
+        },
+      });
+      return updated;
     });
     return { balance: updated.balance };
   }
@@ -219,27 +236,30 @@ export class WalletService {
    * arbitraire au lieu du budget total de la campagne. */
   async deductDailyForCampaign(sellerId: string, campaignId: string, amount: number) {
     const wallet = await this.ensureWallet(sellerId);
-
-    const result = await this.prisma.sellerWallet.updateMany({
-      where: { id: wallet.id, balance: { gte: amount } },
-      data: { balance: { decrement: amount } },
-    });
-    if (result.count === 0) throw new BadRequestException('Solde insuffisant');
-
-    const updated = await this.prisma.sellerWallet.findUniqueOrThrow({ where: { id: wallet.id } });
     const campaignName = await this.getCampaignName(campaignId);
-    await this.prisma.walletTransaction.create({
-      data: {
-        walletId: wallet.id,
-        type: 'CAMPAIGN_PAYMENT',
-        amount: -amount,
-        balanceAfter: updated.balance,
-        description: campaignName
-          ? `Frais quotidien de diffusion — campagne "${campaignName}"`
-          : `Frais quotidien de diffusion d'une campagne publicitaire`,
-        reference: campaignId,
-        status: 'COMPLETED',
-      },
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const result = await tx.sellerWallet.updateMany({
+        where: { id: wallet.id, balance: { gte: amount } },
+        data: { balance: { decrement: amount } },
+      });
+      if (result.count === 0) throw new BadRequestException('Solde insuffisant');
+
+      const updated = await tx.sellerWallet.findUniqueOrThrow({ where: { id: wallet.id } });
+      await tx.walletTransaction.create({
+        data: {
+          walletId: wallet.id,
+          type: 'CAMPAIGN_PAYMENT',
+          amount: -amount,
+          balanceAfter: updated.balance,
+          description: campaignName
+            ? `Frais quotidien de diffusion — campagne "${campaignName}"`
+            : `Frais quotidien de diffusion d'une campagne publicitaire`,
+          reference: campaignId,
+          status: 'COMPLETED',
+        },
+      });
+      return updated;
     });
     return { balance: updated.balance };
   }
@@ -265,32 +285,35 @@ export class WalletService {
    * avec son solde wallet plutôt que via MonCash. */
   async deductForSubscription(sellerId: string, subscriptionId: string, amount: number) {
     const wallet = await this.ensureWallet(sellerId);
-
-    const result = await this.prisma.sellerWallet.updateMany({
-      where: { id: wallet.id, balance: { gte: amount } },
-      data: { balance: { decrement: amount } },
-    });
-    if (result.count === 0) throw new BadRequestException('Solde wallet insuffisant');
-
-    const updated = await this.prisma.sellerWallet.findUniqueOrThrow({ where: { id: wallet.id } });
     let sub: { plan: { name: string } } | null = null;
     try {
       sub = await this.prisma.sellerSubscription.findUnique({
         where: { id: subscriptionId }, select: { plan: { select: { name: true } } },
       });
     } catch { /* description reste générique si la souscription n'est pas retrouvée */ }
-    await this.prisma.walletTransaction.create({
-      data: {
-        walletId: wallet.id,
-        type: 'SUBSCRIPTION',
-        amount: -amount,
-        balanceAfter: updated.balance,
-        description: sub?.plan?.name
-          ? `Paiement de votre abonnement "${sub.plan.name}"`
-          : `Paiement de votre abonnement`,
-        reference: subscriptionId,
-        status: 'COMPLETED',
-      },
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const result = await tx.sellerWallet.updateMany({
+        where: { id: wallet.id, balance: { gte: amount } },
+        data: { balance: { decrement: amount } },
+      });
+      if (result.count === 0) throw new BadRequestException('Solde wallet insuffisant');
+
+      const updated = await tx.sellerWallet.findUniqueOrThrow({ where: { id: wallet.id } });
+      await tx.walletTransaction.create({
+        data: {
+          walletId: wallet.id,
+          type: 'SUBSCRIPTION',
+          amount: -amount,
+          balanceAfter: updated.balance,
+          description: sub?.plan?.name
+            ? `Paiement de votre abonnement "${sub.plan.name}"`
+            : `Paiement de votre abonnement`,
+          reference: subscriptionId,
+          status: 'COMPLETED',
+        },
+      });
+      return updated;
     });
     return { balance: updated.balance };
   }
