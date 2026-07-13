@@ -1474,7 +1474,7 @@ function FlashSection({ products, to, loading }: { products: any[]; to: string; 
         <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' },
           justifyContent: 'space-between', gap: 1.5, mb: { xs: 2, md: 2.5 } }}>
 
-          <Box>
+          <Box sx={{ animation: 'dp-fadeSlide 0.4s ease both' }}>
             <Typography sx={{
               display: 'flex', alignItems: 'center', gap: 0.6,
               fontSize: 11, fontWeight: 700, color: FS_ORANGE,
@@ -1568,7 +1568,7 @@ function PromoSection({ products, to, loading }: { products: any[]; to: string; 
         {/* ── Header ── */}
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: { xs: 1.5, md: 2.5 }, px: { xs: 1.5, md: 0 }, gap: 1 }}>
           {/* Gauche : icône + titre + badge */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0, animation: 'dp-fadeSlide 0.4s ease both' }}>
             <Box sx={{
               width: { xs: 34, md: 44 }, height: { xs: 34, md: 44 }, borderRadius: '12px', flexShrink: 0,
               background: 'linear-gradient(135deg, #FF4444, #FF6B00)',
