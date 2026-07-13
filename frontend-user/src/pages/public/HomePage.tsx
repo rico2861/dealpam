@@ -865,11 +865,12 @@ function ProductCard({ p, flash = false, compact = false }: { p: any; flash?: bo
 
   return (
     <Box sx={{ position: 'relative', borderRadius: radius, overflow: 'hidden',
-      boxShadow: '0 1px 4px rgba(0,0,0,0.07)',
-      transition: 'box-shadow 0.22s, transform 0.22s',
+      border: '1px solid rgba(15,23,42,0.06)',
+      boxShadow: '0 1px 3px rgba(15,23,42,0.05)',
+      transition: 'box-shadow 0.25s ease, transform 0.25s ease, border-color 0.25s ease',
       bgcolor: 'white',
       contain: 'layout style',
-      '&:hover': { boxShadow: '0 8px 32px rgba(0,0,0,0.13)', transform: 'translateY(-3px)' },
+      '&:hover': { boxShadow: '0 14px 32px rgba(15,23,42,0.13)', transform: 'translateY(-4px)', borderColor: 'rgba(15,23,42,0.09)' },
       '&:hover .pc-img': { transform: 'scale(1.05)' },
     }}>
 
@@ -1043,16 +1044,17 @@ function SectionHeader({ title, count, to }: { title: string; count?: number; to
     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
         <Box sx={{ width: 4, height: 26, bgcolor: OR, borderRadius: 2 }} />
-        <Typography fontSize={{ xs: 16, md: 19 }} fontWeight={700} color={BG}>{title}</Typography>
+        <Typography fontSize={{ xs: 16, md: 19.5 }} fontWeight={700} color={BG} letterSpacing="-0.2px">{title}</Typography>
         {count != null && count > 0 && (
           <Chip label={`${count} produits`} size="small"
             sx={{ fontSize: 11, fontWeight: 600, bgcolor: alpha(OR, 0.09), color: OR,
               border: `1px solid ${alpha(OR, 0.2)}`, height: 20 }} />
         )}
       </Box>
-      <Button component={Link} to={to} endIcon={<KeyboardArrowRight />}
+      <Button component={Link} to={to} endIcon={<KeyboardArrowRight className="sh-arrow" sx={{ transition: 'transform 0.2s ease' }} />}
         sx={{ color: OR, fontWeight: 700, fontSize: 13, textTransform: 'none',
-          '&:hover': { bgcolor: alpha(OR, 0.07) }, borderRadius: 2 }}>
+          '&:hover': { bgcolor: alpha(OR, 0.07) }, '&:hover .sh-arrow': { transform: 'translateX(3px)' },
+          borderRadius: 2, transition: 'background-color 0.2s ease' }}>
         Voir tout
       </Button>
     </Box>
