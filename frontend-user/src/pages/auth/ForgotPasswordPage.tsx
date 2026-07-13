@@ -11,6 +11,7 @@ import {
 import api from '../../api/axios';
 import { isPasswordValid, PASSWORD_RULES } from './RegisterPage';
 import { friendlyApiError } from '../../utils/apiError';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const ORANGE = '#FF6B00';
 const ORD    = '#E05A00';
@@ -142,6 +143,7 @@ export default function ForgotPasswordPage() {
   const [showPwd, setShowPwd]       = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading]       = useState(false);
+  const [verified, setVerified]     = useState(false);
   const [error, setError]           = useState('');
   const [emailNotFound, setEmailNotFound] = useState(false);
   const [countdown, setCountdown]   = useState(0);
@@ -188,10 +190,14 @@ export default function ForgotPasswordPage() {
     try {
       const { data } = await api.post('/auth/verify-reset-code', { email, code });
       setResetToken(data.resetToken);
-      setStage('password');
+      setLoading(false);
+      // Petit temps d'affichage du succès avant de passer à l'étape suivante —
+      // sans ça la confirmation visuelle est invisible, la page saute directement
+      // au formulaire de mot de passe.
+      setVerified(true);
+      setTimeout(() => { setStage('password'); setVerified(false); }, 700);
     } catch (err: any) {
       setError(friendlyApiError(err, 'Code invalide ou expiré'));
-    } finally {
       setLoading(false);
     }
   };
@@ -330,31 +336,60 @@ export default function ForgotPasswordPage() {
               </Box>
             </Box>
 
-            <Typography fontSize={13.5} color={SUB} mb={3} lineHeight={1.7}>
-              Saisissez le code à 6 chiffres reçu par email. Il expire dans 15 minutes.
-            </Typography>
+            <AnimatePresence mode="wait">
+              {verified ? (
+                <motion.div key="verified"
+                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '24px 0' }}>
+                  <motion.div
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ type: 'spring', stiffness: 300, damping: 20, delay: 0.05 }}
+                    style={{
+                      width: 64, height: 64, borderRadius: '50%',
+                      background: 'rgba(16,185,129,0.12)', border: '2px solid #10B981',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 14,
+                    }}>
+                    <motion.svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+                      <motion.path d="M4 12.5L9 17.5L20 6.5" stroke="#10B981" strokeWidth={3}
+                        strokeLinecap="round" strokeLinejoin="round"
+                        initial={{ pathLength: 0 }} animate={{ pathLength: 1 }}
+                        transition={{ duration: 0.35, delay: 0.25, ease: 'easeOut' }} />
+                    </motion.svg>
+                  </motion.div>
+                  <Typography fontWeight={800} fontSize={15} color={TXT}>Code vérifié</Typography>
+                  <Typography fontSize={12.5} color={SUB} mt={0.3}>Un instant, on vous redirige…</Typography>
+                </motion.div>
+              ) : (
+                <motion.div key="form" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                  <Typography fontSize={13.5} color={SUB} mb={3} lineHeight={1.7}>
+                    Saisissez le code à 6 chiffres reçu par email. Il expire dans 15 minutes.
+                  </Typography>
 
-            <OtpInput value={code} onChange={setCode} disabled={loading} />
+                  <OtpInput value={code} onChange={setCode} disabled={loading} />
 
-            {error && (
-              <Typography sx={{ fontSize: 12.5, color: '#EF4444', mt: 2, textAlign: 'center' }}>{error}</Typography>
-            )}
+                  {error && (
+                    <Typography sx={{ fontSize: 12.5, color: '#EF4444', mt: 2, textAlign: 'center' }}>{error}</Typography>
+                  )}
 
-            {loading && (
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.5, mt: 3 }}>
-                <CircularProgress size={18} sx={{ color: ORANGE }} />
-                <Typography fontSize={13.5} color={SUB}>Vérification en cours…</Typography>
-              </Box>
-            )}
+                  {loading && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.5, mt: 3 }}>
+                      <CircularProgress size={18} sx={{ color: ORANGE }} />
+                      <Typography fontSize={13.5} color={SUB}>Vérification en cours…</Typography>
+                    </Box>
+                  )}
 
-            {/* Vérifier manuellement si les 6 chiffres sont saisis mais loading est false (erreur) */}
-            {!loading && code.length === 6 && error && (
-              <Button fullWidth variant="contained"
-                onClick={() => { setCode(''); setError(''); }}
-                sx={{ ...submitSx, mt: 3 }}>
-                Réessayer
-              </Button>
-            )}
+                  {/* Vérifier manuellement si les 6 chiffres sont saisis mais loading est false (erreur) */}
+                  {!loading && code.length === 6 && error && (
+                    <Button fullWidth variant="contained"
+                      onClick={() => { setCode(''); setError(''); }}
+                      sx={{ ...submitSx, mt: 3 }}>
+                      Réessayer
+                    </Button>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             <Box sx={{ mt: 3.5, textAlign: 'center' }}>
               <Button onClick={handleResend} disabled={countdown > 0 || loading}
