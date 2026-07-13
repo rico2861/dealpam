@@ -5,7 +5,7 @@ import {
   useMediaQuery, useTheme,
 } from '@mui/material';
 import {
-  ArrowForwardIos, ArrowBackIos, FavoriteBorder, Favorite,
+  ArrowForwardIos, ArrowBackIos, ArrowForward, FavoriteBorder, Favorite,
   SupportAgent, Verified,
   FlashOn, LocationOn, KeyboardArrowRight, Person,
   WorkspacePremium, Stars, CheckCircle, Store, Star,
@@ -323,6 +323,7 @@ function CentralCarousel({ allProducts, slides }: { allProducts: any[]; slides: 
       onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}
       sx={{ flex: 1, position: 'relative', overflow: 'hidden',
         borderRadius: { xs: 0, md: '16px' }, height: '100%',
+        boxShadow: { xs: 'none', md: '0 20px 50px rgba(8,15,35,0.28)' },
         userSelect: 'none', cursor: 'grab', '&:active': { cursor: 'grabbing' } }}>
 
       {/* ── Slides images avec crossfade ── */}
@@ -356,10 +357,12 @@ function CentralCarousel({ allProducts, slides }: { allProducts: any[]; slides: 
         {/* Texte gauche */}
         <Box sx={{ flex: 1, minWidth: 0 }}>
           {/* Tag badge */}
-          <Box sx={{
+          <Box key={`b-${idx}`} sx={{
             display: 'inline-flex', alignItems: 'center', gap: 0.6,
             bgcolor: OR, borderRadius: '20px',
             px: '10px', py: '4px', mb: { xs: 1.2, md: 1.8 },
+            animation: 'dp-fadeSlide 0.35s ease both',
+            boxShadow: `0 4px 14px ${alpha(OR, 0.35)}`,
           }}>
             <FlashOn sx={{ fontSize: 11, color: 'white' }} />
             <Typography sx={{ fontSize: 9.5, fontWeight: 900, color: 'white', letterSpacing: 1.5, lineHeight: 1 }}>
@@ -369,39 +372,46 @@ function CentralCarousel({ allProducts, slides }: { allProducts: any[]; slides: 
 
           {/* Titre */}
           <Typography key={`t-${idx}`} sx={{
-            fontSize: { xs: 22, sm: 28, md: 34, lg: 40 },
-            fontWeight: 900, color: 'white', lineHeight: 1.05,
-            mb: { xs: 1, md: 1.5 }, whiteSpace: 'pre-line',
-            animation: 'dp-fadeSlide 0.4s ease both',
-            letterSpacing: '-0.5px',
+            fontSize: { xs: 23, sm: 29, md: 36, lg: 42 },
+            fontWeight: 800, color: 'white', lineHeight: 1.08,
+            mb: { xs: 1, md: 1.6 }, whiteSpace: 'pre-line',
+            animation: 'dp-fadeSlide 0.45s 0.04s ease both',
+            letterSpacing: '-0.8px',
           }}>
             {slide.title}
           </Typography>
 
           {/* Sous-titre */}
           <Typography key={`s-${idx}`} sx={{
-            fontSize: { xs: 12, md: 14 }, color: 'rgba(255,255,255,0.6)',
-            mb: { xs: 2, md: 3 }, lineHeight: 1.5,
+            fontSize: { xs: 12.5, md: 15 }, color: 'rgba(255,255,255,0.65)',
+            mb: { xs: 2.2, md: 3.2 }, lineHeight: 1.6,
             display: { xs: 'none', sm: 'block' },
-            animation: 'dp-fadeSlide 0.5s 0.08s ease both',
+            maxWidth: 440,
+            animation: 'dp-fadeSlide 0.5s 0.1s ease both',
           }}>
             {slide.sub}
           </Typography>
 
           {/* CTA */}
-          <Button component={Link} to={slide.to}
-            sx={{
-              bgcolor: 'white', color: BG, fontWeight: 800,
-              borderRadius: '30px',
-              px: { xs: 2.5, md: 3.5 }, py: { xs: 0.85, md: 1.1 },
-              fontSize: { xs: 12.5, md: 14 }, textTransform: 'none',
-              boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-              '&:hover': { bgcolor: OR, color: 'white', transform: 'translateY(-1px)',
-                boxShadow: `0 8px 28px ${alpha(OR, 0.5)}` },
-              transition: 'all 0.22s ease',
-            }}>
-            {slide.cta} →
-          </Button>
+          <Box key={`c-${idx}`} sx={{ animation: 'dp-fadeSlide 0.5s 0.16s ease both' }}>
+            <Button component={Link} to={slide.to}
+              className="hero-cta"
+              sx={{
+                bgcolor: 'white', color: BG, fontWeight: 800,
+                borderRadius: '30px',
+                px: { xs: 2.6, md: 3.8 }, py: { xs: 0.9, md: 1.2 },
+                fontSize: { xs: 12.5, md: 14.5 }, textTransform: 'none',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+                display: 'inline-flex', alignItems: 'center', gap: 0.8,
+                '&:hover': { bgcolor: OR, color: 'white', transform: 'translateY(-2px)',
+                  boxShadow: `0 10px 30px ${alpha(OR, 0.5)}`,
+                  '& .hero-cta-arrow': { transform: 'translateX(3px)' } },
+                transition: 'all 0.22s cubic-bezier(0.4,0,0.2,1)',
+              }}>
+              {slide.cta}
+              <ArrowForward className="hero-cta-arrow" sx={{ fontSize: 16, transition: 'transform 0.22s ease' }} />
+            </Button>
+          </Box>
         </Box>
 
         {/* Cartes produit droite */}
