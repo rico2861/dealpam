@@ -116,8 +116,8 @@ function SidebarContent({ badges, onClose, stats }: {
           <Typography sx={{ fontSize: 10, color: SUB, mt: 0.2 }}>Espace Vendeur</Typography>
         </Box>
         {onClose && (
-          <IconButton onClick={onClose} size="small"
-            sx={{ color: SUB, borderRadius: '8px', '&:hover': { color: TXT, bgcolor: 'rgba(15,23,42,0.09)' } }}>
+          <IconButton onClick={onClose}
+            sx={{ color: SUB, borderRadius: '8px', p: '10px', '&:hover': { color: TXT, bgcolor: 'rgba(15,23,42,0.09)' } }}>
             <Close fontSize="small" />
           </IconButton>
         )}
@@ -262,6 +262,12 @@ export default function SellerLayout() {
 
       {isMobile && (
         <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)}
+          // Sur iOS Safari, le verrouillage du scroll du body a l'ouverture d'un
+          // Modal peut decaler la mise en page (barre d'adresse qui se
+          // masque/reapparait), desynchronisant les coordonnees tactiles du fond
+          // — un tap sur le fond ou sur X "rate" alors sa cible reelle et ne
+          // ferme jamais le menu. disableScrollLock evite ce decalage.
+          ModalProps={{ disableScrollLock: true, keepMounted: true }}
           PaperProps={{ sx: { width: W, bgcolor: SIDE, border: 'none' } }}>
           <SidebarContent badges={badges} stats={stats} onClose={() => setDrawerOpen(false)} />
         </Drawer>
