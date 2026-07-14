@@ -686,6 +686,48 @@ export class ProductsService {
     return this.prisma.productVariant.delete({ where: { id: variantId } });
   }
 
+  // ── Repasser en brouillon (dépublier) — fonctionne même sur un produit déjà
+  // PUBLISHED, contrairement à une suppression définitive. Le produit reste
+  // visible uniquement dans "Mes produits", plus sur la plateforme, et peut
+  // être republié plus tard sans perdre son historique (avis, ventes passées).
+  async setDraft(productId: string, userId: string) {
+    const product = await this.prisma.product.findFirst({
+      where: { id: productId, store: { seller: { userId } } },
+    });
+    if (!product) throw new NotFoundException('Produit introuvable');
+
+    await this.prisma.product.update({ where: { id: productId }, data: { status: 'DRAFT' } });
+    await this.prisma.auditLog.create({
+      data: { userId, action: 'PRODUCT_DRAFTED', entity: 'Product', entityId: productId,
+        oldValues: { status: product.status } as any, newValues: { status: 'DRAFT' } as any },
+    }).catch(() => {});
+    return { message: 'Produit remis en brouillon' };
+  }
+
+  // ── Suppression définitive — bloquée si le produit a déjà été commandé
+  // (OrderItem.productId est requis en base, une suppression casserait
+  // l'historique des commandes existantes). Dans ce cas, mettre en brouillon
+  // est la seule option — cf. setDraft ci-dessus.
+  async remove(productId: string, userId: string) {
+    const product = await this.prisma.product.findFirst({
+      where: { id: productId, store: { seller: { userId } } },
+      include: { _count: { select: { orderItems: true } } },
+    });
+    if (!product) throw new NotFoundException('Produit introuvable');
+    if ((product as any)._count.orderItems > 0) {
+      throw new BadRequestException(
+        'Ce produit a déjà été commandé — impossible à supprimer définitivement. Mettez-le en brouillon pour le retirer de la vente.'
+      );
+    }
+
+    const images = await this.prisma.productImage.findMany({ where: { productId } });
+    for (const img of images) {
+      try { await this.uploadService.deleteImage(img.publicId); } catch {}
+    }
+    await this.prisma.product.delete({ where: { id: productId } });
+    return { message: 'Produit supprimé' };
+  }
+
   async getMyProducts(userId: string, page = 1, limit = 20, dateFrom?: string, dateTo?: string) {
     const seller = await this.prisma.seller.findUnique({ where: { userId }, include: { stores: true } });
     if (!seller || seller.stores.length === 0) throw new NotFoundException('Boutique introuvable');

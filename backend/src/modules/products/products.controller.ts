@@ -165,6 +165,18 @@ export class ProductsController {
     return this.productsService.addImages(id, user.id, files?.images ?? []);
   }
 
+  @Patch(':id/draft')
+  @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('SELLER')
+  setDraft(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.productsService.setDraft(id, user.id);
+  }
+
+  @Delete(':id')
+  @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('SELLER')
+  remove(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.productsService.remove(id, user.id);
+  }
+
   @Delete('images/:imageId')
   @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('SELLER')
   deleteImage(@Param('imageId') imageId: string, @CurrentUser() user: any) {
