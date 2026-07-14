@@ -316,7 +316,7 @@ export default function SellerProductsPage({ mode = 'products' }: { mode?: 'prod
           </Box>
           <Box sx={{ mt: 1, p: 1.5, borderRadius: '10px', bgcolor: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
             <Typography fontSize={12.5} color={RED} sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
-              <Warning sx={{ fontSize: 14 }} /> "Supprimer" est définitif et retire aussi les images — refusé si ce produit a déjà été commandé.
+              <Warning sx={{ fontSize: 14 }} /> "Supprimer" est définitif et retire aussi les images — refusé si ce produit a déjà eu ne serait-ce qu'une seule commande dans son historique (même annulée), pour ne jamais effacer une commande de vos archives.
             </Typography>
           </Box>
         </DialogContent>

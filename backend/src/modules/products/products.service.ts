@@ -716,7 +716,7 @@ export class ProductsService {
     if (!product) throw new NotFoundException('Produit introuvable');
     if ((product as any)._count.orderItems > 0) {
       throw new BadRequestException(
-        'Ce produit a déjà été commandé — impossible à supprimer définitivement. Mettez-le en brouillon pour le retirer de la vente.'
+        'Ce produit a déjà eu au moins une commande dans son historique (même annulée ou refusée) — le supprimer effacerait cette commande de vos archives. Mettez-le en brouillon : il sera retiré de la vente sans rien perdre.'
       );
     }
 
