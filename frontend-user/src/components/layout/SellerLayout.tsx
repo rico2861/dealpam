@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import {
-  Box, Typography, Avatar, Badge, IconButton, Drawer,
+  Box, Typography, Avatar, Badge, IconButton,
   useMediaQuery, useTheme, Tooltip,
 } from '@mui/material';
 import {
@@ -229,6 +229,14 @@ export default function SellerLayout() {
   const theme    = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'), { noSsr: true });
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const location = useLocation();
+
+  // Filet de sécurité : quel que soit ce qui a pu empêcher le clic sur X/le
+  // fond de fermer le menu (plusieurs causes différentes déjà rencontrées —
+  // verrouillage de scroll iOS, transition MUI interrompue par la navigation),
+  // un changement de route ferme TOUJOURS le menu, de façon déterministe,
+  // sans dépendre du bon déroulement d'un clic ou d'une transition.
+  useEffect(() => { setDrawerOpen(false); }, [location.pathname]);
 
   const { data: stats } = useQuery({
     queryKey: ['sellerStats'],
@@ -260,17 +268,24 @@ export default function SellerLayout() {
         </Box>
       )}
 
-      {isMobile && (
-        <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)}
-          // Sur iOS Safari, le verrouillage du scroll du body a l'ouverture d'un
-          // Modal peut decaler la mise en page (barre d'adresse qui se
-          // masque/reapparait), desynchronisant les coordonnees tactiles du fond
-          // — un tap sur le fond ou sur X "rate" alors sa cible reelle et ne
-          // ferme jamais le menu. disableScrollLock evite ce decalage.
-          ModalProps={{ disableScrollLock: true }}
-          PaperProps={{ sx: { width: W, bgcolor: SIDE, border: 'none' } }}>
-          <SidebarContent badges={badges} stats={stats} onClose={() => setDrawerOpen(false)} />
-        </Drawer>
+      {/* Menu mobile — implementation manuelle deliberement simple (pas de
+          <Drawer> MUI). Deux bugs en cascade sont venus des mecanismes internes
+          du Modal MUI (verrouillage de scroll iOS desynchronisant les taps,
+          puis keepMounted laissant le fond visible apres une navigation) : on
+          ne depend plus d'aucune transition, d'aucun scroll-lock, d'aucun
+          Portal — juste un rendu conditionnel classique avec des onClick
+          explicites, entierement previsible. */}
+      {isMobile && drawerOpen && (
+        <>
+          <Box onClick={() => setDrawerOpen(false)} aria-hidden
+            sx={{ position: 'fixed', inset: 0, bgcolor: 'rgba(15,23,42,0.5)', zIndex: 1300 }} />
+          <Box sx={{
+            position: 'fixed', top: 0, left: 0, bottom: 0, width: W, zIndex: 1301,
+            bgcolor: SIDE, boxShadow: '0 0 32px rgba(0,0,0,0.25)', overflowY: 'auto',
+          }}>
+            <SidebarContent badges={badges} stats={stats} onClose={() => setDrawerOpen(false)} />
+          </Box>
+        </>
       )}
 
       <Box sx={{ flex: 1, minWidth: 0, ml: isMobile ? 0 : `${W}px`, display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
