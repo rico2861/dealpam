@@ -421,7 +421,7 @@ export default function ProductsPage() {
   const [page, setPage] = useState(1);
   const [mobileFilter, setMobileFilter] = useState(false);
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'), { noSsr: true });
   const { location: locData } = useLocationStore();
   const userDept = locData?.department || localStorage.getItem('dealpam_dept') || localStorage.getItem('dealpam_city') || '';
   const userCity = locData?.city || '';

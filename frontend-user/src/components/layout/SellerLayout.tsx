@@ -227,7 +227,7 @@ function SidebarContent({ badges, onClose, stats }: {
 
 export default function SellerLayout() {
   const theme    = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'), { noSsr: true });
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const { data: stats } = useQuery({

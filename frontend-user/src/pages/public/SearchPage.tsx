@@ -317,7 +317,7 @@ function FilterPanel({ filters, setFilters, onClose, userDept = '' }: { filters:
 
 export default function SearchPage() {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'), { noSsr: true });
   const [searchParams, setSearchParams] = useSearchParams();
   const { location: locData } = useLocationStore();
   const userDept = locData?.department || localStorage.getItem('dealpam_dept') || localStorage.getItem('dealpam_city') || '';

@@ -41,6 +41,10 @@ const darkMenu = {
 };
 
 const fieldSx = {
+  // Le label force en position "shrink" (voir theme global) flotte au-dessus du
+  // champ — sans marge supplementaire, il touchait visuellement la bordure du
+  // champ precedent au-dessus, donnant une impression de texte souligne/tasse.
+  mt: '18px',
   '& .MuiOutlinedInput-root': {
     bgcolor: '#F7F8FA', borderRadius: '10px', fontSize: 13.5, color: TXT,
     '& fieldset': { borderColor: BORD },

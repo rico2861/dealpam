@@ -472,9 +472,9 @@ export default function Header() {
   const unreadMessages = useUnreadMessagesCount();
   const navigate    = useNavigate();
   const theme       = useTheme();
-  const isMobile    = useMediaQuery(theme.breakpoints.down('md'));
-  const isMobileOnly = useMediaQuery(theme.breakpoints.down('sm')); // < 600px
-  const isTablet    = useMediaQuery(theme.breakpoints.between('sm', 'md')); // 600–899px
+  const isMobile    = useMediaQuery(theme.breakpoints.down('md'), { noSsr: true });
+  const isMobileOnly = useMediaQuery(theme.breakpoints.down('sm'), { noSsr: true }); // < 600px
+  const isTablet    = useMediaQuery(theme.breakpoints.between('sm', 'md'), { noSsr: true }); // 600–899px
   const rLocationForBg = useRLocation();
   const isHeroPage = rLocationForBg.pathname === '/home' || rLocationForBg.pathname === '/';
 

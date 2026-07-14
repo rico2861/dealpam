@@ -13,7 +13,7 @@ import './index.css';
 // de chat flottant — on affiche donc les notifications en haut, centrées, en dessous
 // de 600px, et on garde le classique bas-droite sur desktop.
 function AppSnackbarProvider({ children }: { children: React.ReactNode }) {
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'), { noSsr: true });
   return (
     <SnackbarProvider
       maxSnack={3}

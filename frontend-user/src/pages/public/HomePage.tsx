@@ -259,7 +259,7 @@ function CentralCarousel({ allProducts, slides }: { allProducts: any[]; slides: 
   const miniRef  = useRef<any>(null);
   const touchX   = useRef<number | null>(null);
   const theme    = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'), { noSsr: true });
 
   const goTo = useCallback((i: number, direction: 1 | -1 = 1) => {
     setDir(direction);
@@ -691,7 +691,7 @@ function FeaturedSellersSection({ sellers, loading }: { sellers: any[]; loading?
   const [canNext, setCanNext] = useState(true);
   const [hasOverflow, setHasOverflow] = useState(false);
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'), { noSsr: true });
 
   const updateArrows = useCallback(() => {
     const el = scrollRef.current;
@@ -1341,7 +1341,7 @@ function DealCarousel({ products, flash = false }: { products: any[]; flash?: bo
   const [canNext, setCanNext] = useState(true);
   const [hasOverflow, setHasOverflow] = useState(false);
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'), { noSsr: true });
 
   const updateArrows = useCallback(() => {
     const el = scrollRef.current;
