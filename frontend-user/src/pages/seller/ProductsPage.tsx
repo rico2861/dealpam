@@ -45,6 +45,7 @@ export default function SellerProductsPage({ mode = 'products' }: { mode?: 'prod
   const [filter, setFilter]   = useState('ALL');
   const [del, setDel]         = useState<{ open: boolean; id: string; name: string }>({ open: false, id: '', name: '' });
   const [deleting, setDeleting] = useState(false);
+  const [drafting, setDrafting] = useState(false);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo]     = useState('');
   const [page, setPage]         = useState(1);
@@ -67,10 +68,28 @@ export default function SellerProductsPage({ mode = 'products' }: { mode?: 'prod
       qc.invalidateQueries({ queryKey: ['sellerProducts'] });
       enqueueSnackbar('Produit supprimé', { variant: 'success' });
       setDel({ open: false, id: '', name: '' });
-    } catch {
-      enqueueSnackbar('Erreur lors de la suppression', { variant: 'error' });
+    } catch (err: any) {
+      enqueueSnackbar(err?.response?.data?.message || 'Erreur lors de la suppression', { variant: 'error' });
     } finally {
       setDeleting(false);
+    }
+  };
+
+  // Alternative non destructive : dépublie le produit (repasse en brouillon)
+  // sans rien supprimer — utile pour un produit déjà commandé (suppression
+  // définitive refusée côté serveur) ou simplement pour le retirer de la
+  // vente sans perdre son historique/ses avis.
+  const handleSetDraft = async () => {
+    setDrafting(true);
+    try {
+      await api.patch(`/products/${del.id}/draft`);
+      qc.invalidateQueries({ queryKey: ['sellerProducts'] });
+      enqueueSnackbar('Produit mis en brouillon', { variant: 'success' });
+      setDel({ open: false, id: '', name: '' });
+    } catch (err: any) {
+      enqueueSnackbar(err?.response?.data?.message || 'Erreur', { variant: 'error' });
+    } finally {
+      setDrafting(false);
     }
   };
 
@@ -285,23 +304,34 @@ export default function SellerProductsPage({ mode = 'products' }: { mode?: 'prod
       {/* Delete dialog */}
       <Dialog open={del.open} onClose={() => !deleting && setDel({ open: false, id: '', name: '' })} maxWidth="xs" fullWidth
         PaperProps={{ sx: { bgcolor: CARD, border: `1px solid ${BORD}`, borderRadius: '20px' } }}>
-        <DialogTitle sx={{ color: TXT, fontWeight: 800, fontSize: 17 }}>Supprimer le produit</DialogTitle>
+        <DialogTitle sx={{ color: TXT, fontWeight: 800, fontSize: 17 }}>Retirer le produit</DialogTitle>
         <DialogContent>
           <Typography fontSize={14} color={SUB2}>
-            Êtes-vous sûr de vouloir supprimer <strong style={{ color: TXT }}>"{del.name}"</strong> ?
+            Que voulez-vous faire de <strong style={{ color: TXT }}>"{del.name}"</strong> ?
           </Typography>
-          <Box sx={{ mt: 1.5, p: 1.5, borderRadius: '10px', bgcolor: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
+          <Box sx={{ mt: 1.5, p: 1.5, borderRadius: '10px', bgcolor: 'rgba(100,116,139,0.08)', border: '1px solid rgba(100,116,139,0.2)' }}>
+            <Typography fontSize={12.5} color={SUB2} sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
+              <Archive sx={{ fontSize: 14 }} /> "Mettre en brouillon" le retire de la vente sans rien supprimer — vous pourrez le republier plus tard.
+            </Typography>
+          </Box>
+          <Box sx={{ mt: 1, p: 1.5, borderRadius: '10px', bgcolor: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
             <Typography fontSize={12.5} color={RED} sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
-              <Warning sx={{ fontSize: 14 }} /> Cette action est irréversible et supprimera toutes les images associées.
+              <Warning sx={{ fontSize: 14 }} /> "Supprimer" est définitif et retire aussi les images — refusé si ce produit a déjà été commandé.
             </Typography>
           </Box>
         </DialogContent>
-        <DialogActions sx={{ p: 2.5, pt: 1, gap: 1 }}>
-          <Button onClick={() => setDel({ open: false, id: '', name: '' })} disabled={deleting}
+        <DialogActions sx={{ p: 2.5, pt: 1, gap: 1, flexWrap: 'wrap' }}>
+          <Button onClick={() => setDel({ open: false, id: '', name: '' })} disabled={deleting || drafting}
             sx={{ color: SUB2, borderRadius: '10px' }}>
             Annuler
           </Button>
-          <Button onClick={handleDelete} disabled={deleting}
+          <Button onClick={handleSetDraft} disabled={deleting || drafting}
+            startIcon={drafting ? <CircularProgress size={14} color="inherit"/> : <Archive sx={{ fontSize: 16 }}/>}
+            sx={{ bgcolor: 'rgba(100,116,139,0.1)', color: TXT, borderRadius: '10px', fontWeight: 700, px: 2,
+              '&:hover': { bgcolor: 'rgba(100,116,139,0.18)' }, '&:disabled': { bgcolor: 'rgba(15,23,42,0.04)', color: SUB } }}>
+            {drafting ? 'Mise en brouillon…' : 'Mettre en brouillon'}
+          </Button>
+          <Button onClick={handleDelete} disabled={deleting || drafting}
             startIcon={deleting ? <CircularProgress size={14} color="inherit"/> : <Delete sx={{ fontSize: 16 }}/>}
             sx={{ bgcolor: RED, color: '#fff', borderRadius: '10px', fontWeight: 700, px: 2.5,
               '&:hover': { bgcolor: '#DC2626' }, '&:disabled': { bgcolor: 'rgba(15,23,42,0.04)', color: SUB } }}>
