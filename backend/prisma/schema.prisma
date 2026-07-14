@@ -721,8 +721,12 @@ model OrderItem {
   id          String  @id @default(uuid())
   orderId     String  @map("order_id")
   order       Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  productId   String  @map("product_id")
-  product     Product @relation(fields: [productId], references: [id])
+  // Nullable + SetNull : permet de supprimer definitivement un produit qui
+  // n'a plus de commande active, sans casser l'historique des commandes
+  // passees. Ce champ n'est de toute facon jamais utilise pour l'affichage —
+  // productName/imageUrl/unitPrice/subtotal sont deja denormalises ci-dessous.
+  productId   String? @map("product_id")
+  product     Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
   productName String  @map("product_name")
   imageUrl    String? @map("image_url")
   quantity    Int

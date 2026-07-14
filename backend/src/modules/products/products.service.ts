@@ -704,19 +704,27 @@ export class ProductsService {
     return { message: 'Produit remis en brouillon' };
   }
 
-  // ── Suppression définitive — bloquée si le produit a déjà été commandé
-  // (OrderItem.productId est requis en base, une suppression casserait
-  // l'historique des commandes existantes). Dans ce cas, mettre en brouillon
-  // est la seule option — cf. setDraft ci-dessus.
+  // ── Suppression définitive — bloquée uniquement si une commande ACTIVE
+  // (pas encore livrée/annulée/remboursée) référence encore ce produit : la
+  // supprimer romprait un suivi en cours pour le client. Une commande passée
+  // (livrée, annulée, remboursée) ne bloque plus — OrderItem.productId est
+  // désormais nullable avec onDelete: SetNull, l'historique reste intact
+  // (productName/imageUrl/unitPrice/subtotal sont déjà dénormalisés dessus).
   async remove(productId: string, userId: string) {
     const product = await this.prisma.product.findFirst({
       where: { id: productId, store: { seller: { userId } } },
-      include: { _count: { select: { orderItems: true } } },
     });
     if (!product) throw new NotFoundException('Produit introuvable');
-    if ((product as any)._count.orderItems > 0) {
+
+    const activeOrderCount = await this.prisma.orderItem.count({
+      where: {
+        productId,
+        order: { status: { in: ['PENDING', 'CONFIRMED', 'PREPARING', 'SHIPPED'] } },
+      },
+    });
+    if (activeOrderCount > 0) {
       throw new BadRequestException(
-        'Ce produit a déjà eu au moins une commande dans son historique (même annulée ou refusée) — le supprimer effacerait cette commande de vos archives. Mettez-le en brouillon : il sera retiré de la vente sans rien perdre.'
+        'Ce produit a une commande en cours (pas encore livrée/annulée) — impossible à supprimer tant que cette commande n\'est pas terminée. Mettez-le en brouillon pour le retirer de la vente en attendant.'
       );
     }
 
