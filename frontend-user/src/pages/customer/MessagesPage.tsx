@@ -176,6 +176,25 @@ export default function MessagesPage() {
     const peer = conv?.participants?.find(p => p.userId !== user?.id);
     return peer?.userId ?? null;
   }, [user?.id]);
+
+  // L'aperçu du dernier message dans la liste des conversations vient tel quel
+  // de l'API (chiffré si le dernier message l'était) — contrairement au fil de
+  // discussion ouvert, il n'était jamais déchiffré, affichant le texte brut.
+  const [decryptedPreviews, setDecryptedPreviews] = useState<Record<string, string>>({});
+  useEffect(() => {
+    conversations.forEach(async (conv) => {
+      if (!conv.lastMessage || !isEncrypted(conv.lastMessage) || decryptedPreviews[conv.id] !== undefined) return;
+      const peerId = getConvPeerId(conv.id);
+      if (!peerId) return;
+      try {
+        const peerPub = await getPeerPub(peerId);
+        if (!peerPub) return;
+        const plain = await decryptMsg(conv.lastMessage, peerPub);
+        setDecryptedPreviews(prev => ({ ...prev, [conv.id]: plain }));
+      } catch { /* laisse le chiffré affiché si le déchiffrement échoue */ }
+    });
+  }, [conversations, getConvPeerId, getPeerPub]);
+
   const showConvsSkel = useDelayedLoading(convsLoading);
   const showMsgsSkel  = useDelayedLoading(loadingMsgs);
 
@@ -541,7 +560,9 @@ export default function MessagesPage() {
                     color: unread > 0 ? SUB2 : SUB,
                     fontWeight: unread > 0 ? 500 : 400,
                     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {conv.lastMessage ?? 'Démarrez la conversation'}
+                    {conv.lastMessage
+                      ? (isEncrypted(conv.lastMessage) ? (decryptedPreviews[conv.id] ?? '···') : conv.lastMessage)
+                      : 'Démarrez la conversation'}
                   </Typography>
                 </Box>
               </Box>
