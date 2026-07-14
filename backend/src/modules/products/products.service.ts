@@ -728,6 +728,18 @@ export class ProductsService {
       );
     }
 
+    // Même logique pour les rendez-vous d'un service : un rendez-vous PENDING/
+    // CONFIRMED (pas encore honoré/annulé) bloque, un rendez-vous COMPLETED/
+    // CANCELLED ne bloque plus (Appointment.serviceName garde le nom affiché).
+    const activeApptCount = await (this.prisma.appointment as any).count({
+      where: { productId, status: { in: ['PENDING', 'CONFIRMED'] } },
+    });
+    if (activeApptCount > 0) {
+      throw new BadRequestException(
+        'Ce service a un rendez-vous en cours (pas encore honoré/annulé) — impossible à supprimer tant que ce rendez-vous n\'est pas terminé. Mettez-le en brouillon pour le retirer de la vente en attendant.'
+      );
+    }
+
     const images = await this.prisma.productImage.findMany({ where: { productId } });
     for (const img of images) {
       try { await this.uploadService.deleteImage(img.publicId); } catch {}

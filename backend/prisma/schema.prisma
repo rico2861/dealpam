@@ -632,7 +632,9 @@ model CartItem {
   cartId    String  @map("cart_id")
   cart      Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
   productId String  @map("product_id")
-  product   Product @relation(fields: [productId], references: [id])
+  // Cascade : un panier n'a aucune valeur historique, retirer simplement
+  // l'article s'il n'existe plus est le comportement attendu.
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   quantity  Int     @default(1)
   size      String?
   color     String?
@@ -648,7 +650,9 @@ model WishlistItem {
   userId    String   @map("user_id")
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   productId String   @map("product_id")
-  product   Product  @relation(fields: [productId], references: [id])
+  // Cascade : un favori n'a aucune valeur historique, le retirer silencieusement
+  // si le produit disparaît est le comportement attendu (pas de FK à préserver).
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   addedAt   DateTime @default(now()) @map("added_at")
 
   @@unique([userId, productId])
@@ -813,7 +817,9 @@ model Review {
   userId     String   @map("user_id")
   user       User     @relation(fields: [userId], references: [id])
   productId  String?  @map("product_id")
-  product    Product? @relation(fields: [productId], references: [id])
+  // SetNull : l'avis (texte, note) doit survivre à la suppression du produit —
+  // c'est du contenu utilisateur avec sa propre valeur, pas juste un lien.
+  product    Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
   storeId    String?  @map("store_id")
   store      Store?   @relation(fields: [storeId], references: [id])
   orderId    String?  @map("order_id")
@@ -857,8 +863,14 @@ model Appointment {
   id          String            @id @default(uuid())
   userId      String?           @map("user_id")   // null for guest bookings
   user        User?             @relation(fields: [userId], references: [id])
-  productId   String            @map("product_id")
-  product     Product           @relation(fields: [productId], references: [id])
+  productId   String?           @map("product_id")
+  // SetNull : un rendez-vous passe (termine/annule) doit survivre a la
+  // suppression du service — serviceName ci-dessous en garde le nom pour
+  // l'affichage independamment du produit live.
+  product     Product?          @relation(fields: [productId], references: [id], onDelete: SetNull)
+  // Nom du service au moment de la reservation — l'affichage ne depend plus
+  // uniquement de product.name, qui disparait si le service est supprime.
+  serviceName String?           @map("service_name_snapshot")
   storeId     String            @map("store_id")
   store       Store             @relation(fields: [storeId], references: [id])
   status      AppointmentStatus @default(PENDING)

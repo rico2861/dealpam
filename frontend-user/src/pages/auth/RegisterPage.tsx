@@ -322,14 +322,14 @@ function LeftPanel({ accent, badge, headline, sub, features, quote, stats }: {
   );
 }
 
-export default function RegisterPage() {
+export default function RegisterPage({ forceRole }: { forceRole?: 'SELLER' | 'CUSTOMER' } = {}) {
   const [searchParams] = useSearchParams();
   const navigate       = useNavigate();
   const { user, setUser } = useAuthStore();
   const { enqueueSnackbar } = useSnackbar();
 
   const [step, setStep]   = useState(0);
-  const [role, setRole]   = useState(searchParams.get('role') === 'SELLER' ? 'SELLER' : 'CUSTOMER');
+  const [role, setRole]   = useState(forceRole ?? (searchParams.get('role') === 'SELLER' ? 'SELLER' : 'CUSTOMER'));
   const [loading, setLoading] = useState(false);
   const [error, setError]   = useState('');
   const [showPwd, setShowPwd] = useState(false);
@@ -532,7 +532,7 @@ export default function RegisterPage() {
                 ].map(({ value, label, sub, Icon, color }) => {
                   const active = role === value;
                   return (
-                    <Box key={value} onClick={() => setRole(value)} sx={{
+                    <Box key={value} onClick={() => setRole(value as 'SELLER' | 'CUSTOMER')} sx={{
                       p: 3, textAlign: 'center', cursor: 'pointer', borderRadius: '18px',
                       border: `1.5px solid ${active ? color : 'rgba(15,23,42,0.09)'}`,
                       bgcolor: active ? alpha(color, 0.09) : '#FFFFFF',

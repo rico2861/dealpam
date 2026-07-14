@@ -2,7 +2,11 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
+  // En production, retire tous les console.log/warn/error/debugger du bundle —
+  // aucune trace de debug interne (noms de variables, structure du code) ne
+  // doit fuiter dans la console d'un visiteur, dev ou non.
+  esbuild: mode === 'production' ? { drop: ['console', 'debugger'] } : {},
   plugins: [
     react(),
     VitePWA({
@@ -96,4 +100,4 @@ export default defineConfig({
       },
     },
   },
-});
+}));

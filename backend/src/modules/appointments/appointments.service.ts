@@ -34,6 +34,7 @@ export class AppointmentsService {
       data: {
         userId,
         productId: dto.productId,
+        serviceName: product.name,
         storeId: product.storeId,
         scheduledAt: new Date(dto.scheduledAt),
         note: dto.note,
@@ -66,6 +67,7 @@ export class AppointmentsService {
       data: {
         userId: null,  // guest booking
         productId: dto.productId,
+        serviceName: product.name,
         storeId: product.storeId,
         scheduledAt: new Date(dto.scheduledAt),
         note: dto.note,

@@ -201,6 +201,9 @@ export default function App() {
           <Route element={<AuthLayout />}>
             <Route path="/login" element={<LoginGuard><LoginPage /></LoginGuard>} />
             <Route path="/register" element={<LoginGuard><RegisterPage /></LoginGuard>} />
+            {/* Lien court et propre pour les campagnes/pubs vendeur — évite d'exposer
+                "?role=SELLER" en clair dans l'URL partagée (WhatsApp, réseaux sociaux). */}
+            <Route path="/vendre" element={<LoginGuard><RegisterPage forceRole="SELLER" /></LoginGuard>} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
           </Route>

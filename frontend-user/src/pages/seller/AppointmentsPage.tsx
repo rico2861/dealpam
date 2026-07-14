@@ -96,7 +96,7 @@ function ApptDialog({ appt, onClose }: { appt: any; onClose: () => void }) {
         {/* Header */}
         <Box sx={{ p: 3, borderBottom: `1px solid ${BORD}`, background: 'linear-gradient(135deg, rgba(255,107,0,0.08) 0%, transparent 60%)' }}>
           <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1 }}>
-            <Typography fontSize={16} fontWeight={800} color={TXT}>{appt.product?.name ?? '—'}</Typography>
+            <Typography fontSize={16} fontWeight={800} color={TXT}>{appt.product?.name ?? appt.serviceName ?? 'Service supprimé'}</Typography>
             <Box sx={{ px: 1.2, py: 0.4, borderRadius: '8px', bgcolor: `${cfg.color}15`, border: `1px solid ${cfg.color}30` }}>
               <Typography fontSize={11} fontWeight={700} color={cfg.color}>{cfg.label}</Typography>
             </Box>
@@ -241,7 +241,7 @@ function ApptCard({ appt, onClick }: { appt: any; onClick: () => void }) {
       {/* Info */}
       <Box sx={{ flex: 1, minWidth: 0 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.4, flexWrap: 'wrap' }}>
-          <Typography fontSize={14} fontWeight={800} color={TXT} noWrap>{appt.product?.name ?? '—'}</Typography>
+          <Typography fontSize={14} fontWeight={800} color={TXT} noWrap>{appt.product?.name ?? appt.serviceName ?? 'Service supprimé'}</Typography>
           {appt.serviceType && <Typography fontSize={12} color={SUB} noWrap>· {appt.serviceType}</Typography>}
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
@@ -305,7 +305,7 @@ export default function AppointmentsPage() {
       const q = search.toLowerCase();
       const registeredName = a.user ? `${a.user.firstName ?? ''} ${a.user.lastName ?? ''}` : '';
       return (
-        a.product?.name?.toLowerCase().includes(q) ||
+        (a.product?.name ?? a.serviceName)?.toLowerCase().includes(q) ||
         registeredName.toLowerCase().includes(q) ||
         a.clientName?.toLowerCase().includes(q) ||
         (a.user?.phone ?? a.clientPhone)?.includes(q) ||
