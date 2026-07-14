@@ -153,6 +153,20 @@ export class StoresController {
     return this.storesService.deleteStore(u.id, storeId);
   }
 
+  @Patch('me/:storeId/deactivate')
+  @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('SELLER')
+  @ApiOperation({ summary: 'Mettre la boutique en pause (retire ses produits publiés de la vente, réversible)' })
+  deactivateStore(@CurrentUser() u: any, @Param('storeId') storeId: string) {
+    return this.storesService.deactivateStore(u.id, storeId);
+  }
+
+  @Patch('me/:storeId/reactivate')
+  @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('SELLER')
+  @ApiOperation({ summary: 'Réactiver une boutique mise en pause' })
+  reactivateStore(@CurrentUser() u: any, @Param('storeId') storeId: string) {
+    return this.storesService.reactivateStore(u.id, storeId);
+  }
+
   @Patch('me/:storeId/pickup-points')
   @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('SELLER')
   @ApiOperation({ summary: 'Mettre à jour les points de retrait' })

@@ -251,6 +251,38 @@ export class StoresService {
     return this.prisma.store.delete({ where: { id: storeId } });
   }
 
+  // ── Mettre en pause (au lieu de supprimer) — masque la boutique et tous ses
+  // produits publiés sans rien effacer, réversible à tout moment via
+  // reactivateStore. Contrairement à deleteStore, fonctionne même avec des
+  // produits/commandes existants et même sur la boutique principale.
+  async deactivateStore(userId: string, storeId: string) {
+    const store = await this.prisma.store.findFirst({ where: { id: storeId, seller: { userId } } });
+    if (!store) throw new NotFoundException('Boutique introuvable');
+
+    await this.prisma.$transaction([
+      this.prisma.store.update({ where: { id: storeId }, data: { isActive: false } }),
+      this.prisma.product.updateMany({
+        where: { storeId, status: 'PUBLISHED' },
+        data:  { status: 'SUSPENDED' },
+      }),
+    ]);
+    return { message: 'Boutique mise en pause — retirée de la vente, rien n\'a été supprimé.' };
+  }
+
+  async reactivateStore(userId: string, storeId: string) {
+    const store = await this.prisma.store.findFirst({ where: { id: storeId, seller: { userId } } });
+    if (!store) throw new NotFoundException('Boutique introuvable');
+
+    await this.prisma.$transaction([
+      this.prisma.store.update({ where: { id: storeId }, data: { isActive: true } }),
+      this.prisma.product.updateMany({
+        where: { storeId, status: 'SUSPENDED' },
+        data:  { status: 'PUBLISHED' },
+      }),
+    ]);
+    return { message: 'Boutique réactivée.' };
+  }
+
   // ── Admin helpers ─────────────────────────────────────────────────────────
 
   async adminGetStoresBySeller(sellerId: string) {

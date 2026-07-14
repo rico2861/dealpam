@@ -10,6 +10,7 @@ import {
   ContentCopy, OpenInNew, StorefrontOutlined, LocationOnOutlined, ArrowForward,
   PhoneOutlined, LocalShippingOutlined, AccountBalanceWalletOutlined,
   PlaceOutlined, Close, AccessTimeOutlined, VisibilityOutlined, PeopleAltOutlined,
+  PauseCircleOutline, PlayCircleOutline,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
@@ -395,7 +396,7 @@ function StoreDialog({ open, title, initial, onClose, onSave, loading }: {
   );
 }
 
-function StoreCard({ store, onEdit, onDelete, onCopy }: any) {
+function StoreCard({ store, onEdit, onDelete, onCopy, onToggleActive }: any) {
   const hue = (store.name?.charCodeAt(0) ?? 65) * 53 % 360;
   return (
     <Box sx={{
@@ -447,6 +448,9 @@ function StoreCard({ store, onEdit, onDelete, onCopy }: any) {
             {[
               { icon: <ContentCopy sx={{ fontSize: 13 }} />, action: () => onCopy(store.slug), col: SUB2, hov: 'rgba(15,23,42,0.06)', bc: '#64748B' },
               { icon: <Edit sx={{ fontSize: 13 }} />, action: () => onEdit(store), col: OR, hov: 'rgba(255,107,0,0.08)', bc: 'rgba(255,107,0,0.38)' },
+              store.isActive
+                ? { icon: <PauseCircleOutline sx={{ fontSize: 13 }} />, action: () => onToggleActive(store, false), col: '#F59E0B', hov: 'rgba(245,158,11,0.08)', bc: 'rgba(245,158,11,0.38)' }
+                : { icon: <PlayCircleOutline sx={{ fontSize: 13 }} />, action: () => onToggleActive(store, true), col: GRN, hov: 'rgba(16,185,129,0.08)', bc: 'rgba(16,185,129,0.38)' },
               ...(!store.isPrimary ? [{ icon: <Delete sx={{ fontSize: 13 }} />, action: () => onDelete(store), col: RED, hov: 'rgba(239,68,68,0.08)', bc: 'rgba(239,68,68,0.38)' }] : []),
             ].map(({ icon, action, col, hov, bc }, i) => (
               <Box key={i} onClick={action} sx={{ width: 28, height: 28, borderRadius: '7px', cursor: 'pointer',
@@ -519,6 +523,18 @@ export default function SellerStoresPage() {
   const deleteMut = useMutation({
     mutationFn: (id: string) => api.delete(`/stores/me/${id}`),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['myStores'] }); setDeleteStore(null); enqueueSnackbar('Boutique supprimée', { variant: 'info' }); },
+    onError: (e: any) => enqueueSnackbar(e.response?.data?.message || 'Erreur', { variant: 'error' }),
+  });
+  // Alternative non destructive a la suppression : met la boutique et ses
+  // produits publies en pause (reversible), au lieu de supprimer definitivement.
+  const toggleActiveMut = useMutation({
+    mutationFn: ({ id, activate }: { id: string; activate: boolean }) =>
+      api.patch(`/stores/me/${id}/${activate ? 'reactivate' : 'deactivate'}`),
+    onSuccess: (_data, { activate }) => {
+      qc.invalidateQueries({ queryKey: ['myStores'] });
+      qc.invalidateQueries({ queryKey: ['sellerProducts'] });
+      enqueueSnackbar(activate ? 'Boutique réactivée' : 'Boutique mise en pause', { variant: 'success' });
+    },
     onError: (e: any) => enqueueSnackbar(e.response?.data?.message || 'Erreur', { variant: 'error' }),
   });
 
@@ -605,7 +621,8 @@ export default function SellerStoresPage() {
         <Grid container spacing={2.5}>
           {stores.map((store: any) => (
             <Grid item xs={12} md={6} key={store.id}>
-              <StoreCard store={store} onEdit={() => navigate('/seller/store')} onDelete={setDeleteStore} onCopy={copyLink} />
+              <StoreCard store={store} onEdit={() => navigate('/seller/store')} onDelete={setDeleteStore} onCopy={copyLink}
+                onToggleActive={(s: any, activate: boolean) => toggleActiveMut.mutate({ id: s.id, activate })} />
             </Grid>
           ))}
         </Grid>
@@ -623,12 +640,15 @@ export default function SellerStoresPage() {
       <Dialog open={!!deleteStore} onClose={() => setDeleteStore(null)} maxWidth="xs" fullWidth PaperProps={dialogPaper}>
         <DialogTitle sx={{ color: TXT, fontWeight: 900, fontSize: 17 }}>Supprimer la boutique ?</DialogTitle>
         <DialogContent>
-          <Box sx={{ p: 2, borderRadius: '14px', bgcolor: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.2)' }}>
+          <Box sx={{ p: 2, borderRadius: '14px', bgcolor: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.2)', mb: 1.5 }}>
             <Typography fontSize={13.5} color={SUB2} lineHeight={1.6}>
               La boutique <strong style={{ color: TXT }}>"{deleteStore?.name}"</strong> sera définitivement supprimée.
               Les produits associés doivent d'abord être déplacés.
             </Typography>
           </Box>
+          <Typography fontSize={12.5} color={SUB} lineHeight={1.6}>
+            Vous ne voulez pas la supprimer définitivement ? Utilisez plutôt l'icône <PauseCircleOutline sx={{ fontSize: 13, verticalAlign: 'middle' }} /> "Mettre en pause" sur la carte de la boutique — elle et ses produits publiés sont retirés de la vente sans rien supprimer, et vous pourrez les réactiver plus tard.
+          </Typography>
         </DialogContent>
         <DialogActions sx={{ px: 2.5, pb: 2.5, gap: 1 }}>
           <Button onClick={() => setDeleteStore(null)} sx={{ color: SUB2, borderRadius: '10px' }}>Annuler</Button>
