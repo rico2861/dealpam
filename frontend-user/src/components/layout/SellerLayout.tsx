@@ -267,7 +267,7 @@ export default function SellerLayout() {
           // masque/reapparait), desynchronisant les coordonnees tactiles du fond
           // — un tap sur le fond ou sur X "rate" alors sa cible reelle et ne
           // ferme jamais le menu. disableScrollLock evite ce decalage.
-          ModalProps={{ disableScrollLock: true, keepMounted: true }}
+          ModalProps={{ disableScrollLock: true }}
           PaperProps={{ sx: { width: W, bgcolor: SIDE, border: 'none' } }}>
           <SidebarContent badges={badges} stats={stats} onClose={() => setDrawerOpen(false)} />
         </Drawer>
