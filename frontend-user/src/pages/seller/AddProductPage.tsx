@@ -102,7 +102,7 @@ const COLOR_PRESETS = [
 const DEPTS_HT = ['Ouest','Nord','Nord-Est','Nord-Ouest','Sud','Sud-Est','Grand-Anse','Nippes','Centre','Artibonite'];
 const SIZES_CLOTHING = ['XS','S','M','L','XL','XXL','3XL'];
 
-interface Variant { id: string; color: string; colorHex: string; size: string; stock: number; priceOverride: string; imageFile: File | null; imagePreview: string | null; }
+interface Variant { id: string; color: string; colorHex: string; size: string; stock: number | string; priceOverride: string; imageFile: File | null; imagePreview: string | null; }
 function newVariant(): Variant { return { id: crypto.randomUUID(), color: '', colorHex: '', size: '', stock: 1, priceOverride: '', imageFile: null, imagePreview: null }; }
 
 // ── Dark section card ──────────────────────────────────────────────────────
@@ -365,7 +365,7 @@ export default function AddProductPage() {
       else if (form.brandName.trim()) fd.append('brandName', form.brandName.trim());
       fd.append('price', form.price);
       if (form.salePrice) fd.append('salePrice', form.salePrice);
-      const totalStock = variants.length > 0 ? variants.reduce((s, v) => s + v.stock, 0) : parseInt(form.stock) || 1;
+      const totalStock = variants.length > 0 ? variants.reduce((s, v) => s + (Number(v.stock) || 0), 0) : parseInt(form.stock) || 1;
       fd.append('stock', String(totalStock));
       if (form.minOrderQty) fd.append('minOrderQty', form.minOrderQty);
       const cleanTiers = priceTiers
@@ -393,7 +393,7 @@ export default function AddProductPage() {
         fd.append('serviceConfig', JSON.stringify({ availability: vehicleAvail }));
       }
       const variantImageFiles: File[] = [];
-      const variantData = variants.map(v => { let imageFileIndex: number | undefined; if (v.imageFile) { imageFileIndex = variantImageFiles.length; variantImageFiles.push(v.imageFile); } return { color: v.color, colorHex: v.colorHex, size: v.size, stock: v.stock, priceOverride: v.priceOverride || undefined, imageFileIndex }; });
+      const variantData = variants.map(v => { let imageFileIndex: number | undefined; if (v.imageFile) { imageFileIndex = variantImageFiles.length; variantImageFiles.push(v.imageFile); } return { color: v.color, colorHex: v.colorHex, size: v.size, stock: Number(v.stock) || 0, priceOverride: v.priceOverride || undefined, imageFileIndex }; });
       if (variantData.length) fd.append('variants', JSON.stringify(variantData));
       mainImages.forEach(img => fd.append('images', img));
       variantImageFiles.forEach(img => fd.append('variantImages', img));
@@ -855,7 +855,9 @@ export default function AddProductPage() {
                       <input type="color" value={v.colorHex || '#FFFFFF'} onChange={e => changeVariant(v.id, 'colorHex', e.target.value)}
                         style={{ width: 38, height: 38, borderRadius: '10px', border: `1.5px solid ${BORD}`, cursor: 'pointer', padding: 3, background: 'transparent' }} />
                       <TextField size="small" label="Taille" value={v.size} onChange={e => changeVariant(v.id, 'size', e.target.value)} sx={{ ...fieldSx, flex: '1 1 70px' }} />
-                      <TextField size="small" label="Stock" type="number" value={v.stock} onChange={e => changeVariant(v.id, 'stock', parseInt(e.target.value) || 0)} inputProps={{ min: 0 }} sx={{ ...fieldSx, flex: '1 1 70px' }} />
+                      <TextField size="small" label="Stock" type="number" value={v.stock}
+                        onChange={e => changeVariant(v.id, 'stock', e.target.value)}
+                        inputProps={{ min: 0 }} sx={{ ...fieldSx, flex: '1 1 70px' }} />
                       <TextField size="small" label="Prix spécial (HTG)" type="number" value={v.priceOverride} onChange={e => changeVariant(v.id, 'priceOverride', e.target.value)} sx={{ ...fieldSx, flex: '1 1 110px' }} />
                     </Box>
                     <Box sx={{ mt: 1.5, display: 'flex', gap: 0.6, flexWrap: 'wrap' }}>
