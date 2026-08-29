@@ -177,6 +177,24 @@ export class PlatformStoreService {
     return this.prisma.product.delete({ where: { id: productId } });
   }
 
+  // Rattache la boutique officielle a un compte vendeur existant (par email),
+  // pour que ce vendeur puisse la gerer depuis son propre tableau de bord
+  // (en plus du panneau admin qui continue de fonctionner via isPlatformStore).
+  async linkSellerAccount(adminUserId: string, sellerEmail: string) {
+    const store = await this.resolveStore(adminUserId);
+    const user = await this.prisma.user.findUnique({ where: { email: sellerEmail.toLowerCase().trim() } });
+    if (!user) throw new NotFoundException('Utilisateur introuvable pour cet email');
+
+    let seller = await this.prisma.seller.findUnique({ where: { userId: user.id } });
+    if (!seller) {
+      seller = await this.prisma.seller.create({ data: { userId: user.id, status: 'APPROVED' } });
+    } else if (seller.status !== 'APPROVED') {
+      seller = await this.prisma.seller.update({ where: { id: seller.id }, data: { status: 'APPROVED' } });
+    }
+
+    return this.prisma.store.update({ where: { id: store.id }, data: { sellerId: seller.id } });
+  }
+
   async setStatus(adminUserId: string, productId: string, status: string) {
     const store   = await this.resolveStore(adminUserId);
     const product = await this.prisma.product.findFirst({ where: { id: productId, storeId: store.id } });

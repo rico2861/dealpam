@@ -50,4 +50,10 @@ export class PlatformStoreController {
   setStatus(@Request() req: any, @Param('id') id: string, @Body('status') status: string) {
     return this.svc.setStatus(req.user.id, id, status);
   }
+
+  @Post('link-seller')
+  @ApiOperation({ summary: 'Link an existing user account (by email) as the seller managing the DealPam official store' })
+  linkSeller(@Request() req: any, @Body('email') email: string) {
+    return this.svc.linkSellerAccount(req.user.id, email);
+  }
 }
