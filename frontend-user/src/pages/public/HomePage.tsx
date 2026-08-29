@@ -1068,7 +1068,7 @@ function ProductRow({ products, flash = false, title }: { products: any[]; flash
       display: 'grid',
       gap: { xs: '10px', sm: '12px', md: '14px' },
       gridTemplateColumns: {
-        xs: 'repeat(2, 1fr)',
+        xs: 'repeat(3, 1fr)',
         sm: 'repeat(3, 1fr)',
         md: 'repeat(4, 1fr)',
         lg: 'repeat(6, 1fr)',

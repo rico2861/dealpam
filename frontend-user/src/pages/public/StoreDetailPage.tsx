@@ -171,7 +171,7 @@ export default function StoreDetailPage() {
           <Grid item xs={12} md={9}>
             <Grid container spacing={2}>
               {Array(8).fill(0).map((_, i) => (
-                <Grid item xs={6} sm={4} md={3} key={i}>
+                <Grid item xs={4} sm={4} md={3} key={i}>
                   <Skeleton variant="rectangular" height={240} sx={{ borderRadius: 2.5 }} />
                 </Grid>
               ))}
@@ -517,7 +517,7 @@ export default function StoreDetailPage() {
                   {prodsLoading ? (
                     <Grid container spacing={1.5}>
                       {Array(8).fill(0).map((_, i) => (
-                        <Grid item xs={6} sm={4} md={3} key={i}>
+                        <Grid item xs={4} sm={4} md={3} key={i}>
                           <Skeleton variant="rectangular" height={240} sx={{ borderRadius: 2.5 }} />
                         </Grid>
                       ))}
@@ -532,7 +532,7 @@ export default function StoreDetailPage() {
                   ) : (
                     <Grid container spacing={1.5}>
                       {products.map((p: any) => (
-                        <Grid item xs={6} sm={4} md={3} key={p.id}>
+                        <Grid item xs={4} sm={4} md={3} key={p.id}>
                           <ProductCard p={p} />
                         </Grid>
                       ))}

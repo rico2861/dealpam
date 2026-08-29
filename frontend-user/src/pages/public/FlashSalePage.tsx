@@ -337,7 +337,7 @@ export default function FlashSalePage() {
         {isLoading ? (
           showSkel ? (
             <Box sx={{ display: 'grid', gap: { xs: '10px', md: '14px' },
-              gridTemplateColumns: { xs: 'repeat(2,1fr)', sm: 'repeat(3,1fr)', md: 'repeat(4,1fr)', lg: 'repeat(5,1fr)', xl: 'repeat(6,1fr)' } }}>
+              gridTemplateColumns: { xs: 'repeat(3,1fr)', sm: 'repeat(3,1fr)', md: 'repeat(4,1fr)', lg: 'repeat(5,1fr)', xl: 'repeat(6,1fr)' } }}>
               {Array.from({ length: 12 }).map((_, i) => <ProductCardSkeleton key={i} />)}
             </Box>
           ) : null
@@ -360,7 +360,7 @@ export default function FlashSalePage() {
           </Box>
         ) : (
           <Box sx={{ display: 'grid', gap: { xs: '10px', md: '14px' },
-            gridTemplateColumns: { xs: 'repeat(2,1fr)', sm: 'repeat(3,1fr)', md: 'repeat(4,1fr)', lg: 'repeat(5,1fr)', xl: 'repeat(6,1fr)' } }}>
+            gridTemplateColumns: { xs: 'repeat(3,1fr)', sm: 'repeat(3,1fr)', md: 'repeat(4,1fr)', lg: 'repeat(5,1fr)', xl: 'repeat(6,1fr)' } }}>
             {products.map((p: any) => <FlashCard key={p.id} p={p} />)}
           </Box>
         )}

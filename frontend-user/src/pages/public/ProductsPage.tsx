@@ -685,7 +685,7 @@ export default function ProductsPage() {
                 display: 'grid',
                 gap: { xs: '10px', sm: '12px', md: '14px' },
                 gridTemplateColumns: {
-                  xs: 'repeat(2, 1fr)',
+                  xs: 'repeat(3, 1fr)',
                   sm: 'repeat(3, 1fr)',
                   md: 'repeat(3, 1fr)',
                   lg: 'repeat(4, 1fr)',
@@ -722,7 +722,7 @@ export default function ProductsPage() {
                 display: 'grid',
                 gap: { xs: '10px', sm: '12px', md: '14px' },
                 gridTemplateColumns: {
-                  xs: 'repeat(2, 1fr)',
+                  xs: 'repeat(3, 1fr)',
                   sm: 'repeat(3, 1fr)',
                   md: 'repeat(3, 1fr)',
                   lg: 'repeat(4, 1fr)',

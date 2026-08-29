@@ -513,7 +513,7 @@ export default function SearchPage() {
               showSkel ? (
                 <Grid container spacing={1.5}>
                   {Array.from({ length: 12 }).map((_, i) => (
-                    <Grid item xs={6} sm={4} md={3} key={i}>
+                    <Grid item xs={4} sm={4} md={3} key={i}>
                       <ProductCardSkeleton />
                     </Grid>
                   ))}
@@ -558,7 +558,7 @@ export default function SearchPage() {
             ) : view === 'grid' ? (
               <Grid container spacing={1.5}>
                 {products.map((p: any) => (
-                  <Grid item xs={6} sm={4} md={3} key={p.id}>
+                  <Grid item xs={4} sm={4} md={3} key={p.id}>
                     <ProductCardGrid p={p} />
                   </Grid>
                 ))}

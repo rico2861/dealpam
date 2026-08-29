@@ -464,32 +464,58 @@ function PaymentStep({ paymentMethods, selectedPayment, setSelectedPayment, note
         </Box>
       )}
 
-      {(selectedPayment === 'MONCASH' || selectedPayment === 'NATCASH') && storeInfo?.moncashPhone && (
-        <Box sx={{ p: 2, bgcolor: alpha('#FF6B00', 0.08), borderRadius: '14px',
-          border: `1px solid ${alpha('#FF6B00', 0.25)}`, mb: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, mb: 0.5 }}>
-            <Smartphone sx={{ fontSize: 16, color: '#FF6B00' }} />
-            <Typography fontSize={13} fontWeight={700} color="#FF6B00">
-              Numéro {selectedPayment === 'MONCASH' ? 'MonCash' : 'NatCash'} du vendeur
+      {(() => {
+        const num = selectedPayment === 'MONCASH' ? storeInfo?.moncashPhone : selectedPayment === 'NATCASH' ? storeInfo?.natcashPhone : null;
+        if (!num) return null;
+        return (
+          <Box sx={{ p: 2, bgcolor: alpha('#FF6B00', 0.08), borderRadius: '14px',
+            border: `1px solid ${alpha('#FF6B00', 0.25)}`, mb: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, mb: 0.5 }}>
+              <Smartphone sx={{ fontSize: 16, color: '#FF6B00' }} />
+              <Typography fontSize={13} fontWeight={700} color="#FF6B00">
+                Numéro {selectedPayment === 'MONCASH' ? 'MonCash' : 'NatCash'} du vendeur
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography fontWeight={700} fontSize={20} letterSpacing={2} color={TXT}>{num}</Typography>
+              <IconButton size="small" onClick={() => navigator.clipboard.writeText(num)}>
+                <ContentCopy sx={{ fontSize: 14, color: TXT2 }} />
+              </IconButton>
+            </Box>
+            <Typography fontSize={12} color="#64748B" mt={0.5}>
+              Après paiement, soumettez votre référence de transaction à l'étape suivante.
             </Typography>
           </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Typography fontWeight={700} fontSize={20} letterSpacing={2} color={TXT}>{storeInfo.moncashPhone}</Typography>
-            <IconButton size="small" onClick={() => navigator.clipboard.writeText(storeInfo.moncashPhone)}>
-              <ContentCopy sx={{ fontSize: 14, color: TXT2 }} />
-            </IconButton>
-          </Box>
-          <Typography fontSize={12} color="#64748B" mt={0.5}>
-            Après paiement, soumettez votre référence de transaction à l'étape suivante.
-          </Typography>
-        </Box>
-      )}
+        );
+      })()}
 
       {selectedPayment === 'BANK_TRANSFER' && (
         <Box sx={{ p: 2, borderRadius: '14px', border: `1px solid ${alpha('#818CF8', 0.25)}`, bgcolor: alpha('#818CF8', 0.06), mb: 2 }}>
-          <Typography fontSize={13} color="#475569">
-            Effectuez un virement bancaire et conservez la référence. Vous la soumettrez après confirmation.
-          </Typography>
+          {storeInfo?.bankAccountNumber ? (
+            <>
+              <Typography fontSize={13} fontWeight={700} color="#4F46E5" mb={1}>Coordonnées bancaires du vendeur</Typography>
+              {storeInfo?.bankName && (
+                <Typography fontSize={13} color="#475569" mb={0.3}><b>Banque :</b> {storeInfo.bankName}</Typography>
+              )}
+              {storeInfo?.bankAccountName && (
+                <Typography fontSize={13} color="#475569" mb={0.3}><b>Titulaire :</b> {storeInfo.bankAccountName}</Typography>
+              )}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.3 }}>
+                <Typography fontSize={13} color="#475569"><b>N° de compte :</b></Typography>
+                <Typography fontWeight={700} fontSize={15} letterSpacing={1} color={TXT}>{storeInfo.bankAccountNumber}</Typography>
+                <IconButton size="small" onClick={() => navigator.clipboard.writeText(storeInfo.bankAccountNumber)}>
+                  <ContentCopy sx={{ fontSize: 14, color: TXT2 }} />
+                </IconButton>
+              </Box>
+              <Typography fontSize={12} color="#64748B" mt={1}>
+                Effectuez le virement puis soumettez votre référence à l'étape suivante.
+              </Typography>
+            </>
+          ) : (
+            <Typography fontSize={13} color="#475569">
+              Ce vendeur n'a pas encore renseigné ses coordonnées bancaires — contactez-le pour obtenir les détails du virement.
+            </Typography>
+          )}
         </Box>
       )}
 
@@ -571,21 +597,52 @@ function OrderStep({ notes, setNotes, onBack, onNext, placing, paymentMethods, s
         </Box>
       )}
 
-      {(selectedPayment === 'MONCASH' || selectedPayment === 'NATCASH') && storeInfo?.moncashPhone && (
-        <Box sx={{ p: 2, bgcolor: alpha('#FF6B00', 0.08), borderRadius: '14px',
-          border: `1px solid ${alpha('#FF6B00', 0.25)}`, mb: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, mb: 0.5 }}>
-            <Smartphone sx={{ fontSize: 16, color: '#FF6B00' }} />
-            <Typography fontSize={13} fontWeight={700} color="#FF6B00">
-              Numéro {selectedPayment === 'MONCASH' ? 'MonCash' : 'NatCash'} du vendeur
+      {(() => {
+        const num = selectedPayment === 'MONCASH' ? storeInfo?.moncashPhone : selectedPayment === 'NATCASH' ? storeInfo?.natcashPhone : null;
+        if (!num) return null;
+        return (
+          <Box sx={{ p: 2, bgcolor: alpha('#FF6B00', 0.08), borderRadius: '14px',
+            border: `1px solid ${alpha('#FF6B00', 0.25)}`, mb: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, mb: 0.5 }}>
+              <Smartphone sx={{ fontSize: 16, color: '#FF6B00' }} />
+              <Typography fontSize={13} fontWeight={700} color="#FF6B00">
+                Numéro {selectedPayment === 'MONCASH' ? 'MonCash' : 'NatCash'} du vendeur
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography fontWeight={700} fontSize={20} letterSpacing={2} color={TXT}>{num}</Typography>
+              <IconButton size="small" onClick={() => navigator.clipboard.writeText(num)}>
+                <ContentCopy sx={{ fontSize: 14, color: TXT2 }} />
+              </IconButton>
+            </Box>
+          </Box>
+        );
+      })()}
+
+      {selectedPayment === 'BANK_TRANSFER' && (
+        <Box sx={{ p: 2, borderRadius: '14px', border: `1px solid ${alpha('#818CF8', 0.25)}`, bgcolor: alpha('#818CF8', 0.06), mb: 2 }}>
+          {storeInfo?.bankAccountNumber ? (
+            <>
+              <Typography fontSize={13} fontWeight={700} color="#4F46E5" mb={1}>Coordonnées bancaires du vendeur</Typography>
+              {storeInfo?.bankName && (
+                <Typography fontSize={13} color="#475569" mb={0.3}><b>Banque :</b> {storeInfo.bankName}</Typography>
+              )}
+              {storeInfo?.bankAccountName && (
+                <Typography fontSize={13} color="#475569" mb={0.3}><b>Titulaire :</b> {storeInfo.bankAccountName}</Typography>
+              )}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.3 }}>
+                <Typography fontSize={13} color="#475569"><b>N° de compte :</b></Typography>
+                <Typography fontWeight={700} fontSize={15} letterSpacing={1} color={TXT}>{storeInfo.bankAccountNumber}</Typography>
+                <IconButton size="small" onClick={() => navigator.clipboard.writeText(storeInfo.bankAccountNumber)}>
+                  <ContentCopy sx={{ fontSize: 14, color: TXT2 }} />
+                </IconButton>
+              </Box>
+            </>
+          ) : (
+            <Typography fontSize={13} color="#475569">
+              Ce vendeur n'a pas encore renseigné ses coordonnées bancaires — contactez-le pour obtenir les détails du virement.
             </Typography>
-          </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Typography fontWeight={700} fontSize={20} letterSpacing={2} color={TXT}>{storeInfo.moncashPhone}</Typography>
-            <IconButton size="small" onClick={() => navigator.clipboard.writeText(storeInfo.moncashPhone)}>
-              <ContentCopy sx={{ fontSize: 14, color: TXT2 }} />
-            </IconButton>
-          </Box>
+          )}
         </Box>
       )}
 
@@ -721,6 +778,16 @@ export default function CheckoutPage() {
       await fetchCount();
       qc.invalidateQueries({ queryKey: ['cart'] });
       qc.invalidateQueries({ queryKey: ['myOrders'] });
+
+      // Boutique DealPam Officiel + MonCash : redirection vers le gateway MonCash
+      // (seule boutique ou l'argent transite reellement par la plateforme — les
+      // autres vendeurs restent en paiement direct, reference soumise manuellement).
+      if (storeDetail?.isPlatformStore && selectedPayment === 'MONCASH' && orders[0]?.id) {
+        const { data } = await api.post('/payments/order/initiate', { orderId: orders[0].id });
+        window.location.href = data.redirect_url;
+        return;
+      }
+
       navigate('/order-received/thank-you', {
         replace: true,
         state: {

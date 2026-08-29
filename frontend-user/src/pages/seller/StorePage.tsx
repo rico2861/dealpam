@@ -320,6 +320,9 @@ function PaymentMethodsTab({ storeId, store }: { storeId: string; store: any }) 
   const [accepted, setAccepted] = useState<string[]>(parseArr(store?.acceptedPaymentMethods) || ['MONCASH', 'CASH']);
   const [moncashPhone, setMoncashPhone] = useState(store?.moncashPhone || '');
   const [natcashPhone, setNatcashPhone] = useState(store?.natcashPhone || '');
+  const [bankName, setBankName] = useState(store?.bankName || '');
+  const [bankAccountName, setBankAccountName] = useState(store?.bankAccountName || '');
+  const [bankAccountNumber, setBankAccountNumber] = useState(store?.bankAccountNumber || '');
   const [copied, setCopied] = useState(false);
   const [currency, setCurrency] = useState<string>(store?.currency || 'HTG');
   const [exchangeRate, setExchangeRate] = useState<string>(store?.exchangeRate != null ? String(store.exchangeRate) : '');
@@ -329,6 +332,9 @@ function PaymentMethodsTab({ storeId, store }: { storeId: string; store: any }) 
       acceptedPaymentMethods: accepted,
       moncashPhone,
       natcashPhone,
+      bankName,
+      bankAccountName,
+      bankAccountNumber,
       currency,
       exchangeRate: exchangeRate ? Number(exchangeRate) : undefined,
     }),
@@ -425,6 +431,34 @@ function PaymentMethodsTab({ storeId, store }: { storeId: string; store: any }) 
               </Box>
             )}
           </Box>
+        </>
+      )}
+
+      {/* Coordonnées bancaires — affichées au client s'il choisit "Virement bancaire" */}
+      {accepted.includes('BANK_TRANSFER') && (
+        <>
+          <Divider sx={{ my: 2.5 }} />
+          <Typography fontWeight={700} fontSize={14} mb={0.5}>Coordonnées bancaires</Typography>
+          <Typography fontSize={12} color="#64748B" mb={2}>
+            Affichées au client s'il choisit "Virement bancaire" au paiement.
+          </Typography>
+          <Grid container spacing={1.5}>
+            <Grid item xs={12} sm={6}>
+              <FieldLabel>Nom de la banque</FieldLabel>
+              <TextField fullWidth size="small" placeholder="Ex: Sogebank"
+                value={bankName} onChange={e => setBankName(e.target.value)} />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <FieldLabel>Titulaire du compte</FieldLabel>
+              <TextField fullWidth size="small" placeholder="Nom sur le compte"
+                value={bankAccountName} onChange={e => setBankAccountName(e.target.value)} />
+            </Grid>
+            <Grid item xs={12}>
+              <FieldLabel>Numéro de compte</FieldLabel>
+              <TextField fullWidth size="small" placeholder="XXXXXXXXXXXX"
+                value={bankAccountNumber} onChange={e => setBankAccountNumber(e.target.value)} />
+            </Grid>
+          </Grid>
         </>
       )}
 

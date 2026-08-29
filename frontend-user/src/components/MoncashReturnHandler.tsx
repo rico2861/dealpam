@@ -68,8 +68,15 @@ export default function MoncashReturnHandler() {
           return;
         }
 
-        if (data.type === 'payment_review') {
+        if (data.type === 'payment_review' || data.type === 'order_payment_review') {
           showToast(data.message ?? 'Paiement reçu — vérification admin en cours', 'success');
+          if (data.type === 'order_payment_review' && data.order_id) navigate(`/account/orders/${data.order_id}`);
+          return;
+        }
+
+        if (data.type === 'order') {
+          showToast(`Paiement confirmé — ${data.amount_htg} HTG`, 'success');
+          navigate(`/account/orders/${data.order_id}`);
           return;
         }
 
