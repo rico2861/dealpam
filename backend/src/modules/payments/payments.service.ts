@@ -11,7 +11,9 @@ import { CouponsService }  from '../coupons/coupons.service';
 import { MoncashTransactionsService } from '../moncash-transactions/moncash-transactions.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { WalletService }   from '../wallet/wallet.service';
+import { MailService }     from '../mail/mail.service';
 import { Decimal }         from '@prisma/client/runtime/library';
+import type { MoncashPayment } from '../moncash/moncash.service';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Paiements sur la plateforme = VENDEURS SEULEMENT
@@ -29,6 +31,7 @@ export class PaymentsService {
     private moncashTx: MoncashTransactionsService,
     private notifications: NotificationsService,
     private wallet:    WalletService,
+    private mail:      MailService,
   ) {}
 
   // ── Avertit tous les admins qu'un paiement a un montant qui ne correspond
@@ -424,6 +427,154 @@ export class PaymentsService {
   }
 
   // ══════════════════════════════════════════════════════════════════════════
+  //  COMMANDES — MonCash reserve a la boutique officielle DealPam uniquement
+  //  (les autres vendeurs restent sur le modele "paiement direct, reference
+  //  soumise manuellement" — pas de gateway pour eux).
+  // ══════════════════════════════════════════════════════════════════════════
+
+  async initiateOrderPayment(userId: string, orderId: string) {
+    const order = await this.prisma.order.findFirst({
+      where: { id: orderId, userId },
+      include: { store: { select: { isPlatformStore: true } } },
+    });
+    if (!order) throw new NotFoundException('Commande introuvable');
+    if (!order.store?.isPlatformStore) {
+      throw new ForbiddenException('Le paiement MonCash en ligne n\'est disponible que pour les produits DealPam Officiel.');
+    }
+    if (order.paymentTxStatus === 'APPROVED') {
+      throw new ConflictException('Cette commande est déjà payée.');
+    }
+    if (order.status === 'CANCELLED') {
+      throw new BadRequestException('Cette commande a été annulée — paiement impossible.');
+    }
+
+    const amountHTG = Number(order.totalHTG);
+    const moncashRef = `order-${order.id}`;
+    const { redirectUrl } = await this.moncash.createPayment(amountHTG, moncashRef);
+
+    return {
+      redirect_url: redirectUrl,
+      order_id:     order.id,
+      amount_htg:   amountHTG,
+    };
+  }
+
+  private async verifyOrderPayment(orderId: string, mc: MoncashPayment) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        user:  { select: { email: true, firstName: true } },
+        store: { select: { id: true, sellerId: true, name: true, isPlatformStore: true } },
+        items: true,
+      },
+    });
+    if (!order) {
+      await this.moncashTx.record({ scenario: 'order', status: 'FAILED', mc, failReason: `order_not_found:${orderId}` });
+      throw new NotFoundException(`Commande introuvable pour ${orderId}`);
+    }
+    if (order.paymentTxStatus === 'APPROVED') {
+      await this.moncashTx.record({ scenario: 'order', status: 'SUCCESS', mc, orderId });
+      throw new ConflictException('Commande déjà payée — double crédit bloqué');
+    }
+
+    await this.moncashTx.record({ scenario: 'order', status: 'SUCCESS', mc, orderId });
+    const claimed = await this.moncashTx.claimCredit(mc.transaction_id);
+    if (!claimed) throw new ConflictException('Transaksyon deja konfime — double crédit bloqué');
+
+    const confirmedAmount = Number(mc.cost);
+    const expectedAmount  = Number(order.totalHTG);
+    const amountMismatch  = confirmedAmount < expectedAmount * 0.98;
+
+    // La commande a pu être annulée (par le vendeur ou le client) pendant que
+    // le client était sur la page MonCash — l'argent a bien été reçu, mais on
+    // ne confirme jamais automatiquement une commande annulée : un admin doit
+    // arbitrer (rembourser hors plateforme, ou réactiver la commande).
+    if (order.status === 'CANCELLED') {
+      await this.prisma.order.update({
+        where: { id: orderId },
+        data: {
+          paymentTxRef: mc.transaction_id, paymentTxStatus: 'PENDING_REVIEW',
+          paymentTxNote: `Paiement MonCash reçu (${confirmedAmount} HTG) après annulation de la commande — vérification admin requise (remboursement ou réactivation).`,
+          chosenPaymentMethod: 'MONCASH',
+        },
+      });
+      const admins = await this.prisma.user.findMany({ where: { role: { in: ['ADMIN', 'SUPER_ADMIN'] } }, select: { id: true } });
+      await Promise.all(admins.map(a => this.notifications.create(
+        a.id, 'Paiement reçu sur commande annulée',
+        `Commande #${orderId.slice(-8).toUpperCase()} annulée mais payée via MonCash (${confirmedAmount} HTG) — vérifiez et remboursez/réactivez.`,
+        'PAYMENT_ON_CANCELLED_ORDER',
+      ).catch(() => null)));
+      return {
+        type: 'order_payment_review',
+        order_id: orderId,
+        amount_htg: confirmedAmount,
+        message: "Cette commande a été annulée entre-temps. Votre paiement a bien été reçu — l'équipe DealPam va vous contacter pour un remboursement ou pour réactiver la commande.",
+      };
+    }
+
+    if (amountMismatch) {
+      await this.prisma.order.update({
+        where: { id: orderId },
+        data: {
+          paymentTxRef:    mc.transaction_id,
+          paymentTxStatus: 'PENDING_REVIEW',
+          paymentTxNote:   `AMOUNT_MISMATCH: attendu ${expectedAmount} HTG, reçu ${confirmedAmount} HTG — vérification admin requise`,
+          chosenPaymentMethod: 'MONCASH',
+        },
+      });
+      const admins = await this.prisma.user.findMany({ where: { role: { in: ['ADMIN', 'SUPER_ADMIN'] } }, select: { id: true } });
+      await Promise.all(admins.map(a => this.notifications.create(
+        a.id, 'Écart de montant — commande MonCash',
+        `Commande #${orderId.slice(-8).toUpperCase()} : attendu ${expectedAmount} HTG, reçu ${confirmedAmount} HTG. Vérifiez avant de confirmer.`,
+        'PAYMENT_AMOUNT_MISMATCH',
+      ).catch(() => null)));
+      return {
+        type: 'order_payment_review',
+        order_id: orderId,
+        amount_htg: confirmedAmount,
+        expected_htg: expectedAmount,
+        message: "Paiement reçu mais le montant ne correspond pas exactement à la commande — un administrateur va vérifier avant confirmation.",
+      };
+    }
+
+    await this.prisma.order.update({
+      where: { id: orderId },
+      data: {
+        paymentTxRef:    mc.transaction_id,
+        paymentTxStatus: 'APPROVED',
+        chosenPaymentMethod: 'MONCASH',
+        status: order.status === 'PENDING' ? 'CONFIRMED' : order.status,
+      },
+    });
+
+    // Notifications — jamais bloquantes pour la reponse au client qui revient de MonCash.
+    if (order.user?.email) {
+      this.mail.sendOrderStatusUpdate(
+        order.user.email, order.user.firstName, order.id.slice(-8).toUpperCase(),
+        'Paiement confirmé — commande en cours de préparation',
+        `Payé via MonCash — ${confirmedAmount.toLocaleString()} HTG`,
+      ).catch(() => {});
+    }
+    if (order.store?.sellerId) {
+      const sellerUser = await this.prisma.user.findFirst({ where: { seller: { id: order.store.sellerId } }, select: { email: true, firstName: true } });
+      if (sellerUser?.email) {
+        this.mail.sendOrderStatusUpdate(
+          sellerUser.email, sellerUser.firstName, order.id.slice(-8).toUpperCase(),
+          'Paiement MonCash reçu pour une commande',
+          `Le client a payé ${confirmedAmount.toLocaleString()} HTG via MonCash — vous pouvez préparer la commande.`,
+        ).catch(() => {});
+      }
+    }
+
+    return {
+      type: 'order',
+      order_id: orderId,
+      amount_htg: confirmedAmount,
+      transaction_id: mc.transaction_id,
+    };
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
   //  VÉRIFICATION MONCASH — appelée après retour de MonCash
   //  MonCash redirige vers : dealpam.com?transactionId=2039151087
   //  MonCash retourne dans "reference" notre orderId interne (sub-xxx ou ad-xxx)
@@ -477,6 +628,12 @@ export class PaymentsService {
     // vérification vers ce flux abonnement/campagne par erreur ("Paiement pending introuvable").
     if (moncashRef?.startsWith('WALLET-')) {
       return this.wallet.creditFromMc(mc);
+    }
+
+    // Commande DealPam Officiel payee par MonCash — pas de ligne Payment, on
+    // retrouve et met a jour directement la commande via son id encode dans la ref.
+    if (moncashRef?.startsWith('order-')) {
+      return this.verifyOrderPayment(moncashRef.slice('order-'.length), mc);
     }
 
     // Trouver le paiement en DB par moncashOrderId = notre référence interne
