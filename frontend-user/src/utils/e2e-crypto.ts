@@ -93,3 +93,12 @@ export async function decryptMsg(cipherB64: string, peerPubB64: string): Promise
 export function isEncrypted(s: string): boolean {
   return /^[A-Za-z0-9+/]{20,}={0,2}$/.test(s);
 }
+
+// ─── Texte a afficher pour un message ──────────────────────────────────────
+// Si le dechiffrement a echoue (cle publique du contact indisponible, ancien
+// compte sans cle E2E, etc.), le contenu reste du chiffre brut illisible —
+// on ne l'affiche jamais tel quel, un placeholder clair vaut mieux qu'un
+// charabia incomprehensible pour l'utilisateur.
+export function displayText(content: string): string {
+  return isEncrypted(content) ? '🔒 Message chiffré — impossible à afficher sur cet appareil' : content;
+}

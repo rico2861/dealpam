@@ -247,7 +247,7 @@ export default function OrdersPage() {
 
         {/* ── Pagination ── */}
         {!isLoading && filtered.length > PAGE_SIZE && (
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 2.5 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1, mt: 2.5 }}>
             <Typography sx={{ fontSize: 12, color: '#64748B' }}>Page {currentPage} / {pageCount}</Typography>
             <Box sx={{ display: 'flex', gap: 1 }}>
               <Box component="button" disabled={currentPage <= 1} onClick={() => setPage(p => Math.max(1, p - 1))}

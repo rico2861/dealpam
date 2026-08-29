@@ -462,7 +462,7 @@ export class MailService {
         ...(order.sellerPhone ? [['Téléphone', order.sellerPhone]] as [string,string][] : []),
         ...(order.sellerEmail ? [['Email', order.sellerEmail]] as [string,string][] : []),
       ])}
-      ${this.btn('Suivre ma commande', `${BRAND.url}/orders`)}
+      ${this.btn('Suivre ma commande', `${BRAND.url}/account/orders`)}
     `;
     await this.send(to, `Commande #${order.number} confirmée — DealPam`, this.layout('Commande confirmée', `Votre commande #${order.number} sur DealPam est confirmée.`, body), 'client');
   }
@@ -483,7 +483,7 @@ export class MailService {
       ${this.greeting(customerName)}
       ${this.para(s.msg)}
       ${detail ? this.alert(detail, 'info') : ''}
-      ${status === 'DELIVERED' ? this.btn('Laisser un avis', `${BRAND.url}/orders`) : this.btn('Voir ma commande', `${BRAND.url}/orders`)}
+      ${status === 'DELIVERED' ? this.btn('Laisser un avis', `${BRAND.url}/account/orders`) : this.btn('Voir ma commande', `${BRAND.url}/account/orders`)}
     `;
     await this.send(to, `Commande #${orderNumber} — ${s.title} — DealPam`, this.layout(s.title, s.msg, body), 'client');
   }

@@ -384,7 +384,7 @@ export default function SellerProductsPage({ mode = 'products' }: { mode?: 'prod
           })}
         </Box>
         {filtered.length > PAGE_SIZE && (
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1, mt: 2 }}>
             <Typography fontSize={12} color={SUB}>Page {currentPage} / {pageCount}</Typography>
             <Box sx={{ display: 'flex', gap: 1 }}>
               <Button size="small" disabled={currentPage <= 1} onClick={() => setPage(p => Math.max(1, p - 1))}

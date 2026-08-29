@@ -392,7 +392,7 @@ export default function WalletPage() {
 
               {/* Pagination */}
               {filteredTxs.length > PAGE_SIZE && (
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: { xs: 1.5, md: 2.5 }, py: 1.5, borderTop: `1px solid ${BORD}` }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1, px: { xs: 1.5, md: 2.5 }, py: 1.5, borderTop: `1px solid ${BORD}` }}>
                   <Typography fontSize={12} color={SUB}>Page {currentPage} / {pageCount}</Typography>
                   <Box sx={{ display: 'flex', gap: 1 }}>
                     <Button size="small" disabled={currentPage <= 1} onClick={() => setPage(p => Math.max(1, p - 1))}

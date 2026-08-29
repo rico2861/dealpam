@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import api from '../api/axios';
 import { mergeGuestCartOnLogin } from '../utils/cart';
+import { queryClient } from '../queryClient';
 
 interface User { id: string; email: string; firstName: string; lastName: string; role: string; avatar?: string; department?: string; city?: string; username?: string; }
 interface AuthState {
@@ -28,6 +29,12 @@ export const useAuthStore = create<AuthState>()(
       accessToken: null,
       hasHydrated: false,
       setUser: (user, accessToken, refreshToken) => {
+        // Vide le cache React Query AVANT de poser le nouveau token — sinon les
+        // requetes deja en cache (profil, panier, commandes...) du compte
+        // precedent restent affichees a l'ecran jusqu'a leur prochain refetch,
+        // ce qui montre brievement les donnees d'un autre utilisateur apres un
+        // changement de compte sans rechargement complet de page.
+        queryClient.clear();
         localStorage.setItem('accessToken', accessToken);
         localStorage.setItem('refreshToken', refreshToken);
         set({ user, accessToken });
@@ -39,6 +46,7 @@ export const useAuthStore = create<AuthState>()(
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
         set({ user: null, accessToken: null });
+        queryClient.clear();
         // Vide tout cache Workbox lié à l'API — évite qu'un autre compte
         // connecté ensuite sur cet appareil hérite de données mises en cache
         // pour ce compte-ci (voir vite.config.ts pour le détail du bug).

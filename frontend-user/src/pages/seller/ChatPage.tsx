@@ -15,7 +15,7 @@ import { useSnackbar } from 'notistack';
 import { io, Socket } from 'socket.io-client';
 import api from '../../api/axios';
 import { useAuthStore } from '../../store/auth.store';
-import { getOrCreatePublicKey, encryptMsg, decryptMsg, isEncrypted } from '../../utils/e2e-crypto';
+import { getOrCreatePublicKey, encryptMsg, decryptMsg, isEncrypted, displayText } from '../../utils/e2e-crypto';
 import { ListSkeleton, MessageSkeleton } from '../../components/shared/Skeletons';
 import { useDelayedLoading } from '../../hooks/useDelayedLoading';
 
@@ -814,8 +814,9 @@ export default function SellerChatPage() {
                           }}>
                             {msg.mediaUrl && <MediaBubble url={msg.mediaUrl} name={msg.type !== 'IMAGE' ? msg.content : undefined} mine={mine} />}
                             {(msg.type === 'TEXT' || msg.type === 'BOT' || !msg.mediaUrl) && (
-                              <Typography sx={{ fontSize: 13.5, color: mine ? 'white' : NAVY, lineHeight: 1.5, wordBreak: 'break-word' }}>
-                                {msg.content}
+                              <Typography sx={{ fontSize: 13.5, color: mine ? 'white' : NAVY, lineHeight: 1.5, wordBreak: 'break-word',
+                                fontStyle: isEncrypted(msg.content) ? 'italic' : 'normal', opacity: isEncrypted(msg.content) ? 0.75 : 1 }}>
+                                {displayText(msg.content)}
                               </Typography>
                             )}
                           </Box>

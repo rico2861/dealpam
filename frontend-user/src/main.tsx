@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClient } from './queryClient';
 import { SnackbarProvider } from 'notistack';
 import CustomSnackbar from './components/shared/CustomSnackbar';
 import ErrorBoundary from './components/shared/ErrorBoundary';
@@ -50,21 +51,6 @@ window.addEventListener('vite:preloadError', () => {
   if (sessionStorage.getItem('reloaded-after-preload-error')) return;
   sessionStorage.setItem('reloaded-after-preload-error', '1');
   window.location.reload();
-});
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      // 30s — assez court pour que commandes/statuts/notifications restent à
-      // jour, assez long pour ne pas re-fetcher à chaque micro-interaction.
-      // (refetchOnMount/refetchOnWindowFocus par défaut de react-query = true,
-      // donc changer de page ou revenir sur l'onglet rafraîchit les données
-      // périmées — c'était désactivé avant, ce qui gelait tout jusqu'au reload.)
-      staleTime: 30 * 1000,
-      gcTime:    30 * 60 * 1000,  // 30 min — keep inactive data in memory
-      retry: false,
-    },
-  },
 });
 
 // Le flag n'est utile que pour éviter une boucle immédiate après le reload
