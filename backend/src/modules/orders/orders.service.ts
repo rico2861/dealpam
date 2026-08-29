@@ -82,16 +82,15 @@ export class OrdersService {
     }
 
     const result = await this.prisma.$transaction(async (tx) => {
-      // Vérifier stock et décrémenter
+      // Verifie la disponibilite sans decrementer — le stock n'est retire qu'a
+      // la livraison confirmee (statut DELIVERED), pas a la creation de la
+      // commande, pour ne jamais bloquer du stock sur une commande qui pourrait
+      // ne jamais aboutir (pas de paiement en ligne, tout se negocie hors plateforme).
       for (const item of cart.items) {
         if (item.product.status !== 'PUBLISHED') {
           throw new BadRequestException(`"${item.product.name}" se konnen pou la vant`);
         }
-        const updated = await tx.product.updateMany({
-          where: { id: item.productId, stock: { gte: item.quantity } },
-          data:  { stock: { decrement: item.quantity }, totalSold: { increment: item.quantity } },
-        });
-        if (updated.count === 0) {
+        if (item.product.stock < item.quantity) {
           throw new BadRequestException(`Stock ensifizan pou "${item.product.name}"`);
         }
       }
@@ -284,6 +283,18 @@ export class OrdersService {
       },
     });
     if (!order) throw new NotFoundException('Commande introuvable');
+
+    // Le stock n'est retire qu'a ce moment precis (livraison confirmee), jamais
+    // a la creation de la commande — garde anti double-decrement si la commande
+    // etait deja DELIVERED (ex: appel redondant).
+    if (status === 'DELIVERED' && order.status !== 'DELIVERED') {
+      for (const item of order.items) {
+        await this.prisma.product.updateMany({
+          where: { id: item.productId },
+          data:  { stock: { decrement: item.quantity }, totalSold: { increment: item.quantity } },
+        });
+      }
+    }
 
     // REFUNDED n'est qu'un marqueur informatif : la plateforme ne traite jamais le paiement
     // client (paiement direct au vendeur), donc ce statut ne déclenche aucun mouvement de
