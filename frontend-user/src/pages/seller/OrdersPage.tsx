@@ -199,6 +199,15 @@ function OrderCard({ order, onUpdate, pendingStatus }: { order: any; onUpdate: (
         </Box>
       )}
 
+      {/* Cancellation reason — visible vendeur/client/admin */}
+      {order.status === 'CANCELLED' && order.cancelReason && (
+        <Box sx={{ px: 2, py: 0.8, bgcolor: 'rgba(100,116,139,0.08)', borderBottom: `1px solid ${BORD}` }}>
+          <Typography fontSize={11.5} color={SUB2}>
+            <b>Motif d'annulation :</b> {order.cancelReason}
+          </Typography>
+        </Box>
+      )}
+
       {/* Header */}
       <Box sx={{ px: 2.5, py: 2, display: 'flex', alignItems: 'flex-start', gap: 2, flexWrap: 'wrap' }}>
         <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -418,6 +427,7 @@ export default function SellerOrdersPage() {
   const { enqueueSnackbar } = useSnackbar();
   const [tab, setTab]         = useState('');
   const [cancelDlg, setCancelDlg] = useState<{ open: boolean; id: string } | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo]     = useState('');
   const [page, setPage]         = useState(1);
@@ -435,8 +445,8 @@ export default function SellerOrdersPage() {
   const showSkel = useDelayedLoading(isLoading);
 
   const updateMut = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: string }) =>
-      api.patch(`/orders/seller/${id}/status`, { status }),
+    mutationFn: ({ id, status, cancelReason }: { id: string; status: string; cancelReason?: string }) =>
+      api.patch(`/orders/seller/${id}/status`, { status, cancelReason }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['sellerOrders'] });
       qc.invalidateQueries({ queryKey: ['sellerStats'] });
@@ -600,7 +610,7 @@ export default function SellerOrdersPage() {
       )}
 
       {/* Cancel confirmation */}
-      <Dialog open={!!cancelDlg?.open} onClose={() => setCancelDlg(null)} maxWidth="xs" fullWidth
+      <Dialog open={!!cancelDlg?.open} onClose={() => { setCancelDlg(null); setCancelReason(''); }} maxWidth="xs" fullWidth
         PaperProps={{ sx: { bgcolor: CARD, border: `1px solid ${BORD}`, borderRadius: '20px' } }}>
         <DialogTitle sx={{ fontWeight: 900, fontSize: 17, color: TXT }}>Annuler la commande ?</DialogTitle>
         <DialogContent>
@@ -609,18 +619,22 @@ export default function SellerOrdersPage() {
               <Warning sx={{ fontSize: 15 }} /> Cette action est irréversible. Le client sera notifié par email.
             </Typography>
           </Box>
-          <Typography fontSize={13} color={SUB2}>
+          <Typography fontSize={13} color={SUB2} mb={1.5}>
             Des annulations fréquentes pénalisent votre score de réputation et réduisent votre visibilité sur la marketplace.
           </Typography>
+          <TextField fullWidth multiline rows={2} required
+            label="Motif de l'annulation *" placeholder="Ex: rupture de stock, article endommagé..."
+            value={cancelReason} onChange={e => setCancelReason(e.target.value)}
+            helperText="Visible par le client et l'équipe DealPam." size="small" />
         </DialogContent>
         <DialogActions sx={{ px: 2.5, pb: 2.5, gap: 1 }}>
-          <Button onClick={() => setCancelDlg(null)}
+          <Button onClick={() => { setCancelDlg(null); setCancelReason(''); }}
             sx={{ color: SUB2, borderRadius: '10px', border: `1px solid ${BORD}`,
               '&:hover': { borderColor: 'rgba(15,23,42,0.09)' } }}>
             Revenir
           </Button>
-          <Button onClick={() => cancelDlg && updateMut.mutate({ id: cancelDlg.id, status: 'CANCELLED' })}
-            disabled={updateMut.isPending}
+          <Button onClick={() => cancelDlg && updateMut.mutate({ id: cancelDlg.id, status: 'CANCELLED', cancelReason })}
+            disabled={updateMut.isPending || !cancelReason.trim()}
             sx={{ bgcolor: RED, color: '#fff', borderRadius: '10px', fontWeight: 700, px: 2.5,
               '&:hover': { bgcolor: '#DC2626' }, '&:disabled': { bgcolor: 'rgba(15,23,42,0.04)', color: SUB } }}>
             {updateMut.isPending ? <CircularProgress size={15} color="inherit"/> : 'Confirmer l\'annulation'}

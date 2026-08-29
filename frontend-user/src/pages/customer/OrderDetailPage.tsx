@@ -275,6 +275,19 @@ export default function OrderDetailPage() {
   const [showReview, setShowReview] = useState(true);
   const [txRef, setTxRef] = useState('');
   const [submittingTx, setSubmittingTx] = useState(false);
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelReasonInput, setCancelReasonInput] = useState('');
+
+  const cancelMut = useMutation({
+    mutationFn: () => api.patch(`/orders/me/${id}/cancel`, { reason: cancelReasonInput.trim() || undefined }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['order', id] });
+      qc.invalidateQueries({ queryKey: ['orders'] });
+      enqueueSnackbar('Commande annulée', { variant: 'success' });
+      setCancelOpen(false);
+    },
+    onError: (e: any) => enqueueSnackbar(e?.response?.data?.message || 'Erreur lors de l\'annulation', { variant: 'error' }),
+  });
 
   const { data: order, isLoading, error } = useQuery({
     queryKey: ['order', id],
@@ -287,6 +300,8 @@ export default function OrderDetailPage() {
   const stepIdx    = order ? ORDER_STEPS.indexOf(order.status) : -1;
   const isCancelled = order?.status === 'CANCELLED';
   const isDelivered = order?.status === 'DELIVERED';
+  // Annulation client possible tant que le colis n'est pas encore en route.
+  const canCancel = order && ['PENDING', 'CONFIRMED', 'PREPARING'].includes(order.status);
 
   // Needs TX: only for MonCash/NatCash/bank, only if not yet submitted
   const needsTx = order?.chosenPaymentMethod
@@ -347,8 +362,33 @@ export default function OrderDetailPage() {
               <Typography fontSize={12.5} fontWeight={700} color={statusInfo.color}>{statusInfo.label}</Typography>
             </Box>
           )}
+          {canCancel && (
+            <Button onClick={() => setCancelOpen(true)} size="small"
+              sx={{ color: RED, border: `1px solid ${alpha(RED, 0.3)}`, borderRadius: '10px', textTransform: 'none', fontWeight: 700, fontSize: 12.5 }}>
+              Annuler la commande
+            </Button>
+          )}
         </Box>
       </Box>
+
+      <Dialog open={cancelOpen} onClose={() => setCancelOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ fontWeight: 800, fontSize: 16 }}>Annuler cette commande ?</DialogTitle>
+        <DialogContent>
+          <Typography fontSize={13} color="#64748B" mb={1.5}>
+            Cette action est irréversible. Le vendeur sera notifié.
+          </Typography>
+          <TextField fullWidth multiline rows={2} size="small"
+            label="Motif (optionnel)" placeholder="Ex: changement d'avis, doublon..."
+            value={cancelReasonInput} onChange={e => setCancelReasonInput(e.target.value)} />
+        </DialogContent>
+        <DialogActions sx={{ px: 2.5, pb: 2.5 }}>
+          <Button onClick={() => setCancelOpen(false)} sx={{ color: '#64748B' }}>Revenir</Button>
+          <Button onClick={() => cancelMut.mutate()} disabled={cancelMut.isPending}
+            sx={{ bgcolor: RED, color: '#fff', borderRadius: '10px', fontWeight: 700, px: 2.5, '&:hover': { bgcolor: '#DC2626' } }}>
+            {cancelMut.isPending ? <CircularProgress size={15} color="inherit" /> : 'Confirmer l\'annulation'}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* ── Content ── */}
       <Box sx={{ maxWidth: 960, mx: 'auto', px: { xs: 2, sm: 3, lg: 4 }, display: 'flex', gap: 2.5, flexDirection: { xs: 'column', md: 'row' }, alignItems: 'flex-start' }}>
@@ -390,6 +430,11 @@ export default function OrderDetailPage() {
               <Cancel sx={{ color: RED, fontSize: 20, flexShrink: 0, mt: 0.2 }} />
               <Box>
                 <Typography fontWeight={700} fontSize={14} color={RED} mb={0.3}>Commande annulée</Typography>
+                {order.cancelReason && (
+                  <Typography fontSize={13} color="#0F172A" fontWeight={600} mb={0.5}>
+                    Motif : {order.cancelReason}
+                  </Typography>
+                )}
                 <Typography fontSize={13} color="#64748B">
                   Si vous avez déjà effectué un paiement, contactez directement le vendeur ou le support DealPam.
                 </Typography>
