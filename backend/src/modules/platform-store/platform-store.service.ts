@@ -109,6 +109,9 @@ export class PlatformStoreService {
     name: string; description?: string; price: number; salePrice?: number;
     stock?: number; categoryId?: string; images?: string[];
     paymentNote?: string;
+    // { size, priceOverride?, stock? }[] — ex plusieurs capacites memoire pour
+    // un meme modele, chacune avec son propre prix/stock.
+    variants?: { size: string; priceOverride?: number; stock?: number }[];
   }) {
     const store = await this.resolveStore(adminUserId);
 
@@ -138,9 +141,18 @@ export class PlatformStoreService {
       });
     }
 
+    if (body.variants?.length) {
+      await this.prisma.productVariant.createMany({
+        data: body.variants.map((v, i) => ({
+          productId: product.id, size: v.size,
+          priceOverride: v.priceOverride ?? null, stock: v.stock ?? 0, sortOrder: i,
+        })),
+      });
+    }
+
     return this.prisma.product.findUnique({
       where:   { id: product.id },
-      include: { images: true },
+      include: { images: true, variants: true },
     });
   }
 
@@ -166,7 +178,18 @@ export class PlatformStoreService {
       });
     }
 
-    return this.prisma.product.update({ where: { id: productId }, data, include: { images: true } });
+    if (body.variants) {
+      await this.prisma.productVariant.deleteMany({ where: { productId } });
+      if (body.variants.length) {
+        await this.prisma.productVariant.createMany({
+          data: body.variants.map((v: any, i: number) => ({
+            productId, size: v.size, priceOverride: v.priceOverride ?? null, stock: v.stock ?? 0, sortOrder: i,
+          })),
+        });
+      }
+    }
+
+    return this.prisma.product.update({ where: { id: productId }, data, include: { images: true, variants: true } });
   }
 
   async deleteProduct(adminUserId: string, productId: string) {
