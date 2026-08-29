@@ -248,6 +248,10 @@ export class ProductsService {
     name: string; description?: string; price: number; salePrice?: number;
     stock?: number; sku?: string; categoryName?: string; categoryId?: string;
     brandName?: string; condition?: string; images?: string[];
+    // Format "Libelle:Prix:Stock" separes par ";" — ex "128GB:20075:5;256GB:25575:3".
+    // Le prix/stock du produit lui-meme sert de valeur "a partir de" quand des
+    // variantes existent (chaque variante porte son propre prix via priceOverride).
+    variants?: string;
   }[]) {
     const seller = await this.prisma.seller.findUnique({
       where: { userId },
@@ -345,6 +349,22 @@ export class ProductsService {
               productId: product.id, urlFull: url, urlMedium: url, urlThumb: url,
               publicId: url, isPrimary: idx === 0, sortOrder: idx,
             })),
+          });
+        }
+
+        if (item.variants?.trim()) {
+          const variantRows = item.variants.split(';').map(v => v.trim()).filter(Boolean);
+          await this.prisma.productVariant.createMany({
+            data: variantRows.map((v, idx) => {
+              const [size, priceStr, stockStr] = v.split(':').map(s => s?.trim());
+              return {
+                productId: product.id,
+                size: size || null,
+                priceOverride: priceStr ? Number(priceStr) : null,
+                stock: stockStr ? Number(stockStr) : 0,
+                sortOrder: idx,
+              };
+            }),
           });
         }
 

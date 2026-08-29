@@ -112,6 +112,7 @@ export default function SellerProductsPage({ mode = 'products' }: { mode?: 'prod
           brandName: get('Marque', 'Brand'),
           condition: get('Etat', 'État', 'Condition'),
           images,
+          variants: get('Variantes', 'Variants'),
         };
       }).filter(it => it.name);
 
