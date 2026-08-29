@@ -262,16 +262,12 @@ export default function AddProductPage() {
     categoryId: '', brandId: '', brandName: '', price: '', salePrice: '',
     stock: '1', sku: '', condition: 'new', conditionNote: '',
     city: '', department: 'Ouest', storeId: '',
-    hasDelivery: false, deliveryPriceHTG: '',
     allowOffers: false, minOfferPriceHTG: '',
     isLimitedEdition: false,
     minOrderQty: '1',
   });
   const [priceTiers, setPriceTiers] = useState<{ minQty: string; price: string }[]>([]);
-  const [deliveryZones, setDeliveryZones] = useState<{ city: string; dept: string }[]>([]);
-  const [zoneInput, setZoneInput]         = useState({ city: '', dept: 'Ouest' });
   const [attrs, setAttrs]       = useState<Record<string, string>>({});
-  const [pickupPointNames, setPickupPointNames] = useState<string[]>([]);
   const [variants, setVariants] = useState<Variant[]>([]);
   const [mainImages, setMainImages]   = useState<File[]>([]);
   const [mainPreviews, setMainPreviews] = useState<string[]>([]);
@@ -290,12 +286,6 @@ export default function AddProductPage() {
   const maxImages = sub?.plan?.maxImages ?? 5;
   const storeList: any[] = storesData?.stores ?? [];
   const selectedStore = storeList.find((s: any) => s.id === form.storeId) ?? storeList.find((s: any) => s.isPrimary) ?? storeList[0];
-  const storePickupPoints: any[] = (() => {
-    if (!selectedStore?.pickupPoints) return [];
-    try { const p = JSON.parse(selectedStore.pickupPoints); return Array.isArray(p) ? p : []; } catch { return []; }
-  })();
-  const needsPickupPoint = !form.hasDelivery && storePickupPoints.length === 0;
-  const togglePickupPoint = (name: string) => setPickupPointNames(p => p.includes(name) ? p.filter(n => n !== name) : [...p, name]);
   const showCurrencyPanel = selectedStore?.currency === 'USD' && Number(selectedStore?.exchangeRate) > 0;
   const usdEquivalent = showCurrencyPanel && form.price ? (Number(form.price) / Number(selectedStore.exchangeRate)).toFixed(2) : null;
   const selectedCatName = (categories ?? []).find((c: any) => c.id === form.categoryId)?.name ?? '';
@@ -331,27 +321,12 @@ export default function AddProductPage() {
   const changeVariant = (id: string, k: keyof Variant, val: any) => setVariants(p => p.map(v => v.id === id ? { ...v, [k]: val } : v));
   const addQuickSize = (size: string) => { if (!variants.some(v => v.size === size)) setVariants(p => [...p, { ...newVariant(), size }]); };
 
-  // Delivery zones
-  const addZone = () => {
-    const label = zoneInput.city.trim()
-      ? `${zoneInput.city.trim()}, ${zoneInput.dept}`
-      : zoneInput.dept;
-    if (deliveryZones.some(z => `${z.city}, ${z.dept}` === label || z.dept === label)) return;
-    setDeliveryZones(p => [...p, { city: zoneInput.city.trim(), dept: zoneInput.dept }]);
-    setZoneInput(z => ({ ...z, city: '' }));
-  };
-  const removeZone = (i: number) => setDeliveryZones(p => p.filter((_, j) => j !== i));
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name || !form.description || !form.categoryId || !form.price) { setError('Remplissez titre, description, catégorie et prix'); return; }
     if (!mainImages.length) { setError('Ajoutez au moins une photo'); return; }
     if (form.salePrice && Number(form.salePrice) >= Number(form.price)) {
       setError('Le prix normal doit être supérieur au prix promo');
-      return;
-    }
-    if (needsPickupPoint) {
-      setError("Sans livraison, votre boutique doit avoir au moins un point de retrait — configurez-le depuis Ma boutique > Points de retrait.");
       return;
     }
     setLoading(true); setError('');
@@ -377,15 +352,10 @@ export default function AddProductPage() {
       if (form.conditionNote) fd.append('conditionNote', form.conditionNote);
       if (form.city) fd.append('city', form.city);
       if (form.department) fd.append('department', form.department);
-      fd.append('hasDelivery', String(form.hasDelivery));
-      if (form.hasDelivery && form.deliveryPriceHTG) fd.append('deliveryPriceHTG', form.deliveryPriceHTG);
       fd.append('allowOffers', String(form.allowOffers));
       if (form.allowOffers && form.minOfferPriceHTG) fd.append('minOfferPriceHTG', form.minOfferPriceHTG);
       fd.append('isLimitedEdition', String(form.isLimitedEdition));
-      // deliveryDepts: send each zone as "Ville, Département" or just "Département"
-      deliveryZones.forEach(z => fd.append('deliveryDepts', z.city ? `${z.city}, ${z.dept}` : z.dept));
       if (form.storeId) fd.append('storeId', form.storeId);
-      if (pickupPointNames.length) fd.append('pickupPointNames', JSON.stringify(pickupPointNames));
       if (Object.keys(attrs).length) fd.append('attributes', JSON.stringify(attrs));
       if (catType === 'vehicle' && vehicleAppt) {
         fd.append('productType', 'VEHICLE');
@@ -660,105 +630,6 @@ export default function AddProductPage() {
           {/* ── OPTIONS DE VENTE ── */}
           <SectionCard title="Options de vente" icon={<LocalShipping sx={{ fontSize: 17 }} />}>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-
-              <DarkToggle checked={form.hasDelivery} onChange={v => setForm(p => ({ ...p, hasDelivery: v }))}
-                label="Livraison disponible" sub="Proposer la livraison aux acheteurs" />
-
-              {needsPickupPoint && (
-                <Box sx={{ p: 1.6, borderRadius: '10px', bgcolor: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)' }}>
-                  <Typography fontSize={12.5} color={RED} fontWeight={600}>
-                    Sans livraison, votre boutique doit proposer au moins un point de retrait pour que les clients puissent choisir où récupérer leur commande.
-                  </Typography>
-                  <Button component={Link} to="/seller/store" size="small"
-                    sx={{ mt: 0.5, color: RED, fontWeight: 700, fontSize: 12, textTransform: 'none', px: 0 }}>
-                    Configurer un point de retrait →
-                  </Button>
-                </Box>
-              )}
-
-              {/* Points de retrait spécifiques au produit */}
-              <Box>
-                <Typography fontSize={13} fontWeight={600} color={TXT} mb={0.4}>
-                  Points de retrait pour ce produit (optionnel)
-                </Typography>
-                {storePickupPoints.length > 0 ? (
-                  <>
-                    <Typography fontSize={12} color={SUB} mb={1.2}>
-                      Aucune sélection = disponible à tous les points de retrait de votre boutique.
-                    </Typography>
-                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                      {storePickupPoints.map((pt: any) => {
-                        const active = pickupPointNames.includes(pt.name);
-                        return (
-                          <Box key={pt.name} onClick={() => togglePickupPoint(pt.name)}
-                            sx={{ px: 1.5, py: 0.7, borderRadius: '8px', cursor: 'pointer', fontSize: 12.5, fontWeight: 600, bgcolor: active ? 'rgba(255,107,0,0.12)' : 'rgba(15,23,42,0.09)', color: active ? OR : SUB2, border: `1px solid ${active ? `${OR}40` : BORD}` }}>
-                            {pt.name}{pt.city ? ` — ${pt.city}` : ''}
-                          </Box>
-                        );
-                      })}
-                    </Box>
-                  </>
-                ) : (
-                  <Box sx={{ p: 1.6, borderRadius: '10px', bgcolor: 'rgba(15,23,42,0.04)', border: `1px solid ${BORD}` }}>
-                    <Typography fontSize={12.5} color={SUB}>
-                      Configurez des points de retrait dans les paramètres de votre boutique pour les associer à vos produits.
-                    </Typography>
-                    <Button component={Link} to="/seller/store" size="small"
-                      sx={{ mt: 0.5, color: OR, fontWeight: 700, fontSize: 12, textTransform: 'none', px: 0 }}>
-                      Configurer mes points de retrait →
-                    </Button>
-                  </Box>
-                )}
-              </Box>
-
-              <Collapse in={form.hasDelivery}>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 0.5 }}>
-                  <TextField fullWidth label="Frais de livraison (HTG — laisser vide si gratuit)" type="number"
-                    value={form.deliveryPriceHTG} onChange={set('deliveryPriceHTG')} inputProps={{ min: 0 }} sx={fieldSx} />
-
-                  {/* Zone adder */}
-                  <Box>
-                    <Typography fontSize={12.5} fontWeight={600} color={SUB2} mb={1.2}>
-                      Zones de livraison <Typography component="span" fontSize={11} color={SUB}>(ville + département)</Typography>
-                    </Typography>
-                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                      <TextField
-                        label="Ville (ex: Port-au-Prince)" value={zoneInput.city}
-                        onChange={e => setZoneInput(z => ({ ...z, city: e.target.value }))}
-                        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addZone(); } }}
-                        sx={{ ...fieldSx, flex: '1 1 160px' }} size="small" />
-                      <FormControl sx={{ ...fieldSx, flex: '1 1 130px' }} size="small">
-                        <InputLabel shrink>Département</InputLabel>
-                        <Select value={zoneInput.dept} label="Département" MenuProps={darkMenu}
-                          onChange={e => setZoneInput(z => ({ ...z, dept: e.target.value }))}>
-                          {DEPTS_HT.map(d => <MenuItem key={d} value={d}>{d}</MenuItem>)}
-                        </Select>
-                      </FormControl>
-                      <Box onClick={addZone}
-                        sx={{ height: 40, px: 1.8, borderRadius: '10px', bgcolor: OR, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, '&:hover': { bgcolor: '#E05A00' } }}>
-                        <Add sx={{ fontSize: 18, color: '#fff' }} />
-                      </Box>
-                    </Box>
-
-                    {/* Added zones */}
-                    {deliveryZones.length > 0 && (
-                      <Box sx={{ mt: 1.5, display: 'flex', flexWrap: 'wrap', gap: 0.8 }}>
-                        {deliveryZones.map((z, i) => (
-                          <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 0.8, px: 1.2, py: 0.6, borderRadius: '8px', bgcolor: 'rgba(255,107,0,0.1)', border: '1px solid rgba(255,107,0,0.3)' }}>
-                            <Typography fontSize={12} fontWeight={600} color={OR}>
-                              {z.city ? `${z.city}, ${z.dept}` : z.dept}
-                            </Typography>
-                            <Close onClick={() => removeZone(i)} sx={{ fontSize: 13, color: OR, cursor: 'pointer', opacity: 0.7, '&:hover': { opacity: 1 } }} />
-                          </Box>
-                        ))}
-                      </Box>
-                    )}
-                    {deliveryZones.length === 0 && (
-                      <Typography fontSize={11.5} color={SUB} mt={1}>Aucune zone ajoutée — les clients verront ces zones lors de la commande.</Typography>
-                    )}
-                  </Box>
-                </Box>
-              </Collapse>
 
               <DarkToggle checked={form.allowOffers} onChange={v => setForm(p => ({ ...p, allowOffers: v }))}
                 label="Accepter les offres de prix" sub="Les clients pourront vous proposer leur propre prix" />

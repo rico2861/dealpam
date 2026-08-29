@@ -319,7 +319,7 @@ function PaymentMethodsTab({ storeId, store }: { storeId: string; store: any }) 
 
   const saveMutation = useMutation({
     mutationFn: () => api.patch('/stores/me', {
-      acceptedPaymentMethods: JSON.stringify(accepted),
+      acceptedPaymentMethods: accepted,
       moncashPhone,
       natcashPhone,
       currency,

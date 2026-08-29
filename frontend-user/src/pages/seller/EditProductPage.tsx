@@ -94,7 +94,6 @@ export default function EditProductPage() {
   const [images, setImages] = useState<any[]>([]);
   const [newImages, setNewImages] = useState<File[]>([]);
   const [deletingImageId, setDeletingImageId] = useState<string | null>(null);
-  const [zoneInput, setZoneInput] = useState({ city: '', dept: 'Ouest' });
   const [deliveryZones, setDeliveryZones] = useState<{ city: string; dept: string }[]>([]);
   const [pickupPointNames, setPickupPointNames] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -114,10 +113,6 @@ export default function EditProductPage() {
 
   const storeList: any[] = storesData?.stores ?? [];
   const productStore = storeList.find((s: any) => s.id === product?.storeId);
-  const storePickupPoints: any[] = (() => {
-    if (!productStore?.pickupPoints) return [];
-    try { const p = JSON.parse(productStore.pickupPoints); return Array.isArray(p) ? p : []; } catch { return []; }
-  })();
   const showCurrencyPanel = productStore?.currency === 'USD' && Number(productStore?.exchangeRate) > 0;
   const usdEquivalent = showCurrencyPanel && form?.price ? (Number(form.price) / Number(productStore.exchangeRate)).toFixed(2) : null;
 
@@ -158,17 +153,6 @@ export default function EditProductPage() {
       } catch { setPickupPointNames([]); }
     }
   }, [product]);
-
-  const addZone = () => {
-    const label = zoneInput.city.trim()
-      ? `${zoneInput.city.trim()}, ${zoneInput.dept}`
-      : zoneInput.dept;
-    if (deliveryZones.some(z => `${z.city}, ${z.dept}` === label || z.dept === label)) return;
-    setDeliveryZones(p => [...p, { city: zoneInput.city.trim(), dept: zoneInput.dept }]);
-    setZoneInput(z => ({ ...z, city: '' }));
-  };
-  const removeZone = (i: number) => setDeliveryZones(p => p.filter((_, j) => j !== i));
-  const togglePickupPoint = (name: string) => setPickupPointNames(p => p.includes(name) ? p.filter(n => n !== name) : [...p, name]);
 
   const handleAddImages = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -412,81 +396,6 @@ export default function EditProductPage() {
           {/* ── OPTIONS DE VENTE ── */}
           <SectionCard title="Options de vente">
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-              <DarkToggle checked={form.hasDelivery} onChange={v => setForm({ ...form, hasDelivery: v })}
-                label="Livraison disponible" sub="Proposer la livraison aux acheteurs" />
-
-              <Collapse in={form.hasDelivery}>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 0.5 }}>
-                  <TextField fullWidth label="Frais de livraison (HTG — laisser vide si gratuit)" type="number"
-                    value={form.deliveryPriceHTG} onChange={f('deliveryPriceHTG')} inputProps={{ min: 0 }} sx={fieldSx} />
-                  <Box>
-                    <Typography fontSize={12.5} fontWeight={600} color={SUB2} mb={1.2}>
-                      Zones de livraison <Typography component="span" fontSize={11} color={SUB}>(ville + département)</Typography>
-                    </Typography>
-                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                      <TextField size="small" label="Ville (optionnel)" value={zoneInput.city}
-                        onChange={e => setZoneInput(z => ({ ...z, city: e.target.value }))}
-                        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addZone(); } }}
-                        sx={{ ...fieldSx, flex: '1 1 160px' }} />
-                      <FormControl size="small" sx={{ ...fieldSx, flex: '1 1 130px' }}>
-                        <InputLabel shrink>Département</InputLabel>
-                        <Select value={zoneInput.dept} label="Département" MenuProps={darkMenu}
-                          onChange={e => setZoneInput(z => ({ ...z, dept: e.target.value }))}>
-                          {DEPTS_HT.map(d => <MenuItem key={d} value={d}>{d}</MenuItem>)}
-                        </Select>
-                      </FormControl>
-                      <Box onClick={addZone}
-                        sx={{ height: 40, px: 1.8, borderRadius: '10px', bgcolor: OR, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, '&:hover': { bgcolor: '#E05A00' } }}>
-                        <Add sx={{ fontSize: 18, color: '#fff' }} />
-                      </Box>
-                    </Box>
-                    {deliveryZones.length > 0 && (
-                      <Box sx={{ mt: 1.5, display: 'flex', flexWrap: 'wrap', gap: 0.8 }}>
-                        {deliveryZones.map((z, i) => (
-                          <Chip key={i} label={z.city ? `${z.city}, ${z.dept}` : z.dept}
-                            onDelete={() => removeZone(i)} size="small" />
-                        ))}
-                      </Box>
-                    )}
-                  </Box>
-                </Box>
-              </Collapse>
-
-              {/* Points de retrait spécifiques au produit */}
-              <Box>
-                <Typography fontSize={13} fontWeight={600} color={TXT} mb={0.4}>
-                  Points de retrait pour ce produit (optionnel)
-                </Typography>
-                {storePickupPoints.length > 0 ? (
-                  <>
-                    <Typography fontSize={12} color={SUB} mb={1.2}>
-                      Aucune sélection = disponible à tous les points de retrait de votre boutique.
-                    </Typography>
-                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                      {storePickupPoints.map((pt: any) => {
-                        const active = pickupPointNames.includes(pt.name);
-                        return (
-                          <Box key={pt.name} onClick={() => togglePickupPoint(pt.name)}
-                            sx={{ px: 1.5, py: 0.7, borderRadius: '8px', cursor: 'pointer', fontSize: 12.5, fontWeight: 600, bgcolor: active ? 'rgba(255,107,0,0.12)' : 'rgba(15,23,42,0.09)', color: active ? OR : SUB2, border: `1px solid ${active ? `${OR}40` : BORD}` }}>
-                            {pt.name}{pt.city ? ` — ${pt.city}` : ''}
-                          </Box>
-                        );
-                      })}
-                    </Box>
-                  </>
-                ) : (
-                  <Box sx={{ p: 1.6, borderRadius: '10px', bgcolor: 'rgba(15,23,42,0.04)', border: `1px solid ${BORD}` }}>
-                    <Typography fontSize={12.5} color={SUB}>
-                      Configurez des points de retrait dans les paramètres de votre boutique pour les associer à vos produits.
-                    </Typography>
-                    <Button component={Link} to="/seller/store" size="small"
-                      sx={{ mt: 0.5, color: OR, fontWeight: 700, fontSize: 12, textTransform: 'none', px: 0 }}>
-                      Configurer mes points de retrait →
-                    </Button>
-                  </Box>
-                )}
-              </Box>
-
               <DarkToggle checked={form.allowOffers} onChange={v => setForm({ ...form, allowOffers: v })}
                 label="Accepter les offres de prix" sub="Les clients pourront vous proposer leur propre prix" />
 
