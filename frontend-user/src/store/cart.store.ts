@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import api from '../api/axios';
+import { getGuestCartCount } from '../utils/cart';
 
 interface CartState {
   count: number;
@@ -11,6 +12,11 @@ export const useCartStore = create<CartState>((set) => ({
   count: 0,
   setCount: (count) => set({ count }),
   fetchCount: async () => {
+    // Visiteur non connecté : le panier vit en localStorage, pas d'appel serveur.
+    if (!localStorage.getItem('accessToken')) {
+      set({ count: getGuestCartCount() });
+      return;
+    }
     try {
       const { data } = await api.get('/cart');
       set({ count: data.items?.length || 0 });

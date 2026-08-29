@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import api from '../api/axios';
+import { mergeGuestCartOnLogin } from '../utils/cart';
 
 interface User { id: string; email: string; firstName: string; lastName: string; role: string; avatar?: string; department?: string; city?: string; username?: string; }
 interface AuthState {
@@ -30,6 +31,7 @@ export const useAuthStore = create<AuthState>()(
         localStorage.setItem('accessToken', accessToken);
         localStorage.setItem('refreshToken', refreshToken);
         set({ user, accessToken });
+        mergeGuestCartOnLogin().catch(() => {});
       },
       logout: async () => {
         const r = localStorage.getItem('refreshToken');

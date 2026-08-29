@@ -14,6 +14,7 @@ import {
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import api from '../../api/axios';
 import { useCartStore } from '../../store/cart.store';
+import { addToCart as addToCartUtil } from '../../utils/cart';
 import { useLocationStore } from '../../store/location.store';
 import { useSnackbar } from 'notistack';
 import { ProductCardSkeleton } from '../../components/shared/Skeletons';
@@ -51,6 +52,12 @@ const CATEGORIES = [
 
 const DEPARTMENTS = ['Ouest', 'Nord', 'Nord-Est', 'Nord-Ouest', 'Artibonite', 'Centre', 'Sud', 'Sud-Est', "Grand'Anse", 'Nippes'];
 
+
+function snapshotOf(p: any) {
+  const img = p.images?.[0]?.urlMedium || p.images?.[0]?.url || '';
+  return { name: p.name, slug: p.slug, image: img, price: Number(p.price), salePrice: p.salePrice ? Number(p.salePrice) : null, storeName: p.store?.name };
+}
+
 function ProductCardGrid({ p }: { p: any }) {
   const { fetchCount } = useCartStore();
   const { enqueueSnackbar } = useSnackbar();
@@ -58,7 +65,7 @@ function ProductCardGrid({ p }: { p: any }) {
   const [wished, setWished] = useState(false);
 
   const addToCart = useMutation({
-    mutationFn: () => api.post('/cart/items', { productId: p.id, quantity: 1 }),
+    mutationFn: () => addToCartUtil({ productId: p.id, quantity: 1, snapshot: snapshotOf(p) }, !!localStorage.getItem('accessToken')),
     onSuccess: () => { fetchCount(); qc.invalidateQueries({ queryKey: ['cart'] }); enqueueSnackbar('Ajout au panier !', { variant: 'success' }); },
     onError: () => enqueueSnackbar('Erreur ajout panier', { variant: 'error' }),
   });
@@ -145,7 +152,7 @@ function ProductCardRow({ p }: { p: any }) {
   const { enqueueSnackbar } = useSnackbar();
   const qc = useQueryClient();
   const addToCart = useMutation({
-    mutationFn: () => api.post('/cart/items', { productId: p.id, quantity: 1 }),
+    mutationFn: () => addToCartUtil({ productId: p.id, quantity: 1, snapshot: snapshotOf(p) }, !!localStorage.getItem('accessToken')),
     onSuccess: () => { fetchCount(); qc.invalidateQueries({ queryKey: ['cart'] }); enqueueSnackbar('Ajout au panier !', { variant: 'success' }); },
   });
   const img = p.images?.[0]?.urlMedium || p.images?.[0]?.url || 'https://via.placeholder.com/300';

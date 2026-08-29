@@ -17,6 +17,7 @@ import {
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import api from '../../api/axios';
+import { addToCart as addToCartUtil } from '../../utils/cart';
 import { getViewerId } from '../../utils/viewerId';
 import { discountPercent } from '../../utils/discount';
 import { triggerFlyToCart } from '../../utils/flyToCart';
@@ -344,10 +345,6 @@ export default function ProductDetailPage() {
 
   /* ── add to cart (first CTA state) ─────────────────────────────────────── */
   const addToCart = async () => {
-    if (!user || !localStorage.getItem('accessToken')) {
-      navigate(`/login?next=${encodeURIComponent(window.location.pathname)}`);
-      return;
-    }
     if (colors.length > 0 && !clr) {
       document.getElementById('color-picker')?.scrollIntoView({ behavior:'smooth', block:'center' });
       enqueueSnackbar('Veuillez choisir une couleur', { variant:'warning' });
@@ -355,7 +352,10 @@ export default function ProductDetailPage() {
     }
     setLoading(true);
     try {
-      await api.post('/cart/items', { productId:product.id, quantity:qty, color:clr||undefined, size:sz||undefined, variantId:av?.id||undefined });
+      await addToCartUtil({
+        productId:product.id, quantity:qty, color:clr||undefined, size:sz||undefined, variantId:av?.id||undefined,
+        snapshot: { name: product.name, slug: product.slug, image: ci?.urlThumb||ci?.urlMedium||'', price: Number(product.price), salePrice: product.salePrice ? Number(product.salePrice) : null, storeName: product.store?.name },
+      }, !!localStorage.getItem('accessToken'));
       await fetchCount();
       qc.invalidateQueries({ queryKey:['cart'] });
       setInCart(true);

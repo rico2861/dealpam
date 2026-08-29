@@ -19,6 +19,7 @@ import { ListSkeleton } from '../../components/shared/Skeletons';
 import { useDelayedLoading } from '../../hooks/useDelayedLoading';
 import { useCartStore } from '../../store/cart.store';
 import { useAuthStore } from '../../store/auth.store';
+import { getGuestCart, updateGuestCartQuantity, removeFromGuestCart, GuestCartItem } from '../../utils/cart';
 
 const OR   = '#FF6B00';
 const ORD  = '#E05A00';
@@ -283,6 +284,103 @@ function StoreGroup({ group, opts, onRemove, onUpdate, navigate }: any) {
 }
 
 // ── Main ───────────────────────────────────────────────────────────────────────
+// ── Panier invité (non connecté) : lu/écrit en localStorage, pas de requête
+// serveur — les snapshots pris au moment de l'ajout suffisent à tout afficher.
+function GuestCartView() {
+  const navigate = useNavigate();
+  const { fetchCount } = useCartStore();
+  const [items, setItems] = useState<GuestCartItem[]>(getGuestCart());
+
+  const refresh = (next: GuestCartItem[]) => { setItems(next); fetchCount(); };
+  const updateQty = (i: number, qty: number) => refresh(qty > 0 ? updateGuestCartQuantity(i, qty) : removeFromGuestCart(i));
+  const remove = (i: number) => refresh(removeFromGuestCart(i));
+
+  const subtotal = items.reduce((acc, it) => acc + (Number(it.offeredPrice ?? it.snapshot?.salePrice ?? it.snapshot?.price ?? 0) * it.quantity), 0);
+
+  if (items.length === 0) return (
+    <Box sx={{ bgcolor: BG, minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', px: 2 }}>
+      <Box sx={{ textAlign: 'center', maxWidth: 380 }}>
+        <Box sx={{ width: 80, height: 80, borderRadius: '24px', bgcolor: alpha(OR, 0.07), border: `1px solid ${alpha(OR, 0.13)}`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', mx: 'auto', mb: 3 }}>
+          <ShoppingBag sx={{ fontSize: 36, color: OR }} />
+        </Box>
+        <Typography fontWeight={900} fontSize={22} color="#0F172A" mb={1}>Votre panier est vide</Typography>
+        <Typography color="#64748B" fontSize={14} mb={4} lineHeight={1.7}>Découvrez nos produits et profitez des meilleures offres.</Typography>
+        <Button component={Link} to="/products" variant="contained" endIcon={<ArrowForward />}
+          sx={{ bgcolor: OR, color: 'white', fontWeight: 800, borderRadius: '14px', px: 3.5, py: 1.4, textTransform: 'none', fontSize: 15, '&:hover': { bgcolor: ORD }, boxShadow: `0 4px 20px ${alpha(OR, 0.4)}` }}>
+          Voir les produits
+        </Button>
+      </Box>
+    </Box>
+  );
+
+  return (
+    <Box sx={{ bgcolor: BG, minHeight: '100vh', pb: 8 }}>
+      <Box sx={{ px: { xs: 2, md: 4 }, py: { xs: 2, md: 2.5 }, maxWidth: 1160, mx: 'auto', display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+        <ShoppingBag sx={{ color: OR, fontSize: 21 }} />
+        <Typography fontWeight={900} fontSize={{ xs: 20, md: 23 }} color="#0F172A">Mon panier</Typography>
+        <Box sx={{ px: 1.2, py: 0.3, borderRadius: '20px', bgcolor: alpha(OR, 0.1), border: `1px solid ${alpha(OR, 0.2)}` }}>
+          <Typography fontSize={12} fontWeight={700} color={OR}>{items.length} article{items.length > 1 ? 's' : ''}</Typography>
+        </Box>
+      </Box>
+
+      <Box sx={{ maxWidth: 1160, mx: 'auto', px: { xs: 2, md: 4 }, display: 'flex', gap: 3, flexDirection: { xs: 'column', lg: 'row' }, alignItems: 'flex-start' }}>
+        <Box sx={{ flex: 1, minWidth: 0, bgcolor: CARD, border: `1px solid ${BORD}`, boxShadow: SHADOW, borderRadius: '20px', overflow: 'hidden' }}>
+          {items.map((it, i) => {
+            const price = Number(it.offeredPrice ?? it.snapshot?.salePrice ?? it.snapshot?.price ?? 0);
+            return (
+              <Box key={i} sx={{ display: 'flex', gap: 1.5, alignItems: 'center', p: 2, borderBottom: i < items.length - 1 ? `1px solid ${BORD}` : 'none' }}>
+                <Box component={Link} to={`/products/${it.snapshot?.slug || ''}`} sx={{ flexShrink: 0 }}>
+                  <Box component="img" src={it.snapshot?.image || 'https://placehold.co/80x80/F1F5F9/94A3B8?text=+'}
+                    sx={{ width: 64, height: 64, borderRadius: '10px', objectFit: 'cover', bgcolor: '#F1F5F9' }} />
+                </Box>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography fontSize={13} color="#64748B" noWrap>{it.snapshot?.storeName}</Typography>
+                  <Typography component={Link} to={`/products/${it.snapshot?.slug || ''}`}
+                    sx={{ fontSize: 13.5, fontWeight: 700, color: '#0F172A', textDecoration: 'none', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                    {it.snapshot?.name}{it.size ? ` — ${it.size}` : ''}{it.color ? ` — ${it.color}` : ''}
+                  </Typography>
+                  <Typography fontSize={13} fontWeight={800} color={OR} mt={0.3}>{fmt(price)}</Typography>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, border: `1px solid ${BORD}`, borderRadius: '10px' }}>
+                  <IconButton size="small" onClick={() => updateQty(i, it.quantity - 1)}><Remove sx={{ fontSize: 15 }} /></IconButton>
+                  <Typography fontSize={13} fontWeight={700} minWidth={18} textAlign="center">{it.quantity}</Typography>
+                  <IconButton size="small" onClick={() => updateQty(i, it.quantity + 1)}><Add sx={{ fontSize: 15 }} /></IconButton>
+                </Box>
+                <IconButton size="small" onClick={() => remove(i)}><Delete sx={{ fontSize: 17, color: '#94A3B8' }} /></IconButton>
+              </Box>
+            );
+          })}
+        </Box>
+
+        <Box sx={{ width: { xs: '100%', lg: 310 }, flexShrink: 0 }}>
+          <Box sx={{ bgcolor: CARD, border: `1px solid ${BORD}`, boxShadow: SHADOW, borderRadius: '20px', overflow: 'hidden' }}>
+            <Box sx={{ px: 2.5, py: 2, borderBottom: `1px solid ${BORD}` }}>
+              <Typography fontWeight={800} fontSize={15} color="#0F172A">Récapitulatif</Typography>
+            </Box>
+            <Box sx={{ px: 2.5, py: 2 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+                <Typography fontWeight={900} fontSize={16} color="#0F172A">Total</Typography>
+                <Typography fontWeight={900} fontSize={22} color={OR}>{fmt(subtotal)}</Typography>
+              </Box>
+              <Button fullWidth variant="contained"
+                onClick={() => navigate(`/login?next=${encodeURIComponent('/account/checkout')}`)}
+                endIcon={<ArrowForward />}
+                sx={{ bgcolor: OR, color: 'white', fontWeight: 900, borderRadius: '14px', py: 1.5,
+                  fontSize: 14.5, textTransform: 'none', '&:hover': { bgcolor: ORD }, boxShadow: `0 4px 20px ${alpha(OR, 0.45)}` }}>
+                Se connecter pour commander
+              </Button>
+              <Typography fontSize={11.5} color="#64748B" mt={1.2} textAlign="center">
+                Votre panier est conservé — vous le retrouverez après connexion.
+              </Typography>
+            </Box>
+          </Box>
+        </Box>
+      </Box>
+    </Box>
+  );
+}
+
 export default function CartPage() {
   const navigate = useNavigate();
   const qc       = useQueryClient();
@@ -370,6 +468,8 @@ export default function CartPage() {
     onSuccess: () => enqueueSnackbar('Article retiré', { variant: 'info' }),
     onSettled: () => { qc.invalidateQueries({ queryKey: ['cart'] }); fetchCount(); },
   });
+
+  if (!user) return <GuestCartView />;
 
   if (isLoading) return showSkel ? (
     <Box sx={{ bgcolor: BG, minHeight: '100vh', maxWidth: 900, mx: 'auto', px: 2, py: 3 }}>
