@@ -162,9 +162,16 @@ function DeliveryZonesTab({ storeId, initialZones }: { storeId: string; initialZ
                     InputProps={{ inputProps: { min: 1 } }} />
                 </Grid>
                 <Grid item xs={12}>
-                  <Typography fontSize={12} fontWeight={600} color="#475569" mb={1}>
-                    Departements couverts ({zone.departments.length}/10)
-                  </Typography>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                    <Typography fontSize={12} fontWeight={600} color="#475569">
+                      Departements couverts ({zone.departments.length}/10)
+                    </Typography>
+                    <Button size="small" onClick={() => updateZone(zone.id, 'departments',
+                        zone.departments.length === DEPARTMENTS.length ? [] : [...DEPARTMENTS])}
+                      sx={{ fontSize: 11.5, color: ORANGE, textTransform: 'none', p: 0, minWidth: 0 }}>
+                      {zone.departments.length === DEPARTMENTS.length ? 'Tout retirer' : 'Toute la Haïti'}
+                    </Button>
+                  </Box>
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.7 }}>
                     {DEPARTMENTS.map(dept => {
                       const active = zone.departments.includes(dept);
@@ -655,6 +662,44 @@ export default function SellerStorePage() {
           <Typography fontSize={14} fontWeight={700} color={SUB}>Aucune boutique trouvée pour votre compte.</Typography>
         </Box>
       )}
+
+      {/* Checklist de configuration — les vendeurs ne comprenaient pas toujours
+          pourquoi la publication d'un produit était bloquée (paiement/livraison
+          manquants) sans indication claire ici où ils le configurent. */}
+      {store && (() => {
+        const hasPayment = parseArr(store.acceptedPaymentMethods).length > 0;
+        const hasFulfillment = parseArr(store.deliveryZones).length > 0 || parseArr(store.pickupPoints).length > 0;
+        if (hasPayment && hasFulfillment) return null;
+        return (
+          <Box sx={{ mb: 2.5, p: 2, borderRadius: '14px', bgcolor: alpha('#F59E0B', 0.08), border: `1px solid ${alpha('#F59E0B', 0.25)}` }}>
+            <Typography fontSize={13.5} fontWeight={700} color="#92400E" mb={1}>
+              ⚠️ Configuration incomplète — vous ne pourrez pas publier de produit tant que ceci n'est pas fait :
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.6 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography fontSize={13} color={hasPayment ? '#16A34A' : '#92400E'}>
+                  {hasPayment ? '✓' : '○'} Au moins un moyen de paiement
+                </Typography>
+                {!hasPayment && (
+                  <Button size="small" onClick={() => setTab(3)} sx={{ fontSize: 11.5, color: OR, textTransform: 'none', p: 0, minWidth: 0 }}>
+                    Configurer →
+                  </Button>
+                )}
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography fontSize={13} color={hasFulfillment ? '#16A34A' : '#92400E'}>
+                  {hasFulfillment ? '✓' : '○'} Une zone de livraison ou un point de retrait
+                </Typography>
+                {!hasFulfillment && (
+                  <Button size="small" onClick={() => setTab(1)} sx={{ fontSize: 11.5, color: OR, textTransform: 'none', p: 0, minWidth: 0 }}>
+                    Configurer →
+                  </Button>
+                )}
+              </Box>
+            </Box>
+          </Box>
+        );
+      })()}
 
       {/* Tabs */}
       <Box sx={{ borderBottom: `1px solid ${BORD}`, mb: 0, bgcolor: CARD, borderRadius: '16px 16px 0 0', px: 1 }}>
