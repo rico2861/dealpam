@@ -104,11 +104,37 @@ function PickupEditor({ points, onChange }: { points: any[]; onChange: (p: any[]
   );
 }
 
+// ── Variant editor (memoire/taille/couleur) ────────────────────────────────────
+function VariantEditor({ variants, onChange }: { variants: any[]; onChange: (v: any[]) => void }) {
+  const add    = () => onChange([...variants, { size: '', priceOverride: '', stock: 0 }]);
+  const remove = (i: number) => onChange(variants.filter((_, j) => j !== i));
+  const set    = (i: number, k: string, v: any) => { const n = [...variants]; n[i] = { ...n[i], [k]: v }; onChange(n); };
+  return (
+    <Box>
+      {variants.map((v, i) => (
+        <Box key={i} sx={{ display: 'flex', gap: 1, mb: 1, alignItems: 'center' }}>
+          <TextField size="small" label="Ex: 128GB" value={v.size} onChange={e => set(i, 'size', e.target.value)} sx={{ flex: '1 1 140px' }} />
+          <TextField size="small" label="Prix HTG" type="number" value={v.priceOverride} onChange={e => set(i, 'priceOverride', e.target.value)} sx={{ flex: '1 1 120px' }} />
+          <TextField size="small" label="Stock" type="number" value={v.stock} onChange={e => set(i, 'stock', e.target.value)} sx={{ flex: '1 1 90px' }} />
+          <IconButton size="small" color="error" onClick={() => remove(i)}><Delete sx={{ fontSize: 16 }} /></IconButton>
+        </Box>
+      ))}
+      <Button size="small" startIcon={<Add />} onClick={add}>Ajouter une variante (mémoire/taille)</Button>
+    </Box>
+  );
+}
+
 // ── Product dialog ─────────────────────────────────────────────────────────────
 function ProductDialog({ open, onClose, product, storeId }: { open: boolean; onClose: () => void; product?: any; storeId?: string }) {
   const qc = useQueryClient();
   const { enqueueSnackbar } = useSnackbar();
   const editing = !!product;
+
+  const { data: categories = [] } = useQuery({
+    queryKey: ['categories'],
+    queryFn:  () => api.get('/categories').then(r => r.data),
+    enabled:  open,
+  });
 
   const [form, setForm] = useState({
     name:        product?.name        ?? '',
@@ -116,8 +142,15 @@ function ProductDialog({ open, onClose, product, storeId }: { open: boolean; onC
     price:       product?.price       ?? '',
     salePrice:   product?.salePrice   ?? '',
     stock:       product?.stock       ?? 999,
-    images:      product?.images?.map((i: any) => i.url).join('\n') ?? '',
+    categoryId:  product?.categoryId  ?? product?.category?.id ?? '',
+    brandName:   product?.brand?.name ?? '',
+    sku:         product?.sku         ?? '',
+    condition:   product?.condition   ?? 'new',
+    images:      product?.images?.map((i: any) => i.urlFull || i.url).join('\n') ?? '',
   });
+  const [variants, setVariants] = useState<any[]>(
+    product?.variants?.map((v: any) => ({ size: v.size ?? '', priceOverride: v.priceOverride ?? '', stock: v.stock ?? 0 })) ?? []
+  );
 
   const set = (k: string) => (e: any) => setForm(f => ({ ...f, [k]: e.target.value }));
 
@@ -129,7 +162,12 @@ function ProductDialog({ open, onClose, product, storeId }: { open: boolean; onC
         price:       Number(form.price),
         salePrice:   form.salePrice ? Number(form.salePrice) : undefined,
         stock:       Number(form.stock),
+        categoryId:  form.categoryId || undefined,
+        brandName:   form.brandName || undefined,
+        sku:         form.sku || undefined,
+        condition:   form.condition || undefined,
         images:      form.images.split('\n').map(u => u.trim()).filter(Boolean),
+        variants:    variants.filter(v => v.size).map(v => ({ size: v.size, priceOverride: v.priceOverride ? Number(v.priceOverride) : undefined, stock: Number(v.stock) || 0 })),
       };
       return editing
         ? api.patch(`/admin/platform-store/products/${product.id}`, body)
@@ -149,8 +187,32 @@ function ProductDialog({ open, onClose, product, storeId }: { open: boolean; onC
       <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: '16px !important' }}>
         <TextField label="Nom du produit *" value={form.name} onChange={set('name')} fullWidth />
         <TextField label="Description" value={form.description} onChange={set('description')} fullWidth multiline rows={3} />
+
         <Box sx={{ display: 'flex', gap: 2 }}>
-          <TextField label="Prix HTG *" type="number" value={form.price} onChange={set('price')} fullWidth />
+          <FormControl fullWidth size="small">
+            <InputLabel>Catégorie</InputLabel>
+            <Select label="Catégorie" value={form.categoryId} onChange={(e: any) => setForm(f => ({ ...f, categoryId: e.target.value }))}>
+              {categories.map((c: any) => <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>)}
+            </Select>
+          </FormControl>
+          <FormControl fullWidth size="small">
+            <InputLabel>État</InputLabel>
+            <Select label="État" value={form.condition} onChange={(e: any) => setForm(f => ({ ...f, condition: e.target.value }))}>
+              <MenuItem value="new">Neuf</MenuItem>
+              <MenuItem value="used">Occasion</MenuItem>
+              <MenuItem value="refurbished">Reconditionné</MenuItem>
+            </Select>
+          </FormControl>
+        </Box>
+
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <TextField label="Marque" value={form.brandName} onChange={set('brandName')} fullWidth />
+          <TextField label="SKU / Référence" value={form.sku} onChange={set('sku')} fullWidth />
+        </Box>
+
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <TextField label="Prix HTG *" type="number" value={form.price} onChange={set('price')} fullWidth
+            helperText="Prix affiché — barré si un prix soldé est renseigné" />
           <TextField label="Prix soldé HTG" type="number" value={form.salePrice} onChange={set('salePrice')} fullWidth />
         </Box>
         <TextField label="Stock" type="number" value={form.stock} onChange={set('stock')} fullWidth />
@@ -158,8 +220,19 @@ function ProductDialog({ open, onClose, product, storeId }: { open: boolean; onC
           label="URLs des images (une par ligne)"
           value={form.images} onChange={set('images')}
           fullWidth multiline rows={4}
-          helperText="Collez les URLs des images, une par ligne"
+          helperText="Collez les URLs des images, une par ligne — la première sera l'image principale"
         />
+
+        <Divider />
+        <Box>
+          <Typography fontWeight={700} fontSize={13} color="#111827" mb={1}>
+            Variantes (optionnel)
+          </Typography>
+          <Typography fontSize={12} color="#6B7280" mb={1.5}>
+            Ex: mémoire/stockage — le client choisit une variante sur la fiche produit au lieu d'avoir plusieurs fiches séparées.
+          </Typography>
+          <VariantEditor variants={variants} onChange={setVariants} />
+        </Box>
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} color="inherit">Annuler</Button>
@@ -275,6 +348,7 @@ export default function BoutiquePage() {
               <TableHead>
                 <TableRow sx={{ '& th': { fontWeight: 700, color: '#374151', fontSize: 12.5, bgcolor: '#F9FAFB' } }}>
                   <TableCell>Produit</TableCell>
+                  <TableCell>Catégorie</TableCell>
                   <TableCell align="right">Prix HTG</TableCell>
                   <TableCell align="right">Soldé</TableCell>
                   <TableCell align="right">Stock</TableCell>
@@ -284,7 +358,7 @@ export default function BoutiquePage() {
               </TableHead>
               <TableBody>
                 {products.map((p: any) => {
-                  const img = p.images?.[0]?.url;
+                  const img = p.images?.[0]?.urlFull || p.images?.[0]?.urlThumb || p.images?.[0]?.url;
                   return (
                     <TableRow key={p.id} hover>
                       <TableCell>
@@ -292,10 +366,19 @@ export default function BoutiquePage() {
                           <Box sx={{ width: 44, height: 44, borderRadius: '8px', overflow: 'hidden', bgcolor: '#F3F4F6', flexShrink: 0 }}>
                             {img && <Box component="img" src={img} sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
                           </Box>
-                          <Typography fontSize={13} fontWeight={600} color="#111827" sx={{ maxWidth: 280, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical' }}>
-                            {p.name}
-                          </Typography>
+                          <Box sx={{ minWidth: 0 }}>
+                            <Typography fontSize={13} fontWeight={600} color="#111827" sx={{ maxWidth: 280, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical' }}>
+                              {p.name}
+                            </Typography>
+                            {p.variants?.length > 0 && (
+                              <Chip size="small" label={`${p.variants.length} variantes`}
+                                sx={{ mt: 0.3, fontSize: 10, height: 18, bgcolor: alpha(OR, 0.1), color: OR, fontWeight: 700 }} />
+                            )}
+                          </Box>
                         </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Typography fontSize={12.5} color="#6B7280">{p.category?.name || '—'}</Typography>
                       </TableCell>
                       <TableCell align="right">
                         <Typography fontSize={13} fontWeight={700}>{Number(p.price).toLocaleString()}</Typography>
@@ -344,7 +427,7 @@ export default function BoutiquePage() {
                 })}
                 {products.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} align="center" sx={{ py: 5 }}>
+                    <TableCell colSpan={7} align="center" sx={{ py: 5 }}>
                       <Typography color="text.secondary">Aucun produit. Ajoutez votre premier produit.</Typography>
                     </TableCell>
                   </TableRow>

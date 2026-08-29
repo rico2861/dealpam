@@ -100,20 +100,29 @@ export class PlatformStoreService {
     const store = await this.resolveStore(adminUserId);
     return this.prisma.product.findMany({
       where: { storeId: store.id },
-      include: { images: { take: 1, where: { isPrimary: true } }, category: { select: { id: true, name: true } } },
+      include: { images: { take: 1, where: { isPrimary: true } }, category: { select: { id: true, name: true } }, brand: { select: { id: true, name: true } }, variants: true },
       orderBy: { createdAt: 'desc' },
     });
+  }
+
+  private async findOrCreateBrand(name: string): Promise<string> {
+    const slug = name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    const existing = await this.prisma.brand.findFirst({ where: { OR: [{ slug }, { name: { equals: name.trim(), mode: 'insensitive' } }] } });
+    if (existing) return existing.id;
+    const created = await this.prisma.brand.create({ data: { name: name.trim(), slug } });
+    return created.id;
   }
 
   async addProduct(adminUserId: string, body: {
     name: string; description?: string; price: number; salePrice?: number;
     stock?: number; categoryId?: string; images?: string[];
-    paymentNote?: string;
+    paymentNote?: string; brandName?: string; sku?: string; condition?: string;
     // { size, priceOverride?, stock? }[] — ex plusieurs capacites memoire pour
     // un meme modele, chacune avec son propre prix/stock.
     variants?: { size: string; priceOverride?: number; stock?: number }[];
   }) {
     const store = await this.resolveStore(adminUserId);
+    const brandId = body.brandName?.trim() ? await this.findOrCreateBrand(body.brandName.trim()) : null;
 
     const product = await this.prisma.product.create({
       data: {
@@ -126,6 +135,9 @@ export class PlatformStoreService {
         stock:       body.stock ?? 999,
         status:      'PUBLISHED',
         categoryId:  body.categoryId ?? null,
+        brandId,
+        sku:         body.sku || null,
+        condition:   body.condition || null,
       },
     });
 
@@ -168,6 +180,9 @@ export class PlatformStoreService {
     if (body.salePrice   !== undefined) data.salePrice   = body.salePrice;
     if (body.stock       !== undefined) data.stock       = body.stock;
     if (body.categoryId  !== undefined) data.categoryId  = body.categoryId;
+    if (body.sku         !== undefined) data.sku         = body.sku;
+    if (body.condition   !== undefined) data.condition   = body.condition;
+    if (body.brandName?.trim()) data.brandId = await this.findOrCreateBrand(body.brandName.trim());
 
     if (body.images?.length) {
       await this.prisma.productImage.deleteMany({ where: { productId } });
