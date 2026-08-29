@@ -104,6 +104,22 @@ function SidebarContent({ badges, onClose, stats }: {
   const navigate = useNavigate();
   const isApproved = stats?.sellerStatus === 'APPROVED';
 
+  // La boutique officielle DealPam est geree par l'equipe (pas un vrai
+  // vendeur individuel) — "Profil & Documents" (KYC) et "Wallet" (retraits
+  // vers un compte bancaire personnel) n'ont pas de sens pour ce compte.
+  const { data: myStores } = useQuery({
+    queryKey: ['myStoresNav'],
+    queryFn: () => api.get('/stores/me/all').then(r => r.data?.stores ?? []),
+    enabled: !!localStorage.getItem('accessToken'),
+    staleTime: 5 * 60_000,
+  });
+  const isPlatformStore = (myStores ?? []).some((s: any) => s.isPlatformStore);
+  const navGroups = isPlatformStore
+    ? GROUPS.map(g => g.label === 'Compte'
+        ? { ...g, items: g.items.filter(i => i.path !== '/seller/wallet' && i.path !== '/seller/profile') }
+        : g)
+    : GROUPS;
+
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: SIDE }}>
 
@@ -159,7 +175,7 @@ function SidebarContent({ badges, onClose, stats }: {
 
       {/* Nav */}
       <Box sx={{ flex: 1, overflowY: 'auto', px: 1.5, py: 1, scrollbarWidth: 'thin', scrollbarColor: 'rgba(15,23,42,0.09) transparent', '&::-webkit-scrollbar': { width: 6 }, '&::-webkit-scrollbar-track': { bgcolor: 'transparent' }, '&::-webkit-scrollbar-thumb': { bgcolor: 'rgba(15,23,42,0.09)', borderRadius: 3, '&:hover': { bgcolor: 'rgba(15,23,42,0.09)' } } }}>
-        {GROUPS.map((g, gi) => (
+        {navGroups.map((g, gi) => (
           <Box key={gi} sx={{ mb: 2 }}>
             <Typography sx={{ px: 1.5, mb: 0.8, fontSize: 9.5, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '1px' }}>
               {g.label}
