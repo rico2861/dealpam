@@ -643,7 +643,7 @@ function SellerCard({ s }: { s: any }) {
           color: FS_ORANGE, fontWeight: 800, fontSize: 22,
         }}>
           {hasImg
-            ? <Box component="img" src={img} alt={name} onError={() => setImgError(true)}
+            ? <Box component="img" src={img} alt={name} loading="lazy" decoding="async" onError={() => setImgError(true)}
                 sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             : initials}
         </Box>

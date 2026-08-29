@@ -98,7 +98,7 @@ function ProductCardGrid({ p }: { p: any }) {
 
       <Box component={Link} to={`/products/${p.slug}`} sx={{ textDecoration: 'none', display: 'block' }}>
         <Box sx={{ aspectRatio: '1', overflow: 'hidden', bgcolor: '#F5F5F5' }}>
-          <Box component="img" src={img} alt={p.name}
+          <Box component="img" src={img} alt={p.name} loading="lazy" decoding="async"
             sx={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s',
               '&:hover': { transform: 'scale(1.05)' } }} />
         </Box>
@@ -165,7 +165,7 @@ function ProductCardRow({ p }: { p: any }) {
       '&:hover': { boxShadow: '0 2px 12px rgba(0,0,0,0.08)' } }}>
       <Box component={Link} to={`/products/${p.slug}`}
         sx={{ width: { xs: 100, md: 160 }, flexShrink: 0, bgcolor: '#F5F5F5', textDecoration: 'none' }}>
-        <Box component="img" src={img} alt={p.name}
+        <Box component="img" src={img} alt={p.name} loading="lazy" decoding="async"
           sx={{ width: '100%', height: '100%', objectFit: 'cover', minHeight: { xs: 100, md: 140 } }} />
       </Box>
       <Box sx={{ flex: 1, p: { xs: 1.2, md: 2 }, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
