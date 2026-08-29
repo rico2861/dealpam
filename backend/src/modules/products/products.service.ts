@@ -240,6 +240,129 @@ export class ProductsService {
     return product;
   }
 
+  // ── Vendeur : import en masse depuis un fichier Excel/CSV ─────────────────
+  // Chaque ligne suit les memes regles metier qu'une creation unitaire (boutique
+  // complete, quota du plan, moderation) mais sans upload de fichiers — les
+  // images sont fournies par URL (ex: lien deja hebergeur/CDN du vendeur).
+  async bulkImport(userId: string, items: {
+    name: string; description?: string; price: number; salePrice?: number;
+    stock?: number; sku?: string; categoryName?: string; categoryId?: string;
+    brandName?: string; condition?: string; images?: string[];
+  }[]) {
+    const seller = await this.prisma.seller.findUnique({
+      where: { userId },
+      include: {
+        stores: true,
+        subscriptions: { where: { isActive: true, endDate: { gt: new Date() } }, include: { plan: true }, take: 1 },
+      },
+    });
+    if (!seller) throw new NotFoundException('Profil vendeur introuvable');
+    if (seller.status !== 'APPROVED') throw new ForbiddenException('Votre boutique n\'est pas approuvée');
+
+    let sub = seller.subscriptions[0];
+    if (!sub) {
+      const baseline = await this.subscriptionsService.ensureBaselinePlan(seller.id).catch(() => null);
+      if (!baseline) throw new ForbiddenException('Abonnement requis pour publier des produits');
+      sub = await this.prisma.sellerSubscription.findUnique({ where: { id: baseline.id }, include: { plan: true } }) as any;
+    }
+
+    const store = seller.stores.find(s => s.isPrimary) ?? seller.stores[0];
+    if (!store) throw new ForbiddenException('Boutique introuvable');
+
+    const parseJsonArr = (val: any): any[] => {
+      if (!val) return [];
+      if (Array.isArray(val)) return val;
+      try { const p = JSON.parse(val); return Array.isArray(p) ? p : []; } catch { return []; }
+    };
+    const hasPayment = parseJsonArr((store as any).acceptedPaymentMethods).length > 0;
+    const hasFulfillment = parseJsonArr((store as any).deliveryZones).length > 0 || parseJsonArr((store as any).pickupPoints).length > 0;
+    if (!hasPayment || !hasFulfillment) {
+      throw new ForbiddenException(
+        'Votre boutique doit avoir un moyen de paiement et une zone de livraison ou un point de retrait configurés avant d\'importer des produits.',
+      );
+    }
+
+    let existingCount = sub.plan.maxProducts
+      ? await this.prisma.product.count({ where: { storeId: store.id, productType: { not: 'SERVICE' }, status: { in: ['PUBLISHED', 'PENDING_REVIEW', 'DRAFT'] } } })
+      : 0;
+
+    const categories = await this.prisma.category.findMany({ select: { id: true, name: true, slug: true } });
+    const findCategoryId = (name?: string, id?: string) => {
+      if (id) return id;
+      if (!name) return null;
+      const n = name.trim().toLowerCase();
+      const match = categories.find(c => c.name.toLowerCase() === n || c.slug.toLowerCase() === n);
+      return match?.id ?? null;
+    };
+
+    const results: { row: number; name: string; status: 'created' | 'error'; error?: string }[] = [];
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      const rowNum = i + 2; // +2 : ligne 1 = en-tetes du fichier Excel
+      try {
+        if (!item.name?.trim()) throw new Error('Nom du produit manquant');
+        if (!item.price || Number(item.price) <= 0) throw new Error('Prix invalide');
+
+        if (sub.plan.maxProducts && existingCount >= sub.plan.maxProducts) {
+          throw new Error(`Limite de ${sub.plan.maxProducts} produits atteinte pour votre plan`);
+        }
+
+        const categoryId = findCategoryId(item.categoryName, item.categoryId);
+        if (!categoryId) throw new Error(`Categorie "${item.categoryName || ''}" introuvable`);
+
+        let resolvedBrandId: string | null = null;
+        if (item.brandName?.trim()) {
+          resolvedBrandId = await this.findOrCreateBrand(item.brandName.trim());
+        }
+
+        const moderation = scanForProhibitedContent(item.name, undefined, item.description);
+        const slug = item.name.toLowerCase()
+          .normalize('NFD').replace(/[̀-ͯ]/g, '')
+          .replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+          + '-' + Date.now() + '-' + i;
+
+        const images = (item.images || []).filter(Boolean).slice(0, sub.plan.maxImages || 5);
+
+        const product = await this.prisma.product.create({
+          data: {
+            storeId: store.id, categoryId, brandId: resolvedBrandId,
+            name: item.name.trim(), slug,
+            description: item.description || '',
+            sku: item.sku || null,
+            price: item.price, salePrice: item.salePrice ?? null,
+            stock: item.stock ?? 1,
+            condition: item.condition || null,
+            isFlagged: moderation.isFlagged, flagReason: moderation.reason,
+            status: moderation.isFlagged ? 'PENDING_REVIEW' : 'PENDING_REVIEW',
+            minOrderQty: 1,
+          },
+        });
+
+        if (images.length) {
+          await this.prisma.productImage.createMany({
+            data: images.map((url, idx) => ({
+              productId: product.id, urlFull: url, urlMedium: url, urlThumb: url,
+              publicId: url, isPrimary: idx === 0, sortOrder: idx,
+            })),
+          });
+        }
+
+        existingCount++;
+        results.push({ row: rowNum, name: item.name, status: 'created' });
+      } catch (e: any) {
+        results.push({ row: rowNum, name: item.name || '(sans nom)', status: 'error', error: e.message || 'Erreur inconnue' });
+      }
+    }
+
+    return {
+      total: items.length,
+      created: results.filter(r => r.status === 'created').length,
+      failed: results.filter(r => r.status === 'error').length,
+      results,
+    };
+  }
+
   async create(userId: string, dto: CreateProductDto, files: { images?: Express.Multer.File[], variantImages?: Express.Multer.File[] }) {
     const seller = await this.prisma.seller.findUnique({
       where: { userId },

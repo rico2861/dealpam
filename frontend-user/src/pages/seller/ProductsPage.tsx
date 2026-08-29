@@ -1,12 +1,12 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box, Typography, Button, Avatar, CircularProgress,
   Dialog, DialogTitle, DialogContent, DialogActions,
-  TextField, InputAdornment,
+  TextField, InputAdornment, List, ListItem, ListItemText,
 } from '@mui/material';
 import {
-  Add, Edit, Delete, Search, Inventory,
+  Add, Edit, Delete, Search, Inventory, UploadFile,
   CheckCircle, Warning, Block, RadioButtonUnchecked, Archive,
 } from '@mui/icons-material';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -50,6 +50,9 @@ export default function SellerProductsPage({ mode = 'products' }: { mode?: 'prod
   const [dateTo, setDateTo]     = useState('');
   const [page, setPage]         = useState(1);
   const PAGE_SIZE = 12;
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<{ total: number; created: number; failed: number; results: any[] } | null>(null);
 
   const { data: allProducts, isLoading } = useQuery({
     queryKey: ['sellerProducts'],
@@ -72,6 +75,63 @@ export default function SellerProductsPage({ mode = 'products' }: { mode?: 'prod
       enqueueSnackbar(err?.response?.data?.message || 'Erreur lors de la suppression', { variant: 'error' });
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setImporting(true);
+    setImportResult(null);
+    try {
+      const XLSX = await import('xlsx');
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, { type: 'array' });
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const rows: any[] = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+
+      const items = rows.map(r => {
+        const get = (...keys: string[]) => {
+          for (const k of keys) {
+            const found = Object.keys(r).find(rk => rk.trim().toLowerCase() === k.toLowerCase());
+            if (found && String(r[found]).trim() !== '') return r[found];
+          }
+          return undefined;
+        };
+        const imagesRaw = get('Images', 'Image', 'Image URL', 'Photo');
+        const images = imagesRaw ? String(imagesRaw).split(/[,;]/).map((s: string) => s.trim()).filter(Boolean) : [];
+        return {
+          name: get('Nom', 'Nom du produit', 'Name'),
+          description: get('Description'),
+          price: Number(get('Prix', 'Price')) || 0,
+          salePrice: get('Prix promo', 'Sale Price') ? Number(get('Prix promo', 'Sale Price')) : undefined,
+          stock: get('Stock') ? Number(get('Stock')) : 1,
+          sku: get('SKU', 'Reference'),
+          categoryName: get('Categorie', 'Catégorie', 'Category'),
+          brandName: get('Marque', 'Brand'),
+          condition: get('Etat', 'État', 'Condition'),
+          images,
+        };
+      }).filter(it => it.name);
+
+      if (!items.length) {
+        enqueueSnackbar('Aucune ligne valide trouvée dans le fichier', { variant: 'warning' });
+        return;
+      }
+
+      const res = await api.post('/products/bulk-import', { items });
+      setImportResult(res.data);
+      qc.invalidateQueries({ queryKey: ['sellerProducts'] });
+      if (res.data.failed === 0) {
+        enqueueSnackbar(`${res.data.created} produit(s) importé(s) — en attente de validation`, { variant: 'success' });
+      } else {
+        enqueueSnackbar(`${res.data.created} importé(s), ${res.data.failed} en erreur — voir le détail`, { variant: 'warning' });
+      }
+    } catch (err: any) {
+      enqueueSnackbar(err?.response?.data?.message || 'Erreur lors de la lecture du fichier', { variant: 'error' });
+    } finally {
+      setImporting(false);
     }
   };
 
@@ -133,14 +193,53 @@ export default function SellerProductsPage({ mode = 'products' }: { mode?: 'prod
             {list.length} {mode === 'services' ? 'service' : 'produit'}{list.length !== 1 ? 's' : ''} au total
           </Typography>
         </Box>
-        <Button
-          onClick={() => navigate(mode === 'services' ? '/seller/services/add' : '/seller/products/add')}
-          startIcon={<Add sx={{ fontSize: 18 }} />}
-          sx={{ bgcolor: OR, color: '#fff', borderRadius: '12px', fontWeight: 700, px: 2.5, py: 1.2,
-            boxShadow: '0 4px 14px rgba(255,107,0,0.28)', '&:hover': { bgcolor: '#E05A00' } }}>
-          {mode === 'services' ? '+ Ajouter un service' : '+ Ajouter un produit'}
-        </Button>
+        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+          {mode !== 'services' && (
+            <>
+              <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv" hidden onChange={handleImportFile} />
+              <Button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={importing}
+                startIcon={importing ? <CircularProgress size={16} /> : <UploadFile sx={{ fontSize: 18 }} />}
+                sx={{ bgcolor: '#FFFFFF', color: TXT, borderRadius: '12px', fontWeight: 700, px: 2.5, py: 1.2,
+                  border: `1px solid ${BORD}`, '&:hover': { bgcolor: 'rgba(15,23,42,0.04)' } }}>
+                Importer Excel
+              </Button>
+            </>
+          )}
+          <Button
+            onClick={() => navigate(mode === 'services' ? '/seller/services/add' : '/seller/products/add')}
+            startIcon={<Add sx={{ fontSize: 18 }} />}
+            sx={{ bgcolor: OR, color: '#fff', borderRadius: '12px', fontWeight: 700, px: 2.5, py: 1.2,
+              boxShadow: '0 4px 14px rgba(255,107,0,0.28)', '&:hover': { bgcolor: '#E05A00' } }}>
+            {mode === 'services' ? '+ Ajouter un service' : '+ Ajouter un produit'}
+          </Button>
+        </Box>
       </Box>
+
+      {importResult && (
+        <Dialog open onClose={() => setImportResult(null)} maxWidth="sm" fullWidth>
+          <DialogTitle>Résultat de l'import</DialogTitle>
+          <DialogContent>
+            <Typography fontSize={14} mb={1.5}>
+              {importResult.created} produit(s) importé(s) sur {importResult.total}
+              {importResult.failed > 0 && ` — ${importResult.failed} en erreur`}
+            </Typography>
+            {importResult.failed > 0 && (
+              <List dense sx={{ maxHeight: 300, overflowY: 'auto', bgcolor: 'rgba(239,68,68,0.05)', borderRadius: '10px' }}>
+                {importResult.results.filter(r => r.status === 'error').map((r, i) => (
+                  <ListItem key={i}>
+                    <ListItemText primary={`Ligne ${r.row} — ${r.name}`} secondary={r.error} />
+                  </ListItem>
+                ))}
+              </List>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setImportResult(null)}>Fermer</Button>
+          </DialogActions>
+        </Dialog>
+      )}
 
       {/* Filter tabs + search */}
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, mb: 2.5, alignItems: 'center' }}>

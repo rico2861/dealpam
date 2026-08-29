@@ -2,7 +2,7 @@ import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, Us
 import { Response } from 'express';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
-import { ApiTags, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiConsumes, ApiOperation } from '@nestjs/swagger';
 import { JwtService } from '@nestjs/jwt';
 import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
 import { RolesGuard } from '../../shared/guards/roles.guard';
@@ -126,6 +126,13 @@ export class ProductsController {
       } catch { /* token absent/expiré/invalide — reste anonyme, la route est publique */ }
     }
     return this.productsService.findOne(slug, viewerKey, currentUserId);
+  }
+
+  @Post('bulk-import')
+  @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('SELLER')
+  @ApiOperation({ summary: 'Importer plusieurs produits en une fois (ex: depuis un fichier Excel parse cote client)' })
+  bulkImport(@CurrentUser() user: any, @Body('items') items: any[]) {
+    return this.productsService.bulkImport(user.id, items ?? []);
   }
 
   @Post()
