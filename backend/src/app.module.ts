@@ -42,7 +42,16 @@ import { CouponsModule } from './modules/coupons/coupons.module';
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     ScheduleModule.forRoot(),
-    ThrottlerModule.forRoot([{ ttl: 60000, limit: 120 }]),
+    // Limite anti-abus globale, par IP — 120/min etait trop bas pour une app qui
+    // interroge le serveur en continu (notifications, chat, commandes... toutes
+    // les 20-60s) des qu'un utilisateur a plusieurs onglets/fenetres ouverts en
+    // meme temps : plusieurs onglets legitimes suffisaient a declencher un 429
+    // sur TOUTES les requetes de cette IP pendant la minute restante, ce qui se
+    // presentait comme "la plateforme plante" sans aucune erreur explicite a
+    // l'ecran. Les endpoints sensibles (login/register/reset password) gardent
+    // leurs limites plus strictes via leurs propres @Throttle() qui priment sur
+    // celle-ci.
+    ThrottlerModule.forRoot([{ ttl: 60000, limit: 600 }]),
     PrismaModule,
     MailModule,
     AuthModule,
