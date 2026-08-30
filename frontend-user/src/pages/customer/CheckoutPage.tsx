@@ -9,10 +9,10 @@ import {
   ShoppingCart, LocationOn, ArrowBack,
   Phone, WhatsApp, LocalShipping, ContentCopy,
   DirectionsWalk, Info, Smartphone, AccountBalance, AttachMoney,
-  CreditCard, AccessTime, Lock, Shield, Add, Close,
+  CreditCard, AccessTime, Lock, Shield, Add, Close, Remove, Delete,
   Warning, ChatBubbleOutline, Person,
 } from '@mui/icons-material';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import api from '../../api/axios';
 import { ListSkeleton } from '../../components/shared/Skeletons';
@@ -751,6 +751,39 @@ export default function CheckoutPage() {
     s + getEffectiveUnitPrice(i.product?.price, i.product?.salePrice, i.product?.priceTiers, i.quantity) * i.quantity, 0);
   const total = subtotal + shippingCost;
 
+  // Quantite +/- et suppression directement depuis le recapitulatif de commande
+  // — optimiste comme sur la page Panier, pour ne pas attendre le serveur avant
+  // de voir le total se mettre a jour.
+  const updateQtyMut = useMutation({
+    mutationFn: ({ itemId, quantity }: { itemId: string; quantity: number }) => api.patch(`/cart/items/${itemId}`, { quantity }),
+    onMutate: async ({ itemId, quantity }) => {
+      await qc.cancelQueries({ queryKey: ['cart'] });
+      const previous = qc.getQueryData(['cart']);
+      qc.setQueryData(['cart'], (old: any) => old ? { ...old, items: old.items.map((it: any) => it.id === itemId ? { ...it, quantity } : it) } : old);
+      return { previous };
+    },
+    onError: (err: any, _v, ctx: any) => {
+      if (ctx?.previous) qc.setQueryData(['cart'], ctx.previous);
+      enqueueSnackbar(err?.response?.data?.message || "La quantité n'a pas pu être mise à jour", { variant: 'error' });
+    },
+    onSettled: () => { qc.invalidateQueries({ queryKey: ['cart'] }); fetchCount(); },
+  });
+  const removeItemMut = useMutation({
+    mutationFn: (itemId: string) => api.delete(`/cart/items/${itemId}`),
+    onMutate: async (itemId: string) => {
+      await qc.cancelQueries({ queryKey: ['cart'] });
+      const previous = qc.getQueryData(['cart']);
+      qc.setQueryData(['cart'], (old: any) => old ? { ...old, items: old.items.filter((it: any) => it.id !== itemId) } : old);
+      return { previous };
+    },
+    onError: (err: any, _v, ctx: any) => {
+      if (ctx?.previous) qc.setQueryData(['cart'], ctx.previous);
+      enqueueSnackbar(err?.response?.data?.message || "L'article n'a pas pu être retiré", { variant: 'error' });
+    },
+    onSuccess: () => enqueueSnackbar('Article retiré', { variant: 'info' }),
+    onSettled: () => { qc.invalidateQueries({ queryKey: ['cart'] }); fetchCount(); },
+  });
+
   const handleAddressAdded = (addr: any) => {
     qc.invalidateQueries({ queryKey: ['addresses'] });
     setSelectedAddress(addr.id);
@@ -930,16 +963,34 @@ export default function CheckoutPage() {
                   return (
                     <Box key={item.id} sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
                       <Box sx={{ width: 52, height: 52, borderRadius: '12px', overflow: 'hidden',
-                        bgcolor: '#F1F5F9', border: `1px solid ${BORD}`, flexShrink: 0, position: 'relative' }}>
+                        bgcolor: '#F1F5F9', border: `1px solid ${BORD}`, flexShrink: 0 }}>
                         {img && <Box component="img" src={img} alt={p?.name} sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
-                        <Box sx={{ position: 'absolute', top: -6, right: -6, width: 18, height: 18,
-                          borderRadius: '50%', bgcolor: OR, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <Typography sx={{ fontSize: 9, color: 'white', fontWeight: 600 }}>{item.quantity}</Typography>
-                        </Box>
                       </Box>
                       <Box sx={{ flex: 1, minWidth: 0 }}>
                         <Typography fontSize={12.5} fontWeight={500} noWrap color="#0F172A">{p?.name}</Typography>
                         {item.color && <Typography fontSize={11} color={TXT2}>{item.color}{item.size ? ` · ${item.size}` : ''}</Typography>}
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6, mt: 0.6 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', border: `1px solid ${BORD}`, borderRadius: '8px' }}>
+                            <IconButton size="small" sx={{ p: 0.4 }}
+                              disabled={updateQtyMut.isPending}
+                              onClick={() => item.quantity > 1
+                                ? updateQtyMut.mutate({ itemId: item.id, quantity: item.quantity - 1 })
+                                : removeItemMut.mutate(item.id)}>
+                              <Remove sx={{ fontSize: 13 }} />
+                            </IconButton>
+                            <Typography fontSize={12} fontWeight={700} sx={{ minWidth: 16, textAlign: 'center' }}>{item.quantity}</Typography>
+                            <IconButton size="small" sx={{ p: 0.4 }}
+                              disabled={updateQtyMut.isPending}
+                              onClick={() => updateQtyMut.mutate({ itemId: item.id, quantity: item.quantity + 1 })}>
+                              <Add sx={{ fontSize: 13 }} />
+                            </IconButton>
+                          </Box>
+                          <IconButton size="small" sx={{ p: 0.4, color: '#94A3B8' }}
+                            disabled={removeItemMut.isPending}
+                            onClick={() => removeItemMut.mutate(item.id)}>
+                            <Delete sx={{ fontSize: 14 }} />
+                          </IconButton>
+                        </Box>
                       </Box>
                       <Typography fontWeight={700} fontSize={13} color={TXT} flexShrink={0}>{fmtHTG(price * item.quantity)}</Typography>
                     </Box>
