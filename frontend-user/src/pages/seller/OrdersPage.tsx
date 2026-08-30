@@ -428,6 +428,8 @@ export default function SellerOrdersPage() {
   const [tab, setTab]         = useState('');
   const [cancelDlg, setCancelDlg] = useState<{ open: boolean; id: string } | null>(null);
   const [cancelReason, setCancelReason] = useState('');
+  const [shipDlg, setShipDlg] = useState<{ open: boolean; id: string } | null>(null);
+  const [etaDate, setEtaDate] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo]     = useState('');
   const [page, setPage]         = useState(1);
@@ -445,8 +447,8 @@ export default function SellerOrdersPage() {
   const showSkel = useDelayedLoading(isLoading);
 
   const updateMut = useMutation({
-    mutationFn: ({ id, status, cancelReason }: { id: string; status: string; cancelReason?: string }) =>
-      api.patch(`/orders/seller/${id}/status`, { status, cancelReason }),
+    mutationFn: ({ id, status, cancelReason, estimatedDeliveryDate }: { id: string; status: string; cancelReason?: string; estimatedDeliveryDate?: string }) =>
+      api.patch(`/orders/seller/${id}/status`, { status, cancelReason, estimatedDeliveryDate }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['sellerOrders'] });
       qc.invalidateQueries({ queryKey: ['sellerStats'] });
@@ -458,6 +460,7 @@ export default function SellerOrdersPage() {
 
   const handleUpdate = (id: string, status: string) => {
     if (status === 'CANCELLED') { setCancelDlg({ open: true, id }); return; }
+    if (status === 'SHIPPED') { setShipDlg({ open: true, id }); return; }
     updateMut.mutate({ id, status });
   };
 
@@ -638,6 +641,32 @@ export default function SellerOrdersPage() {
             sx={{ bgcolor: RED, color: '#fff', borderRadius: '10px', fontWeight: 700, px: 2.5,
               '&:hover': { bgcolor: '#DC2626' }, '&:disabled': { bgcolor: 'rgba(15,23,42,0.04)', color: SUB } }}>
             {updateMut.isPending ? <CircularProgress size={15} color="inherit"/> : 'Confirmer l\'annulation'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Estimation de livraison a l'expedition */}
+      <Dialog open={!!shipDlg?.open} onClose={() => { setShipDlg(null); setEtaDate(''); }} maxWidth="xs" fullWidth
+        PaperProps={{ sx: { bgcolor: CARD, border: `1px solid ${BORD}`, borderRadius: '20px' } }}>
+        <DialogTitle sx={{ fontWeight: 900, fontSize: 17, color: TXT }}>Marquer comme expédiée</DialogTitle>
+        <DialogContent>
+          <Typography fontSize={13} color={SUB2} mb={1.5}>
+            Indiquez une date estimée de réception (optionnel) — elle sera affichée au client.
+          </Typography>
+          <TextField fullWidth size="small" type="date" label="Date estimée de livraison"
+            value={etaDate} onChange={e => setEtaDate(e.target.value)}
+            InputLabelProps={{ shrink: true }} inputProps={{ min: new Date().toISOString().slice(0, 10) }} />
+        </DialogContent>
+        <DialogActions sx={{ px: 2.5, pb: 2.5, gap: 1 }}>
+          <Button onClick={() => { setShipDlg(null); setEtaDate(''); }}
+            sx={{ color: SUB2, borderRadius: '10px', border: `1px solid ${BORD}`,
+              '&:hover': { borderColor: 'rgba(15,23,42,0.09)' } }}>
+            Annuler
+          </Button>
+          <Button onClick={() => { if (shipDlg) { updateMut.mutate({ id: shipDlg.id, status: 'SHIPPED', estimatedDeliveryDate: etaDate || undefined }); setShipDlg(null); setEtaDate(''); } }}
+            disabled={updateMut.isPending}
+            sx={{ bgcolor: OR, color: '#fff', borderRadius: '10px', fontWeight: 700, px: 2.5, '&:hover': { bgcolor: '#E05A00' } }}>
+            {updateMut.isPending ? <CircularProgress size={15} color="inherit"/> : 'Confirmer l\'expédition'}
           </Button>
         </DialogActions>
       </Dialog>

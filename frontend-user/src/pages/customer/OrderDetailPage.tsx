@@ -422,6 +422,15 @@ export default function OrderDetailPage() {
                   </Step>
                 ))}
               </Stepper>
+              {order.status === 'SHIPPED' && order.estimatedDeliveryDate && (
+                <Box sx={{ mt: 2.5, p: 1.5, borderRadius: '12px', bgcolor: alpha('#22D3EE', 0.1), border: `1px solid ${alpha('#22D3EE', 0.25)}`,
+                  display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <LocalShipping sx={{ fontSize: 16, color: '#0E7490' }} />
+                  <Typography fontSize={12.5} fontWeight={600} color="#0E7490">
+                    Réception estimée le {new Date(order.estimatedDeliveryDate).toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: 'long' })}
+                  </Typography>
+                </Box>
+              )}
             </Box>
           )}
 
