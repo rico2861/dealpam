@@ -518,6 +518,12 @@ export default function Header() {
   const [sCatOpen,    setSCatOpen]   = useState(false);
   const [drawerOpen,  setDrawerOpen] = useState(false);
   const [drawerShowAllCats, setDrawerShowAllCats] = useState(false);
+  // Filet de sécurité : un changement de route ferme TOUJOURS le menu mobile,
+  // sans dépendre du bon déroulement d'un clic ou d'une transition (même
+  // correctif déjà appliqué à SellerLayout — verrouillage de scroll iOS ou
+  // transition MUI interrompue par la navigation ont déjà empêché la
+  // fermeture normale ailleurs sur la plateforme).
+  useEffect(() => { setDrawerOpen(false); }, [rLocation.pathname]);
   const [mSearch,     setMSearch]    = useState(false);
   const [suggs,       setSuggs]      = useState<any[]>([]);
   const [showSuggs,   setShowSuggs]  = useState(false);

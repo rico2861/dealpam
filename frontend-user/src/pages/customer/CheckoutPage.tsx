@@ -449,22 +449,45 @@ function DeliveryStep({
         </Box>
       )}
 
-      <Button fullWidth variant="contained" onClick={onNext}
-        disabled={
-          // Une adresse précise est TOUJOURS requise en livraison à domicile — avant ce
-          // correctif, un client sans adresse enregistrée pouvait continuer en s'appuyant
-          // uniquement sur la ville de son profil (bloc "Mon profil" ci-dessus), et le
-          // vendeur recevait une commande "À domicile" sans aucune adresse exploitable.
-          (deliveryType === 'DELIVERY' && (!selectedAddress || zonesMismatch || (deliveryZones.length > 0 && selectedZone === null && !zonesMismatch && !!selDept))) ||
-          (deliveryType === 'PICKUP'   && selectedPickup === null)
-        }
-        sx={{ mt: 1, py: 1.4, borderRadius: '14px', fontWeight: 600, textTransform: 'none', fontSize: 14.5,
-          bgcolor: OR, boxShadow: `0 8px 24px ${alpha(OR, 0.3)}`, '&:hover': { bgcolor: ORD },
-          '&.Mui-disabled': { bgcolor: '#F1F5F9', color: '#64748B' } }}>
-        {/* Les vendeurs hors plateforme DealPam n'ont pas de paiement en ligne — le
-            client passe directement la commande, il n'y a pas d'étape "paiement". */}
-        {storeInfo?.isPlatformStore ? 'Continuer vers le paiement' : 'Continuer'}
-      </Button>
+      {(() => {
+        // Une adresse précise est TOUJOURS requise en livraison à domicile — avant ce
+        // correctif, un client sans adresse enregistrée pouvait continuer en s'appuyant
+        // uniquement sur la ville de son profil (bloc "Mon profil" ci-dessus), et le
+        // vendeur recevait une commande "À domicile" sans aucune adresse exploitable.
+        const needsAddress = deliveryType === 'DELIVERY' && !selectedAddress && !zonesMismatch;
+        const needsZone    = deliveryType === 'DELIVERY' && !zonesMismatch && deliveryZones.length > 0 && selectedZone === null && !!selDept;
+        const needsPickup  = deliveryType === 'PICKUP' && selectedPickup === null;
+        const isDisabled   = (deliveryType === 'DELIVERY' && (needsAddress || zonesMismatch || needsZone)) || needsPickup;
+        return (
+          <>
+            <Button fullWidth variant="contained" onClick={onNext} disabled={isDisabled}
+              sx={{ mt: 1, py: 1.4, borderRadius: '14px', fontWeight: 600, textTransform: 'none', fontSize: 14.5,
+                bgcolor: OR, boxShadow: `0 8px 24px ${alpha(OR, 0.3)}`, '&:hover': { bgcolor: ORD },
+                '&.Mui-disabled': { bgcolor: '#F1F5F9', color: '#64748B' } }}>
+              {/* Les vendeurs hors plateforme DealPam n'ont pas de paiement en ligne — le
+                  client passe directement la commande, il n'y a pas d'étape "paiement". */}
+              {storeInfo?.isPlatformStore ? 'Continuer vers le paiement' : 'Continuer'}
+            </Button>
+            {/* Le bouton grisé sans explication passait pour "cassé" — on dit
+                explicitement ce qui manque pour pouvoir continuer. */}
+            {needsAddress && !zonesMismatch && (
+              <Typography fontSize={12} color={RED} mt={1} textAlign="center">
+                Ajoutez une adresse de livraison ci-dessus pour continuer.
+              </Typography>
+            )}
+            {needsZone && !needsAddress && (
+              <Typography fontSize={12} color={RED} mt={1} textAlign="center">
+                Sélectionnez une zone de livraison ci-dessus pour continuer.
+              </Typography>
+            )}
+            {needsPickup && (
+              <Typography fontSize={12} color={RED} mt={1} textAlign="center">
+                Sélectionnez un point de retrait ci-dessus pour continuer.
+              </Typography>
+            )}
+          </>
+        );
+      })()}
 
       <AddAddressModal open={addOpen} onClose={() => setAddOpen(false)} profile={profile}
         onCreated={(addr: any) => { onAddressAdded(addr); setAddOpen(false); }} />

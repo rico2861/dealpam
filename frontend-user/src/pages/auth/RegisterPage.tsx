@@ -16,6 +16,7 @@ import { useSnackbar } from 'notistack';
 import api from '../../api/axios';
 import { useAuthStore } from '../../store/auth.store';
 import { friendlyApiError } from '../../utils/apiError';
+import { StoreForm } from '../seller/StoresPage';
 
 const ORANGE  = '#FF6B00';
 const PURPLE  = '#8B5CF6';
@@ -339,6 +340,8 @@ export default function RegisterPage({ forceRole }: { forceRole?: 'SELLER' | 'CU
     username: '', storeName: '', storeDescription: '', nif: '',
   });
 
+  const [storeConfig, setStoreConfig] = useState<any>(null);
+
   const [emailStatus,    setEmailStatus]    = useState<'idle'|'checking'|'ok'|'taken'>('idle');
   const [usernameStatus, setUsernameStatus] = useState<'idle'|'checking'|'ok'|'taken'>('idle');
   const emailTimer    = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -394,6 +397,21 @@ export default function RegisterPage({ forceRole }: { forceRole?: 'SELLER' | 'CU
     try {
       const payload: any = { ...form, role };
       ['storeName', 'storeDescription', 'nif', 'username'].forEach(k => { if (!payload[k]) delete payload[k]; });
+      if (role === 'SELLER' && storeConfig) {
+        Object.assign(payload, {
+          department:             storeConfig.department || undefined,
+          city:                   storeConfig.city || undefined,
+          address:                storeConfig.address || undefined,
+          storePhone:             storeConfig.phone || undefined,
+          whatsapp:               storeConfig.whatsapp || undefined,
+          storeEmail:             storeConfig.email || undefined,
+          moncashPhone:           storeConfig.moncashPhone || undefined,
+          acceptedPaymentMethods: storeConfig.acceptedPaymentMethods,
+          deliveryZones:          storeConfig.deliveryZones,
+          pickupPoints:           storeConfig.pickupPoints,
+          schedule:               storeConfig.schedule,
+        });
+      }
       const { data } = await api.post('/auth/register', payload);
       setUser(data.user, data.accessToken, data.refreshToken);
       if (role === 'SELLER') {
@@ -419,7 +437,17 @@ export default function RegisterPage({ forceRole }: { forceRole?: 'SELLER' | 'CU
       emailStatus !== 'taken' && emailStatus !== 'checking' &&
       usernameStatus !== 'taken'
     );
-    if (step === 2 && role === 'SELLER') return form.storeName.length >= 2;
+    if (step === 2 && role === 'SELLER') {
+      if (form.storeName.length < 2) return false;
+      // Configuration obligatoire dès l'inscription : au moins un moyen de
+      // paiement et au moins une option de réception (livraison ou retrait) —
+      // sans ça, un vendeur pouvait publier des produits impossibles à
+      // commander (aucun moyen de payer, aucun moyen de recevoir).
+      let hasPayment = false, hasFulfillment = false;
+      try { hasPayment = JSON.parse(storeConfig?.acceptedPaymentMethods || '[]').length > 0; } catch { /* ignore */ }
+      try { hasFulfillment = JSON.parse(storeConfig?.deliveryZones || '[]').length > 0 || JSON.parse(storeConfig?.pickupPoints || '[]').length > 0; } catch { /* ignore */ }
+      return hasPayment && hasFulfillment;
+    }
     return true;
   };
 
@@ -728,7 +756,26 @@ export default function RegisterPage({ forceRole }: { forceRole?: 'SELLER' | 'CU
                     </Typography>
                   </Box>
                 </Box>
-              ) : (
+              ) : null}
+
+              {role === 'SELLER' && (
+                <Box sx={{ p: 2.5, borderRadius: '16px', bgcolor: '#FFFFFF', border: `1.5px solid rgba(15,23,42,0.09)` }}>
+                  <Typography sx={{ fontWeight: 700, fontSize: 14, color: '#0F172A', mb: 0.3 }}>
+                    Configuration de la boutique
+                  </Typography>
+                  <Typography sx={{ fontSize: 12, color: '#64748B', mb: 2 }}>
+                    Obligatoire — au moins un moyen de paiement et une option de réception (livraison ou retrait), sinon vos clients ne pourront pas commander.
+                  </Typography>
+                  <StoreForm loading={loading} hideBasicInfo _onDataChange={setStoreConfig} />
+                  {storeConfig && !canNext() && (
+                    <Typography sx={{ fontSize: 11.5, color: '#F87171', mt: 1.5 }}>
+                      Sélectionnez au moins un moyen de paiement et une zone de livraison ou un point de retrait pour continuer.
+                    </Typography>
+                  )}
+                </Box>
+              )}
+
+              {role !== 'SELLER' && (
                 <Box sx={{ p: 3, borderRadius: '16px', bgcolor: alpha('#10B981', 0.05), border: `1.5px solid ${alpha('#10B981', 0.18)}`, textAlign: 'center' }}>
                   <Box sx={{
                     width: 60, height: 60, borderRadius: '50%', mx: 'auto', mb: 1.5,

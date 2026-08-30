@@ -43,7 +43,14 @@ const theme = createTheme({
       },
     },
     MuiTextField: {
-      defaultProps: { variant: 'outlined' },
+      // shrink:true force le libellé à toujours rester flottant au-dessus du
+      // champ (jamais centré "dedans"). Sans ça, un champ multiligne vide et
+      // non focus affiche son libellé centré verticalement dans la boîte,
+      // pile à la hauteur de la bordure du haut — la bordure traverse alors
+      // le texte du libellé comme un texte barré (bug visuel signalé sur
+      // "Message (optionnel)", "Motif (optionnel)"...). Appliqué une fois ici
+      // pour tous les TextField de la plateforme plutôt que champ par champ.
+      defaultProps: { variant: 'outlined', InputLabelProps: { shrink: true } },
       styleOverrides: { root: { '& .MuiOutlinedInput-root': { borderRadius: 10 } } },
     },
     // Les libellés de champ (ex: "Titre de l'annonce") étaient trop clairs
