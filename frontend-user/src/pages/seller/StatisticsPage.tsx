@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useRef } from 'react';
 import { Box, Typography, Tooltip } from '@mui/material';
 import {
   TrendingUp, ShoppingBag, Visibility, Star, BarChart,
@@ -21,6 +21,23 @@ const RED  = '#EF4444';
 const BLU  = '#3B82F6';
 const PUR  = '#8B5CF6';
 const YLW  = '#F59E0B';
+
+// Palette categorielle validee (separation daltonisme + contraste) pour les
+// statuts de commande — ordre fixe, jamais cycle. Voir skill dataviz.
+const STATUS_COLOR: Record<string, string> = {
+  PENDING:   '#eda100', // yellow
+  CONFIRMED: '#2a78d6', // blue
+  PREPARING: '#4a3aa7', // violet
+  SHIPPED:   '#1baf7a', // aqua
+  DELIVERED: '#008300', // green (status "good")
+  CANCELLED: '#e34948', // red (status "critical")
+  REFUNDED:  '#e87ba4', // magenta
+};
+
+const ORDER_STATUS_LABEL: Record<string, string> = {
+  PENDING: 'En attente', CONFIRMED: 'Confirmées', PREPARING: 'En préparation',
+  SHIPPED: 'Expédiées', DELIVERED: 'Livrées', CANCELLED: 'Annulées', REFUNDED: 'Remboursées',
+};
 
 function fmt(v: number) { return Number(v).toLocaleString('fr-HT'); }
 
@@ -48,6 +65,77 @@ function KpiCard({ icon, label, value, sub, color, trend }: { icon: any; label: 
         <Typography fontSize={24} fontWeight={900} color={TXT} letterSpacing="-0.5px">{value}</Typography>
         <Typography fontSize={12.5} color={SUB} mt={0.2}>{label}</Typography>
         {sub && <Typography fontSize={11} color={SUB} mt={0.3}>{sub}</Typography>}
+      </Box>
+    </Box>
+  );
+}
+
+// ── Graphique d'evolution du revenu ──────────────────────────────────────────
+// Ligne + aire en SVG, une seule serie (le titre la nomme, pas de legende
+// necessaire), crosshair + info-bulle au survol comme recommande pour toute
+// serie temporelle. Pas de bibliotheque de graphes ajoutee au bundle.
+function RevenueChart({ series, max }: { series: { label: string; revenue: number }[]; max: number }) {
+  const [hover, setHover] = useState<number | null>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  if (series.length === 0) return (
+    <Box sx={{ textAlign: 'center', py: 6 }}>
+      <Typography fontSize={13} color={SUB}>Pas de données sur la période</Typography>
+    </Box>
+  );
+
+  const W = 100, H = 40; // viewBox unitless — s'adapte a la largeur du conteneur (SVG responsive)
+  const stepX = series.length > 1 ? W / (series.length - 1) : 0;
+  const yFor = (v: number) => H - (max > 0 ? (v / max) * (H - 4) : 0) - 2;
+  const points = series.map((r, i) => ({ x: series.length > 1 ? i * stepX : W / 2, y: yFor(r.revenue), ...r }));
+  const linePath = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ');
+  const areaPath = `${linePath} L${points[points.length - 1].x},${H} L${points[0].x},${H} Z`;
+
+  const handleMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!wrapRef.current || points.length === 0) return;
+    const rect = wrapRef.current.getBoundingClientRect();
+    const relX = ((e.clientX - rect.left) / rect.width) * W;
+    let closest = 0, bestDist = Infinity;
+    points.forEach((p, i) => { const d = Math.abs(p.x - relX); if (d < bestDist) { bestDist = d; closest = i; } });
+    setHover(closest);
+  };
+
+  const hp = hover !== null ? points[hover] : null;
+
+  return (
+    <Box ref={wrapRef} sx={{ position: 'relative', height: 180 }}
+      onMouseMove={handleMove} onMouseLeave={() => setHover(null)}>
+      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" width="100%" height="100%" style={{ display: 'block', overflow: 'visible' }}>
+        <defs>
+          <linearGradient id="revFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={OR} stopOpacity="0.22" />
+            <stop offset="100%" stopColor={OR} stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <path d={areaPath} fill="url(#revFill)" stroke="none" />
+        <path d={linePath} fill="none" stroke={OR} strokeWidth="0.6" vectorEffect="non-scaling-stroke" strokeLinejoin="round" strokeLinecap="round" />
+        {hp && (
+          <>
+            <line x1={hp.x} y1="0" x2={hp.x} y2={H} stroke={BORD} strokeWidth="0.4" vectorEffect="non-scaling-stroke" />
+            <circle cx={hp.x} cy={hp.y} r="1.4" fill={OR} stroke="#fff" strokeWidth="0.5" vectorEffect="non-scaling-stroke" />
+          </>
+        )}
+      </svg>
+      {hp && (
+        <Box sx={{
+          position: 'absolute', top: 4, pointerEvents: 'none',
+          left: `${Math.min(Math.max((hp.x / W) * 100, 12), 88)}%`, transform: 'translateX(-50%)',
+          bgcolor: TXT, color: '#fff', px: 1.2, py: 0.6, borderRadius: '8px', whiteSpace: 'nowrap',
+          boxShadow: '0 4px 14px rgba(0,0,0,0.2)',
+        }}>
+          <Typography fontSize={11} fontWeight={700}>{fmt(hp.revenue)} HTG</Typography>
+          <Typography fontSize={9.5} color="rgba(255,255,255,0.7)">{hp.label}</Typography>
+        </Box>
+      )}
+      {/* Ticks premier/dernier point — reperes suffisants sans surcharger l'axe */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
+        <Typography fontSize={10.5} color={SUB}>{series[0]?.label}</Typography>
+        <Typography fontSize={10.5} color={SUB}>{series[series.length - 1]?.label}</Typography>
       </Box>
     </Box>
   );
@@ -121,6 +209,8 @@ export default function StatisticsPage() {
   const orderStatusBreakdown: Record<string, number> = stats?.orderStatusBreakdown ?? {};
   const topProducts: any[] = stats?.topProducts ?? [];
   const revenueSeries: any[] = stats?.revenueSeries ?? [];
+  const uniqueCustomerCount = stats?.uniqueCustomerCount ?? 0;
+  const conversionRate = stats?.conversionRate ?? 0;
   const maxTopProductRevenue = topProducts[0]?.revenue || 1;
   const maxSeriesRevenue = Math.max(...revenueSeries.map(r => r.revenue), 1);
   const maxOrderStatus = Math.max(...Object.values(orderStatusBreakdown).map((v: any) => Number(v)), 1);
@@ -143,6 +233,8 @@ export default function StatisticsPage() {
       { Indicateur: 'Vues produits (total)', Valeur: totalViewsLifetime },
       { Indicateur: 'Note moyenne', Valeur: avgRating },
       { Indicateur: "Nombre d'avis", Valeur: totalReviews },
+      { Indicateur: 'Clients uniques', Valeur: uniqueCustomerCount },
+      { Indicateur: 'Taux de conversion (%)', Valeur: conversionRate },
     ]);
     XLSX.utils.book_append_sheet(wb, kpiSheet, 'Resume');
 
@@ -154,7 +246,7 @@ export default function StatisticsPage() {
         XLSX.utils.book_append_sheet(wb, topSheet, 'Top produits');
       }
       const statusSheet = XLSX.utils.json_to_sheet(
-        Object.entries(orderStatusBreakdown).map(([k, v]) => ({ Statut: k, Nombre: v })),
+        Object.entries(orderStatusBreakdown).map(([k, v]) => ({ Statut: ORDER_STATUS_LABEL[k] ?? k, Nombre: v })),
       );
       XLSX.utils.book_append_sheet(wb, statusSheet, 'Commandes par statut');
     }
@@ -185,6 +277,8 @@ export default function StatisticsPage() {
         ['Vues produits (total)', fmt(totalViewsLifetime)],
         ['Note moyenne', avgRating ? avgRating.toFixed(1) : '—'],
         ["Nombre d'avis", String(totalReviews)],
+        ['Clients uniques', String(uniqueCustomerCount)],
+        ['Taux de conversion', `${conversionRate}%`],
       ],
     });
 
@@ -200,7 +294,7 @@ export default function StatisticsPage() {
       autoTable(doc, {
         startY: (doc as any).lastAutoTable.finalY + 10,
         head: [['Statut commande', 'Nombre']],
-        body: Object.entries(orderStatusBreakdown).map(([k, v]) => [k, String(v)]),
+        body: Object.entries(orderStatusBreakdown).map(([k, v]) => [ORDER_STATUS_LABEL[k] ?? k, String(v)]),
       });
     }
 
@@ -322,8 +416,10 @@ export default function StatisticsPage() {
                       <Typography fontSize={13} color={SUB}>Aucune vente sur la période</Typography>
                     </Box>
                   ) : (
-                    topProducts.map((p: any, i: number) => (
-                      <BarRow key={p.productId} label={p.name} value={p.revenue} max={maxTopProductRevenue} color={[OR, GRN, BLU, PUR, YLW][i % 5]} />
+                    // Une seule teinte : chaque barre porte deja son nom de produit en
+                    // etiquette directe, un arc-en-ciel par rang n'ajoute aucune info.
+                    topProducts.map((p: any) => (
+                      <BarRow key={p.productId} label={p.name} value={p.revenue} max={maxTopProductRevenue} color={OR} />
                     ))
                   )}
                 </Box>
@@ -334,7 +430,7 @@ export default function StatisticsPage() {
                     <Typography fontWeight={800} fontSize={14} color={TXT}>Commandes par statut</Typography>
                   </Box>
                   {Object.entries(orderStatusBreakdown).map(([label, count]: [string, any]) => (
-                    <BarRow key={label} label={label} value={Number(count)} max={maxOrderStatus} color={PUR} />
+                    <BarRow key={label} label={ORDER_STATUS_LABEL[label] ?? label} value={Number(count)} max={maxOrderStatus} color={STATUS_COLOR[label] ?? PUR} />
                   ))}
                 </Box>
               </Box>
@@ -345,19 +441,7 @@ export default function StatisticsPage() {
                   <TrendingUp sx={{ fontSize: 17, color: GRN }} />
                   <Typography fontWeight={800} fontSize={14} color={TXT}>Évolution du revenu</Typography>
                 </Box>
-                {revenueSeries.length === 0 ? (
-                  <Box sx={{ textAlign: 'center', py: 6 }}>
-                    <Typography fontSize={13} color={SUB}>Pas de données sur la période</Typography>
-                  </Box>
-                ) : (
-                  <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 1, height: 140, px: 1 }}>
-                    {revenueSeries.map((r, i) => (
-                      <Tooltip key={i} title={`${r.label}: ${fmt(r.revenue)} HTG`}>
-                        <Box sx={{ flex: 1, height: `${Math.max((r.revenue / maxSeriesRevenue) * 100, 3)}%`, bgcolor: OR, borderRadius: '4px 4px 0 0', minWidth: 4 }} />
-                      </Tooltip>
-                    ))}
-                  </Box>
-                )}
+                <RevenueChart series={revenueSeries} max={maxSeriesRevenue} />
               </Box>
 
               {/* Revenue summary */}
@@ -366,11 +450,13 @@ export default function StatisticsPage() {
                   <TrendingUp sx={{ fontSize: 17, color: GRN }} />
                   <Typography fontWeight={800} fontSize={14} color={TXT}>Aperçu des revenus</Typography>
                 </Box>
-                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', md: 'repeat(3,1fr)' }, gap: 1.5 }}>
+                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', md: 'repeat(5,1fr)' }, gap: 1.5 }}>
                   {[
                     { label: 'Revenu de la période', value: `${fmt(revenue)} HTG`, color: GRN },
                     { label: 'Commandes',             value: String(orderCount),   color: OR },
                     { label: 'Panier moyen',          value: `${fmt(avgOrderValue)} HTG`, color: BLU },
+                    { label: 'Clients uniques',       value: String(uniqueCustomerCount), color: PUR },
+                    { label: 'Taux de conversion',    value: `${conversionRate}%`, color: YLW },
                   ].map(({ label, value, color }) => (
                     <Box key={label} sx={{ p: 2, borderRadius: '12px', bgcolor: 'rgba(15,23,42,0.09)', border: `1px solid ${BORD}` }}>
                       <Typography fontSize={18} fontWeight={900} color={color}>{value}</Typography>
@@ -378,6 +464,9 @@ export default function StatisticsPage() {
                     </Box>
                   ))}
                 </Box>
+                <Typography fontSize={10.5} color={SUB} mt={1.5}>
+                  * Taux de conversion approximatif — basé sur les vues cumulées depuis toujours (aucun horodatage de vue en base pour l'instant).
+                </Typography>
               </Box>
             </>
           ) : (
