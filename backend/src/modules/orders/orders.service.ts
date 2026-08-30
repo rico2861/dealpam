@@ -29,8 +29,18 @@ export class OrdersService {
     pickupPointName?: string;
     pickupPointAddress?: string;
     shippingCost?: number;
+    // Panier multi-boutiques : chaque vendeur a ses propres zones de livraison,
+    // points de retrait et moyens de paiement — un seul jeu de valeurs "à plat"
+    // (deliveryType/shippingCost/...) ne peut pas représenter correctement 2
+    // boutiques différentes dans la même commande. Quand présent, prime sur les
+    // champs à plat POUR LA boutique concernée ; les boutiques absentes de cette
+    // map retombent sur les champs à plat (compatibilité panier mono-boutique).
+    storeOverrides?: Record<string, {
+      deliveryType?: string; pickupPointName?: string; pickupPointAddress?: string;
+      shippingCost?: number; chosenPaymentMethod?: string;
+    }>;
   }) {
-    const { addressId, notes, chosenPaymentMethod, deliveryType, pickupPointName, pickupPointAddress } = body;
+    const { addressId, notes, chosenPaymentMethod, deliveryType, pickupPointName, pickupPointAddress, storeOverrides } = body;
     // Le champ shippingHTG existait deja dans le schema mais n'etait jamais
     // renseigne ici — le total de la commande ignorait totalement les frais
     // de livraison calcules et affiches au client pendant le checkout.
@@ -103,19 +113,29 @@ export class OrdersService {
             : getEffectiveUnitPrice(Number(i.product.price), i.product.salePrice ? Number(i.product.salePrice) : null, (i.product as any).priceTiers, i.quantity)
         );
         const subtotal = items.reduce((s, i, idx) => s + unitPrices[idx] * i.quantity, 0);
+
+        // Surcharge par boutique si fournie (panier multi-vendeurs), sinon
+        // valeurs à plat (panier mono-boutique, comportement inchangé).
+        const ov = storeOverrides?.[storeId];
+        const storeDeliveryType        = ov?.deliveryType        ?? deliveryType ?? 'DELIVERY';
+        const storePickupPointName     = ov?.pickupPointName     ?? pickupPointName ?? null;
+        const storePickupPointAddress  = ov?.pickupPointAddress  ?? pickupPointAddress ?? null;
+        const storeShippingCost        = Math.max(0, Number(ov?.shippingCost ?? shippingCost) || 0);
+        const storeChosenPaymentMethod = ov?.chosenPaymentMethod ?? chosenPaymentMethod ?? null;
+
         const order = await tx.order.create({
           data: {
             userId,
             storeId,
             addressId:          addressId || null,
             notes,
-            chosenPaymentMethod: chosenPaymentMethod || null,
-            deliveryType:        deliveryType || 'DELIVERY',
-            pickupPointName:     pickupPointName || null,
-            pickupPointAddress:  pickupPointAddress || null,
+            chosenPaymentMethod: storeChosenPaymentMethod,
+            deliveryType:        storeDeliveryType,
+            pickupPointName:     storePickupPointName,
+            pickupPointAddress:  storePickupPointAddress,
             subtotalHTG: subtotal,
-            shippingHTG: shippingCost,
-            totalHTG:    subtotal + shippingCost,
+            shippingHTG: storeShippingCost,
+            totalHTG:    subtotal + storeShippingCost,
             items: {
               create: items.map((i, idx) => ({
                 productId:   i.productId,
