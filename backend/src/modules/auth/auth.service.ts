@@ -116,6 +116,21 @@ export class AuthService {
           slug:        `${slug}-${Date.now().toString(36)}`,
           description: dto.storeDescription?.trim() || null,
           isPrimary:   true,
+          // Configuration boutique optionnelle remplie directement à
+          // l'inscription — modifiable plus tard via "Configurer la boutique".
+          department:             dto.department || null,
+          city:                   dto.city || null,
+          address:                dto.address || null,
+          phone:                  dto.storePhone || null,
+          whatsapp:               dto.whatsapp || null,
+          email:                  dto.storeEmail || null,
+          moncashPhone:           dto.moncashPhone || null,
+          natcashPhone:           dto.natcashPhone || null,
+          acceptedPaymentMethods: dto.acceptedPaymentMethods || '[]',
+          bankAccounts:           dto.bankAccounts || null,
+          deliveryZones:          dto.deliveryZones || null,
+          pickupPoints:           dto.pickupPoints || null,
+          schedule:               dto.schedule || null,
         },
       });
 

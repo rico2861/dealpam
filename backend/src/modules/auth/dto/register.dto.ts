@@ -72,4 +72,20 @@ export class RegisterDto {
   @MaxLength(20)
   @Matches(/^[A-Z0-9-]{5,20}$/i, { message: 'NIF invalide' })
   nif?: string;
+
+  // Configuration boutique optionnelle saisie directement à l'inscription
+  // (voir aussi BecomeSellerDto pour la conversion acheteur → vendeur).
+  @ApiProperty({ required: false }) @IsOptional() @IsString() @MaxLength(30) department?: string;
+  @ApiProperty({ required: false }) @IsOptional() @IsString() @MaxLength(60) city?: string;
+  @ApiProperty({ required: false }) @IsOptional() @IsString() @MaxLength(200) address?: string;
+  @ApiProperty({ required: false }) @IsOptional() @IsString() @MaxLength(20) storePhone?: string;
+  @ApiProperty({ required: false }) @IsOptional() @IsString() @MaxLength(20) whatsapp?: string;
+  @ApiProperty({ required: false }) @IsOptional() @IsString() @MaxLength(100) storeEmail?: string;
+  @ApiProperty({ required: false }) @IsOptional() @IsString() @MaxLength(20) moncashPhone?: string;
+  @ApiProperty({ required: false }) @IsOptional() @IsString() @MaxLength(20) natcashPhone?: string;
+  @ApiProperty({ required: false }) @IsOptional() @IsString() acceptedPaymentMethods?: string;
+  @ApiProperty({ required: false }) @IsOptional() @IsString() bankAccounts?: string;
+  @ApiProperty({ required: false }) @IsOptional() @IsString() deliveryZones?: string;
+  @ApiProperty({ required: false }) @IsOptional() @IsString() pickupPoints?: string;
+  @ApiProperty({ required: false }) @IsOptional() @IsString() schedule?: string;
 }
