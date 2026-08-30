@@ -783,6 +783,18 @@ export default function CheckoutPage() {
     enabled:  !!firstStoreSlug,
   });
 
+  // Préchauffe le token MonCash dès l'arrivée à l'étape paiement (avant même
+  // que le client choisisse sa méthode) — le clic final sur "Payer" n'a alors
+  // plus qu'à créer le paiement lui-même, au lieu d'attendre en série le token
+  // ET la création : la redirection MonCash paraissait lente pile au moment
+  // où le client s'y attend le moins. Fire-and-forget, résultat ignoré.
+  useEffect(() => {
+    if (step === 1 && storeDetail?.isPlatformStore) {
+      api.post('/payments/moncash/warm').catch(() => {});
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, storeDetail?.isPlatformStore]);
+
   const pickupPoints:  any[]    = storeOptions?.pickupPoints  ?? [];
   const deliveryZones: any[]    = storeOptions?.deliveryZones ?? [];
   const paymentMethods: string[] = (() => {

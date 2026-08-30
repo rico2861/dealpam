@@ -572,7 +572,9 @@ export default function SellerStorePage() {
     name: '', description: '', city: '', address: '', phone: '', email: '', department: '',
   });
   const logoInputRef = useRef<HTMLInputElement>(null);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
 
   const { data: sellerData, isLoading } = useQuery({
     queryKey: ['sellerMe'],
@@ -640,6 +642,35 @@ export default function SellerStorePage() {
     } finally { setUploadingLogo(false); }
   };
 
+  const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingBanner(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('folder', 'stores');
+      const { data } = await api.post('/upload/image', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+      await api.patch('/stores/me', { bannerUrl: data.urlFull || data.urlMedium });
+      qc.invalidateQueries({ queryKey: ['sellerMe'] });
+      enqueueSnackbar('Photo de couverture mise à jour !', { variant: 'success' });
+    } catch {
+      enqueueSnackbar("Erreur lors de l'envoi de l'image", { variant: 'error' });
+    } finally { setUploadingBanner(false); e.target.value = ''; }
+  };
+
+  const handleBannerRemove = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setUploadingBanner(true);
+    try {
+      await api.patch('/stores/me', { bannerUrl: null });
+      qc.invalidateQueries({ queryKey: ['sellerMe'] });
+      enqueueSnackbar('Photo de couverture retirée', { variant: 'success' });
+    } catch {
+      enqueueSnackbar('Erreur lors de la suppression', { variant: 'error' });
+    } finally { setUploadingBanner(false); }
+  };
+
   const parseArr = (val: any): any[] => {
     if (!val) return [];
     if (Array.isArray(val)) return val;
@@ -686,52 +717,87 @@ export default function SellerStorePage() {
     <Box sx={{ p: { xs: 2, md: 3 }, bgcolor: BG, minHeight: '100vh' }}>
       <Box sx={{ maxWidth: 1200, mx: 'auto' }}>
 
-      {/* Header */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3, flexWrap: 'wrap' }}>
-        <input type="file" ref={logoInputRef} accept="image/*" style={{ display: 'none' }} onChange={handleLogoUpload} />
-        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.6, flexShrink: 0 }}>
+      {/* Header — bandeau de couverture + logo qui chevauche, meme pattern que
+          la page boutique publique (StoreDetailPage) pour que le vendeur voie
+          exactement ce que ses clients verront. */}
+      <input type="file" ref={logoInputRef} accept="image/*" style={{ display: 'none' }} onChange={handleLogoUpload} />
+      <input type="file" ref={bannerInputRef} accept="image/*" style={{ display: 'none' }} onChange={handleBannerUpload} />
+
+      <Box sx={{ position: 'relative', mb: 6.5 }}>
+        {/* Couverture */}
+        <Box onClick={() => !uploadingBanner && bannerInputRef.current?.click()}
+          sx={{ position: 'relative', height: { xs: 120, md: 170 }, borderRadius: '20px', overflow: 'hidden',
+            cursor: uploadingBanner ? 'default' : 'pointer', border: `1px solid ${BORD}` }}>
+          {store?.bannerUrl ? (
+            <Box component="img" src={store.bannerUrl} alt="Couverture"
+              sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          ) : (
+            <Box sx={{ width: '100%', height: '100%',
+              background: 'linear-gradient(135deg, #0F172A 0%, #1E3A8A 50%, #2563EB 100%)' }} />
+          )}
+          <Box sx={{ position: 'absolute', inset: 0, bgcolor: 'rgba(0,0,0,0.15)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0, transition: 'opacity 0.15s',
+            '&:hover': { opacity: 1 } }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 2, py: 1, borderRadius: '10px', bgcolor: 'rgba(0,0,0,0.55)' }}>
+              {uploadingBanner ? <CircularProgress size={16} sx={{ color: '#fff' }} /> : <PhotoCamera sx={{ fontSize: 16, color: '#fff' }} />}
+              <Typography fontSize={12.5} fontWeight={700} color="#fff">
+                {store?.bannerUrl ? 'Changer la couverture' : 'Ajouter une couverture'}
+              </Typography>
+            </Box>
+          </Box>
+          {store?.bannerUrl && !uploadingBanner && (
+            <Box onClick={handleBannerRemove}
+              sx={{ position: 'absolute', top: 10, right: 10, width: 30, height: 30, borderRadius: '50%',
+                bgcolor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                '&:hover': { bgcolor: '#EF4444' } }}>
+              <Close sx={{ fontSize: 15, color: '#fff' }} />
+            </Box>
+          )}
+        </Box>
+
+        {/* Logo, chevauche la couverture */}
+        <Box sx={{ position: 'absolute', bottom: -38, left: { xs: 20, md: 32 } }}>
           <Box onClick={() => !uploadingLogo && logoInputRef.current?.click()}
-            sx={{ position: 'relative', width: 64, height: 64, borderRadius: '16px', cursor: uploadingLogo ? 'default' : 'pointer',
+            sx={{ position: 'relative', width: 84, height: 84, borderRadius: '18px', cursor: uploadingLogo ? 'default' : 'pointer',
               transition: 'transform 0.15s', '&:hover': { transform: uploadingLogo ? 'none' : 'scale(1.03)' } }}>
             {store?.logoUrl
-              ? <Avatar src={store.logoUrl} variant="rounded" sx={{ width: 64, height: 64, borderRadius: '16px', border: `1px solid ${BORD}` }} />
-              : <Box sx={{ width: 64, height: 64, borderRadius: '16px', bgcolor: alpha(OR, 0.12), border: `1.5px dashed ${alpha(OR, 0.35)}`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Store sx={{ color: OR, fontSize: 28 }} />
+              ? <Avatar src={store.logoUrl} variant="rounded" sx={{ width: 84, height: 84, borderRadius: '18px', border: '3px solid #fff', boxShadow: '0 8px 20px rgba(15,23,42,0.18)' }} />
+              : <Box sx={{ width: 84, height: 84, borderRadius: '18px', bgcolor: alpha(OR, 0.12), border: '3px solid #fff',
+                  boxShadow: '0 8px 20px rgba(15,23,42,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Store sx={{ color: OR, fontSize: 32 }} />
                 </Box>}
             {/* Badge appareil photo — toujours visible (pas seulement au survol), pour que
                 ce soit évident au vendeur, y compris sur mobile où il n'y a pas de "hover". */}
             <Box sx={{
-              position: 'absolute', bottom: -4, right: -4, width: 26, height: 26, borderRadius: '50%',
+              position: 'absolute', bottom: -4, right: -4, width: 28, height: 28, borderRadius: '50%',
               bgcolor: OR, border: '2px solid #fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
               boxShadow: '0 2px 8px rgba(255,107,0,0.4)',
             }}>
-              {uploadingLogo ? <CircularProgress size={12} sx={{ color: '#fff' }} /> : <PhotoCamera sx={{ fontSize: 13, color: '#fff' }} />}
+              {uploadingLogo ? <CircularProgress size={13} sx={{ color: '#fff' }} /> : <PhotoCamera sx={{ fontSize: 14, color: '#fff' }} />}
             </Box>
             {/* Bouton retirer — visible seulement si une photo est déjà définie */}
             {store?.logoUrl && !uploadingLogo && (
               <Box onClick={handleLogoRemove}
                 sx={{
-                  position: 'absolute', top: -6, left: -6, width: 20, height: 20, borderRadius: '50%',
+                  position: 'absolute', top: -6, left: -6, width: 22, height: 22, borderRadius: '50%',
                   bgcolor: '#EF4444', border: '2px solid #fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   boxShadow: '0 2px 6px rgba(239,68,68,0.4)', '&:hover': { bgcolor: '#DC2626' },
                 }}>
-                <Close sx={{ fontSize: 12, color: '#fff' }} />
+                <Close sx={{ fontSize: 13, color: '#fff' }} />
               </Box>
             )}
           </Box>
-          <Typography fontSize={10} fontWeight={600} color={SUB} sx={{ display: { xs: 'none', sm: 'block' } }}>
-            {store?.logoUrl ? 'Modifier' : 'Ajouter'}
-          </Typography>
         </Box>
-        <Box sx={{ minWidth: 0 }}>
-          <Typography fontWeight={900} fontSize={{ xs: 20, md: 24 }} color={TXT} letterSpacing="-0.5px">
-            {store?.name || 'Ma boutique'}
-          </Typography>
-          <Typography fontSize={13} color={SUB}>
-            Gérez les informations, zones de livraison et paiements de votre boutique
-          </Typography>
-        </Box>
+      </Box>
+
+      {/* Nom + description de la boutique */}
+      <Box sx={{ mb: 3, pl: { md: '116px' } }}>
+        <Typography fontWeight={900} fontSize={{ xs: 20, md: 24 }} color={TXT} letterSpacing="-0.5px">
+          {store?.name || 'Ma boutique'}
+        </Typography>
+        <Typography fontSize={13} color={SUB}>
+          Gérez les informations, zones de livraison et paiements de votre boutique
+        </Typography>
       </Box>
 
       {/* Status alerts */}
