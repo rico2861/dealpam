@@ -23,6 +23,7 @@ const MoncashTransactionsPage = lazy(() => import('./pages/payments/MoncashTrans
 const SubscriptionsPage       = lazy(() => import('./pages/subscriptions/SubscriptionsPage'));
 const PlansPage               = lazy(() => import('./pages/subscriptions/PlansPage'));
 const CouponsPage             = lazy(() => import('./pages/coupons/CouponsPage'));
+const PredictionsPage         = lazy(() => import('./pages/predictions/PredictionsPage'));
 const CategoriesPage          = lazy(() => import('./pages/categories/CategoriesPage'));
 const BrandsPage              = lazy(() => import('./pages/brands/BrandsPage'));
 const ReviewsPage             = lazy(() => import('./pages/reviews/ReviewsPage'));
@@ -89,6 +90,7 @@ const ROUTE_ROLES: Record<string, string[]> = {
   '/subscriptions':[...ADMIN_ONLY, 'ACCOUNTANT'],
   '/plans':        ADMIN_ONLY,
   '/coupons':      ADMIN_ONLY,
+  '/predictions':  ADMIN_ONLY,
   '/categories':   ADMIN_ONLY,
   '/brands':       ADMIN_ONLY,
   '/reviews':      [...ADMIN_MOD, 'CUSTOMER_CARE'],
@@ -189,6 +191,7 @@ export default function App() {
             <Route path="subscriptions" element={<RoleGuard path="/subscriptions"><SubscriptionsPage /></RoleGuard>} />
             <Route path="plans" element={<RoleGuard path="/plans"><PlansPage /></RoleGuard>} />
             <Route path="coupons" element={<RoleGuard path="/coupons"><CouponsPage /></RoleGuard>} />
+            <Route path="predictions" element={<RoleGuard path="/predictions"><PredictionsPage /></RoleGuard>} />
             <Route path="categories"    element={<RoleGuard path="/categories">   <CategoriesPage /></RoleGuard>} />
             <Route path="brands"        element={<RoleGuard path="/brands">       <BrandsPage /></RoleGuard>} />
             <Route path="reviews"       element={<RoleGuard path="/reviews">      <ReviewsPage /></RoleGuard>} />
