@@ -320,21 +320,34 @@ function PaymentMethodsTab({ storeId, store }: { storeId: string; store: any }) 
   const [accepted, setAccepted] = useState<string[]>(parseArr(store?.acceptedPaymentMethods) || ['MONCASH', 'CASH']);
   const [moncashPhone, setMoncashPhone] = useState(store?.moncashPhone || '');
   const [natcashPhone, setNatcashPhone] = useState(store?.natcashPhone || '');
-  const [bankName, setBankName] = useState(store?.bankName || '');
-  const [bankAccountName, setBankAccountName] = useState(store?.bankAccountName || '');
-  const [bankAccountNumber, setBankAccountNumber] = useState(store?.bankAccountNumber || '');
+  // Plusieurs comptes bancaires possibles (banques différentes) — si le
+  // nouveau champ est vide mais qu'un ancien compte unique existe déjà
+  // (avant l'ajout de cette fonctionnalité), on le reprend comme premier
+  // compte plutôt que de le faire disparaître silencieusement.
+  const initialBankAccounts = (() => {
+    const arr = parseArr(store?.bankAccounts) as any[];
+    if (arr.length > 0) return arr;
+    if (store?.bankAccountNumber) {
+      return [{ id: crypto.randomUUID(), bankName: store.bankName || '', accountName: store.bankAccountName || '', accountNumber: store.bankAccountNumber }];
+    }
+    return [];
+  })();
+  const [bankAccounts, setBankAccounts] = useState<{ id: string; bankName: string; accountName: string; accountNumber: string }[]>(initialBankAccounts);
   const [copied, setCopied] = useState(false);
   const [currency, setCurrency] = useState<string>(store?.currency || 'HTG');
   const [exchangeRate, setExchangeRate] = useState<string>(store?.exchangeRate != null ? String(store.exchangeRate) : '');
+
+  const addBankAccount = () => setBankAccounts(a => [...a, { id: crypto.randomUUID(), bankName: '', accountName: '', accountNumber: '' }]);
+  const removeBankAccount = (id: string) => setBankAccounts(a => a.filter(x => x.id !== id));
+  const updateBankAccount = (id: string, key: string, val: string) =>
+    setBankAccounts(a => a.map(x => x.id === id ? { ...x, [key]: val } : x));
 
   const saveMutation = useMutation({
     mutationFn: () => api.patch('/stores/me', {
       acceptedPaymentMethods: accepted,
       moncashPhone,
       natcashPhone,
-      bankName,
-      bankAccountName,
-      bankAccountNumber,
+      bankAccounts: JSON.stringify(bankAccounts.map(({ bankName, accountName, accountNumber }) => ({ bankName, accountName, accountNumber }))),
       currency,
       exchangeRate: exchangeRate ? Number(exchangeRate) : undefined,
     }),
@@ -434,31 +447,72 @@ function PaymentMethodsTab({ storeId, store }: { storeId: string; store: any }) 
         </>
       )}
 
-      {/* Coordonnées bancaires — affichées au client s'il choisit "Virement bancaire" */}
+      {/* Coordonnées bancaires — affichées au client s'il choisit "Virement bancaire".
+          Plusieurs comptes possibles (banques différentes) : même pattern carte
+          répétable que les zones de livraison et points de retrait ci-dessus. */}
       {accepted.includes('BANK_TRANSFER') && (
         <>
           <Divider sx={{ my: 2.5 }} />
-          <Typography fontWeight={700} fontSize={14} mb={0.5}>Coordonnées bancaires</Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+            <Typography fontWeight={700} fontSize={14}>Comptes bancaires</Typography>
+            <Button startIcon={<Add />} onClick={addBankAccount} variant="outlined" size="small"
+              sx={{ borderColor: ORANGE, color: ORANGE, borderRadius: 1.5, '&:hover': { bgcolor: alpha(ORANGE, 0.05) } }}>
+              Ajouter un compte
+            </Button>
+          </Box>
           <Typography fontSize={12} color="#64748B" mb={2}>
-            Affichées au client s'il choisit "Virement bancaire" au paiement.
+            Affichés au client s'il choisit "Virement bancaire" au paiement — ajoutez-en plusieurs si vous avez des comptes dans différentes banques.
           </Typography>
-          <Grid container spacing={1.5}>
-            <Grid item xs={12} sm={6}>
-              <FieldLabel>Nom de la banque</FieldLabel>
-              <TextField fullWidth size="small" placeholder="Ex: Sogebank"
-                value={bankName} onChange={e => setBankName(e.target.value)} />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FieldLabel>Titulaire du compte</FieldLabel>
-              <TextField fullWidth size="small" placeholder="Nom sur le compte"
-                value={bankAccountName} onChange={e => setBankAccountName(e.target.value)} />
-            </Grid>
-            <Grid item xs={12}>
-              <FieldLabel>Numéro de compte</FieldLabel>
-              <TextField fullWidth size="small" placeholder="XXXXXXXXXXXX"
-                value={bankAccountNumber} onChange={e => setBankAccountNumber(e.target.value)} />
-            </Grid>
-          </Grid>
+
+          {bankAccounts.length === 0 && (
+            <Box sx={{ textAlign: 'center', py: 4, bgcolor: 'rgba(15,23,42,0.03)', borderRadius: 2, border: '2px dashed rgba(15,23,42,0.15)', mb: 1 }}>
+              <Payments sx={{ fontSize: 34, color: 'rgba(15,23,42,0.2)', mb: 1 }} />
+              <Typography color="#64748B" fontSize={13.5}>Aucun compte bancaire renseigné</Typography>
+              <Button startIcon={<Add />} onClick={addBankAccount} sx={{ mt: 1.5, color: ORANGE }} size="small">
+                Ajouter votre premier compte
+              </Button>
+            </Box>
+          )}
+
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {bankAccounts.map((acc, i) => (
+              <Card key={acc.id} variant="outlined" sx={{ borderRadius: 2, borderColor: 'rgba(15,23,42,0.09)' }}>
+                <CardContent sx={{ p: 2.5 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Box sx={{ width: 30, height: 30, borderRadius: '50%', bgcolor: alpha('#1E40AF', 0.12),
+                        display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Payments sx={{ fontSize: 15, color: '#1E40AF' }} />
+                      </Box>
+                      <Typography fontWeight={700} fontSize={13} color="#0F172A">
+                        {acc.bankName || 'Compte ' + (i + 1)}
+                      </Typography>
+                    </Box>
+                    <IconButton size="small" onClick={() => removeBankAccount(acc.id)} sx={{ color: '#EF4444' }}>
+                      <Delete fontSize="small" />
+                    </IconButton>
+                  </Box>
+                  <Grid container spacing={1.5}>
+                    <Grid item xs={12} sm={6}>
+                      <FieldLabel>Nom de la banque</FieldLabel>
+                      <TextField fullWidth size="small" placeholder="Ex: Sogebank"
+                        value={acc.bankName} onChange={e => updateBankAccount(acc.id, 'bankName', e.target.value)} />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <FieldLabel>Titulaire du compte</FieldLabel>
+                      <TextField fullWidth size="small" placeholder="Nom sur le compte"
+                        value={acc.accountName} onChange={e => updateBankAccount(acc.id, 'accountName', e.target.value)} />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <FieldLabel>Numéro de compte</FieldLabel>
+                      <TextField fullWidth size="small" placeholder="XXXXXXXXXXXX"
+                        value={acc.accountNumber} onChange={e => updateBankAccount(acc.id, 'accountNumber', e.target.value)} />
+                    </Grid>
+                  </Grid>
+                </CardContent>
+              </Card>
+            ))}
+          </Box>
         </>
       )}
 

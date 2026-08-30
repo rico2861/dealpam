@@ -46,6 +46,20 @@ const theme = createTheme({
       defaultProps: { variant: 'outlined' },
       styleOverrides: { root: { '& .MuiOutlinedInput-root': { borderRadius: 10 } } },
     },
+    // Les libellés de champ (ex: "Titre de l'annonce") étaient trop clairs
+    // (gris-bleu pâle, même ton que le texte des placeholders) — illisibles
+    // sur fond clair, en particulier en petite taille sur mobile. Un contraste
+    // et un poids plus marqués, appliqués une fois ici, corrigent tous les
+    // formulaires de la plateforme d'un coup plutôt que champ par champ.
+    MuiInputLabel: {
+      styleOverrides: {
+        root: { color: '#334155', fontWeight: 600, fontSize: 13.5 },
+        shrink: { fontWeight: 700 },
+      },
+    },
+    MuiFormHelperText: {
+      styleOverrides: { root: { color: '#64748B', fontSize: 11.5, marginLeft: 2, marginTop: 5 } },
+    },
     MuiChip: {
       styleOverrides: { root: { fontWeight: 600, borderRadius: 8 } },
     },

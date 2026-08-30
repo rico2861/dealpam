@@ -179,7 +179,7 @@ function ApptDialog({ appt, onClose }: { appt: any; onClose: () => void }) {
           {/* Seller note */}
           <TextField fullWidth multiline rows={2} label="Votre note (optionnelle)" value={note}
             onChange={e => setNote(e.target.value)}
-            sx={{ '& .MuiOutlinedInput-root': { bgcolor: '#F7F8FA', borderRadius: '10px', fontSize: 13, color: TXT, '& fieldset': { borderColor: BORD }, '&:hover fieldset': { borderColor: 'rgba(15,23,42,0.09)' }, '&.Mui-focused fieldset': { borderColor: OR } }, '& .MuiInputLabel-root': { color: SUB, fontSize: 13 }, '& .MuiInputLabel-root.Mui-focused': { color: OR } }} />
+            sx={{ '& .MuiOutlinedInput-root': { bgcolor: '#F7F8FA', borderRadius: '10px', fontSize: 13, color: TXT, '& fieldset': { borderColor: BORD }, '&:hover fieldset': { borderColor: 'rgba(15,23,42,0.09)' }, '&.Mui-focused fieldset': { borderColor: OR } }, '& .MuiInputLabel-root': { color: '#334155', fontWeight: 600, fontSize: 13 }, '& .MuiInputLabel-root.Mui-focused': { color: OR } }} />
 
           {/* Actions */}
           {appt.status === 'PENDING' && (

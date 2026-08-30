@@ -448,7 +448,7 @@ export default function WalletPage() {
               onChange={e => setAmount(e.target.value)}
               inputProps={{ min: MIN_RECHARGE }}
               helperText={`Minimum ${MIN_RECHARGE} HTG`}
-              sx={{ '& .MuiOutlinedInput-root': { bgcolor: '#F7F8FA', borderRadius: '10px', fontSize: 15, color: TXT, fontWeight: 700, '& fieldset': { borderColor: BORD }, '&:hover fieldset': { borderColor: 'rgba(15,23,42,0.09)' }, '&.Mui-focused fieldset': { borderColor: OR } }, '& .MuiInputLabel-root': { color: SUB }, '& .MuiInputLabel-root.Mui-focused': { color: OR }, '& .MuiFormHelperText-root': { color: SUB } }} />
+              sx={{ '& .MuiOutlinedInput-root': { bgcolor: '#F7F8FA', borderRadius: '10px', fontSize: 15, color: TXT, fontWeight: 700, '& fieldset': { borderColor: BORD }, '&:hover fieldset': { borderColor: 'rgba(15,23,42,0.09)' }, '&.Mui-focused fieldset': { borderColor: OR } }, '& .MuiInputLabel-root': { color: '#334155', fontWeight: 600 }, '& .MuiInputLabel-root.Mui-focused': { color: OR }, '& .MuiFormHelperText-root': { color: SUB } }} />
 
             <Box sx={{ display: 'flex', gap: 1 }}>
               <Button onClick={() => setOpen(false)} disabled={loading}

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Box, Typography, Avatar, IconButton, CircularProgress, alpha,
   InputBase, Tooltip, Chip,
@@ -112,6 +112,7 @@ function MediaBubble({ url, name, mine }: { url: string; name?: string; mine: bo
 
 export default function MessagesPage() {
   const { userId: deepLinkUserId } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const token = localStorage.getItem('accessToken');
@@ -323,6 +324,19 @@ export default function MessagesPage() {
     })();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deepLinkUserId, token, conversations]);
+
+  // Pré-remplit le champ de saisie depuis un lien "Contacter le vendeur" avec
+  // un message déjà rédigé (ex: demande de coordonnées bancaires au checkout)
+  // — évite au client de reformuler une question standard lui-même.
+  const draftHandled = useRef(false);
+  useEffect(() => {
+    const draft = searchParams.get('draft');
+    if (!draft || draftHandled.current) return;
+    draftHandled.current = true;
+    setText(draft);
+    setSearchParams(prev => { prev.delete('draft'); return prev; }, { replace: true });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const sendMsg = async () => {
     const content = text.trim();

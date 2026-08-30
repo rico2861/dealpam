@@ -35,6 +35,54 @@ const TXT2  = '#6B7280';
 
 const fmtHTG = (v: number) => `${v.toLocaleString('fr-HT')} HTG`;
 
+// Un vendeur peut avoir plusieurs comptes bancaires (voir StorePage.tsx côté
+// vendeur) — bankAccounts (nouveau, tableau JSON) prime, avec repli sur
+// l'ancien compte unique (bankName/bankAccountName/bankAccountNumber) pour
+// les boutiques pas encore migrées vers le nouveau champ.
+function parseBankAccounts(storeInfo: any): { bankName: string; accountName: string; accountNumber: string }[] {
+  if (storeInfo?.bankAccounts) {
+    try {
+      const arr = JSON.parse(storeInfo.bankAccounts);
+      if (Array.isArray(arr) && arr.length > 0) return arr;
+    } catch { /* ignore */ }
+  }
+  if (storeInfo?.bankAccountNumber) {
+    return [{ bankName: storeInfo.bankName || '', accountName: storeInfo.bankAccountName || '', accountNumber: storeInfo.bankAccountNumber }];
+  }
+  return [];
+}
+
+function BankAccountsBlock({ accounts, note }: { accounts: { bankName: string; accountName: string; accountNumber: string }[]; note?: string }) {
+  return (
+    <>
+      <Typography fontSize={13} fontWeight={700} color="#4F46E5" mb={1}>
+        {accounts.length > 1 ? 'Comptes bancaires du vendeur' : 'Coordonnées bancaires du vendeur'}
+      </Typography>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.4 }}>
+        {accounts.map((acc, i) => (
+          <Box key={i} sx={{ p: accounts.length > 1 ? 1.2 : 0, borderRadius: '10px',
+            bgcolor: accounts.length > 1 ? alpha('#818CF8', 0.08) : 'transparent' }}>
+            {acc.bankName && (
+              <Typography fontSize={13} color="#475569" mb={0.3}><b>Banque :</b> {acc.bankName}</Typography>
+            )}
+            {acc.accountName && (
+              <Typography fontSize={13} color="#475569" mb={0.3}><b>Titulaire :</b> {acc.accountName}</Typography>
+            )}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.3 }}>
+              <Typography fontSize={13} color="#475569"><b>N° de compte :</b></Typography>
+              <Typography fontWeight={700} fontSize={15} letterSpacing={1} color={TXT}>{acc.accountNumber}</Typography>
+              <IconButton size="small" onClick={() => navigator.clipboard.writeText(acc.accountNumber)}>
+                <ContentCopy sx={{ fontSize: 14, color: TXT2 }} />
+              </IconButton>
+            </Box>
+          </Box>
+        ))}
+      </Box>
+      {note && <Typography fontSize={12} color="#64748B" mt={1}>{note}</Typography>}
+    </>
+  );
+}
+
 const PAYMENT_INFO: Record<string, { label: string; color: string; Icon: any; hint: string }> = {
   MONCASH:       { label: 'MonCash',         color: '#FF6B00', Icon: Smartphone,      hint: 'Paiement mobile Digicel' },
   NATCASH:       { label: 'NatCash',         color: '#0EA5E9', Icon: Smartphone,      hint: 'Paiement mobile Natcom' },
@@ -426,7 +474,7 @@ function DeliveryStep({
 
 // ─── Step: Payment ────────────────────────────────────────────────────────────
 
-function PaymentStep({ paymentMethods, selectedPayment, setSelectedPayment, notes, setNotes, couponCode, setCouponCode, onBack, onNext, storeInfo, placing }: any) {
+function PaymentStep({ paymentMethods, selectedPayment, setSelectedPayment, notes, setNotes, couponCode, setCouponCode, onBack, onNext, storeInfo, placing, onAskBankDetails }: any) {
   return (
     <Box>
       <Typography fontWeight={600} fontSize={16} mb={2} color={TXT}>Mode de paiement</Typography>
@@ -491,31 +539,23 @@ function PaymentStep({ paymentMethods, selectedPayment, setSelectedPayment, note
 
       {selectedPayment === 'BANK_TRANSFER' && (
         <Box sx={{ p: 2, borderRadius: '14px', border: `1px solid ${alpha('#818CF8', 0.25)}`, bgcolor: alpha('#818CF8', 0.06), mb: 2 }}>
-          {storeInfo?.bankAccountNumber ? (
-            <>
-              <Typography fontSize={13} fontWeight={700} color="#4F46E5" mb={1}>Coordonnées bancaires du vendeur</Typography>
-              {storeInfo?.bankName && (
-                <Typography fontSize={13} color="#475569" mb={0.3}><b>Banque :</b> {storeInfo.bankName}</Typography>
-              )}
-              {storeInfo?.bankAccountName && (
-                <Typography fontSize={13} color="#475569" mb={0.3}><b>Titulaire :</b> {storeInfo.bankAccountName}</Typography>
-              )}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.3 }}>
-                <Typography fontSize={13} color="#475569"><b>N° de compte :</b></Typography>
-                <Typography fontWeight={700} fontSize={15} letterSpacing={1} color={TXT}>{storeInfo.bankAccountNumber}</Typography>
-                <IconButton size="small" onClick={() => navigator.clipboard.writeText(storeInfo.bankAccountNumber)}>
-                  <ContentCopy sx={{ fontSize: 14, color: TXT2 }} />
-                </IconButton>
-              </Box>
-              <Typography fontSize={12} color="#64748B" mt={1}>
-                Effectuez le virement puis soumettez votre référence à l'étape suivante.
-              </Typography>
-            </>
+          {(() => { const accts = parseBankAccounts(storeInfo); return accts.length > 0 ? (
+            <BankAccountsBlock accounts={accts} note="Effectuez le virement puis soumettez votre référence à l'étape suivante." />
           ) : (
-            <Typography fontSize={13} color="#475569">
-              Ce vendeur n'a pas encore renseigné ses coordonnées bancaires — contactez-le pour obtenir les détails du virement.
-            </Typography>
-          )}
+            <Box>
+              <Typography fontSize={13} color="#475569" mb={1.2}>
+                Ce vendeur n'a pas encore renseigné ses coordonnées bancaires.
+              </Typography>
+              <Button fullWidth onClick={onAskBankDetails} startIcon={<ChatBubbleOutline sx={{ fontSize: 16 }} />}
+                sx={{
+                  py: 1, borderRadius: '11px', fontWeight: 700, fontSize: 12.8, textTransform: 'none',
+                  bgcolor: '#4F46E5', color: '#fff',
+                  '&:hover': { bgcolor: '#4338CA' },
+                }}>
+                Demander ses coordonnées bancaires
+              </Button>
+            </Box>
+          ); })()}
         </Box>
       )}
 
@@ -555,7 +595,7 @@ function PaymentStep({ paymentMethods, selectedPayment, setSelectedPayment, note
 // plateforme entre l'acheteur et le vendeur, selon les modalités habituelles
 // de ce dernier. Le libellé "commander" (au lieu de "payer") suffit à lui
 // seul à indiquer la différence — pas de texte d'avertissement nécessaire.
-function OrderStep({ notes, setNotes, onBack, onNext, placing, paymentMethods, selectedPayment, setSelectedPayment, storeInfo }: any) {
+function OrderStep({ notes, setNotes, onBack, onNext, placing, paymentMethods, selectedPayment, setSelectedPayment, storeInfo, onAskBankDetails }: any) {
   return (
     <Box>
       <Typography fontWeight={600} fontSize={16} mb={2} color={TXT}>Confirmer la commande</Typography>
@@ -621,28 +661,23 @@ function OrderStep({ notes, setNotes, onBack, onNext, placing, paymentMethods, s
 
       {selectedPayment === 'BANK_TRANSFER' && (
         <Box sx={{ p: 2, borderRadius: '14px', border: `1px solid ${alpha('#818CF8', 0.25)}`, bgcolor: alpha('#818CF8', 0.06), mb: 2 }}>
-          {storeInfo?.bankAccountNumber ? (
-            <>
-              <Typography fontSize={13} fontWeight={700} color="#4F46E5" mb={1}>Coordonnées bancaires du vendeur</Typography>
-              {storeInfo?.bankName && (
-                <Typography fontSize={13} color="#475569" mb={0.3}><b>Banque :</b> {storeInfo.bankName}</Typography>
-              )}
-              {storeInfo?.bankAccountName && (
-                <Typography fontSize={13} color="#475569" mb={0.3}><b>Titulaire :</b> {storeInfo.bankAccountName}</Typography>
-              )}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.3 }}>
-                <Typography fontSize={13} color="#475569"><b>N° de compte :</b></Typography>
-                <Typography fontWeight={700} fontSize={15} letterSpacing={1} color={TXT}>{storeInfo.bankAccountNumber}</Typography>
-                <IconButton size="small" onClick={() => navigator.clipboard.writeText(storeInfo.bankAccountNumber)}>
-                  <ContentCopy sx={{ fontSize: 14, color: TXT2 }} />
-                </IconButton>
-              </Box>
-            </>
+          {(() => { const accts = parseBankAccounts(storeInfo); return accts.length > 0 ? (
+            <BankAccountsBlock accounts={accts} />
           ) : (
-            <Typography fontSize={13} color="#475569">
-              Ce vendeur n'a pas encore renseigné ses coordonnées bancaires — contactez-le pour obtenir les détails du virement.
-            </Typography>
-          )}
+            <Box>
+              <Typography fontSize={13} color="#475569" mb={1.2}>
+                Ce vendeur n'a pas encore renseigné ses coordonnées bancaires.
+              </Typography>
+              <Button fullWidth onClick={onAskBankDetails} startIcon={<ChatBubbleOutline sx={{ fontSize: 16 }} />}
+                sx={{
+                  py: 1, borderRadius: '11px', fontWeight: 700, fontSize: 12.8, textTransform: 'none',
+                  bgcolor: '#4F46E5', color: '#fff',
+                  '&:hover': { bgcolor: '#4338CA' },
+                }}>
+                Demander ses coordonnées bancaires
+              </Button>
+            </Box>
+          ); })()}
         </Box>
       )}
 
@@ -795,6 +830,13 @@ export default function CheckoutPage() {
     else setDeliveryType('CONTACT');
   };
 
+  const handleAskBankDetails = () => {
+    const sellerUserId = storeOptions?.seller?.userId ?? storeDetail?.seller?.userId;
+    if (!sellerUserId) return;
+    const draft = encodeURIComponent('Bonjour, quelles sont vos coordonnées bancaires pour un paiement par virement svp ?');
+    navigate(`/account/messages/${sellerUserId}?draft=${draft}`);
+  };
+
   const placeOrder = async () => {
     if (items.length === 0) { enqueueSnackbar('Panier vide', { variant: 'error' }); return; }
     setPlacing(true);
@@ -933,6 +975,7 @@ export default function CheckoutPage() {
                     couponCode={couponCode} setCouponCode={setCouponCode}
                     storeInfo={{ ...storeDetail, ...storeOptions }}
                     onBack={() => setStep(0)} onNext={placeOrder} placing={placing}
+                    onAskBankDetails={handleAskBankDetails}
                   />
                 ) : (
                   <OrderStep
@@ -941,6 +984,7 @@ export default function CheckoutPage() {
                     selectedPayment={selectedPayment} setSelectedPayment={setSelectedPayment}
                     storeInfo={{ ...storeDetail, ...storeOptions }}
                     onBack={() => setStep(0)} onNext={placeOrder} placing={placing}
+                    onAskBankDetails={handleAskBankDetails}
                   />
                 )
               )}

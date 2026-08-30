@@ -86,7 +86,7 @@ const fieldSx = {
     '&:hover fieldset': { borderColor: 'rgba(15,23,42,0.09)' },
     '&.Mui-focused fieldset': { borderColor: OR },
   },
-  '& .MuiInputLabel-root': { color: SUB },
+  '& .MuiInputLabel-root': { color: '#334155', fontWeight: 600 },
   '& .MuiInputLabel-root.Mui-focused': { color: OR },
   '& .MuiFormHelperText-root': { color: SUB },
   '& .MuiSelect-icon': { color: SUB },
