@@ -692,8 +692,14 @@ export default function CheckoutPage() {
   const [notes, setNotes] = useState('');
   const [couponCode, setCouponCode] = useState('');
 
-  // Cart
-  const { data: cart, isLoading: cartLoading } = useQuery({ queryKey: ['cart'], queryFn: () => api.get('/cart').then(r => r.data) });
+  // Cart — reutilise en synchrone les donnees deja en cache depuis la page
+  // Panier (meme queryKey) pour ne jamais afficher "panier vide" une fraction
+  // de seconde au premier rendu de cette page avant que la requete ne reponde.
+  const { data: cart, isLoading: cartLoading } = useQuery({
+    queryKey: ['cart'],
+    queryFn: () => api.get('/cart').then(r => r.data),
+    initialData: () => qc.getQueryData(['cart']),
+  });
   const showCartSkel = useDelayedLoading(cartLoading);
   const items: any[] = cart?.items ?? [];
 

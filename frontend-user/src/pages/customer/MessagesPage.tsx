@@ -15,7 +15,7 @@ import { useSnackbar } from 'notistack';
 import { io, Socket } from 'socket.io-client';
 import api from '../../api/axios';
 import { useAuthStore } from '../../store/auth.store';
-import { getOrCreatePublicKey, encryptMsg, decryptMsg, isEncrypted, displayText } from '../../utils/e2e-crypto';
+import { decryptMsg, isEncrypted, displayText } from '../../utils/e2e-crypto';
 import { ListSkeleton, MessageSkeleton } from '../../components/shared/Skeletons';
 import { useDelayedLoading } from '../../hooks/useDelayedLoading';
 
@@ -136,12 +136,6 @@ export default function MessagesPage() {
   const activeRef   = useRef<string | null>(null);
   const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const peerKeys    = useRef<Map<string, string>>(new Map());
-
-  useEffect(() => {
-    getOrCreatePublicKey().then(pub =>
-      api.patch('/users/me/public-key', { publicKey: pub }).catch(() => {})
-    );
-  }, []);
 
   const getPeerPub = useCallback(async (peerId: string): Promise<string | null> => {
     if (peerKeys.current.has(peerId)) return peerKeys.current.get(peerId)!;
@@ -344,17 +338,12 @@ export default function MessagesPage() {
     setMessages(p => [...p, opt]);
     scrollBottom();
 
-    let payload = content;
-    const conv = conversations.find(c => c.id === active);
-    if (conv && !conv.isSupport) {
-      const peer = conv.participants.find(p => p.userId !== user?.id);
-      if (peer) {
-        const peerPub = await getPeerPub(peer.userId);
-        if (peerPub) {
-          try { payload = await encryptMsg(content, peerPub); } catch { /* send plaintext on crypto failure */ }
-        }
-      }
-    }
+    // Chiffrement E2E desactive : un message chiffre n'etait lisible que sur
+    // l'appareil/navigateur ou la cle privee avait ete generee — changer de
+    // telephone ou vider le stockage rendait les messages definitivement
+    // illisibles, y compris pour leur propre destinataire. Les messages sont
+    // maintenant envoyes en clair pour rester lisibles sur tout appareil.
+    const payload = content;
 
     try {
       if (socketRef.current?.connected) {
