@@ -283,6 +283,12 @@ model Store {
   isPlatformStore  Boolean   @default(false) @map("is_platform_store")
   // Numéro MonCash du vendeur (pour que le client sache où payer)
   moncashPhone String?  @map("moncash_phone")
+  natcashPhone String?  @map("natcash_phone")
+  // Coordonnées bancaires pour paiement par virement (BANK_TRANSFER) — affichées
+  // au client au checkout quand il choisit ce mode de paiement.
+  bankName          String? @map("bank_name")
+  bankAccountName   String? @map("bank_account_name")
+  bankAccountNumber String? @map("bank_account_number")
   // Points de retrait : [{name, address, city, dept, phone, hours}] — stocké en JSON.stringify()
   pickupPoints String?  @map("pickup_points")
   // Zones de livraison : [{dept, priceHTG, estimatedDays}] — stocké en JSON.stringify()
@@ -769,6 +775,11 @@ model Payment {
   moncashTransactionId String?             @unique @map("moncash_transaction_id")
 
   gatewayData          Json?               @map("gateway_data")
+  // Donnees de checkout (adresse, livraison, notes...) en attente de paiement
+  // confirme — la commande n'est creee qu'APRES verification reussie aupres
+  // de MonCash, jamais avant (voir PaymentsService.initiateOrderPayment).
+  orderPayload         Json?               @map("order_payload")
+  orderUserId          String?             @map("order_user_id")
   paidAt               DateTime?           @map("paid_at")
   failureReason        String?             @map("failure_reason")
   createdAt            DateTime            @default(now()) @map("created_at")

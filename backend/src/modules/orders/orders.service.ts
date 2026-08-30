@@ -306,6 +306,18 @@ export class OrdersService {
       );
     }
 
+    // Un colis deja en route ne peut plus etre annule par le vendeur (le client
+    // non plus, voir cancelByCustomer) — seul l'admin garde la main via la voie
+    // ADMIN_ALLOWED (userId absent) pour gerer les litiges/retours exceptionnels.
+    if (status === 'CANCELLED' && userId && ['SHIPPED', 'DELIVERED'].includes(order.status)) {
+      throw new BadRequestException('Impossible d\'annuler une commande déjà expédiée ou livrée.');
+    }
+    // Le motif est obligatoire pour un vendeur — il doit rester visible au
+    // client et a l'admin (affiche cote commande partout ou le statut CANCELLED apparait).
+    if (status === 'CANCELLED' && userId && !cancelReason?.trim()) {
+      throw new BadRequestException('Un motif d\'annulation est requis.');
+    }
+
     const updateData: any = { status: status as any };
     if (status === 'CANCELLED' && cancelReason) {
       updateData.cancelReason = cancelReason;
@@ -328,12 +340,19 @@ export class OrdersService {
       };
       // Pas de await ici : un SMTP lent ne doit jamais retarder la réponse du
       // bouton "Confirmer/Annuler/Livré..." (même bug que sur la création de commande).
+      // status (pas statusLabels[status]) : sendOrderStatusUpdate indexe son propre
+      // template d'email sur la cle brute (CONFIRMED/SHIPPED/...) — lui passer le
+      // libelle francais faisait toujours rater ce lookup et afficher le template
+      // generique par defaut, quel que soit le vrai statut.
+      const emailDetail = status === 'CANCELLED' && cancelReason
+        ? `Motif : ${cancelReason}`
+        : `Total: ${Number(order.totalHTG).toLocaleString()} HTG`;
       this.mail.sendOrderStatusUpdate(
         order.user.email,
         order.user.firstName,
         order.id.slice(-8).toUpperCase(),
-        statusLabels[status] || status,
-        `Total: ${Number(order.totalHTG).toLocaleString()} HTG`,
+        status,
+        emailDetail,
       ).catch(() => {});
     }
 
@@ -367,6 +386,21 @@ export class OrdersService {
     }
 
     return updated;
+  }
+
+  // ── Client : annuler sa propre commande ────────────────────────────────────
+  // Autorise uniquement avant expedition (PENDING/CONFIRMED/PREPARING) — une
+  // fois SHIPPED/DELIVERED, seul l'admin peut encore intervenir (litige/retour).
+  async cancelByCustomer(userId: string, orderId: string, reason?: string) {
+    const order = await this.prisma.order.findFirst({
+      where: { id: orderId, userId },
+      include: { user: { select: { email: true, firstName: true } }, store: { select: { id: true, sellerId: true, name: true, reputationScore: true } }, items: true },
+    });
+    if (!order) throw new NotFoundException('Commande introuvable');
+    if (!['PENDING', 'CONFIRMED', 'PREPARING'].includes(order.status)) {
+      throw new BadRequestException('Cette commande ne peut plus être annulée — elle est déjà en cours de livraison ou finalisée.');
+    }
+    return this.updateStatus(orderId, 'CANCELLED', undefined, reason?.trim() || 'Annulée par le client');
   }
 
   // Wrapper public utilisé par OrdersCron (l'auto-annulation vit dans un autre

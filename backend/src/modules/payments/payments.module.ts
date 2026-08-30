@@ -7,9 +7,11 @@ import { PrismaModule }       from '../../prisma/prisma.module';
 import { CouponsModule }      from '../coupons/coupons.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { WalletModule } from '../wallet/wallet.module';
+import { MailModule } from '../mail/mail.module';
+import { OrdersModule } from '../orders/orders.module';
 
 @Module({
-  imports:     [PrismaModule, MoncashModule, MoncashTransactionsModule, CouponsModule, NotificationsModule, WalletModule],
+  imports:     [PrismaModule, MoncashModule, MoncashTransactionsModule, CouponsModule, NotificationsModule, WalletModule, MailModule, OrdersModule],
   providers:   [PaymentsService],
   controllers: [PaymentsController],
   exports:     [PaymentsService],

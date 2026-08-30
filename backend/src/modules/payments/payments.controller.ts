@@ -15,6 +15,14 @@ class InitiateSubDto {
   @IsOptional() @IsString() couponCode?: string;
 }
 class InitiateAdDto     { @IsUUID() campaignId: string; }
+class InitiateOrderDto {
+  @IsOptional() @IsUUID() addressId?: string;
+  @IsOptional() @IsString() notes?: string;
+  @IsOptional() @IsString() deliveryType?: string;
+  @IsOptional() @IsString() pickupPointName?: string;
+  @IsOptional() @IsString() pickupPointAddress?: string;
+  @IsOptional() shippingCost?: number;
+}
 class VerifyDto {
   @IsOptional() @IsString() transaction_id?: string;
   @IsOptional() @IsString() order_id?: string;
@@ -48,6 +56,14 @@ export class PaymentsController {
   @ApiOperation({ summary: 'Vendeur — initie le paiement MonCash pour une campagne pub' })
   initiateAdCampaign(@CurrentUser() u: any, @Body() dto: InitiateAdDto) {
     return this.ps.initiateAdCampaignPayment(u.id, dto.campaignId);
+  }
+
+  // ── Commande : initier le paiement MonCash (boutique DealPam Officiel uniquement) ──
+  @Post('order/initiate')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Client — initie le paiement MonCash pour une commande DealPam Officiel' })
+  initiateOrder(@CurrentUser() u: any, @Body() dto: InitiateOrderDto) {
+    return this.ps.initiateOrderPayment(u.id, dto);
   }
 
   // ── Vérification retour MonCash (vendeur) ─────────────────────────────────
