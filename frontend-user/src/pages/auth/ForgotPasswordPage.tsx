@@ -9,7 +9,7 @@ import {
   LockOutlined, CheckCircle, Visibility, VisibilityOff,
 } from '@mui/icons-material';
 import api from '../../api/axios';
-import { isPasswordValid, PASSWORD_RULES } from './RegisterPage';
+import { isPasswordValid, PASSWORD_RULES } from '../../utils/passwordRules';
 import { friendlyApiError } from '../../utils/apiError';
 import { motion, AnimatePresence } from 'framer-motion';
 

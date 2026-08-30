@@ -25,16 +25,8 @@ const PURPLE  = '#8B5CF6';
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const STEPS   = ['Rôle', 'Informations', 'Finalisation'];
 
-/* ── Password rules ── */
-export const PASSWORD_RULES = [
-  { label: '8 car. min',               ok: (p: string) => p.length >= 8 },
-  { label: 'Minuscule',                ok: (p: string) => /[a-z]/.test(p) },
-  { label: 'Majuscule',                ok: (p: string) => /[A-Z]/.test(p) },
-  { label: 'Chiffre',                  ok: (p: string) => /\d/.test(p) },
-  { label: 'Caractère spécial (!@#…)', ok: (p: string) => /[!@#$%^&*()\-_=+[\]{}|;:,.<>?/\\~`"']/.test(p) },
-];
-
-export function isPasswordValid(p: string) { return PASSWORD_RULES.every(r => r.ok(p)); }
+/* ── Password rules (partagées avec ForgotPasswordPage — voir utils/passwordRules.ts) ── */
+import { PASSWORD_RULES, isPasswordValid } from '../../utils/passwordRules';
 
 const STRENGTH_COLORS = ['#EF4444', '#EF4444', '#F59E0B', '#3B82F6', '#10B981', '#10B981'];
 const STRENGTH_LABELS = ['', 'Très faible', 'Faible', 'Moyen', 'Fort', 'Très fort'];
