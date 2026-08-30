@@ -764,7 +764,7 @@ export default function CheckoutPage() {
       // sinon selectedPickup peut rester présélectionné (voir DeliveryStep) et
       // enverrait un point de retrait qui n'a rien à voir avec le mode choisi.
       const pickupPt = deliveryType === 'PICKUP' && selectedPickup !== null ? pickupPoints[selectedPickup] : null;
-      const res = await api.post('/orders', {
+      const orderBody = {
         addressId:           deliveryType === 'DELIVERY' ? selectedAddress : undefined,
         deliveryType,
         pickupPointName:     pickupPt?.name    || undefined,
@@ -773,20 +773,23 @@ export default function CheckoutPage() {
         notes:               notes             || undefined,
         couponCode:          storeDetail?.isPlatformStore && couponCode ? couponCode : undefined,
         shippingCost:        deliveryType === 'DELIVERY' ? shippingCost : 0,
-      });
+      };
+
+      // Boutique DealPam Officiel + MonCash : le paiement est verifie AVANT toute
+      // creation de commande — on ne cree jamais de commande "fantome" si le
+      // client abandonne ou echoue son paiement MonCash. La commande n'existera
+      // qu'apres confirmation reelle du paiement (voir verifyOrderPayment cote back).
+      if (storeDetail?.isPlatformStore && selectedPayment === 'MONCASH') {
+        const { data } = await api.post('/payments/order/initiate', orderBody);
+        window.location.href = data.redirect_url;
+        return;
+      }
+
+      const res = await api.post('/orders', orderBody);
       const orders = Array.isArray(res.data) ? res.data : [res.data];
       await fetchCount();
       qc.invalidateQueries({ queryKey: ['cart'] });
       qc.invalidateQueries({ queryKey: ['myOrders'] });
-
-      // Boutique DealPam Officiel + MonCash : redirection vers le gateway MonCash
-      // (seule boutique ou l'argent transite reellement par la plateforme — les
-      // autres vendeurs restent en paiement direct, reference soumise manuellement).
-      if (storeDetail?.isPlatformStore && selectedPayment === 'MONCASH' && orders[0]?.id) {
-        const { data } = await api.post('/payments/order/initiate', { orderId: orders[0].id });
-        window.location.href = data.redirect_url;
-        return;
-      }
 
       navigate('/order-received/thank-you', {
         replace: true,

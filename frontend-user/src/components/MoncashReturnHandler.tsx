@@ -1,5 +1,7 @@
 ﻿import { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
+import { useCartStore } from '../store/cart.store';
 
 const API = import.meta.env.VITE_API_URL;
 
@@ -18,6 +20,8 @@ const API = import.meta.env.VITE_API_URL;
 export default function MoncashReturnHandler() {
   const location = useLocation();
   const navigate = useNavigate();
+  const qc = useQueryClient();
+  const { fetchCount } = useCartStore();
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -75,6 +79,9 @@ export default function MoncashReturnHandler() {
         }
 
         if (data.type === 'order') {
+          qc.invalidateQueries({ queryKey: ['cart'] });
+          qc.invalidateQueries({ queryKey: ['myOrders'] });
+          fetchCount();
           showToast(`Paiement confirmé — ${data.amount_htg} HTG`, 'success');
           navigate(`/account/orders/${data.order_id}`);
           return;
