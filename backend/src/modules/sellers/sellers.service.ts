@@ -55,7 +55,7 @@ export class SellersService {
     return suggestions;
   }
 
-  async becomeSeller(userId: string, storeName: string, storeDescription?: string, nif?: string) {
+  async becomeSeller(userId: string, storeName: string, storeDescription?: string, nif?: string, storeExtra?: Record<string, any>) {
     const user = await this.prisma.user.findUnique({ where: { id: userId }, include: { seller: true } });
     if (!user) throw new NotFoundException('Utilisateur introuvable');
     if (user.role === 'SELLER' || user.seller) throw new ConflictException('Ce compte est déjà un compte vendeur');
@@ -88,6 +88,24 @@ export class SellersService {
               slug,
               description: storeDescription || null,
               isPrimary: true,
+              // Champs de configuration optionnels remplis directement à
+              // l'inscription (voir BecomeSellerDto) — restent modifiables
+              // plus tard via "Configurer la boutique".
+              department:             storeExtra?.department || null,
+              city:                   storeExtra?.city || null,
+              address:                storeExtra?.address || null,
+              phone:                  storeExtra?.phone || null,
+              whatsapp:               storeExtra?.whatsapp || null,
+              email:                  storeExtra?.email || null,
+              moncashPhone:           storeExtra?.moncashPhone || null,
+              natcashPhone:           storeExtra?.natcashPhone || null,
+              bankName:               storeExtra?.bankName || null,
+              bankAccountName:        storeExtra?.bankAccountName || null,
+              bankAccountNumber:      storeExtra?.bankAccountNumber || null,
+              acceptedPaymentMethods: storeExtra?.acceptedPaymentMethods || '[]',
+              deliveryZones:          storeExtra?.deliveryZones || null,
+              pickupPoints:           storeExtra?.pickupPoints || null,
+              schedule:               storeExtra?.schedule || null,
             },
           },
         },

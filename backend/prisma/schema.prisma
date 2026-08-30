@@ -293,6 +293,8 @@ model Store {
   pickupPoints String?  @map("pickup_points")
   // Zones de livraison : [{dept, priceHTG, estimatedDays}] — stocké en JSON.stringify()
   deliveryZones String? @map("delivery_zones")
+  // Horaires d'ouverture : Record<jour, {open, close, closed}> — stocké en JSON.stringify()
+  schedule     String?  @map("schedule")
   // Devise d'affichage par défaut de la boutique : "HTG" ou "USD". Les prix
   // produits restent toujours stockés en HTG ; ce champ ne pilote que l'affichage.
   currency     String    @default("HTG")
@@ -704,6 +706,9 @@ model Order {
   // Méthode de paiement choisie par le client (parmi celles du vendeur)
   chosenPaymentMethod  String?  @map("chosen_payment_method")
   // Référence de transaction soumise par le client (MonCash/NatCash txId)
+  // Date estimee de reception — renseignee par le vendeur au moment de marquer
+  // la commande "expediee" (SHIPPED), affichee au client sur le suivi.
+  estimatedDeliveryDate DateTime? @map("estimated_delivery_date")
   paymentTxRef         String?  @map("payment_tx_ref")
   paymentTxStatus      String?  @default("PENDING") @map("payment_tx_status")
   paymentTxNote        String?  @map("payment_tx_note")

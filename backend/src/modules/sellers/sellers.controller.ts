@@ -38,6 +38,55 @@ class BecomeSellerDto {
 
   @IsString() @IsOptional() @MaxLength(30)
   nif?: string;
+
+  // Configuration boutique optionnelle saisie directement à l'inscription
+  // vendeur — évite d'obliger un aller-retour ultérieur vers "Configurer la
+  // boutique" pour des infos que le vendeur a déjà sous la main à cet instant.
+  @IsString() @IsOptional() @MaxLength(30)
+  department?: string;
+
+  @IsString() @IsOptional() @MaxLength(60)
+  city?: string;
+
+  @IsString() @IsOptional() @MaxLength(200)
+  address?: string;
+
+  @IsString() @IsOptional() @MaxLength(20)
+  phone?: string;
+
+  @IsString() @IsOptional() @MaxLength(20)
+  whatsapp?: string;
+
+  @IsString() @IsOptional() @MaxLength(100)
+  email?: string;
+
+  @IsString() @IsOptional() @MaxLength(20)
+  moncashPhone?: string;
+
+  @IsString() @IsOptional() @MaxLength(20)
+  natcashPhone?: string;
+
+  @IsString() @IsOptional() @MaxLength(100)
+  bankName?: string;
+
+  @IsString() @IsOptional() @MaxLength(100)
+  bankAccountName?: string;
+
+  @IsString() @IsOptional() @MaxLength(50)
+  bankAccountNumber?: string;
+
+  // Tableaux stringifiés côté client — mêmes formats que PATCH /stores/me/:id
+  @IsString() @IsOptional()
+  acceptedPaymentMethods?: string; // JSON.stringify(string[])
+
+  @IsString() @IsOptional()
+  deliveryZones?: string; // JSON.stringify({dept,priceHTG,estimatedDays}[])
+
+  @IsString() @IsOptional()
+  pickupPoints?: string; // JSON.stringify({name,address,city,phone}[])
+
+  @IsString() @IsOptional()
+  schedule?: string; // JSON.stringify(Record<day,{open,close,closed}>)
 }
 
 @ApiTags('Sellers')
@@ -61,7 +110,8 @@ export class SellersController {
   @Post('become')
   @ApiOperation({ summary: 'Convert buyer account to seller' })
   becomeSeller(@CurrentUser() u: any, @Body() dto: BecomeSellerDto) {
-    return this.sellersService.becomeSeller(u.id, dto.storeName, dto.storeDescription, dto.nif);
+    const { storeName, storeDescription, nif, ...storeExtra } = dto;
+    return this.sellersService.becomeSeller(u.id, storeName, storeDescription, nif, storeExtra);
   }
 
   // ── Seller self ───────────────────────────────────────────────────────────
