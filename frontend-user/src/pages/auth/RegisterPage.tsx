@@ -16,7 +16,7 @@ import { useSnackbar } from 'notistack';
 import api from '../../api/axios';
 import { useAuthStore } from '../../store/auth.store';
 import { friendlyApiError } from '../../utils/apiError';
-import { StoreForm } from '../seller/StoresPage';
+import { StoreForm } from '../../components/shared/StoreConfigForm';
 
 const ORANGE  = '#FF6B00';
 const PURPLE  = '#8B5CF6';
