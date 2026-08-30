@@ -88,6 +88,7 @@ const PAYMENT_INFO: Record<string, { label: string; color: string; Icon: any; hi
   NATCASH:       { label: 'NatCash',         color: '#0EA5E9', Icon: Smartphone,      hint: 'Paiement mobile Natcom' },
   CASH:          { label: 'Cash',            color: GRN,       Icon: AttachMoney,     hint: 'Paiement en espèces à la livraison' },
   BANK_TRANSFER: { label: 'Virement',        color: '#818CF8', Icon: AccountBalance,  hint: 'Virement bancaire' },
+  CRYPTO:        { label: 'Crypto',          color: '#F7931A', Icon: CreditCard,      hint: 'Bitcoin, USDT et autres cryptomonnaies' },
   OTHER:         { label: 'Autre méthode',   color: TXT2,      Icon: CreditCard,      hint: 'Autres méthodes acceptées' },
 };
 
@@ -897,6 +898,14 @@ export default function CheckoutPage() {
       // qu'apres confirmation reelle du paiement (voir verifyOrderPayment cote back).
       if (storeDetail?.isPlatformStore && selectedPayment === 'MONCASH') {
         const { data } = await api.post('/payments/order/initiate', orderBody);
+        window.location.href = data.redirect_url;
+        return;
+      }
+
+      // Même principe que MonCash : le paiement crypto (NOWPayments) est
+      // vérifié via IPN AVANT toute création de commande.
+      if (storeDetail?.isPlatformStore && selectedPayment === 'CRYPTO') {
+        const { data } = await api.post('/payments/order/initiate-crypto', orderBody);
         window.location.href = data.redirect_url;
         return;
       }

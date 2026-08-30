@@ -33,6 +33,7 @@ const PAYMENT_METHODS = [
   { key: 'CASH', label: 'Especes', color: '#007600', desc: 'Paiement a la livraison' },
   { key: 'BANK_TRANSFER', label: 'Virement bancaire', color: '#1E40AF', desc: 'Transfert bancaire' },
   { key: 'VISA', label: 'Visa / Mastercard', color: '#1A1F71', desc: 'Carte internationale' },
+  { key: 'CRYPTO', label: 'Crypto', color: '#F7931A', desc: 'Bitcoin, USDT et autres cryptomonnaies (DealPam Officiel uniquement)' },
 ];
 
 interface DeliveryZone {
