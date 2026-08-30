@@ -58,6 +58,23 @@ window.addEventListener('vite:preloadError', () => {
 // qu'un futur (nouveau) déploiement puisse déclencher le même rechargement.
 sessionStorage.removeItem('reloaded-after-preload-error');
 
+// Filet de sécurité global contre les images produit cassées (fichier supprimé/
+// jamais uploadé côté stockage R2 alors que la base garde encore l'URL) : sans
+// ça, chaque <img> concernée affiche l'icône "image cassée" du navigateur sur
+// TOUTE la plateforme (grilles produits, panier, checkout, chat...), quel que
+// soit le composant qui l'affiche. Écoute en phase de capture (le seul moyen
+// d'intercepter un événement 'error' d'<img>, qui ne remonte pas/bulle pas) et
+// remplace la source par un SVG placeholder neutre, une seule fois par image
+// (data-img-fallback évite une boucle si le placeholder lui-même échouait).
+const IMG_FALLBACK_SRC = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"%3E%3Crect width="100" height="100" fill="%23F1F5F9"/%3E%3Cpath d="M30 65 L45 45 L55 55 L70 35 L75 65 Z" fill="%23CBD5E1"/%3E%3Ccircle cx="38" cy="38" r="6" fill="%23CBD5E1"/%3E%3C/svg%3E';
+document.addEventListener('error', (e) => {
+  const el = e.target as HTMLElement;
+  if (el?.tagName === 'IMG' && !el.dataset.imgFallback) {
+    el.dataset.imgFallback = '1';
+    (el as HTMLImageElement).src = IMG_FALLBACK_SRC;
+  }
+}, true);
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <ThemeProvider theme={theme}>
