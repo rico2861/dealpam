@@ -1,5 +1,5 @@
 import {
-  Controller, Get, Post, Body, Query, Param, UseGuards, BadRequestException,
+  Controller, Get, Post, Body, Query, Param, UseGuards, BadRequestException, Headers,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { IsUUID, IsString, IsOptional, IsIn } from 'class-validator';
@@ -77,6 +77,25 @@ export class PaymentsController {
   @ApiOperation({ summary: 'Client — initie le paiement MonCash pour une commande DealPam Officiel' })
   initiateOrder(@CurrentUser() u: any, @Body() dto: InitiateOrderDto) {
     return this.ps.initiateOrderPayment(u.id, dto);
+  }
+
+  // ── Commande : initier le paiement crypto (NOWPayments, DealPam Officiel uniquement) ──
+  @Post('order/initiate-crypto')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Client — initie le paiement crypto (NOWPayments) pour une commande DealPam Officiel' })
+  initiateOrderCrypto(@CurrentUser() u: any, @Body() dto: InitiateOrderDto) {
+    return this.ps.initiateOrderPaymentCrypto(u.id, dto);
+  }
+
+  // ── IPN NOWPayments — confirmation serveur-à-serveur du paiement crypto ───
+  // PUBLIC (pas de JwtAuthGuard) comme le retour MonCash : la sécurité vient
+  // uniquement de la signature HMAC (en-tête x-nowpayments-sig), jamais d'un
+  // JWT — NOWPayments appelle cette route directement depuis ses serveurs,
+  // sans navigateur ni session utilisateur.
+  @Post('crypto/ipn')
+  @ApiOperation({ summary: 'Webhook NOWPayments — confirmation de paiement crypto' })
+  handleCryptoIpn(@Body() body: any, @Headers('x-nowpayments-sig') signature: string) {
+    return this.ps.handleCryptoIpn(body, signature);
   }
 
   // ── Vérification retour MonCash (vendeur) ─────────────────────────────────

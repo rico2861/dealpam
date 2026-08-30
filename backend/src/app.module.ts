@@ -28,6 +28,7 @@ import { AdsModule } from './modules/ads/ads.module';
 import { FlashSaleModule } from './modules/flash-sale/flash-sale.module';
 import { BadgesModule } from './modules/badges/badges.module';
 import { MoncashModule } from './modules/moncash/moncash.module';
+import { NowPaymentsModule } from './modules/nowpayments/nowpayments.module';
 import { WishlistModule } from './modules/wishlist/wishlist.module';
 import { BannersModule } from './modules/banners/banners.module';
 import { EventsModule } from './modules/events/events.module';
@@ -76,6 +77,7 @@ import { CouponsModule } from './modules/coupons/coupons.module';
     FlashSaleModule,
     BadgesModule,
     MoncashModule,
+    NowPaymentsModule,
     WishlistModule,
     BannersModule,
     EventsModule,

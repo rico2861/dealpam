@@ -99,6 +99,7 @@ enum PaymentMethod {
   PAYPAL
   MANUAL
   WALLET
+  CRYPTO
 }
 
 enum AppointmentStatus {
@@ -784,6 +785,9 @@ model Payment {
   moncashOrderId       String?             @unique @map("moncash_order_id")
   // transaction_id final confirmé par MonCash (webhook / confirm endpoint)
   moncashTransactionId String?             @unique @map("moncash_transaction_id")
+  // ID du paiement retourné par NOWPayments (crypto) à la création de la facture —
+  // sert à retrouver ce Payment quand l'IPN de confirmation arrive.
+  nowpaymentsId        String?             @unique @map("nowpayments_id")
 
   gatewayData          Json?               @map("gateway_data")
   // Donnees de checkout (adresse, livraison, notes...) en attente de paiement

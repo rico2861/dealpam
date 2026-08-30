@@ -13,6 +13,8 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { WalletService }   from '../wallet/wallet.service';
 import { MailService }     from '../mail/mail.service';
 import { OrdersService }   from '../orders/orders.service';
+import { NowPaymentsService } from '../nowpayments/nowpayments.service';
+import type { NowPaymentsIpnPayload } from '../nowpayments/nowpayments.service';
 import { Decimal }         from '@prisma/client/runtime/library';
 import type { MoncashPayment } from '../moncash/moncash.service';
 
@@ -34,6 +36,7 @@ export class PaymentsService {
     private wallet:    WalletService,
     private mail:      MailService,
     private orders:    OrdersService,
+    private nowpayments: NowPaymentsService,
   ) {}
 
   // ── Avertit tous les admins qu'un paiement a un montant qui ne correspond
@@ -609,6 +612,169 @@ export class PaymentsService {
       amount_htg: confirmedAmount,
       transaction_id: mc.transaction_id,
     };
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  PAIEMENT CRYPTO (NOWPayments) — même principe que MonCash : la commande
+  //  n'est créée qu'après confirmation reçue via l'IPN, jamais avant. Restreint
+  //  à la boutique DealPam Officiel comme MonCash (la plateforme ne peut pas
+  //  répartir automatiquement un paiement crypto entre vendeurs indépendants).
+  // ══════════════════════════════════════════════════════════════════════════
+
+  async initiateOrderPaymentCrypto(userId: string, body: {
+    addressId?: string; notes?: string; deliveryType?: string;
+    pickupPointName?: string; pickupPointAddress?: string; shippingCost?: number;
+  }) {
+    const cart = await this.prisma.cart.findUnique({
+      where: { userId },
+      include: { items: { include: { product: { include: { store: { select: { id: true, isPlatformStore: true, exchangeRate: true } } } } } } },
+    });
+    if (!cart || cart.items.length === 0) throw new NotFoundException('Panier vide');
+
+    const nonPlatform = cart.items.some(i => !i.product.store.isPlatformStore);
+    if (nonPlatform) {
+      throw new BadRequestException(
+        "Le paiement crypto n'est disponible que pour les produits DealPam Officiel — retirez les autres produits de votre panier pour ce paiement.",
+      );
+    }
+    for (const item of cart.items) {
+      if (item.product.status !== 'PUBLISHED') throw new BadRequestException(`"${item.product.name}" n'est plus en vente`);
+      if (item.product.stock < item.quantity) throw new BadRequestException(`Stock insuffisant pour "${item.product.name}"`);
+    }
+
+    const exchangeRate = Number(cart.items[0]?.product.store.exchangeRate);
+    if (!exchangeRate || exchangeRate <= 0) {
+      throw new BadRequestException("Le paiement crypto n'est pas disponible pour le moment (taux de change non configuré) — choisissez un autre moyen de paiement.");
+    }
+
+    const shippingCost = Math.max(0, Number(body.shippingCost) || 0);
+    const subtotal = cart.items.reduce((s, i) => {
+      const price = (i as any).offeredPrice != null ? Number((i as any).offeredPrice) : Number(i.product.salePrice ?? i.product.price);
+      return s + price * i.quantity;
+    }, 0);
+    const amountHTG = subtotal + shippingCost;
+    if (amountHTG <= 0) throw new BadRequestException('Montant de commande invalide');
+    const amountUSD = Math.round((amountHTG / exchangeRate) * 100) / 100;
+
+    const payment = await this.prisma.payment.create({
+      data: {
+        method: 'CRYPTO', status: 'PENDING',
+        amountHTG: new Decimal(amountHTG),
+        orderUserId: userId,
+        orderPayload: {
+          addressId: body.addressId, notes: body.notes, deliveryType: body.deliveryType,
+          pickupPointName: body.pickupPointName, pickupPointAddress: body.pickupPointAddress,
+          shippingCost, chosenPaymentMethod: 'CRYPTO',
+        } as any,
+      },
+    });
+
+    const orderRef = `cryptopay-${payment.id}`;
+    const apiBase = this.apiBaseUrl();
+    const invoice = await this.nowpayments.createInvoice({
+      amountHTG: amountUSD,
+      orderId: orderRef,
+      description: `Commande DealPam #${orderRef}`,
+      ipnCallbackUrl: `${apiBase}/payments/crypto/ipn`,
+      successUrl: `${this.frontendUrl()}/order-received/thank-you`,
+      cancelUrl: `${this.frontendUrl()}/checkout`,
+    });
+
+    await this.prisma.payment.update({
+      where: { id: payment.id },
+      data: { transactionId: orderRef, nowpaymentsId: invoice.id },
+    });
+
+    return { redirect_url: invoice.invoice_url, payment_id: payment.id, amount_usd: amountUSD };
+  }
+
+  // Endpoint IPN — appelé par NOWPayments server-to-server, jamais par le
+  // navigateur du client. Doit rester public (pas de JWT), la sécurité vient
+  // uniquement de la vérification de signature HMAC.
+  async handleCryptoIpn(rawBody: NowPaymentsIpnPayload, signature: string | undefined) {
+    if (!this.nowpayments.verifyIpnSignature(rawBody, signature)) {
+      throw new ForbiddenException('Signature IPN invalide');
+    }
+
+    const orderRef = rawBody.order_id;
+    const payment = await this.prisma.payment.findFirst({ where: { transactionId: orderRef, method: 'CRYPTO' } });
+    if (!payment) throw new NotFoundException(`Paiement introuvable pour ${orderRef}`);
+
+    // L'IPN arrive plusieurs fois pendant la confirmation (waiting → confirming
+    // → finished) — on ne traite que l'état terminal, et une seule fois.
+    if (rawBody.payment_status !== 'finished') return { received: true, status: rawBody.payment_status };
+
+    // Verrou anti-double-crédit atomique : seul le PREMIER appel qui trouve le
+    // paiement encore PENDING peut le faire passer à COMPLETED. Sûr même si
+    // NOWPayments renvoie plusieurs IPN "finished" en parallèle (déjà arrivé
+    // avec MonCash) — voir MoncashTransactionsService.claimCredit pour le même
+    // principe appliqué à l'autre gateway. On marque COMPLETED tout de suite ;
+    // si la création de la commande échoue ensuite, on ajoute juste une note
+    // d'échec sans repasser le paiement en PENDING (jamais de double-tentative
+    // automatique sur un paiement déjà confirmé par le gateway).
+    const claim = await this.prisma.payment.updateMany({
+      where: { id: payment.id, status: 'PENDING' },
+      data:  { status: 'COMPLETED', paidAt: new Date(), gatewayData: rawBody as any },
+    });
+    if (claim.count === 0) return { received: true, status: 'already_processed' };
+
+    const payload = payment.orderPayload as any;
+    let order: any;
+    try {
+      const orders = await this.orders.create(payment.orderUserId!, payload);
+      order = orders[0];
+    } catch (err: any) {
+      await this.prisma.payment.update({
+        where: { id: payment.id },
+        data: { failureReason: `ORDER_CREATION_FAILED: ${err?.message || 'erreur inconnue'} — paiement crypto reçu, commande non créée, intervention manuelle requise` },
+      });
+      const admins = await this.prisma.user.findMany({ where: { role: { in: ['ADMIN', 'SUPER_ADMIN'] } }, select: { id: true } });
+      await Promise.all(admins.map(a => this.notifications.create(
+        a.id, 'Paiement crypto reçu mais commande non créée',
+        `Paiement ${payment.id} confirmé (NOWPayments) mais la commande n'a pas pu être créée : ${err?.message}. Intervention manuelle requise.`,
+        'PAYMENT_ORDER_CREATION_FAILED',
+      ).catch(() => null)));
+      return { received: true, status: 'order_creation_failed' };
+    }
+
+    await this.prisma.order.update({
+      where: { id: order.id },
+      data: { paymentTxRef: String(rawBody.payment_id), paymentTxStatus: 'APPROVED', status: 'CONFIRMED' },
+    });
+
+    const fullOrder = await this.prisma.order.findUnique({
+      where: { id: order.id },
+      include: { user: { select: { email: true, firstName: true } }, store: { select: { sellerId: true } } },
+    });
+    if (fullOrder?.user?.email) {
+      this.mail.sendOrderStatusUpdate(
+        fullOrder.user.email, fullOrder.user.firstName, order.id.slice(-8).toUpperCase(),
+        'Paiement confirmé — commande en cours de préparation',
+        `Payé en crypto — ${rawBody.actually_paid} ${rawBody.pay_currency?.toUpperCase()}`,
+      ).catch(() => {});
+    }
+    if (fullOrder?.store?.sellerId) {
+      const sellerUser = await this.prisma.user.findFirst({ where: { seller: { id: fullOrder.store.sellerId } }, select: { email: true, firstName: true } });
+      if (sellerUser?.email) {
+        this.mail.sendOrderStatusUpdate(
+          sellerUser.email, sellerUser.firstName, order.id.slice(-8).toUpperCase(),
+          'Paiement crypto reçu pour une commande',
+          `Le client a payé en crypto — vous pouvez préparer la commande.`,
+        ).catch(() => {});
+      }
+    }
+
+    return { received: true, status: 'order_created', order_id: order.id };
+  }
+
+  private apiBaseUrl(): string {
+    // RENDER_EXTERNAL_URL est injectée automatiquement par Render sur chaque
+    // service — API_BASE_URL permet de la surcharger si besoin (autre host).
+    const base = process.env.API_BASE_URL || process.env.RENDER_EXTERNAL_URL || 'https://backenddealpam.onrender.com';
+    return `${base.replace(/\/$/, '')}/v1`;
+  }
+  private frontendUrl(): string {
+    return process.env.FRONTEND_URL || 'https://dealpam.com';
   }
 
   // ══════════════════════════════════════════════════════════════════════════
