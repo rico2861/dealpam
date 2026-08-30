@@ -289,6 +289,12 @@ model Store {
   bankName          String? @map("bank_name")
   bankAccountName   String? @map("bank_account_name")
   bankAccountNumber String? @map("bank_account_number")
+  // Plusieurs comptes bancaires possibles (le vendeur peut avoir des comptes
+  // dans différentes banques) : [{bankName, accountName, accountNumber}] —
+  // stocké en JSON.stringify(). Remplace bankName/bankAccountName/
+  // bankAccountNumber ci-dessus, conservés en lecture pour compatibilité
+  // avec d'éventuelles anciennes données non migrées.
+  bankAccounts String? @map("bank_accounts")
   // Points de retrait : [{name, address, city, dept, phone, hours}] — stocké en JSON.stringify()
   pickupPoints String?  @map("pickup_points")
   // Zones de livraison : [{dept, priceHTG, estimatedDays}] — stocké en JSON.stringify()

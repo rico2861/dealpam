@@ -31,6 +31,14 @@ class UpdateStoreDto {
   @IsOptional() @IsString() @MaxLength(100) department?: string;
   @IsOptional() @IsArray() acceptedPaymentMethods?: string[];
   @IsOptional() @IsString() @MaxLength(20) moncashPhone?: string;
+  @IsOptional() @IsString() @MaxLength(20) natcashPhone?: string;
+  @IsOptional() @IsString() @MaxLength(100) bankName?: string;
+  @IsOptional() @IsString() @MaxLength(150) bankAccountName?: string;
+  @IsOptional() @IsString() @MaxLength(50) bankAccountNumber?: string;
+  @IsOptional() @IsString() bankAccounts?: string;
+  @IsOptional() @IsString() pickupPoints?: string;
+  @IsOptional() @IsString() deliveryZones?: string;
+  @IsOptional() @IsString() schedule?: string;
   @IsOptional() @IsIn(['HTG', 'USD']) currency?: string;
   @IsOptional() @IsNumber() @Min(0.0001) exchangeRate?: number;
 }
@@ -81,6 +89,10 @@ export class StoresController {
       city:      (store as any).city      ?? null,
       department:(store as any).department ?? null,
       moncashPhone: (store as any).moncashPhone ?? null,
+      natcashPhone: (store as any).natcashPhone ?? null,
+      bankName:          (store as any).bankName          ?? null,
+      bankAccountName:   (store as any).bankAccountName   ?? null,
+      bankAccountNumber: (store as any).bankAccountNumber ?? null,
       acceptedPaymentMethods: (store as any).acceptedPaymentMethods,
       sellerUserId: (store as any).seller?.userId ?? null,
       pickupPoints,

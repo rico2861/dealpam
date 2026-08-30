@@ -193,6 +193,11 @@ export class StoresService {
     department?:             string;
     acceptedPaymentMethods?: string[];
     moncashPhone?:           string;
+    natcashPhone?:           string;
+    bankName?:               string;
+    bankAccountName?:        string;
+    bankAccountNumber?:      string;
+    bankAccounts?:           string;
     pickupPoints?:           string;
     deliveryZones?:          string;
     schedule?:               string;
