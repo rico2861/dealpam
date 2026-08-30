@@ -69,6 +69,15 @@ api.interceptors.response.use(
     const status: number = error.response?.status;
     const originalConfig = error.config;
 
+    // Le message d'erreur renvoyé par le backend (souvent explicite : champ en
+    // cause, contrainte violée…) n'apparaît jamais dans la ligne d'erreur réseau
+    // du navigateur ("GET ... 400") — seul le corps JSON le contient. Le logguer
+    // ici le rend visible sans avoir à ouvrir l'onglet Réseau et inspecter la
+    // réponse manuellement.
+    if (status >= 400) {
+      console.error(`[API ${status}] ${originalConfig?.method?.toUpperCase()} ${originalConfig?.url}:`, error.response?.data);
+    }
+
     // No active session → never redirect anonymous users, just reject
     if (!hasSession()) return Promise.reject(error);
 

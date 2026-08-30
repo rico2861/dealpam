@@ -3,14 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import {
   Box, Typography, Button, TextField, Dialog,
   DialogTitle, DialogContent, DialogActions, CircularProgress, Grid,
-  Select, MenuItem, InputLabel, FormControl, Avatar,
+  Select, MenuItem, InputLabel, FormControl, Avatar, Menu,
 } from '@mui/material';
 import {
-  Add, Edit, Delete, Star, Inventory2Outlined, ShoppingBagOutlined, Verified,
+  Add, Delete, Star, Inventory2Outlined, ShoppingBagOutlined, Verified,
   ContentCopy, OpenInNew, StorefrontOutlined, LocationOnOutlined, ArrowForward,
   PhoneOutlined, LocalShippingOutlined, AccountBalanceWalletOutlined,
   PlaceOutlined, Close, AccessTimeOutlined, VisibilityOutlined, PeopleAltOutlined,
-  PauseCircleOutline, PlayCircleOutline,
+  PauseCircleOutline, PlayCircleOutline, SettingsOutlined, MoreVert,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
@@ -398,6 +398,7 @@ function StoreDialog({ open, title, initial, onClose, onSave, loading }: {
 
 function StoreCard({ store, onEdit, onDelete, onCopy, onToggleActive }: any) {
   const hue = (store.name?.charCodeAt(0) ?? 65) * 53 % 360;
+  const [menuEl, setMenuEl] = useState<null | HTMLElement>(null);
   return (
     <Box sx={{
       borderRadius: '16px', bgcolor: CARD, overflow: 'hidden', transition: 'all 0.18s',
@@ -443,23 +444,35 @@ function StoreCard({ store, onEdit, onDelete, onCopy, onToggleActive }: any) {
             </Box>
           </Box>
 
-          {/* Actions */}
-          <Box sx={{ display: 'flex', gap: 0.5, flexShrink: 0 }}>
-            {[
-              { icon: <ContentCopy sx={{ fontSize: 13 }} />, action: () => onCopy(store.slug), col: SUB2, hov: 'rgba(15,23,42,0.06)', bc: '#64748B' },
-              { icon: <Edit sx={{ fontSize: 13 }} />, action: () => onEdit(store), col: OR, hov: 'rgba(255,107,0,0.08)', bc: 'rgba(255,107,0,0.38)' },
-              store.isActive
-                ? { icon: <PauseCircleOutline sx={{ fontSize: 13 }} />, action: () => onToggleActive(store, false), col: '#F59E0B', hov: 'rgba(245,158,11,0.08)', bc: 'rgba(245,158,11,0.38)' }
-                : { icon: <PlayCircleOutline sx={{ fontSize: 13 }} />, action: () => onToggleActive(store, true), col: GRN, hov: 'rgba(16,185,129,0.08)', bc: 'rgba(16,185,129,0.38)' },
-              ...(!store.isPrimary ? [{ icon: <Delete sx={{ fontSize: 13 }} />, action: () => onDelete(store), col: RED, hov: 'rgba(239,68,68,0.08)', bc: 'rgba(239,68,68,0.38)' }] : []),
-            ].map(({ icon, action, col, hov, bc }, i) => (
-              <Box key={i} onClick={action} sx={{ width: 28, height: 28, borderRadius: '7px', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', color: col,
-                border: `1px solid ${BORD}`, transition: 'all 0.13s',
-                '&:hover': { bgcolor: hov, borderColor: bc } }}>
-                {icon}
-              </Box>
-            ))}
+          {/* Menu secondaire (copier / pause / supprimer) */}
+          <Box sx={{ flexShrink: 0 }}>
+            <Box onClick={(e) => setMenuEl(e.currentTarget)} sx={{ width: 30, height: 30, borderRadius: '8px', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', color: SUB2,
+              border: `1px solid ${BORD}`, transition: 'all 0.13s',
+              '&:hover': { bgcolor: 'rgba(15,23,42,0.06)' } }}>
+              <MoreVert sx={{ fontSize: 17 }} />
+            </Box>
+            <Menu anchorEl={menuEl} open={!!menuEl} onClose={() => setMenuEl(null)}
+              anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }} transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+              PaperProps={{ sx: { borderRadius: '12px', border: `1px solid ${BORD}`, boxShadow: '0 8px 24px rgba(15,23,42,0.12)', minWidth: 200 } }}>
+              <MenuItem onClick={() => { setMenuEl(null); onCopy(store.slug); }} sx={{ fontSize: 13, gap: 1.2, py: 1.1 }}>
+                <ContentCopy sx={{ fontSize: 16, color: SUB2 }} /> Copier le lien
+              </MenuItem>
+              {store.isActive ? (
+                <MenuItem onClick={() => { setMenuEl(null); onToggleActive(store, false); }} sx={{ fontSize: 13, gap: 1.2, py: 1.1, color: '#B45309' }}>
+                  <PauseCircleOutline sx={{ fontSize: 16 }} /> Mettre en pause
+                </MenuItem>
+              ) : (
+                <MenuItem onClick={() => { setMenuEl(null); onToggleActive(store, true); }} sx={{ fontSize: 13, gap: 1.2, py: 1.1, color: '#047857' }}>
+                  <PlayCircleOutline sx={{ fontSize: 16 }} /> Réactiver
+                </MenuItem>
+              )}
+              {!store.isPrimary && (
+                <MenuItem onClick={() => { setMenuEl(null); onDelete(store); }} sx={{ fontSize: 13, gap: 1.2, py: 1.1, color: RED }}>
+                  <Delete sx={{ fontSize: 16 }} /> Supprimer définitivement
+                </MenuItem>
+              )}
+            </Menu>
           </Box>
         </Box>
 
@@ -481,6 +494,14 @@ function StoreCard({ store, onEdit, onDelete, onCopy, onToggleActive }: any) {
             </Box>
           ))}
         </Box>
+
+        {/* CTA principal — bien visible, c'est l'action la plus recherchée sur cette carte */}
+        <Button fullWidth onClick={() => onEdit(store)} startIcon={<SettingsOutlined sx={{ fontSize: 16 }} />}
+          sx={{ mb: 1.2, py: 1, borderRadius: '10px', fontWeight: 800, fontSize: 12.8, textTransform: 'none',
+            bgcolor: 'rgba(255,107,0,0.1)', color: OR, border: '1px solid rgba(255,107,0,0.28)',
+            '&:hover': { bgcolor: 'rgba(255,107,0,0.16)', borderColor: 'rgba(255,107,0,0.4)' } }}>
+          Configurer la boutique
+        </Button>
 
         {/* Link */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1.2, py: 0.7, borderRadius: '8px',
