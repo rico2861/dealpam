@@ -64,6 +64,7 @@ enum ProductType {
   FOOD
   REAL_ESTATE
   FREELANCE
+  PREDICTION
 }
 
 enum ProductStatus {
@@ -175,6 +176,7 @@ model User {
   refreshTokens        RefreshToken[]
   addresses            Address[]
   orders               Order[]
+  vipSubscriptions     VipSubscription[]
   wishlistItems        WishlistItem[]
   cart                 Cart?
   reviews              Review[]
@@ -417,6 +419,26 @@ model SellerSubscription {
   @@index([isActive])
   @@index([endDate])
   @@map("seller_subscriptions")
+}
+
+// Abonnement VIP côté CLIENT (pas vendeur) — donne accès à tous les
+// pronostics VIP de tous les tipsters, palier unique, prix fixé par la
+// plateforme (voir PaymentsService.initiateVipSubscription).
+model VipSubscription {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  user      User      @relation(fields: [userId], references: [id])
+  status    String    @default("PENDING") // PENDING | ACTIVE | EXPIRED | CANCELLED
+  startDate DateTime? @map("start_date")
+  endDate   DateTime? @map("end_date")
+  autoRenew Boolean   @default(false) @map("auto_renew")
+  priceHTG  Decimal   @map("price_htg") @db.Decimal(10, 2)
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@index([status])
+  @@map("vip_subscriptions")
 }
 
 model TrialUsage {

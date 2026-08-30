@@ -700,6 +700,11 @@ export class PaymentsService {
     const payment = await this.prisma.payment.findFirst({ where: { transactionId: orderRef, method: 'CRYPTO' } });
     if (!payment) throw new NotFoundException(`Paiement introuvable pour ${orderRef}`);
 
+    // Abonnement VIP crypto : flux séparé (pas de commande à créer).
+    if (orderRef.startsWith('vipcrypto-')) {
+      return this.handleVipCryptoIpn(payment, rawBody);
+    }
+
     // L'IPN arrive plusieurs fois pendant la confirmation (waiting → confirming
     // → finished) — on ne traite que l'état terminal, et une seule fois.
     if (rawBody.payment_status !== 'finished') return { received: true, status: rawBody.payment_status };
@@ -765,6 +770,108 @@ export class PaymentsService {
     }
 
     return { received: true, status: 'order_created', order_id: order.id };
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  ABONNEMENT VIP (client) — palier unique, plateforme entière, MonCash ou
+  //  crypto. Même principe que les commandes/abonnements vendeur : le Payment
+  //  reste PENDING tant que la confirmation réelle n'est pas reçue ; l'abonnement
+  //  n'est activé/prolongé qu'APRÈS, jamais avant.
+  // ══════════════════════════════════════════════════════════════════════════
+
+  private vipMonthlyPriceHTG(): number {
+    return Number(process.env.VIP_MONTHLY_PRICE_HTG) || 1000;
+  }
+
+  async initiateVipSubscription(userId: string, method: 'MONCASH' | 'CRYPTO') {
+    const priceHTG = this.vipMonthlyPriceHTG();
+    const payment = await this.prisma.payment.create({
+      data: { method, status: 'PENDING', amountHTG: new Decimal(priceHTG), orderUserId: userId },
+    });
+
+    if (method === 'MONCASH') {
+      const ref = `vippay-${payment.id}`;
+      const { redirectUrl } = await this.moncash.createPayment(priceHTG, ref);
+      await this.prisma.payment.update({ where: { id: payment.id }, data: { moncashOrderId: ref, transactionId: ref } });
+      return { redirect_url: redirectUrl, payment_id: payment.id };
+    }
+
+    // CRYPTO : NOWPayments facture en USD — même taux que celui configuré pour
+    // les commandes DealPam Officiel (pas de contexte "boutique" ici puisque
+    // l'abonnement VIP n'appartient à aucun vendeur en particulier).
+    const exchangeRate = Number(process.env.VIP_HTG_USD_RATE) || 133;
+    const priceUSD = Math.round((priceHTG / exchangeRate) * 100) / 100;
+    const ref = `vipcrypto-${payment.id}`;
+    const invoice = await this.nowpayments.createInvoice({
+      amountHTG: priceUSD,
+      orderId: ref,
+      description: `Abonnement VIP DealPam #${ref}`,
+      ipnCallbackUrl: `${this.apiBaseUrl()}/payments/crypto/ipn`,
+      successUrl: `${this.frontendUrl()}/account/vip`,
+      cancelUrl: `${this.frontendUrl()}/account/vip`,
+    });
+    await this.prisma.payment.update({ where: { id: payment.id }, data: { transactionId: ref, nowpaymentsId: invoice.id } });
+    return { redirect_url: invoice.invoice_url, payment_id: payment.id };
+  }
+
+  /** Active ou prolonge l'abonnement VIP d'un utilisateur d'un mois à partir d'aujourd'hui (ou de la fin d'abonnement en cours si encore actif). */
+  private async activateVip(userId: string, priceHTG: number) {
+    const existing = await this.prisma.vipSubscription.findFirst({
+      where: { userId, status: 'ACTIVE' },
+      orderBy: { endDate: 'desc' },
+    });
+    const base = existing?.endDate && existing.endDate > new Date() ? existing.endDate : new Date();
+    const endDate = new Date(base);
+    endDate.setMonth(endDate.getMonth() + 1);
+
+    if (existing) {
+      return this.prisma.vipSubscription.update({ where: { id: existing.id }, data: { endDate, status: 'ACTIVE' } });
+    }
+    return this.prisma.vipSubscription.create({
+      data: { userId, status: 'ACTIVE', startDate: new Date(), endDate, priceHTG: new Decimal(priceHTG) },
+    });
+  }
+
+  private async verifyVipSubscription(moncashRef: string, mc: MoncashPayment) {
+    const payment = await this.prisma.payment.findFirst({ where: { moncashOrderId: moncashRef } });
+    if (!payment) {
+      await this.moncashTx.record({ scenario: 'order', status: 'FAILED', mc, failReason: `vip_payment_not_found:${moncashRef}` });
+      throw new NotFoundException(`Paiement introuvable pour ${moncashRef}`);
+    }
+    if (payment.status === 'COMPLETED') throw new ConflictException('Paiement déjà traité — double crédit bloqué');
+
+    await this.moncashTx.record({ scenario: 'order', status: 'SUCCESS', mc, orderId: moncashRef });
+    const claimed = await this.moncashTx.claimCredit(mc.transaction_id);
+    if (!claimed) throw new ConflictException('Transaksyon deja konfime — double crédit bloqué');
+
+    const confirmedAmount = Number(mc.cost);
+    const expectedAmount = Number(payment.amountHTG);
+    if (confirmedAmount < expectedAmount * 0.98) {
+      await this.prisma.payment.update({
+        where: { id: payment.id },
+        data: { status: 'COMPLETED', moncashTransactionId: mc.transaction_id, paidAt: new Date(), gatewayData: mc as any,
+          failureReason: `AMOUNT_MISMATCH: attendu ${expectedAmount} HTG, reçu ${confirmedAmount} HTG` },
+      });
+      return { type: 'vip_payment_review', message: 'Paiement reçu mais montant incorrect — vérification admin en cours.' };
+    }
+
+    await this.prisma.payment.update({
+      where: { id: payment.id },
+      data: { status: 'COMPLETED', moncashTransactionId: mc.transaction_id, paidAt: new Date(), gatewayData: mc as any },
+    });
+    const vip = await this.activateVip(payment.orderUserId!, expectedAmount);
+    return { type: 'vip_subscription', end_date: vip.endDate };
+  }
+
+  private async handleVipCryptoIpn(payment: any, rawBody: NowPaymentsIpnPayload) {
+    if (rawBody.payment_status !== 'finished') return { received: true, status: rawBody.payment_status };
+    const claim = await this.prisma.payment.updateMany({
+      where: { id: payment.id, status: 'PENDING' },
+      data: { status: 'COMPLETED', paidAt: new Date(), gatewayData: rawBody as any },
+    });
+    if (claim.count === 0) return { received: true, status: 'already_processed' };
+    await this.activateVip(payment.orderUserId!, Number(payment.amountHTG));
+    return { received: true, status: 'vip_activated' };
   }
 
   private apiBaseUrl(): string {
@@ -839,6 +946,11 @@ export class PaymentsService {
     // plus haut dans cette fonction, avant meme d'atteindre ce dispatch).
     if (moncashRef?.startsWith('orderpay-')) {
       return this.verifyOrderPayment(moncashRef, mc);
+    }
+
+    // Abonnement VIP (client) payé par MonCash.
+    if (moncashRef?.startsWith('vippay-')) {
+      return this.verifyVipSubscription(moncashRef, mc);
     }
 
     // Trouver le paiement en DB par moncashOrderId = notre référence interne
