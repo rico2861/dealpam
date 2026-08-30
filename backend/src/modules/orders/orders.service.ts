@@ -256,7 +256,7 @@ export class OrdersService {
   }
 
   // ── Vendeur : changer le statut de la commande ────────────────────────────
-  async updateStatus(id: string, status: string, userId?: string, cancelReason?: string) {
+  async updateStatus(id: string, status: string, userId?: string, cancelReason?: string, estimatedDeliveryDate?: string, cancelledByCustomer?: boolean) {
     const SELLER_ALLOWED = ['CONFIRMED', 'PREPARING', 'SHIPPED', 'DELIVERED', 'CANCELLED'];
     const ADMIN_ALLOWED  = ['PENDING', 'CONFIRMED', 'PREPARING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'REFUNDED'];
     const allowed = userId ? SELLER_ALLOWED : ADMIN_ALLOWED;
@@ -325,6 +325,10 @@ export class OrdersService {
     if (status === 'REFUNDED') {
       updateData.notes = `${order.notes ? order.notes + ' | ' : ''}[REFUNDED marqué le ${new Date().toISOString()} — statut informatif, aucun fonds recrédité automatiquement]`;
     }
+    if (status === 'SHIPPED' && estimatedDeliveryDate) {
+      const d = new Date(estimatedDeliveryDate);
+      if (!isNaN(d.getTime())) updateData.estimatedDeliveryDate = d;
+    }
     const updated = await this.prisma.order.update({ where: { id }, data: updateData });
 
     // ── Email notification to customer ────────────────────────────────────
@@ -353,6 +357,7 @@ export class OrdersService {
         order.id.slice(-8).toUpperCase(),
         status,
         emailDetail,
+        cancelledByCustomer,
       ).catch(() => {});
     }
 
@@ -400,7 +405,7 @@ export class OrdersService {
     if (!['PENDING', 'CONFIRMED', 'PREPARING'].includes(order.status)) {
       throw new BadRequestException('Cette commande ne peut plus être annulée — elle est déjà en cours de livraison ou finalisée.');
     }
-    return this.updateStatus(orderId, 'CANCELLED', undefined, reason?.trim() || 'Annulée par le client');
+    return this.updateStatus(orderId, 'CANCELLED', undefined, reason?.trim() || 'Annulée par le client', undefined, true);
   }
 
   // Wrapper public utilisé par OrdersCron (l'auto-annulation vit dans un autre
@@ -657,19 +662,36 @@ export class OrdersService {
   }
 
   // ── Admin ─────────────────────────────────────────────────────────────────
-  async findAll(page = 1, limit = 20, dateFrom?: string, dateTo?: string) {
+  // Enrichi (client, boutique, items, adresse) pour que l'admin voie tout
+  // sans requête supplémentaire — avant, la liste ne renvoyait que l'ID brut,
+  // rendant la page admin inutilisable pour investiguer une commande.
+  async findAll(page = 1, limit = 20, dateFrom?: string, dateTo?: string, status?: string, search?: string) {
     const where: any = {};
     if (dateFrom || dateTo) {
       where.createdAt = {};
       if (dateFrom) where.createdAt.gte = new Date(dateFrom);
       if (dateTo)   where.createdAt.lte = new Date(`${dateTo}T23:59:59.999Z`);
     }
+    if (status) where.status = status;
+    if (search) {
+      const s = search.trim();
+      where.OR = [
+        { id: { contains: s, mode: 'insensitive' } },
+        { store: { name: { contains: s, mode: 'insensitive' } } },
+        { user:  { firstName: { contains: s, mode: 'insensitive' } } },
+        { user:  { lastName:  { contains: s, mode: 'insensitive' } } },
+        { user:  { email:     { contains: s, mode: 'insensitive' } } },
+        { user:  { phone:     { contains: s, mode: 'insensitive' } } },
+      ];
+    }
     const [data, total] = await Promise.all([
       this.prisma.order.findMany({
         where,
         include: {
-          user:  { select: { firstName: true, lastName: true, email: true } },
-          store: { select: { name: true } },
+          user:    { select: { firstName: true, lastName: true, email: true, phone: true } },
+          store:   { select: { name: true, slug: true } },
+          address: true,
+          items:   { select: { productName: true, quantity: true, unitPrice: true, subtotal: true, imageUrl: true } },
         },
         skip: (page - 1) * limit, take: limit,
         orderBy: { createdAt: 'desc' },

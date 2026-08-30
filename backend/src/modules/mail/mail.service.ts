@@ -469,13 +469,19 @@ export class MailService {
 
   // ── 11. ORDER STATUS UPDATE ───────────────────────────────────────────────
 
-  async sendOrderStatusUpdate(to: string, customerName: string, orderNumber: string, status: string, detail?: string): Promise<void> {
+  async sendOrderStatusUpdate(to: string, customerName: string, orderNumber: string, status: string, detail?: string, cancelledByCustomer?: boolean): Promise<void> {
     const statusMap: Record<string, { icon: string; color: string; bg: string; title: string; msg: string }> = {
       CONFIRMED:   { icon: '✅', color: '#166534', bg: '#F0FDF4', title: 'Commande acceptée',    msg: 'Le vendeur a accepté votre commande et va commencer à la préparer.' },
       PREPARING:   { icon: '🔧', color: '#92400E', bg: '#FFFBEB', title: 'En préparation',       msg: 'Le vendeur prépare votre commande. Vous serez notifié dès l\'expédition.' },
       SHIPPED:     { icon: '🚚', color: '#1D4ED8', bg: '#EFF6FF', title: 'Commande expédiée',    msg: 'Votre commande est en route ! Préparez-vous à la recevoir.' },
       DELIVERED:   { icon: '📬', color: '#047857', bg: '#ECFDF5', title: 'Commande livrée',      msg: 'Votre commande a été livrée. N\'oubliez pas de laisser un avis !' },
-      CANCELLED:   { icon: '❌', color: '#991B1B', bg: '#FFF1F2', title: 'Commande annulée',     msg: 'Votre commande a été annulée. Contactez le vendeur pour plus d\'informations.' },
+      // "Contactez le vendeur" n'a de sens que si c'est le VENDEUR qui a annulé
+      // (le client a besoin de savoir pourquoi) — si c'est le CLIENT lui-même
+      // qui a annulé, ce message était trompeur (il sait déjà pourquoi).
+      CANCELLED:   { icon: '❌', color: '#991B1B', bg: '#FFF1F2', title: 'Commande annulée',
+        msg: cancelledByCustomer
+          ? 'Votre commande a bien été annulée, comme demandé.'
+          : 'Votre commande a été annulée par le vendeur. Contactez-le pour plus d\'informations.' },
     };
     const s = statusMap[status] || { icon: '📋', color: BRAND.orange, bg: '#FFF8EC', title: `Statut : ${status}`, msg: detail || 'Le statut de votre commande a été mis à jour.' };
     const body = `
