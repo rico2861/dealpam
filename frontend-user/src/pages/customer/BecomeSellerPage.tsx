@@ -8,6 +8,7 @@ import {
 import { useSnackbar } from 'notistack';
 import api from '../../api/axios';
 import { useAuthStore } from '../../store/auth.store';
+import { StoreForm } from '../seller/StoresPage';
 
 const ORANGE = '#FF6B00';
 const PURPLE = '#8B5CF6';
@@ -75,6 +76,7 @@ export default function BecomeSellerPage() {
   const [nif, setNif]                 = useState('');
   const [error, setError]             = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [storeConfig, setStoreConfig] = useState<any>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,6 +87,22 @@ export default function BecomeSellerPage() {
         storeName: storeName.trim(),
         storeDescription: storeDesc.trim() || undefined,
         nif: nif.trim() || undefined,
+        // Configuration boutique (localisation, contact, paiement, livraison,
+        // horaires) saisie directement ici — évite d'obliger un aller-retour
+        // vers "Configurer la boutique" juste après la création du compte.
+        ...(storeConfig ? {
+          department:             storeConfig.department || undefined,
+          city:                   storeConfig.city || undefined,
+          address:                storeConfig.address || undefined,
+          phone:                  storeConfig.phone || undefined,
+          whatsapp:               storeConfig.whatsapp || undefined,
+          email:                  storeConfig.email || undefined,
+          moncashPhone:           storeConfig.moncashPhone || undefined,
+          acceptedPaymentMethods: storeConfig.acceptedPaymentMethods,
+          deliveryZones:          storeConfig.deliveryZones,
+          pickupPoints:           storeConfig.pickupPoints,
+          schedule:               storeConfig.schedule,
+        } : {}),
       });
       if (data.user) setUser(data.user, localStorage.getItem('accessToken') || '', localStorage.getItem('refreshToken') || '');
       enqueueSnackbar('Votre boutique est créée !', { variant: 'success' });
@@ -186,7 +204,7 @@ export default function BecomeSellerPage() {
 
       {/* ── RIGHT panel ── */}
       <Box sx={{
-        width: { xs: '100%', lg: 520 }, flexShrink: 0,
+        width: { xs: '100%', lg: 620 }, flexShrink: 0,
         display: 'flex', flexDirection: 'column', justifyContent: 'center',
         px: { xs: 3, sm: 6 }, py: 5,
         bgcolor: '#FFFFFF',
@@ -196,7 +214,7 @@ export default function BecomeSellerPage() {
         <Box sx={{ position: 'absolute', top: 0, left: '15%', right: '15%', height: '2px',
           background: `linear-gradient(90deg, transparent, ${ORANGE}, transparent)`, opacity: 0.5 }} />
 
-        <Box sx={{ maxWidth: 400, width: '100%', mx: 'auto' }}>
+        <Box sx={{ maxWidth: 480, width: '100%', mx: 'auto' }}>
 
           {/* Icon */}
           <Box sx={{ width: 56, height: 56, borderRadius: '16px', mb: 3,
@@ -234,6 +252,19 @@ export default function BecomeSellerPage() {
             <Field label="Nom de la boutique" required value={storeName} onChange={setStoreName} placeholder="Ex: Tech Store Haïti" />
             <Field label="Description" value={storeDesc} onChange={setStoreDesc} placeholder="Décrivez ce que vous vendez…" multiline rows={3} />
             <Field label="NIF (optionnel)" value={nif} onChange={setNif} placeholder="Numéro d'identification fiscale" />
+
+            {/* Configuration boutique — facultative à ce stade, modifiable plus
+                tard depuis "Configurer la boutique" si le vendeur préfère
+                démarrer vite et compléter ensuite. */}
+            <Box sx={{ mt: 1, pt: 2.5, borderTop: '1px solid rgba(15,23,42,0.09)' }}>
+              <Typography sx={{ fontSize: 13.5, fontWeight: 800, color: '#0F172A', mb: 0.3 }}>
+                Configuration de la boutique
+              </Typography>
+              <Typography sx={{ fontSize: 12, color: '#64748B', mb: 2 }}>
+                Facultatif — vous pourrez toujours modifier ces informations plus tard.
+              </Typography>
+              <StoreForm loading={loading} hideBasicInfo _onDataChange={setStoreConfig} />
+            </Box>
 
             {error && (
               <Box>

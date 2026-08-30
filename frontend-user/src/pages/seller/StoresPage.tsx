@@ -116,8 +116,8 @@ function TimeInput({ label, value, onChange, disabled }: { label: string; value:
   );
 }
 
-function StoreForm({ initial, onSave, loading, _onDataChange }: {
-  initial?: any; onSave?: (data: any) => void; loading: boolean; _onDataChange?: (data: any) => void;
+export function StoreForm({ initial, onSave, loading, _onDataChange, hideBasicInfo }: {
+  initial?: any; onSave?: (data: any) => void; loading: boolean; _onDataChange?: (data: any) => void; hideBasicInfo?: boolean;
 }) {
   const parseJson = (v: any, fb: any) => { try { return typeof v === 'string' ? JSON.parse(v) : (v ?? fb); } catch { return fb; } };
 
@@ -179,11 +179,15 @@ function StoreForm({ initial, onSave, loading, _onDataChange }: {
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
 
       {/* ── Infos générales ── */}
-      <SecHead icon={<StorefrontOutlined sx={{ fontSize: 14 }} />} label="Informations générales" />
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mb: 2.5 }}>
-        <TextField fullWidth label="Nom de la boutique *" value={form.name} onChange={f('name')} sx={fieldSx} />
-        <TextField fullWidth label="Description" value={form.description} onChange={f('description')} multiline rows={2} sx={fieldSx} />
-      </Box>
+      {!hideBasicInfo && (
+        <>
+          <SecHead icon={<StorefrontOutlined sx={{ fontSize: 14 }} />} label="Informations générales" />
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mb: 2.5 }}>
+            <TextField fullWidth label="Nom de la boutique *" value={form.name} onChange={f('name')} sx={fieldSx} />
+            <TextField fullWidth label="Description" value={form.description} onChange={f('description')} multiline rows={2} sx={fieldSx} />
+          </Box>
+        </>
+      )}
 
       {/* ── Localisation ── */}
       <SecHead icon={<PlaceOutlined sx={{ fontSize: 14 }} />} label="Localisation" color={BLU} />
