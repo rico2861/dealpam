@@ -72,6 +72,20 @@ export default function MoncashReturnHandler() {
           return;
         }
 
+        if (data.type === 'vip_subscription') {
+          qc.invalidateQueries({ queryKey: ['vip-status'] });
+          qc.invalidateQueries({ queryKey: ['predictions'] });
+          showToast('Abonnement VIP activé !', 'success');
+          navigate('/account/vip');
+          return;
+        }
+
+        if (data.type === 'vip_payment_review') {
+          showToast(data.message ?? 'Paiement reçu — vérification admin en cours', 'success');
+          navigate('/account/vip');
+          return;
+        }
+
         if (data.type === 'payment_review' || data.type === 'order_payment_review') {
           showToast(data.message ?? 'Paiement reçu — vérification admin en cours', 'success');
           if (data.type === 'order_payment_review' && data.order_id) navigate(`/account/orders/${data.order_id}`);

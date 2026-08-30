@@ -77,6 +77,7 @@ const OrdersPage        = lazy(() => import('./pages/customer/OrdersPage'));
 const OrderDetailPage   = lazy(() => import('./pages/customer/OrderDetailPage'));
 const MessagesPage      = lazy(() => import('./pages/customer/MessagesPage'));
 const WishlistPage      = lazy(() => import('./pages/account/WishlistPage'));
+const VipPage           = lazy(() => import('./pages/account/VipPage'));
 const ProfilePage       = lazy(() => import('./pages/customer/ProfilePage'));
 const BecomeSellerPage  = lazy(() => import('./pages/customer/BecomeSellerPage'));
 const CartPage          = lazy(() => import('./pages/customer/CartPage'));
@@ -221,6 +222,7 @@ export default function App() {
             <Route path="messages" element={<MessagesPage />} />
             <Route path="messages/:userId" element={<MessagesPage />} />
             <Route path="wishlist" element={<WishlistPage />} />
+            <Route path="vip" element={<VipPage />} />
             <Route path="profile" element={<ProfilePage />} />
             <Route path="checkout" element={<CheckoutPage />} />
           </Route>
