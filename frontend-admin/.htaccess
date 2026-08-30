@@ -2,3 +2,20 @@ Options -MultiViews
 RewriteEngine On
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule ^ index.html [QSA,L]
+
+# index.html doit TOUJOURS être revalidé — c'est lui qui référence les noms de
+# fichiers JS hashés du build courant (ex: PlansPage-lZQpCJBK.js). Si le
+# navigateur (ou un CDN devant Hostinger) le garde en cache après un nouveau
+# déploiement, il continue de pointer vers des fichiers d'un ancien build déjà
+# écrasés sur le serveur → 404 sur les chunks → page blanche à chaque clic sur
+# une page pas encore chargée. Les fichiers dans /assets/, eux, sont hashés
+# par leur contenu (un changement de code = un nouveau nom de fichier) donc
+# peuvent être mis en cache indéfiniment sans risque.
+<IfModule mod_headers.c>
+  <FilesMatch "index\.html$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+  </FilesMatch>
+  <FilesMatch "\.(js|css|woff2?|png|jpg|jpeg|svg|webp)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+</IfModule>
