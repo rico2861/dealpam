@@ -733,6 +733,276 @@ function OrderStep({ notes, setNotes, onBack, onNext, placing, paymentMethods, s
 
 // ─── Main Checkout ────────────────────────────────────────────────────────────
 
+// ─── Checkout panier multi-vendeurs ─────────────────────────────────────────
+// Un panier peut contenir des produits de boutiques différentes — chaque
+// boutique a ses propres zones de livraison, points de retrait et moyens de
+// paiement, donc un seul jeu de choix "à plat" ne peut pas représenter les
+// deux. Une commande DISTINCTE est créée par boutique (déjà géré côté backend
+// dans OrdersService.create — "Grouper par boutique"), chaque vendeur ne voit
+// et ne reçoit jamais que SA propre commande (email + liste "Mes commandes"
+// déjà strictement filtrés par storeId côté backend). Le paiement en ligne
+// (MonCash/Crypto) reste indisponible ici — il exige un panier mono-boutique
+// DealPam Officiel (voir initiateOrderPayment/-Crypto) ; chaque vendeur choisit
+// son propre moyen de paiement "direct" (cash, virement, MonCash personnel...).
+function StoreCheckoutCard({ store, items, selection, onChange }: {
+  store: any; items: any[];
+  selection: { deliveryType: string; zoneIdx: number | null; pickupIdx: number | null; payment: string };
+  onChange: (patch: Partial<typeof selection>) => void;
+}) {
+  const { data: options } = useQuery({
+    queryKey: ['storeOptions', store.slug],
+    queryFn:  () => api.get(`/stores/${store.slug}/options`).then(r => r.data),
+    enabled:  !!store.slug,
+  });
+  const zones: any[]   = options?.deliveryZones ?? [];
+  const pickups: any[] = options?.pickupPoints  ?? [];
+  const methods: string[] = (() => {
+    try {
+      const m = options?.acceptedPaymentMethods;
+      if (Array.isArray(m)) return m;
+      const parsed = JSON.parse(m || '[]');
+      return Array.isArray(parsed) ? parsed : [];
+    } catch { return []; }
+  })();
+  const subtotal = items.reduce((s, i) => s + getEffectiveUnitPrice(i.product?.price, i.product?.salePrice, i.product?.priceTiers, i.quantity) * i.quantity, 0);
+  const zonePrice = selection.zoneIdx !== null ? Number(zones[selection.zoneIdx]?.price ?? 0) : 0;
+
+  return (
+    <Box sx={{ borderRadius: '16px', bgcolor: CARD2, border: `1px solid ${BORD}`, p: 2.5, mb: 2 }}>
+      <Typography fontWeight={700} fontSize={14.5} color={TXT} mb={0.3}>{store.name}</Typography>
+      <Typography fontSize={12} color={TXT2} mb={1.5}>{items.length} article{items.length > 1 ? 's' : ''} · {fmtHTG(subtotal)}</Typography>
+
+      {/* Livraison */}
+      <Box sx={{ display: 'flex', gap: 1, mb: 1.5, flexWrap: 'wrap' }}>
+        {[
+          { value: 'DELIVERY', label: 'Livraison', show: true },
+          { value: 'PICKUP',   label: 'Retrait',   show: pickups.length > 0 },
+          { value: 'CONTACT',  label: 'Contact direct', show: true },
+        ].filter(o => o.show).map(o => {
+          const active = selection.deliveryType === o.value;
+          return (
+            <Box key={o.value} onClick={() => onChange({ deliveryType: o.value })}
+              sx={{ px: 1.5, py: 0.7, borderRadius: '10px', cursor: 'pointer', fontSize: 12.5, fontWeight: 700,
+                border: `1px solid ${active ? OR : BORD}`, bgcolor: active ? alpha(OR, 0.1) : 'transparent',
+                color: active ? OR : TXT2 }}>
+              {o.label}
+            </Box>
+          );
+        })}
+      </Box>
+
+      {selection.deliveryType === 'DELIVERY' && zones.length > 0 && (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.7, mb: 1.5 }}>
+          {zones.map((z: any, i: number) => {
+            const active = selection.zoneIdx === i;
+            const zName  = z.name || (z.departments?.join(', ') ?? `Zone ${i + 1}`);
+            return (
+              <Box key={i} onClick={() => onChange({ zoneIdx: i })}
+                sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 1.2, borderRadius: '10px', cursor: 'pointer',
+                  border: `1px solid ${active ? OR : BORD}`, bgcolor: active ? alpha(OR, 0.06) : 'transparent' }}>
+                <Typography fontSize={12.5} fontWeight={600} color={active ? OR : TXT}>{zName}</Typography>
+                <Typography fontSize={12.5} fontWeight={700}>{z.price > 0 ? `+${fmtHTG(z.price)}` : 'Gratuit'}</Typography>
+              </Box>
+            );
+          })}
+        </Box>
+      )}
+
+      {selection.deliveryType === 'PICKUP' && pickups.length > 0 && (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.7, mb: 1.5 }}>
+          {pickups.map((pt: any, i: number) => {
+            const active = selection.pickupIdx === i;
+            return (
+              <Box key={i} onClick={() => onChange({ pickupIdx: i })}
+                sx={{ p: 1.2, borderRadius: '10px', cursor: 'pointer',
+                  border: `1px solid ${active ? OR : BORD}`, bgcolor: active ? alpha(OR, 0.06) : 'transparent' }}>
+                <Typography fontSize={12.5} fontWeight={600} color={active ? OR : TXT}>{pt.name}</Typography>
+                <Typography fontSize={11.5} color={TXT2}>{pt.address}, {pt.city}</Typography>
+              </Box>
+            );
+          })}
+        </Box>
+      )}
+
+      {/* Paiement — uniquement les méthodes "directes" du vendeur, jamais MonCash/Crypto plateforme ici */}
+      <Typography fontSize={11.5} fontWeight={700} color={TXT2} mb={0.8} sx={{ textTransform: 'uppercase', letterSpacing: 0.4 }}>Paiement</Typography>
+      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+        {methods.length === 0 ? (
+          <Typography fontSize={12} color={TXT2}>À convenir directement avec le vendeur</Typography>
+        ) : methods.map((m: string) => {
+          const info = PAYMENT_INFO[m];
+          const active = selection.payment === m;
+          return (
+            <Box key={m} onClick={() => onChange({ payment: m })}
+              sx={{ px: 1.5, py: 0.7, borderRadius: '10px', cursor: 'pointer', fontSize: 12.5, fontWeight: 700,
+                border: `1px solid ${active ? OR : BORD}`, bgcolor: active ? alpha(OR, 0.1) : 'transparent',
+                color: active ? OR : TXT2 }}>
+              {info?.label || m}
+            </Box>
+          );
+        })}
+      </Box>
+      {zonePrice > 0 && selection.deliveryType === 'DELIVERY' && (
+        <Typography fontSize={12} color={TXT2} mt={1.2}>Livraison : {fmtHTG(zonePrice)} — Total boutique : {fmtHTG(subtotal + zonePrice)}</Typography>
+      )}
+    </Box>
+  );
+}
+
+function MultiStoreCheckout({ items, profile, addresses, onAddressAdded }: {
+  items: any[]; profile: any; addresses: any[]; onAddressAdded: (a: any) => void;
+}) {
+  const navigate = useNavigate();
+  const { enqueueSnackbar } = useSnackbar();
+  const qc = useQueryClient();
+  const { fetchCount } = useCartStore();
+  const [addOpen, setAddOpen] = useState(false);
+  const [selectedAddress, setSelectedAddress] = useState('');
+  const [notes, setNotes] = useState('');
+  const [placing, setPlacing] = useState(false);
+
+  const storeGroups = (() => {
+    const map = new Map<string, { store: any; items: any[] }>();
+    for (const it of items) {
+      const s = it.product.store;
+      if (!map.has(s.id)) map.set(s.id, { store: s, items: [] });
+      map.get(s.id)!.items.push(it);
+    }
+    return Array.from(map.values());
+  })();
+
+  const [selections, setSelections] = useState<Record<string, { deliveryType: string; zoneIdx: number | null; pickupIdx: number | null; payment: string }>>(
+    () => Object.fromEntries(storeGroups.map(g => [g.store.id, { deliveryType: 'DELIVERY', zoneIdx: null, pickupIdx: null, payment: '' }])),
+  );
+
+  useEffect(() => {
+    const def = addresses.find((a: any) => a.isDefault);
+    if (def && !selectedAddress) setSelectedAddress(def.id);
+    else if (!selectedAddress && addresses.length > 0) setSelectedAddress(addresses[0].id);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [addresses]);
+
+  const total = items.reduce((s, i) => s + getEffectiveUnitPrice(i.product?.price, i.product?.salePrice, i.product?.priceTiers, i.quantity) * i.quantity, 0);
+
+  const canSubmit = storeGroups.every(g => {
+    const sel = selections[g.store.id];
+    if (!sel) return false;
+    if (sel.deliveryType === 'DELIVERY') return !!selectedAddress;
+    if (sel.deliveryType === 'PICKUP') return sel.pickupIdx !== null;
+    return true;
+  });
+
+  const placeOrder = async () => {
+    setPlacing(true);
+    try {
+      const storeOverrides: Record<string, any> = {};
+      for (const g of storeGroups) {
+        const sel = selections[g.store.id];
+        storeOverrides[g.store.id] = {
+          deliveryType: sel.deliveryType,
+          pickupPointName: undefined,
+          pickupPointAddress: undefined,
+          shippingCost: 0,
+          chosenPaymentMethod: sel.payment || undefined,
+        };
+      }
+      // Résolution des zones/points de retrait par boutique nécessite les
+      // options déjà chargées dans chaque StoreCheckoutCard — recalculées ici
+      // à partir des mêmes requêtes (React Query sert le cache, pas de refetch).
+      for (const g of storeGroups) {
+        const sel = selections[g.store.id];
+        const options: any = qc.getQueryData(['storeOptions', g.store.slug]);
+        if (sel.deliveryType === 'PICKUP' && sel.pickupIdx !== null) {
+          const pt = options?.pickupPoints?.[sel.pickupIdx];
+          storeOverrides[g.store.id].pickupPointName = pt?.name;
+          storeOverrides[g.store.id].pickupPointAddress = pt?.address ? `${pt.address}, ${pt.city}` : undefined;
+        }
+        if (sel.deliveryType === 'DELIVERY' && sel.zoneIdx !== null) {
+          const z = options?.deliveryZones?.[sel.zoneIdx];
+          storeOverrides[g.store.id].shippingCost = Number(z?.price ?? 0);
+        }
+      }
+
+      const orderBody = {
+        addressId: selectedAddress || undefined,
+        notes: notes || undefined,
+        storeOverrides,
+      };
+      const res = await api.post('/orders', orderBody);
+      const orders = Array.isArray(res.data) ? res.data : [res.data];
+      await fetchCount();
+      qc.invalidateQueries({ queryKey: ['cart'] });
+      qc.invalidateQueries({ queryKey: ['myOrders'] });
+      navigate('/order-received/thank-you', { replace: true, state: { type: 'product', orders } });
+    } catch (e: any) {
+      enqueueSnackbar(e?.response?.data?.message || 'Erreur lors de la commande', { variant: 'error' });
+    } finally { setPlacing(false); }
+  };
+
+  return (
+    <Box sx={{ bgcolor: BG, minHeight: '100vh', pb: 6 }}>
+      <Box sx={{ bgcolor: CARD2, borderBottom: `1px solid ${BORD}`, py: 2 }}>
+        <Container maxWidth="md">
+          <Typography fontWeight={700} fontSize={18} color={TXT}>Passer la commande — {storeGroups.length} boutiques</Typography>
+          <Typography fontSize={12.5} color={TXT2} mt={0.3}>
+            Votre panier contient des produits de plusieurs vendeurs — une commande distincte sera créée pour chacun. Chaque vendeur ne voit et ne reçoit que sa propre commande.
+          </Typography>
+        </Container>
+      </Box>
+
+      <Container maxWidth="md" sx={{ pt: 3 }}>
+        {/* Adresse partagée */}
+        <Box sx={{ borderRadius: '16px', bgcolor: CARD2, border: `1px solid ${BORD}`, p: 2.5, mb: 2 }}>
+          <Typography fontWeight={700} fontSize={14} color={TXT} mb={1.2}>Adresse de livraison</Typography>
+          {addresses.length === 0 ? (
+            <Button startIcon={<Add />} onClick={() => setAddOpen(true)} size="small"
+              sx={{ color: OR, fontWeight: 700, textTransform: 'none', border: `1px dashed ${alpha(OR, 0.4)}`, borderRadius: '10px', px: 2 }}>
+              Préciser l'adresse de livraison
+            </Button>
+          ) : (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.8 }}>
+              {addresses.map((a: any) => (
+                <Box key={a.id} onClick={() => setSelectedAddress(a.id)}
+                  sx={{ p: 1.2, borderRadius: '10px', cursor: 'pointer',
+                    border: `1px solid ${selectedAddress === a.id ? OR : BORD}`, bgcolor: selectedAddress === a.id ? alpha(OR, 0.06) : 'transparent' }}>
+                  <Typography fontSize={12.5} fontWeight={600}>{a.line1}, {a.city} ({a.department})</Typography>
+                </Box>
+              ))}
+              <Button startIcon={<Add />} onClick={() => setAddOpen(true)} size="small"
+                sx={{ mt: 0.5, alignSelf: 'flex-start', color: OR, fontWeight: 700, textTransform: 'none' }}>
+                Ajouter une autre adresse
+              </Button>
+            </Box>
+          )}
+        </Box>
+
+        {storeGroups.map(g => (
+          <StoreCheckoutCard key={g.store.id} store={g.store} items={g.items}
+            selection={selections[g.store.id]}
+            onChange={(patch) => setSelections(s => ({ ...s, [g.store.id]: { ...s[g.store.id], ...patch } }))} />
+        ))}
+
+        <TextField fullWidth multiline rows={2} label="Note (optionnel, appliquée à toutes les commandes)"
+          value={notes} onChange={e => setNotes(e.target.value)} sx={{ mb: 2, bgcolor: CARD2 }} />
+
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2, borderRadius: '14px', bgcolor: CARD2, border: `1px solid ${BORD}`, mb: 2 }}>
+          <Typography fontWeight={700} fontSize={15}>Total ({items.length} articles)</Typography>
+          <Typography fontWeight={800} fontSize={18} color={OR}>{fmtHTG(total)}</Typography>
+        </Box>
+
+        <Button fullWidth variant="contained" onClick={placeOrder} disabled={!canSubmit || placing}
+          sx={{ py: 1.4, borderRadius: '14px', fontWeight: 700, textTransform: 'none', fontSize: 14.5,
+            bgcolor: OR, '&:hover': { bgcolor: ORD }, '&.Mui-disabled': { bgcolor: '#F1F5F9', color: '#64748B' } }}>
+          {placing ? <CircularProgress size={20} sx={{ color: '#fff' }} /> : 'Confirmer la commande'}
+        </Button>
+      </Container>
+
+      <AddAddressModal open={addOpen} onClose={() => setAddOpen(false)} profile={profile}
+        onCreated={(addr: any) => { onAddressAdded(addr); setSelectedAddress(addr.id); setAddOpen(false); }} />
+    </Box>
+  );
+}
+
 export default function CheckoutPage() {
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
@@ -953,6 +1223,14 @@ export default function CheckoutPage() {
       </Container>
     </Box>
   );
+
+  // Panier multi-boutiques : flux dédié (une commande par vendeur, chacun ne
+  // voit que la sienne) — le flux ci-dessous reste inchangé pour un panier
+  // mono-boutique (paiement en ligne MonCash/Crypto y compris).
+  const distinctStoreIds = new Set(items.map((i: any) => i.product?.store?.id));
+  if (distinctStoreIds.size > 1) {
+    return <MultiStoreCheckout items={items} profile={profile} addresses={addresses} onAddressAdded={handleAddressAdded} />;
+  }
 
   return (
     <Box sx={{ bgcolor: BG, minHeight: '100vh', pb: 6 }}>
