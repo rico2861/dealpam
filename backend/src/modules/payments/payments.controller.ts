@@ -58,6 +58,19 @@ export class PaymentsController {
     return this.ps.initiateAdCampaignPayment(u.id, dto.campaignId);
   }
 
+  // ── Préchauffe le token MonCash (mis en cache 49s côté MoncashService) dès
+  // que le client arrive à l'étape paiement — appelée en fire-and-forget par
+  // le frontend, sans attendre sa réponse. Sans ça, le premier appel réel
+  // (order/initiate, au clic sur "Payer") payait à la fois le coût du
+  // /oauth/token ET du /CreatePayment en série, doublant la latence perçue
+  // pile au moment où le client attend une redirection.
+  @Post('moncash/warm')
+  @ApiOperation({ summary: 'Préchauffe le cache du token MonCash (perf, pas de garantie de résultat)' })
+  async warmMoncash() {
+    try { await this.ps.warmMoncashToken(); } catch { /* best-effort, jamais bloquant */ }
+    return { ok: true };
+  }
+
   // ── Commande : initier le paiement MonCash (boutique DealPam Officiel uniquement) ──
   @Post('order/initiate')
   @UseGuards(JwtAuthGuard)

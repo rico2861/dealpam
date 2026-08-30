@@ -438,6 +438,12 @@ export class PaymentsService {
   // qu'apres confirmation reelle du paiement aupres de MonCash (voir
   // verifyOrderPayment) — sinon un client qui abandonne ou echoue son
   // paiement se retrouverait quand meme avec une commande "PENDING" fantome.
+  // Best-effort : peuple juste le cache interne du token MonCash (49s) avant
+  // que le client clique réellement sur "Payer" — voir PaymentsController.warmMoncash.
+  async warmMoncashToken(): Promise<void> {
+    await this.moncash.getToken();
+  }
+
   async initiateOrderPayment(userId: string, body: {
     addressId?: string; notes?: string; deliveryType?: string;
     pickupPointName?: string; pickupPointAddress?: string; shippingCost?: number;
