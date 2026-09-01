@@ -414,11 +414,16 @@ function NeutralErrorScreen({ message }: { message?: string }) {
         <Typography fontSize={13.5} color="rgba(255,255,255,0.6)" mb={3}>
           {message || 'Une erreur est survenue.'} Contactez le support si le montant a bien été débité.
         </Typography>
-        <Button component={Link} to="/" variant="outlined" sx={{
+        {/* Jamais un lien vers la home DealPam ici : on ne sait pas à qui
+            appartient cette transaction — peut-être un client d'une autre
+            app qui n'a jamais entendu parler de DealPam. "Page précédente"
+            (comme sur NotFoundPage) le ramène d'où il vient, sans présumer
+            de rien sur l'app propriétaire. */}
+        <Button onClick={() => window.history.back()} variant="outlined" sx={{
           borderColor: 'rgba(255,255,255,0.2)', color: '#fff', textTransform: 'none',
           borderRadius: '12px', px: 3, '&:hover': { borderColor: 'rgba(255,255,255,0.4)', bgcolor: 'rgba(255,255,255,0.05)' },
         }}>
-          Retour à l'accueil
+          Page précédente
         </Button>
       </Box>
     </Box>
