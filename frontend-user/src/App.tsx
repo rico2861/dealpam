@@ -83,6 +83,7 @@ const CartPage          = lazy(() => import('./pages/customer/CartPage'));
 const CheckoutPage      = lazy(() => import('./pages/customer/CheckoutPage'));
 const OrderSuccessPage  = lazy(() => import('./pages/customer/OrderSuccessPage'));
 const ThankYouPage      = lazy(() => import('./pages/customer/ThankYouPage'));
+const TransactionDesignTestPage = lazy(() => import('./pages/customer/TransactionDesignTestPage'));
 
 // Seller pages
 const SellerDashboard       = lazy(() => import('./pages/seller/DashboardPage'));
@@ -189,6 +190,7 @@ export default function App() {
             <Route path="cart" element={<CartPage />} />
             <Route path="order-success" element={<OrderSuccessPage />} />
             <Route path="order-received/thank-you" element={<ThankYouPage />} />
+            <Route path="test/transaction-design" element={<TransactionDesignTestPage />} />
             <Route path="support" element={<SupportPage />} />
             <Route path="newsletter/unsubscribe" element={<UnsubscribePage />} />
             <Route path="privacy" element={<PrivacyPage />} />
