@@ -5,7 +5,7 @@ import {
   CheckCircle, ShoppingBag, ArrowForward, Storefront,
   LocalShipping, DirectionsWalk, Phone, Email, LocationOn,
   Smartphone, AttachMoney, AccountBalance, CreditCard, ChatBubbleOutline,
-  WorkspacePremium, Star,
+  WorkspacePremium, Star, ErrorOutline,
 } from '@mui/icons-material';
 import { useAuthStore } from '../../store/auth.store';
 
@@ -65,6 +65,8 @@ export default function ThankYouPage() {
   // une autre app, MoncashReturnHandler redirige avant que quoi que ce soit
   // de DealPam n'ait eu la chance de s'afficher.
   if (!state) return <NeutralProcessingScreen />;
+
+  if (type === 'verify_failed') return <NeutralErrorScreen message={state.message} />;
 
   return type === 'subscription' || type === 'subscription_scheduled'
     ? <SubscriptionThankYou state={state} firstName={firstName} />
@@ -387,6 +389,37 @@ function NeutralProcessingScreen() {
         <CircularProgress sx={{ color: '#7C3AED', mb: 3 }} size={48} thickness={4} />
         <Typography fontWeight={800} fontSize={19} mb={1}>Vérification du paiement…</Typography>
         <Typography fontSize={13.5} color="rgba(255,255,255,0.6)">Un instant, on confirme votre transaction.</Typography>
+      </Box>
+    </Box>
+  );
+}
+
+/* ─── Échec de vérification (aucune marque — on ne sait pas à qui appartient
+     la transaction) : jamais un écran figé, toujours un moyen de repartir. ── */
+function NeutralErrorScreen({ message }: { message?: string }) {
+  return (
+    <Box sx={{
+      bgcolor: '#0B0F1A', minHeight: '100vh', display: 'flex', alignItems: 'center',
+      justifyContent: 'center', px: 2, color: '#fff',
+    }}>
+      <Box sx={{ textAlign: 'center', maxWidth: 420 }}>
+        <Box sx={{
+          width: 72, height: 72, borderRadius: '50%', mx: 'auto', mb: 3,
+          bgcolor: alpha('#EF4444', 0.15), border: `1.5px solid ${alpha('#EF4444', 0.4)}`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <ErrorOutline sx={{ fontSize: 36, color: '#EF4444' }} />
+        </Box>
+        <Typography fontWeight={800} fontSize={19} mb={1}>Vérification impossible</Typography>
+        <Typography fontSize={13.5} color="rgba(255,255,255,0.6)" mb={3}>
+          {message || 'Une erreur est survenue.'} Contactez le support si le montant a bien été débité.
+        </Typography>
+        <Button component={Link} to="/" variant="outlined" sx={{
+          borderColor: 'rgba(255,255,255,0.2)', color: '#fff', textTransform: 'none',
+          borderRadius: '12px', px: 3, '&:hover': { borderColor: 'rgba(255,255,255,0.4)', bgcolor: 'rgba(255,255,255,0.05)' },
+        }}>
+          Retour à l'accueil
+        </Button>
       </Box>
     </Box>
   );

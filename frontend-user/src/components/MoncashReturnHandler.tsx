@@ -54,6 +54,14 @@ export default function MoncashReturnHandler() {
         if (res.status === 409) return;
         if (!res.ok) {
           showToast(`Pèman echwe: ${data.message ?? 'Erè enkoni'}`, 'error');
+          // Ne laisse jamais l'utilisateur bloqué sur un écran de
+          // vérification qui ne se résoudra plus (ou sur la home s'il y a
+          // été poussé entre-temps par le routeur) — un état d'erreur
+          // explicite avec un moyen de repartir vaut mieux qu'un silence.
+          navigate('/order-received/thank-you', {
+            replace: true,
+            state: { type: 'verify_failed', message: data.message },
+          });
           return;
         }
 
@@ -64,6 +72,10 @@ export default function MoncashReturnHandler() {
         if (data.type === 'external_app') {
           if (data.status === 'FAILED') {
             showToast('Paiement non confirmé — contactez le support si le montant a été débité.', 'error');
+            navigate('/order-received/thank-you', {
+              replace: true,
+              state: { type: 'verify_failed', message: "Le paiement n'a pas pu être confirmé." },
+            });
             return;
           }
           showToast(
