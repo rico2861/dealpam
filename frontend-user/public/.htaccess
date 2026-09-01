@@ -17,4 +17,18 @@ RewriteRule ^ index.html [QSA,L]
   <FilesMatch "\.(js|css|png|jpg|jpeg|webp|svg|woff2)$">
     Header set Cache-Control "public, max-age=31536000, immutable"
   </FilesMatch>
+
+  # sw.js/registerSW.js et le manifest PWA gardent TOUJOURS le même nom de
+  # fichier (contrairement aux assets hashés ci-dessus) — les mettre en
+  # cache 1 an "immutable" empêche le navigateur de jamais revérifier s'il
+  # existe une nouvelle version du service worker après un déploiement,
+  # ce qui fige les visiteurs sur une ancienne build indéfiniment (vu en
+  # prod : un visiteur restait bloqué sur du JS vieux de plusieurs
+  # déploiements malgré un hard refresh classique). Cette règle doit venir
+  # APRÈS la règle générale ".js" ci-dessus pour la surcharger.
+  <FilesMatch "^(sw|registerSW)\.js$|\.webmanifest$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+    Header set Pragma "no-cache"
+    Header set Expires 0
+  </FilesMatch>
 </IfModule>
