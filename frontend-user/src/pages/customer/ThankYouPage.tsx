@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
-import { Box, Typography, Button, alpha, Divider } from '@mui/material';
+import { Box, Typography, Button, alpha, Divider, CircularProgress } from '@mui/material';
 import {
   CheckCircle, ShoppingBag, ArrowForward, Storefront,
   LocalShipping, DirectionsWalk, Phone, Email, LocationOn,
@@ -56,7 +56,15 @@ export default function ThankYouPage() {
     if (!state && !hasPendingMoncashReturn) navigate('/account/orders', { replace: true });
   }, []);
 
-  if (!state) return null;
+  // Le compte marchand MonCash est partagé avec d'autres apps (ex. PeguyTBN)
+  // et son URL de retour est fixe (dealpam.com/order-received/thank-you) —
+  // cette page peut donc recevoir un client qui n'a jamais eu de compte
+  // DealPam. Tant qu'on ne sait pas encore à qui appartient la transaction
+  // (MoncashReturnHandler est en train de vérifier), on affiche un écran
+  // neutre, jamais la marque DealPam : si la transaction s'avère être pour
+  // une autre app, MoncashReturnHandler redirige avant que quoi que ce soit
+  // de DealPam n'ait eu la chance de s'afficher.
+  if (!state) return <NeutralProcessingScreen />;
 
   return type === 'subscription' || type === 'subscription_scheduled'
     ? <SubscriptionThankYou state={state} firstName={firstName} />
@@ -363,6 +371,22 @@ function ProductThankYou({ state, firstName }: { state: any; firstName: string }
             DealPam · Marketplace Haïtienne
           </Typography>
         </Box>
+      </Box>
+    </Box>
+  );
+}
+
+/* ─── Écran neutre pendant la vérification (aucune marque, aucune app) ───── */
+function NeutralProcessingScreen() {
+  return (
+    <Box sx={{
+      bgcolor: '#0B0F1A', minHeight: '100vh', display: 'flex', alignItems: 'center',
+      justifyContent: 'center', px: 2, color: '#fff',
+    }}>
+      <Box sx={{ textAlign: 'center' }}>
+        <CircularProgress sx={{ color: '#7C3AED', mb: 3 }} size={48} thickness={4} />
+        <Typography fontWeight={800} fontSize={19} mb={1}>Vérification du paiement…</Typography>
+        <Typography fontSize={13.5} color="rgba(255,255,255,0.6)">Un instant, on confirme votre transaction.</Typography>
       </Box>
     </Box>
   );

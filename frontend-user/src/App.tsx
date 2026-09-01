@@ -190,7 +190,6 @@ export default function App() {
             <Route path="ventes-flash" element={<FlashSalePage />} />
             <Route path="cart" element={<CartPage />} />
             <Route path="order-success" element={<OrderSuccessPage />} />
-            <Route path="order-received/thank-you" element={<ThankYouPage />} />
             <Route path="test/transaction-design" element={<TransactionDesignTestPage />} />
             <Route path="support" element={<SupportPage />} />
             <Route path="newsletter/unsubscribe" element={<UnsubscribePage />} />
@@ -200,9 +199,13 @@ export default function App() {
             <Route path="legal" element={<LegalPage />} />
           </Route>
 
-          {/* Page de retour MonCash partagée pour d'autres apps (PeguyTBN...) —
-              hors MainLayout : pas de header/footer DealPam, un client de
-              l'app externe n'a souvent aucune session DealPam. */}
+          {/* Page de retour MonCash — hors MainLayout : le compte marchand est
+              partagé avec d'autres apps (PeguyTBN...) et son URL de retour est
+              fixe (dealpam.com/order-received/thank-you), donc CETTE page peut
+              recevoir un client qui n'a jamais eu de session/compte DealPam.
+              Tant que l'app propriétaire de la transaction n'est pas identifiée,
+              rien de marque DealPam ne doit s'afficher (voir ThankYouPage). */}
+          <Route path="/order-received/thank-you" element={<ThankYouPage />} />
           <Route path="/payments/return/:appTag" element={<CrossAppPaymentReturnPage />} />
 
           {/* Auth — with branded header + footer */}
