@@ -5,5 +5,6 @@ import { CrossAppPaymentsController } from './cross-app-payments.controller';
 @Module({
   providers: [CrossAppPaymentsService],
   controllers: [CrossAppPaymentsController],
+  exports: [CrossAppPaymentsService],
 })
 export class CrossAppPaymentsModule {}

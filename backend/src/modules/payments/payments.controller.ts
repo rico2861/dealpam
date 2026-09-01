@@ -1,5 +1,5 @@
 import {
-  Controller, Get, Post, Body, Query, Param, UseGuards, BadRequestException, Headers,
+  Controller, Get, Post, Body, Query, Param, UseGuards, BadRequestException, NotFoundException, Headers,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { IsUUID, IsString, IsOptional, IsIn } from 'class-validator';
@@ -8,6 +8,14 @@ import { RolesGuard }     from '../../shared/guards/roles.guard';
 import { Roles }          from '../../shared/decorators/roles.decorator';
 import { CurrentUser }    from '../../shared/decorators/current-user.decorator';
 import { PaymentsService } from './payments.service';
+import { CrossAppPaymentsService } from '../cross-app-payments/cross-app-payments.service';
+
+// Apps externes utilisant DealPam comme page de retour MonCash partagée
+// (voir cross-app-payments.service.ts) — le compte marchand MonCash étant
+// partagé et son URL de retour fixe (impossible à faire varier par app),
+// on ne peut pas router par URL : on tente d'abord la résolution DealPam
+// normale, puis on retombe sur chacune de ces apps en fallback.
+const CROSS_APP_FALLBACK_TAGS = ['peguytbn'];
 
 class InitiateSubDto {
   @IsUUID() planId: string;
@@ -31,7 +39,7 @@ class VerifyDto {
 @ApiBearerAuth()
 @Controller('payments')
 export class PaymentsController {
-  constructor(private ps: PaymentsService) {}
+  constructor(private ps: PaymentsService, private crossApp: CrossAppPaymentsService) {}
 
   // ── Abonnement : initier le paiement MonCash ──────────────────────────────
   @Post('subscription/initiate')
@@ -109,10 +117,39 @@ export class PaymentsController {
     summary: 'Vérifier un paiement MonCash vendeur après retour',
     description: 'Envoyer transaction_id (URL MonCash) OU order_id interne. Active automatiquement l\'abonnement ou la campagne.',
   })
-  verify(@Body() dto: VerifyDto) {
-    if (dto.transaction_id) return this.ps.verifySellerPayment(dto.transaction_id);
-    if (dto.order_id)       return this.ps.verifyByOrderId(dto.order_id);
+  async verify(@Body() dto: VerifyDto) {
+    if (dto.transaction_id) {
+      try {
+        return await this.ps.verifySellerPayment(dto.transaction_id);
+      } catch (err) {
+        if (err instanceof NotFoundException) {
+          const fallback = await this.tryCrossAppFallback(dto.transaction_id);
+          if (fallback) return fallback;
+        }
+        throw err;
+      }
+    }
+    if (dto.order_id) return this.ps.verifyByOrderId(dto.order_id);
     throw new BadRequestException('Fournir transaction_id ou order_id');
+  }
+
+  // Le compte marchand MonCash est partagé avec d'autres apps (ex.
+  // PeguyTBN) et son URL de retour est fixe — impossible de router par URL
+  // vers une page par app. Quand ce transactionId n'est trouvé dans AUCUNE
+  // commande/abonnement/campagne DealPam, on essaie chaque app externe
+  // enregistrée avant d'abandonner (voir CROSS_APP_FALLBACK_TAGS ci-dessus).
+  private async tryCrossAppFallback(transactionId: string) {
+    for (const appTag of CROSS_APP_FALLBACK_TAGS) {
+      try {
+        const result = await this.crossApp.verify(appTag, transactionId);
+        return { type: 'external_app', ...result };
+      } catch {
+        // Ni une erreur "pas trouvé côté cette app" ni un pépin réseau ne
+        // doivent bloquer l'essai de l'app suivante — on abandonne
+        // seulement après avoir tenté toutes les apps connues.
+      }
+    }
+    return null;
   }
 
   // ── Historique paiements du vendeur ──────────────────────────────────────

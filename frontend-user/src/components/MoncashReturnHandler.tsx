@@ -57,6 +57,25 @@ export default function MoncashReturnHandler() {
           return;
         }
 
+        // Le compte marchand MonCash est partagé avec d'autres apps (ex.
+        // PeguyTBN) et son URL de retour est fixe — quand ce transactionId
+        // ne correspond à rien côté DealPam, le backend a essayé chaque app
+        // externe enregistrée en fallback (voir payments.controller.ts).
+        if (data.type === 'external_app') {
+          if (data.status === 'FAILED') {
+            showToast('Paiement non confirmé — contactez le support si le montant a été débité.', 'error');
+            return;
+          }
+          showToast(
+            data.status === 'CONFIRMED'
+              ? `Paiement confirmé — redirection vers ${data.appName}…`
+              : `Paiement en cours de confirmation — redirection vers ${data.appName}…`,
+            'success',
+          );
+          window.location.href = data.redirectUrl;
+          return;
+        }
+
         if (data.type === 'wallet') {
           showToast(`Recharge confirmée — ${data.amount} HTG crédités`, 'success');
           navigate('/seller/wallet');
