@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { Box, Drawer, List, ListItem, ListItemIcon, ListItemText, Typography, AppBar, Toolbar, IconButton, Avatar, Chip, Divider, useMediaQuery, useTheme, Badge, Tooltip, alpha } from '@mui/material';
-import { Dashboard, People, Store, Inventory, ShoppingBag, Payment, Subscriptions, Category, BrandingWatermark, Reviews, Settings, Menu as MenuIcon, Logout, Notifications, FlashOn, Campaign, Tag, Label, Timer, ViewCarousel, SupportAgent, Storefront, AdminPanelSettings, Handshake, WorkspacePremium, LocalOffer, TravelExplore, SportsSoccer } from '@mui/icons-material';
+import { Dashboard, People, Store, Inventory, ShoppingBag, Payment, Subscriptions, Category, BrandingWatermark, Reviews, Settings, Menu as MenuIcon, Logout, Notifications, FlashOn, Campaign, Tag, Label, Timer, ViewCarousel, SupportAgent, Storefront, AdminPanelSettings, Handshake, WorkspacePremium, LocalOffer, TravelExplore } from '@mui/icons-material';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { io } from 'socket.io-client';
 import { useAdminStore } from '../../store/admin.store';
@@ -32,7 +32,6 @@ const MENU: MenuItem[] = [
   { path: '/subscriptions', label: 'Abonnements',      icon: Subscriptions,      roles: [...ADMIN_ONLY, 'ACCOUNTANT'] },
   { path: '/plans',         label: 'Plans',            icon: WorkspacePremium,   roles: ADMIN_ONLY },
   { path: '/coupons',       label: 'Coupons',          icon: LocalOffer,         roles: ADMIN_ONLY },
-  { path: '/predictions',   label: 'Pronostics VIP',   icon: SportsSoccer,       roles: ADMIN_ONLY },
   { path: '/categories',    label: 'Catégories',       icon: Category,           roles: ADMIN_ONLY },
   { path: '/brands',        label: 'Marques',          icon: BrandingWatermark,  roles: ADMIN_ONLY },
   { path: '/reviews',       label: 'Avis',             icon: Reviews,            roles: [...ADMIN_ONLY, 'MODERATOR', 'CUSTOMER_CARE'] },

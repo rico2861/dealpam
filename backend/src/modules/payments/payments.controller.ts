@@ -27,10 +27,6 @@ class VerifyDto {
   @IsOptional() @IsString() transaction_id?: string;
   @IsOptional() @IsString() order_id?: string;
 }
-class InitiateVipDto {
-  @IsIn(['MONCASH', 'CRYPTO']) method: 'MONCASH' | 'CRYPTO';
-}
-
 @ApiTags('Payments')
 @ApiBearerAuth()
 @Controller('payments')
@@ -59,14 +55,6 @@ export class PaymentsController {
   @ApiOperation({ summary: 'Vendeur — initie le paiement MonCash pour une campagne pub' })
   initiateAdCampaign(@CurrentUser() u: any, @Body() dto: InitiateAdDto) {
     return this.ps.initiateAdCampaignPayment(u.id, dto.campaignId);
-  }
-
-  // ── Abonnement VIP (client) : palier unique, plateforme entière ───────────
-  @Post('vip/initiate')
-  @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: 'Client — initie le paiement de l\'abonnement VIP pronostics (MonCash ou crypto)' })
-  initiateVip(@CurrentUser() u: any, @Body() dto: InitiateVipDto) {
-    return this.ps.initiateVipSubscription(u.id, dto.method);
   }
 
   // ── Préchauffe le token MonCash (mis en cache 49s côté MoncashService) dès

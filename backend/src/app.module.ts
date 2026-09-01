@@ -38,7 +38,6 @@ import { PlatformStoreModule } from './modules/platform-store/platform-store.mod
 import { WalletModule } from './modules/wallet/wallet.module';
 import { MoncashTransactionsModule } from './modules/moncash-transactions/moncash-transactions.module';
 import { CouponsModule } from './modules/coupons/coupons.module';
-import { PredictionsModule } from './modules/predictions/predictions.module';
 
 @Module({
   imports: [
@@ -88,7 +87,6 @@ import { PredictionsModule } from './modules/predictions/predictions.module';
     WalletModule,
     MoncashTransactionsModule,
     CouponsModule,
-    PredictionsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

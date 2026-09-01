@@ -16,7 +16,7 @@ import {
   TrendingUp, FavoriteBorder, GridView, CheckCircle,
   ShoppingBag, Inventory, BarChart as BarChartIcon,
   GpsFixed, StorefrontOutlined, ArrowForward, ReceiptLongOutlined,
-  ChatBubbleOutline, WorkspacePremium,
+  ChatBubbleOutline,
 } from '@mui/icons-material';
 import { useAuthStore } from '../../store/auth.store';
 import { useCartStore } from '../../store/cart.store';
@@ -330,7 +330,6 @@ function AccountDropdown({ user, isSeller, navigate, onClose, logout }: any) {
     { label: 'Mes commandes',  path: '/account/orders',   Icon: ReceiptLongOutlined },
     { label: 'Mes messages',   path: '/account/messages', Icon: ChatBubbleOutline },
     { label: 'Mes favoris',    path: '/account/wishlist', Icon: FavoriteBorder },
-    { label: 'Pronostics VIP', path: '/account/vip',      Icon: WorkspacePremium },
   ];
 
   const sellerItems = [

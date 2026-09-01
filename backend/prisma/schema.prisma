@@ -176,8 +176,6 @@ model User {
   refreshTokens        RefreshToken[]
   addresses            Address[]
   orders               Order[]
-  vipSubscriptions     VipSubscription[]
-  predictions          Prediction[]
   wishlistItems        WishlistItem[]
   cart                 Cart?
   reviews              Review[]
@@ -420,50 +418,6 @@ model SellerSubscription {
   @@index([isActive])
   @@index([endDate])
   @@map("seller_subscriptions")
-}
-
-// Abonnement VIP côté CLIENT (pas vendeur) — donne accès à tous les
-// pronostics VIP de tous les tipsters, palier unique, prix fixé par la
-// plateforme (voir PaymentsService.initiateVipSubscription).
-model VipSubscription {
-  id        String    @id @default(uuid())
-  userId    String    @map("user_id")
-  user      User      @relation(fields: [userId], references: [id])
-  status    String    @default("PENDING") // PENDING | ACTIVE | EXPIRED | CANCELLED
-  startDate DateTime? @map("start_date")
-  endDate   DateTime? @map("end_date")
-  autoRenew Boolean   @default(false) @map("auto_renew")
-  priceHTG  Decimal   @map("price_htg") @db.Decimal(10, 2)
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @updatedAt @map("updated_at")
-
-  @@index([userId])
-  @@index([status])
-  @@map("vip_subscriptions")
-}
-
-// Pronostic publié par un admin/super admin, réservé aux abonnés VIP actifs
-// (voir PredictionsService — les non-VIP reçoivent une version masquée).
-model Prediction {
-  id           String    @id @default(uuid())
-  competition  String
-  homeTeam     String    @map("home_team")
-  awayTeam     String    @map("away_team")
-  matchDate    DateTime  @map("match_date")
-  market       String // ex: "1X2", "Over/Under 2.5", "BTTS"
-  pick         String // ex: "Victoire Real Madrid"
-  odds         Decimal   @db.Decimal(6, 2)
-  confidence   Int // 0-100
-  note         String?
-  status       String    @default("PENDING") // PENDING | WON | LOST | VOID
-  createdById  String    @map("created_by_id")
-  createdBy    User      @relation(fields: [createdById], references: [id])
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt    DateTime  @updatedAt @map("updated_at")
-
-  @@index([matchDate])
-  @@index([status])
-  @@map("predictions")
 }
 
 model TrialUsage {
