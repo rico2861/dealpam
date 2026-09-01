@@ -17,6 +17,7 @@ import { BrandsModule } from './modules/brands/brands.module';
 import { CartModule } from './modules/cart/cart.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { PaymentsModule } from './modules/payments/payments.module';
+import { CrossAppPaymentsModule } from './modules/cross-app-payments/cross-app-payments.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
@@ -66,6 +67,7 @@ import { CouponsModule } from './modules/coupons/coupons.module';
     CartModule,
     OrdersModule,
     PaymentsModule,
+    CrossAppPaymentsModule,
     ReviewsModule,
     NotificationsModule,
     DashboardModule,

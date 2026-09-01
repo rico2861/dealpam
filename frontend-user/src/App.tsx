@@ -84,6 +84,7 @@ const CheckoutPage      = lazy(() => import('./pages/customer/CheckoutPage'));
 const OrderSuccessPage  = lazy(() => import('./pages/customer/OrderSuccessPage'));
 const ThankYouPage      = lazy(() => import('./pages/customer/ThankYouPage'));
 const TransactionDesignTestPage = lazy(() => import('./pages/customer/TransactionDesignTestPage'));
+const CrossAppPaymentReturnPage = lazy(() => import('./pages/customer/CrossAppPaymentReturnPage'));
 
 // Seller pages
 const SellerDashboard       = lazy(() => import('./pages/seller/DashboardPage'));
@@ -198,6 +199,11 @@ export default function App() {
             <Route path="cookies" element={<CookiesPage />} />
             <Route path="legal" element={<LegalPage />} />
           </Route>
+
+          {/* Page de retour MonCash partagée pour d'autres apps (PeguyTBN...) —
+              hors MainLayout : pas de header/footer DealPam, un client de
+              l'app externe n'a souvent aucune session DealPam. */}
+          <Route path="/payments/return/:appTag" element={<CrossAppPaymentReturnPage />} />
 
           {/* Auth — with branded header + footer */}
           <Route element={<AuthLayout />}>

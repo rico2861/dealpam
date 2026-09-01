@@ -1259,3 +1259,24 @@ model MlModelState {
 
   @@map("ml_model_state")
 }
+
+// ── Passerelle de paiement inter-applications ──────────────────────────────
+// DealPam sert de page de retour MonCash partagée pour d'autres apps
+// (ex. PeguyTBN) qui gardent leur propre compte marchand MonCash mais
+// pointent leur URL de retour ici. Cette table journalise chaque
+// confirmation relayée à l'app d'origine, avec une contrainte d'unicité
+// sur (appTag, moncashTransactionId) pour ne jamais retraiter deux fois
+// le même transactionId réutilisé dans l'URL (bookmark, retour arrière...).
+model CrossAppPayment {
+  id                   String   @id @default(uuid())
+  appTag               String   @map("app_tag")
+  moncashTransactionId String   @map("moncash_transaction_id")
+  status               String   @default("PENDING") // PENDING | CONFIRMED | FAILED
+  responsePayload      String?  @map("response_payload")
+  redirectUrl          String?  @map("redirect_url")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  @@unique([appTag, moncashTransactionId])
+  @@map("cross_app_payments")
+}

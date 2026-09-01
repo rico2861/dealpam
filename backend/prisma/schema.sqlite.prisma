@@ -665,3 +665,18 @@ model FlashSaleItem {
 
   @@map("flash_sale_items")
 }
+
+// ── Passerelle de paiement inter-applications (voir schema.prisma) ─────────
+model CrossAppPayment {
+  id                   String   @id @default(uuid())
+  appTag               String   @map("app_tag")
+  moncashTransactionId String   @map("moncash_transaction_id")
+  status               String   @default("PENDING")
+  responsePayload      String?  @map("response_payload")
+  redirectUrl          String?  @map("redirect_url")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  @@unique([appTag, moncashTransactionId])
+  @@map("cross_app_payments")
+}

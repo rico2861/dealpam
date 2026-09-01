@@ -24,6 +24,10 @@ export default function MoncashReturnHandler() {
   const { fetchCount } = useCartStore();
 
   useEffect(() => {
+    // La page de retour partagée pour les apps externes (PeguyTBN...) gère
+    // elle-même son propre transactionId — ne pas lui voler le paramètre.
+    if (location.pathname.startsWith('/payments/return/')) return;
+
     const params = new URLSearchParams(location.search);
     const txId   = params.get('transactionId');
     if (!txId) return;
