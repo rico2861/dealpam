@@ -32,6 +32,15 @@ export default function MoncashReturnHandler() {
     const txId   = params.get('transactionId');
     if (!txId) return;
 
+    // ThankYouPage est chargée en lazy (chunk JS à télécharger) — le temps
+    // qu'elle monte, l'URL ci-dessous a déjà été nettoyée par ce composant
+    // (monté eagerly, lui). Sans ce flag, ThankYouPage lirait une URL sans
+    // transactionId, croirait qu'aucun paiement n'est en cours, et
+    // redirigerait vers /account/orders — qui bascule un visiteur non
+    // connecté (ex. client PeguyTBN sans compte DealPam) vers login/home
+    // avant même que la vérification ait eu une chance de s'exécuter.
+    sessionStorage.setItem('moncashVerifyPending', '1');
+
     params.delete('transactionId');
     const cleanSearch = params.toString();
     const cleanUrl    = location.pathname + (cleanSearch ? `?${cleanSearch}` : '');
@@ -44,6 +53,17 @@ export default function MoncashReturnHandler() {
 
     (async () => {
       try {
+        await handleVerify();
+      } catch {
+        showToast('Erè koneksyon pandan verifikasyon pèman', 'error');
+      } finally {
+        // Quel que soit le chemin de sortie (succès, échec, exception),
+        // ThankYouPage doit redevenir libre de bouncer un visiteur qui
+        // arrive ensuite sur cette page sans transaction en cours.
+        sessionStorage.removeItem('moncashVerifyPending');
+      }
+
+      async function handleVerify() {
         const res = await fetch(`${API}/payments/verify`, {
           method:  'POST',
           headers: { 'Content-Type': 'application/json', Authorization: token ? `Bearer ${token}` : '' },
@@ -129,8 +149,6 @@ export default function MoncashReturnHandler() {
         }
 
         showToast(`Pèman konfime — ${data.amount_htg} HTG`, 'success');
-      } catch {
-        showToast('Erè koneksyon pandan verifikasyon pèman', 'error');
       }
     })();
   // eslint-disable-next-line react-hooks/exhaustive-deps

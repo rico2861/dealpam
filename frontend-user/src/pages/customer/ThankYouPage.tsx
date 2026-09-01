@@ -50,7 +50,18 @@ export default function ThankYouPage() {
   // Rediriger immédiatement (comme avant) effaçait ce transactionId de l'URL
   // avant que MoncashReturnHandler (monté au niveau App) ait pu le lire et
   // vérifier le paiement — le paiement n'était donc jamais confirmé.
-  const hasPendingMoncashReturn = new URLSearchParams(search).has('transactionId');
+  //
+  // Cette page est chargée en lazy (chunk JS à télécharger) : le temps
+  // qu'elle monte, MoncashReturnHandler (monté eagerly, lui) a déjà pu lire
+  // ET nettoyer transactionId de l'URL — donc `search` ici peut être déjà
+  // vide alors qu'une vérification est bel et bien en cours. On se fie
+  // aussi au flag sessionStorage posé par MoncashReturnHandler AVANT ce
+  // nettoyage, sans quoi un visiteur sans session (ex. client PeguyTBN)
+  // se faisait rediriger vers /account/orders (donc login/home) avant même
+  // que la vérification ait eu une chance de s'exécuter.
+  const hasPendingMoncashReturn =
+    new URLSearchParams(search).has('transactionId') ||
+    sessionStorage.getItem('moncashVerifyPending') === '1';
 
   useEffect(() => {
     if (!state && !hasPendingMoncashReturn) navigate('/account/orders', { replace: true });
