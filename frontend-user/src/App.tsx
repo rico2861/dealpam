@@ -154,8 +154,18 @@ function LoginGuard({ children }: { children: React.ReactNode }) {
 export default function App() {
   const { user, refreshProfile, hasHydrated } = useAuthStore();
 
-  // Sync role & profile from server on every app load (handles role upgrades like buyer→seller)
-  useEffect(() => { if (user) refreshProfile(); }, []); // eslint-disable-line
+  // Sync role & profile from server on every app load (handles role upgrades like buyer→seller).
+  // Sauf sur la page de retour MonCash partagée : si le token stocké est
+  // périmé, cet appel déclenche un refresh qui échoue puis un logout global
+  // (SessionWatcher -> navigate('/login')) -- un aller-retour parasite vers
+  // une page brandée DealPam pendant que MoncashReturnHandler est encore en
+  // train de vérifier le paiement (confondu avec "ça affiche la home"),
+  // avant que la vraie redirection (DealPam ou app externe) ne prenne le
+  // dessus. Cette page n'a de toute façon besoin d'aucune session DealPam
+  // pour fonctionner (un client PeguyTBN n'en a souvent aucune).
+  useEffect(() => {
+    if (user && !window.location.pathname.startsWith('/order-received/thank-you')) refreshProfile();
+  }, []); // eslint-disable-line
 
   // NOTE : le gate bloquant sur hasHydrated a été retiré (2026-07) — il a provoqué
   // un écran de chargement infini en production (BootScreen figé indéfiniment,
