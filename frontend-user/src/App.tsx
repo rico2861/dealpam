@@ -151,20 +151,41 @@ function LoginGuard({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+// Le compte marchand MonCash étant partagé et son URL de retour parfois mal
+// respectée par MonCash lui-même (vu en prod : atterrit sur "/" au lieu de
+// /order-received/thank-you/), un <Navigate to="/home"> immédiat et
+// inconditionnel ici écraserait l'URL (donc le ?transactionId=...) avant
+// même que MoncashReturnHandler ait fini de lire/traiter le paramètre —
+// react-router's Navigate ne préserve pas la query string. On temporise :
+// tant qu'un retour MonCash est en cours, on ne rend rien plutôt que de
+// naviguer, MoncashReturnHandler prend le relais une fois résolu.
+function HomeRedirect() {
+  const hasPendingMoncashReturn =
+    new URLSearchParams(window.location.search).has('transactionId') ||
+    sessionStorage.getItem('moncashVerifyPending') === '1';
+  if (hasPendingMoncashReturn) return null;
+  return <Navigate to="/home" replace />;
+}
+
 export default function App() {
   const { user, refreshProfile, hasHydrated } = useAuthStore();
 
   // Sync role & profile from server on every app load (handles role upgrades like buyer→seller).
-  // Sauf sur la page de retour MonCash partagée : si le token stocké est
-  // périmé, cet appel déclenche un refresh qui échoue puis un logout global
-  // (SessionWatcher -> navigate('/login')) -- un aller-retour parasite vers
-  // une page brandée DealPam pendant que MoncashReturnHandler est encore en
-  // train de vérifier le paiement (confondu avec "ça affiche la home"),
-  // avant que la vraie redirection (DealPam ou app externe) ne prenne le
-  // dessus. Cette page n'a de toute façon besoin d'aucune session DealPam
-  // pour fonctionner (un client PeguyTBN n'en a souvent aucune).
+  // Sauf si un retour MonCash est en cours (transactionId dans l'URL) : si le
+  // token stocké est périmé, cet appel déclenche un refresh qui échoue puis
+  // un logout global (SessionWatcher -> navigate('/login')) -- un aller-
+  // retour parasite vers une page brandée DealPam pendant que
+  // MoncashReturnHandler est encore en train de vérifier le paiement
+  // (confondu avec "ça affiche la home"), avant que la vraie redirection
+  // (DealPam ou app externe) ne prenne le dessus. On teste la présence du
+  // paramètre plutôt qu'un chemin précis : le compte marchand MonCash étant
+  // partagé, son URL de retour configurée peut en pratique atterrir sur
+  // n'importe quelle page (vu en prod : www.dealpam.com/?transactionId=...
+  // au lieu de /order-received/thank-you/, MonCash ne respectant pas
+  // toujours l'URL configurée dans son propre portail marchand).
   useEffect(() => {
-    if (user && !window.location.pathname.startsWith('/order-received/thank-you')) refreshProfile();
+    const hasPendingMoncashReturn = new URLSearchParams(window.location.search).has('transactionId');
+    if (user && !hasPendingMoncashReturn) refreshProfile();
   }, []); // eslint-disable-line
 
   // NOTE : le gate bloquant sur hasHydrated a été retiré (2026-07) — il a provoqué
@@ -188,7 +209,7 @@ export default function App() {
         <Routes>
           {/* Public */}
           <Route path="/" element={<MainLayout />}>
-            <Route index element={<Navigate to="/home" replace />} />
+            <Route index element={<HomeRedirect />} />
             <Route path="home" element={<HomePage />} />
             <Route path="products" element={<ProductsPage />} />
             <Route path="products/:slug" element={<ProductDetailPage />} />

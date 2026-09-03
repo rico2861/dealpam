@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { Box } from '@mui/material';
 import Header from './Header';
 import Footer from './Footer';
@@ -13,10 +13,23 @@ import { useCartStore } from '../../store/cart.store';
 export default function MainLayout() {
   const { user } = useAuthStore();
   const { fetchCount } = useCartStore();
+  const location = useLocation();
 
   useEffect(() => {
     if (user) fetchCount();
   }, [user]);
+
+  // Le compte marchand MonCash étant partagé, MonCash atterrit parfois sur
+  // "/" au lieu de l'URL de retour configurée (vu en prod) — sans ça, le
+  // header/footer DealPam s'affichait quand même autour du contenu vide de
+  // HomeRedirect pendant que MoncashReturnHandler vérifie encore le
+  // paiement. Uniquement sur "/" exactement (jamais sur les autres pages
+  // utilisant ce layout) et seulement le temps de la vérification.
+  const hasPendingMoncashReturn =
+    location.pathname === '/' &&
+    (new URLSearchParams(location.search).has('transactionId') ||
+      sessionStorage.getItem('moncashVerifyPending') === '1');
+  if (hasPendingMoncashReturn) return <Outlet />;
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100svh' }}>
