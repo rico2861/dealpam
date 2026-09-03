@@ -1380,12 +1380,18 @@ export default function CheckoutPage() {
                   <Typography fontSize={13} color="#64748B">Sous-total</Typography>
                   <Typography fontSize={13} fontWeight={600} color="#0F172A">{fmtHTG(subtotal)}</Typography>
                 </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography fontSize={13} color="#64748B">Livraison</Typography>
-                  <Typography fontSize={13} fontWeight={600} color={shippingCost === 0 ? GRN : '#0F172A'}>
-                    {shippingCost === 0 ? 'Gratuite' : fmtHTG(shippingCost)}
-                  </Typography>
-                </Box>
+                {/* Retrait/contact direct : pas de livraison du tout (le client
+                    se déplace lui-même) — "Gratuite" laisserait croire qu'une
+                    livraison a été organisée pour rien, donc on masque la
+                    ligne entièrement plutôt que d'afficher 0 HTG. */}
+                {deliveryType === 'DELIVERY' && (
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography fontSize={13} color="#64748B">Livraison</Typography>
+                    <Typography fontSize={13} fontWeight={600} color={shippingCost === 0 ? GRN : '#0F172A'}>
+                      {shippingCost === 0 ? 'Gratuite' : fmtHTG(shippingCost)}
+                    </Typography>
+                  </Box>
+                )}
                 <Divider sx={{ my: 0.5, borderColor: BORD }} />
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                   <Typography fontSize={16} fontWeight={600} color={TXT}>Total</Typography>
