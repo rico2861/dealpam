@@ -108,8 +108,18 @@ async function bootstrap() {
     // *.hostingersite.com avant/pendant le pointage du domaine final) —
     // liste blanche explicite, jamais un motif générique (voir commentaire
     // plus bas sur pourquoi le wildcard *.hostingersite.com a été retiré).
-    ...(process.env.EXTRA_CORS_ORIGINS?.split(',').map((o) => o.trim()).filter(Boolean) ?? []),
+    // Split sur virgule ET retour à la ligne — certains éditeurs de
+    // variables d'env (dont celui de Render) acceptent le collage
+    // multi-lignes, qui ne serait sinon pas découpé correctement.
+    ...(process.env.EXTRA_CORS_ORIGINS?.split(/[,\n]/).map((o) => o.trim()).filter(Boolean) ?? []),
   ].filter(Boolean) as string[];
+
+  // Diagnostic temporaire — confirme au démarrage ce que le processus a
+  // réellement reçu comme EXTRA_CORS_ORIGINS, pour trancher entre "mal
+  // découpé côté code" et "valeur différente de ce qui est affiché dans
+  // le dashboard Render". À retirer une fois le souci résolu.
+  console.log('[CORS] EXTRA_CORS_ORIGINS brut =', JSON.stringify(process.env.EXTRA_CORS_ORIGINS));
+  console.log('[CORS] allowedOrigins =', JSON.stringify(allowedOrigins));
 
   // Compare sans le préfixe "www." pour qu'un domaine autorisé couvre
   // automatiquement ses deux variantes (https://dealpam.com et https://www.dealpam.com)
