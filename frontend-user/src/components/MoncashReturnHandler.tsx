@@ -138,8 +138,33 @@ export default function MoncashReturnHandler() {
           qc.invalidateQueries({ queryKey: ['cart'] });
           qc.invalidateQueries({ queryKey: ['myOrders'] });
           fetchCount();
-          showToast(`Paiement confirmé — ${data.amount_htg} HTG`, 'success');
-          navigate(`/account/orders/${data.order_id}`);
+          // Le paiement MonCash d'une commande DealPam Officiel fait quitter
+          // le site (redirection vers la passerelle MonCash) puis revenir ici
+          // — l'objet "orders" construit au moment du checkout (voir
+          // CheckoutPage) est donc perdu. On le reconstitue via un GET pour
+          // afficher la même page "Merci" que le paiement direct (cash...),
+          // au lieu du détail de commande brut. Si ce GET échoue pour une
+          // raison quelconque, on retombe sur le détail de commande plutôt
+          // que de laisser le client sans confirmation du tout.
+          try {
+            const orderRes = await fetch(`${API}/orders/me/${data.order_id}`, {
+              headers: { Authorization: token ? `Bearer ${token}` : '' },
+            });
+            if (!orderRes.ok) throw new Error('order fetch failed');
+            const order = await orderRes.json();
+            navigate('/order-received/thank-you', {
+              replace: true,
+              state: {
+                type: 'product',
+                orders: [order],
+                storeInfo: order.store,
+                sellerUserId: order.store?.seller?.userId ?? null,
+              },
+            });
+          } catch {
+            showToast(`Paiement confirmé — ${data.amount_htg} HTG`, 'success');
+            navigate(`/account/orders/${data.order_id}`);
+          }
           return;
         }
 
