@@ -11,6 +11,16 @@ export default defineConfig(({ mode }) => ({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      // Le registerSW.js auto-injecte par defaut se contente d'un .register()
+      // brut, sans jamais reverifier ni appliquer une mise a jour tant que
+      // l'onglet reste ouvert (aucune boucle de check, aucun reload -- vu en
+      // prod : un visiteur reste bloque sur une version vieille de plusieurs
+      // deploiements malgre skipWaiting+clientsClaim, qui ne concernent que
+      // l'activation du SW, pas la reprise de controle d'un onglet deja
+      // charge). injectRegister:false + enregistrement manuel dans main.tsx
+      // (virtual:pwa-register) pour verifier activement et recharger des
+      // qu'une nouvelle version est detectee.
+      injectRegister: false,
       includeAssets: ['favicon.ico', 'icons/*.png'],
       manifest: {
         name: 'Dealpam',

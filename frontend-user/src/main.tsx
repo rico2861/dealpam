@@ -26,6 +26,36 @@ function AppSnackbarProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+// Enregistrement manuel du service worker (VitePWA injectRegister:false, voir
+// vite.config.ts) : le registerSW.js auto-injecté par défaut ne fait qu'un
+// .register() brut, sans jamais reverifier une mise à jour tant que l'onglet
+// reste ouvert — un visiteur pouvait rester bloqué sur une version vieille de
+// plusieurs déploiements. Ici, on vérifie activement (au chargement, sur
+// chaque retour au premier plan, et toutes les 5 min) et on recharge dès
+// qu'une nouvelle version est détectée et activée.
+import { registerSW } from 'virtual:pwa-register';
+
+if ('serviceWorker' in navigator) {
+  const updateSW = registerSW({
+    immediate: true,
+    onRegisteredSW(_url, registration) {
+      if (!registration) return;
+      const checkForUpdate = () => registration.update().catch(() => {});
+      setInterval(checkForUpdate, 5 * 60_000);
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') checkForUpdate();
+      });
+    },
+    onNeedRefresh() {
+      // Silencieux plutôt qu'un bandeau "nouvelle version disponible" à
+      // confirmer : sur une page de retour de paiement en particulier, un
+      // visiteur qui doit cliquer quelque chose avant que ça se répare tout
+      // seul revit exactement le bug qu'on corrige.
+      updateSW(true);
+    },
+  });
+}
+
 // Purge les anciens caches Workbox 'api-*' d'appareils déjà affectés par le bug
 // où les réponses /v1/* étaient mises en cache par URL sans tenir compte du
 // compte connecté (fuite de données entre comptes). Un simple refresh ne les
