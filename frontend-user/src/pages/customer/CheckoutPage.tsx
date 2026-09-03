@@ -1021,6 +1021,16 @@ export default function CheckoutPage() {
   const [notes, setNotes] = useState('');
   const [couponCode, setCouponCode] = useState('');
 
+  // shippingCost n'est mis à jour QUE lors du choix d'une zone de livraison
+  // (voir setShippingCost plus bas, appelé uniquement en DELIVERY) — sans ce
+  // reset, choisir une zone puis basculer sur Retrait en boutique/Contact
+  // laissait le prix de la zone affiché et additionné au total affiché,
+  // même si la commande réellement soumise, elle, envoie bien shippingCost:0
+  // pour ces deux cas (voir plus bas, submit).
+  useEffect(() => {
+    if (deliveryType !== 'DELIVERY') setShippingCost(0);
+  }, [deliveryType]);
+
   // Cart — reutilise en synchrone les donnees deja en cache depuis la page
   // Panier (meme queryKey) pour ne jamais afficher "panier vide" une fraction
   // de seconde au premier rendu de cette page avant que la requete ne reponde.
