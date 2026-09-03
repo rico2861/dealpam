@@ -104,6 +104,11 @@ async function bootstrap() {
     'http://172.20.10.2:5174',
     'http://172.20.64.1:5173',
     'http://172.20.64.1:5174',
+    // Origines supplémentaires ponctuelles (ex. URL de staging Hostinger
+    // *.hostingersite.com avant/pendant le pointage du domaine final) —
+    // liste blanche explicite, jamais un motif générique (voir commentaire
+    // plus bas sur pourquoi le wildcard *.hostingersite.com a été retiré).
+    ...(process.env.EXTRA_CORS_ORIGINS?.split(',').map((o) => o.trim()).filter(Boolean) ?? []),
   ].filter(Boolean) as string[];
 
   // Compare sans le préfixe "www." pour qu'un domaine autorisé couvre
