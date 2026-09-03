@@ -10,9 +10,10 @@ import { WalletModule } from '../wallet/wallet.module';
 import { MailModule } from '../mail/mail.module';
 import { OrdersModule } from '../orders/orders.module';
 import { CrossAppPaymentsModule } from '../cross-app-payments/cross-app-payments.module';
+import { CrossPlatformModule } from '../cross-platform/cross-platform.module';
 
 @Module({
-  imports:     [PrismaModule, MoncashModule, MoncashTransactionsModule, CouponsModule, NotificationsModule, WalletModule, MailModule, OrdersModule, CrossAppPaymentsModule],
+  imports:     [PrismaModule, MoncashModule, MoncashTransactionsModule, CouponsModule, NotificationsModule, WalletModule, MailModule, OrdersModule, CrossAppPaymentsModule, CrossPlatformModule],
   providers:   [PaymentsService],
   controllers: [PaymentsController],
   exports:     [PaymentsService],

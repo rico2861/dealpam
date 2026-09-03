@@ -34,6 +34,7 @@ import { WishlistModule } from './modules/wishlist/wishlist.module';
 import { BannersModule } from './modules/banners/banners.module';
 import { EventsModule } from './modules/events/events.module';
 import { AlgoModule } from './modules/algo/algo.module';
+import { CrossPlatformModule } from './modules/cross-platform/cross-platform.module';
 import { NewsletterModule } from './modules/newsletter/newsletter.module';
 import { PlatformStoreModule } from './modules/platform-store/platform-store.module';
 import { WalletModule } from './modules/wallet/wallet.module';
@@ -68,6 +69,7 @@ import { CouponsModule } from './modules/coupons/coupons.module';
     OrdersModule,
     PaymentsModule,
     CrossAppPaymentsModule,
+    CrossPlatformModule,
     ReviewsModule,
     NotificationsModule,
     DashboardModule,

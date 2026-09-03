@@ -15,6 +15,7 @@ import { MailService }     from '../mail/mail.service';
 import { OrdersService }   from '../orders/orders.service';
 import { NowPaymentsService } from '../nowpayments/nowpayments.service';
 import type { NowPaymentsIpnPayload } from '../nowpayments/nowpayments.service';
+import { CrossPlatformService } from '../cross-platform/cross-platform.service';
 import { Decimal }         from '@prisma/client/runtime/library';
 import type { MoncashPayment } from '../moncash/moncash.service';
 
@@ -37,6 +38,7 @@ export class PaymentsService {
     private mail:      MailService,
     private orders:    OrdersService,
     private nowpayments: NowPaymentsService,
+    private crossPlatform: CrossPlatformService,
   ) {}
 
   // ── Avertit tous les admins qu'un paiement a un montant qui ne correspond
@@ -606,6 +608,15 @@ export class PaymentsService {
       }
     }
 
+    this.crossPlatform.notifyPeguy({
+      referenceId: payment.id,
+      provider: 'moncash',
+      status: 'success',
+      amountHtg: confirmedAmount,
+      userEmail: fullOrder?.user?.email ?? null,
+      userName: fullOrder?.user?.firstName ?? null,
+    }).catch(() => {});
+
     return {
       type: 'order',
       order_id: order.id,
@@ -764,6 +775,15 @@ export class PaymentsService {
       }
     }
 
+    this.crossPlatform.notifyPeguy({
+      referenceId: order.id,
+      provider: 'crypto',
+      status: 'success',
+      amountUsd: Number(rawBody.actually_paid) || null,
+      userEmail: fullOrder?.user?.email ?? null,
+      userName: fullOrder?.user?.firstName ?? null,
+    }).catch(() => {});
+
     return { received: true, status: 'order_created', order_id: order.id };
   }
 
@@ -888,7 +908,7 @@ export class PaymentsService {
       };
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    const settled = await this.prisma.$transaction(async (tx) => {
       // Marquer le paiement comme complété
       await tx.payment.update({
         where: { id: payment.id },
@@ -966,6 +986,16 @@ export class PaymentsService {
 
       throw new BadRequestException('Type de paiement inconnu');
     });
+
+    this.crossPlatform.notifyPeguy({
+      referenceId: payment.id,
+      provider: 'moncash',
+      status: 'success',
+      planType: (settled as any).tier ?? null,
+      amountHtg: (settled as any).amount_htg ?? Number(confirmedAmount),
+    }).catch(() => {});
+
+    return settled;
   }
 
   // ── Vérifier par orderId MonCash (fallback — si transactionId pas dispo) ─
