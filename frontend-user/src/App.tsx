@@ -3,6 +3,7 @@ import { ThemeProvider, createTheme, CssBaseline, Box, CircularProgress } from '
 import { Suspense, lazy, useCallback, useEffect } from 'react';
 import { useAuthStore } from './store/auth.store';
 import { useInactivityLogout } from './hooks/useInactivityLogout';
+import { getMoncashTransactionId } from './utils/moncashParam';
 
 const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000; // 30 min — client/vendeur (wallet, paiements)
 
@@ -161,7 +162,7 @@ function LoginGuard({ children }: { children: React.ReactNode }) {
 // naviguer, MoncashReturnHandler prend le relais une fois résolu.
 function HomeRedirect() {
   const hasPendingMoncashReturn =
-    new URLSearchParams(window.location.search).has('transactionId') ||
+    !!getMoncashTransactionId(window.location.search) ||
     sessionStorage.getItem('moncashVerifyPending') === '1';
   if (hasPendingMoncashReturn) return null;
   return <Navigate to="/home" replace />;
@@ -184,7 +185,7 @@ export default function App() {
   // au lieu de /order-received/thank-you/, MonCash ne respectant pas
   // toujours l'URL configurée dans son propre portail marchand).
   useEffect(() => {
-    const hasPendingMoncashReturn = new URLSearchParams(window.location.search).has('transactionId');
+    const hasPendingMoncashReturn = !!getMoncashTransactionId(window.location.search);
     if (user && !hasPendingMoncashReturn) refreshProfile();
   }, []); // eslint-disable-line
 

@@ -8,6 +8,7 @@ import {
   WorkspacePremium, Star, ErrorOutline,
 } from '@mui/icons-material';
 import { useAuthStore } from '../../store/auth.store';
+import { getMoncashTransactionId } from '../../utils/moncashParam';
 
 const OR   = '#FF6B00';
 const BG   = '#F7F8FA';
@@ -60,7 +61,7 @@ export default function ThankYouPage() {
   // se faisait rediriger vers /account/orders (donc login/home) avant même
   // que la vérification ait eu une chance de s'exécuter.
   const hasPendingMoncashReturn =
-    new URLSearchParams(search).has('transactionId') ||
+    !!getMoncashTransactionId(search) ||
     sessionStorage.getItem('moncashVerifyPending') === '1';
 
   useEffect(() => {

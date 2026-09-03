@@ -9,6 +9,7 @@ import SilentErrorBoundary from '../shared/SilentErrorBoundary';
 import FlyToCartLayer from '../shared/FlyToCartLayer';
 import { useAuthStore } from '../../store/auth.store';
 import { useCartStore } from '../../store/cart.store';
+import { getMoncashTransactionId } from '../../utils/moncashParam';
 
 export default function MainLayout() {
   const { user } = useAuthStore();
@@ -20,14 +21,14 @@ export default function MainLayout() {
   }, [user]);
 
   // Le compte marchand MonCash étant partagé, MonCash atterrit parfois sur
-  // "/" au lieu de l'URL de retour configurée (vu en prod) — sans ça, le
-  // header/footer DealPam s'affichait quand même autour du contenu vide de
-  // HomeRedirect pendant que MoncashReturnHandler vérifie encore le
-  // paiement. Uniquement sur "/" exactement (jamais sur les autres pages
-  // utilisant ce layout) et seulement le temps de la vérification.
+  // "/" ou "/home" au lieu de l'URL de retour configurée (vu en prod) —
+  // sans ça, le header/footer DealPam s'affichait quand même autour du
+  // contenu vide pendant que MoncashReturnHandler vérifie encore le
+  // paiement. Uniquement sur ces deux chemins précis (jamais sur les autres
+  // pages utilisant ce layout) et seulement le temps de la vérification.
   const hasPendingMoncashReturn =
-    location.pathname === '/' &&
-    (new URLSearchParams(location.search).has('transactionId') ||
+    (location.pathname === '/' || location.pathname === '/home') &&
+    (!!getMoncashTransactionId(location.search) ||
       sessionStorage.getItem('moncashVerifyPending') === '1');
   if (hasPendingMoncashReturn) return <Outlet />;
 

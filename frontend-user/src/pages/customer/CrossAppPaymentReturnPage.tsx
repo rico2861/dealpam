@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import { Box, Typography, CircularProgress, alpha } from '@mui/material';
 import { CheckCircle, ErrorOutline, WorkspacePremium } from '@mui/icons-material';
+import { getMoncashTransactionId } from '../../utils/moncashParam';
 
 const API = import.meta.env.VITE_API_URL;
 const BG = '#0B0F1A';
@@ -34,7 +35,7 @@ export default function CrossAppPaymentReturnPage() {
   const attemptsRef = useRef(0);
 
   useEffect(() => {
-    const transactionId = new URLSearchParams(search).get('transactionId');
+    const transactionId = getMoncashTransactionId(search);
     if (!transactionId || !appTag) {
       setPhase('error');
       setError('Lien de retour incomplet.');

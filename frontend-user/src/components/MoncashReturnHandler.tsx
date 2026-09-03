@@ -2,6 +2,7 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCartStore } from '../store/cart.store';
+import { getMoncashTransactionId, stripMoncashTransactionParams } from '../utils/moncashParam';
 
 const API = import.meta.env.VITE_API_URL;
 
@@ -29,7 +30,7 @@ export default function MoncashReturnHandler() {
     if (location.pathname.startsWith('/payments/return/')) return;
 
     const params = new URLSearchParams(location.search);
-    const txId   = params.get('transactionId');
+    const txId   = getMoncashTransactionId(location.search);
     if (!txId) return;
 
     // ThankYouPage est chargée en lazy (chunk JS à télécharger) — le temps
@@ -41,7 +42,7 @@ export default function MoncashReturnHandler() {
     // avant même que la vérification ait eu une chance de s'exécuter.
     sessionStorage.setItem('moncashVerifyPending', '1');
 
-    params.delete('transactionId');
+    stripMoncashTransactionParams(params);
     const cleanSearch = params.toString();
     const cleanUrl    = location.pathname + (cleanSearch ? `?${cleanSearch}` : '');
     window.history.replaceState({}, '', cleanUrl);
