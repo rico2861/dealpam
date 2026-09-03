@@ -195,6 +195,13 @@ async function bootstrap() {
   httpAdapter.get('/health', (_req: any, res: any) => {
     res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
   });
+  // navigator.sendBeacon() (utilisé par le ping keep-alive PeguyTBN, voir
+  // dealpamKeepAlive.js) émet TOUJOURS un POST, jamais un GET — sans ce
+  // handler, chaque ping échouait avant même la vérification CORS/le corps
+  // de la requête ("Cannot POST /health").
+  httpAdapter.post('/health', (_req: any, res: any) => {
+    res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+  });
 
 const port = process.env.PORT ?? 3000;
   await app.listen(port, '0.0.0.0');
