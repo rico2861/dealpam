@@ -10,6 +10,7 @@ import FlyToCartLayer from '../shared/FlyToCartLayer';
 import { useAuthStore } from '../../store/auth.store';
 import { useCartStore } from '../../store/cart.store';
 import { getMoncashTransactionId } from '../../utils/moncashParam';
+import PaymentVerifyingScreen from '../shared/PaymentVerifyingScreen';
 
 export default function MainLayout() {
   const { user } = useAuthStore();
@@ -22,15 +23,16 @@ export default function MainLayout() {
 
   // Le compte marchand MonCash étant partagé, MonCash atterrit parfois sur
   // "/" ou "/home" au lieu de l'URL de retour configurée (vu en prod) —
-  // sans ça, le header/footer DealPam s'affichait quand même autour du
-  // contenu vide pendant que MoncashReturnHandler vérifie encore le
-  // paiement. Uniquement sur ces deux chemins précis (jamais sur les autres
-  // pages utilisant ce layout) et seulement le temps de la vérification.
+  // sans ça, le header/footer DealPam (et sur "/home", HomePage en entier :
+  // produits, catégories...) s'affichaient quand même pendant que
+  // MoncashReturnHandler vérifie encore le paiement. Uniquement sur ces
+  // deux chemins précis (jamais sur les autres pages utilisant ce layout)
+  // et seulement le temps de la vérification.
   const hasPendingMoncashReturn =
     (location.pathname === '/' || location.pathname === '/home') &&
     (!!getMoncashTransactionId(location.search) ||
       sessionStorage.getItem('moncashVerifyPending') === '1');
-  if (hasPendingMoncashReturn) return <Outlet />;
+  if (hasPendingMoncashReturn) return <PaymentVerifyingScreen />;
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100svh' }}>

@@ -3,6 +3,7 @@ import { useParams, useLocation } from 'react-router-dom';
 import { Box, Typography, CircularProgress, alpha } from '@mui/material';
 import { CheckCircle, ErrorOutline, WorkspacePremium } from '@mui/icons-material';
 import { getMoncashTransactionId } from '../../utils/moncashParam';
+import PaymentVerifyingScreen from '../../components/shared/PaymentVerifyingScreen';
 
 const API = import.meta.env.VITE_API_URL;
 const BG = '#0B0F1A';
@@ -84,22 +85,14 @@ export default function CrossAppPaymentReturnPage() {
     return () => { cancelled = true; };
   }, [appTag, search]);
 
+  if (phase === 'checking') return <PaymentVerifyingScreen />;
+
   return (
     <Box sx={{
       bgcolor: BG, minHeight: '100vh', display: 'flex', alignItems: 'center',
       justifyContent: 'center', px: 2, color: '#fff',
     }}>
       <Box sx={{ maxWidth: 420, width: '100%', textAlign: 'center' }}>
-        {phase === 'checking' && (
-          <>
-            <CircularProgress sx={{ color: '#7C3AED', mb: 3 }} size={48} thickness={4} />
-            <Typography fontWeight={800} fontSize={19} mb={1}>Vérification du paiement…</Typography>
-            <Typography fontSize={13.5} color="rgba(255,255,255,0.6)">
-              Un instant, on confirme votre transaction auprès de {appTag}.
-            </Typography>
-          </>
-        )}
-
         {phase === 'pending' && (
           <>
             <CircularProgress sx={{ color: '#F59E0B', mb: 3 }} size={48} thickness={4} />

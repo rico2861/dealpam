@@ -9,6 +9,7 @@ import {
 } from '@mui/icons-material';
 import { useAuthStore } from '../../store/auth.store';
 import { getMoncashTransactionId } from '../../utils/moncashParam';
+import PaymentVerifyingScreen from '../../components/shared/PaymentVerifyingScreen';
 
 const OR   = '#FF6B00';
 const BG   = '#F7F8FA';
@@ -76,7 +77,7 @@ export default function ThankYouPage() {
   // neutre, jamais la marque DealPam : si la transaction s'avère être pour
   // une autre app, MoncashReturnHandler redirige avant que quoi que ce soit
   // de DealPam n'ait eu la chance de s'afficher.
-  if (!state) return <NeutralProcessingScreen />;
+  if (!state) return <PaymentVerifyingScreen />;
 
   if (type === 'verify_failed') return <NeutralErrorScreen message={state.message} />;
 
@@ -385,22 +386,6 @@ function ProductThankYou({ state, firstName }: { state: any; firstName: string }
             DealPam · Marketplace Haïtienne
           </Typography>
         </Box>
-      </Box>
-    </Box>
-  );
-}
-
-/* ─── Écran neutre pendant la vérification (aucune marque, aucune app) ───── */
-function NeutralProcessingScreen() {
-  return (
-    <Box sx={{
-      bgcolor: '#0B0F1A', minHeight: '100vh', display: 'flex', alignItems: 'center',
-      justifyContent: 'center', px: 2, color: '#fff',
-    }}>
-      <Box sx={{ textAlign: 'center' }}>
-        <CircularProgress sx={{ color: '#7C3AED', mb: 3 }} size={48} thickness={4} />
-        <Typography fontWeight={800} fontSize={19} mb={1}>Vérification du paiement…</Typography>
-        <Typography fontSize={13.5} color="rgba(255,255,255,0.6)">Un instant, on confirme votre transaction.</Typography>
       </Box>
     </Box>
   );

@@ -4,6 +4,7 @@ import { Suspense, lazy, useCallback, useEffect } from 'react';
 import { useAuthStore } from './store/auth.store';
 import { useInactivityLogout } from './hooks/useInactivityLogout';
 import { getMoncashTransactionId } from './utils/moncashParam';
+import PaymentVerifyingScreen from './components/shared/PaymentVerifyingScreen';
 
 const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000; // 30 min — client/vendeur (wallet, paiements)
 
@@ -164,7 +165,7 @@ function HomeRedirect() {
   const hasPendingMoncashReturn =
     !!getMoncashTransactionId(window.location.search) ||
     sessionStorage.getItem('moncashVerifyPending') === '1';
-  if (hasPendingMoncashReturn) return null;
+  if (hasPendingMoncashReturn) return <PaymentVerifyingScreen />;
   return <Navigate to="/home" replace />;
 }
 
