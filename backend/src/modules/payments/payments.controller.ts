@@ -119,11 +119,21 @@ export class PaymentsController {
   })
   async verify(@Body() dto: VerifyDto) {
     if (dto.transaction_id) {
+      const txId = dto.transaction_id;
+      // Lance le fallback cross-app EN PARALLÈLE dès le départ (jamais
+      // attendu ici, tryCrossAppFallback ne rejette jamais) — s'il s'avère
+      // nécessaire, il est déjà bien avancé au lieu de démarrer à zéro
+      // après l'échec de la vérification DealPam native, ce qui transformait
+      // 2 appels réseau MonCash séquentiels (compte DealPam puis compte
+      // PeguyTBN) en la latence cumulée des deux au lieu du plus lent des
+      // deux. N'ajoute aucune latence au cas DealPam natif : on ne l'attend
+      // que si la vérification native échoue.
+      const fallbackPromise = this.tryCrossAppFallback(txId);
       try {
-        return await this.ps.verifySellerPayment(dto.transaction_id);
+        return await this.ps.verifySellerPayment(txId);
       } catch (err) {
         if (err instanceof NotFoundException) {
-          const fallback = await this.tryCrossAppFallback(dto.transaction_id);
+          const fallback = await fallbackPromise;
           if (fallback) return fallback;
         }
         throw err;
