@@ -15,6 +15,31 @@
     <meta name="description" content="Dealpam - La marketplace haitienne. Achetez et vendez partout en Haiti." />
     <meta name="mobile-web-app-capable" content="yes" />
     <title>Dealpam</title>
+    <script>
+      // Un onglet resté ouvert depuis avant un nouveau déploiement peut
+      // avoir un index.html périmé (cache navigateur/service worker) qui
+      // référence un chunk JS déjà supprimé du serveur — le script
+      // d'entrée lui-même échoue à charger ("Failed to load module
+      // script... MIME type text/html", le serveur renvoie le fallback SPA
+      // à la place du fichier absent). Ça arrive AVANT que React ne
+      // démarre, donc aucun code applicatif ne peut réagir — seul un
+      // rechargement complet (qui récupère un index.html à jour) répare
+      // ça. Écouteur brut, hors bundle, avec un garde-fou anti-boucle.
+      (function () {
+        var RELOAD_FLAG = 'dp_entry_reload_attempted';
+        window.addEventListener('error', function (e) {
+          var el = e.target;
+          if (!el || (el.tagName !== 'SCRIPT' && el.tagName !== 'LINK')) return;
+          var src = el.src || el.href || '';
+          if (src.indexOf('/assets/') === -1 && src.indexOf('/src/') === -1) return;
+          try {
+            if (sessionStorage.getItem(RELOAD_FLAG) === '1') return;
+            sessionStorage.setItem(RELOAD_FLAG, '1');
+          } catch (err) {}
+          window.location.reload();
+        }, true);
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -57,6 +57,12 @@ window.addEventListener('vite:preloadError', () => {
 // forcé ci-dessus — une fois l'app relancée avec succès, on le retire pour
 // qu'un futur (nouveau) déploiement puisse déclencher le même rechargement.
 sessionStorage.removeItem('reloaded-after-preload-error');
+// Même principe pour le filet de sécurité "script d'entrée cassé" tout en
+// haut de index.html (couvre le cas où c'est le script principal lui-même
+// qui échoue à charger, avant que ce fichier n'ait la moindre chance de
+// s'exécuter — vite:preloadError ci-dessus ne couvre que les chunks lazy
+// une fois l'app déjà démarrée).
+sessionStorage.removeItem('dp_entry_reload_attempted');
 
 // Filet de sécurité global contre les images produit cassées (fichier supprimé/
 // jamais uploadé côté stockage R2 alors que la base garde encore l'URL) : sans
