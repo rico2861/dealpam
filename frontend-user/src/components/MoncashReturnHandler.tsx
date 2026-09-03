@@ -2,7 +2,7 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCartStore } from '../store/cart.store';
-import { getMoncashTransactionId, stripMoncashTransactionParams } from '../utils/moncashParam';
+import { getMoncashTransactionId, stripMoncashTransactionParams, setMoncashVerifyPending, clearMoncashVerifyPending } from '../utils/moncashParam';
 
 const API = import.meta.env.VITE_API_URL;
 
@@ -40,7 +40,7 @@ export default function MoncashReturnHandler() {
     // redirigerait vers /account/orders — qui bascule un visiteur non
     // connecté (ex. client PeguyTBN sans compte DealPam) vers login/home
     // avant même que la vérification ait eu une chance de s'exécuter.
-    sessionStorage.setItem('moncashVerifyPending', '1');
+    setMoncashVerifyPending();
 
     stripMoncashTransactionParams(params);
     const cleanSearch = params.toString();
@@ -61,7 +61,7 @@ export default function MoncashReturnHandler() {
         // Quel que soit le chemin de sortie (succès, échec, exception),
         // ThankYouPage doit redevenir libre de bouncer un visiteur qui
         // arrive ensuite sur cette page sans transaction en cours.
-        sessionStorage.removeItem('moncashVerifyPending');
+        clearMoncashVerifyPending();
       }
 
       async function handleVerify() {

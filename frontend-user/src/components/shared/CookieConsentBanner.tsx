@@ -4,7 +4,7 @@ import {
 } from '@mui/material';
 import { Cookie, Close, Shield, BarChart, Campaign } from '@mui/icons-material';
 import { Link } from 'react-router-dom';
-import { getMoncashTransactionId } from '../../utils/moncashParam';
+import { getMoncashTransactionId, isMoncashVerifyPending } from '../../utils/moncashParam';
 
 const ORANGE = '#FF6B00';
 const BG     = '#0A0F1C';
@@ -92,8 +92,7 @@ export default function CookieConsentBanner() {
     // vérification — un client d'une autre app (ex. PeguyTBN) qui atterrit
     // ici un instant ne doit voir aucune trace de DealPam.
     const hasPendingMoncashReturn =
-      !!getMoncashTransactionId(window.location.search) ||
-      sessionStorage.getItem('moncashVerifyPending') === '1';
+      !!getMoncashTransactionId(window.location.search) || isMoncashVerifyPending();
     if (!readConsent() && !hasPendingMoncashReturn) {
       const t = setTimeout(() => setVisible(true), 500);
       return () => clearTimeout(t);

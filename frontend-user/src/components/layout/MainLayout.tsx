@@ -9,7 +9,7 @@ import SilentErrorBoundary from '../shared/SilentErrorBoundary';
 import FlyToCartLayer from '../shared/FlyToCartLayer';
 import { useAuthStore } from '../../store/auth.store';
 import { useCartStore } from '../../store/cart.store';
-import { getMoncashTransactionId } from '../../utils/moncashParam';
+import { getMoncashTransactionId, isMoncashVerifyPending } from '../../utils/moncashParam';
 import PaymentVerifyingScreen from '../shared/PaymentVerifyingScreen';
 
 export default function MainLayout() {
@@ -30,8 +30,7 @@ export default function MainLayout() {
   // et seulement le temps de la vérification.
   const hasPendingMoncashReturn =
     (location.pathname === '/' || location.pathname === '/home') &&
-    (!!getMoncashTransactionId(location.search) ||
-      sessionStorage.getItem('moncashVerifyPending') === '1');
+    (!!getMoncashTransactionId(location.search) || isMoncashVerifyPending());
   if (hasPendingMoncashReturn) return <PaymentVerifyingScreen />;
 
   return (

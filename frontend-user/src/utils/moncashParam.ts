@@ -28,3 +28,33 @@ export function stripMoncashTransactionParams(params: URLSearchParams): void {
   }
   toDelete.forEach((key) => params.delete(key));
 }
+
+const VERIFY_PENDING_KEY = 'moncashVerifyPending';
+// Le flag doit normalement être nettoyé par MoncashReturnHandler une fois la
+// vérification terminée (succès, échec ou exception) — mais s'il reste
+// bloqué à '1' pour une raison quelconque (onglet fermé/rechargé en plein
+// milieu, exception avant le `finally`...), sessionStorage le garde pour
+// TOUTE la durée de vie de l'onglet, ce qui bloquerait indéfiniment la home
+// sur l'écran de vérification (vu en prod : impossible de se connecter,
+// coincé sur cet écran). On horodate le flag et on l'ignore passé ce délai.
+const VERIFY_PENDING_MAX_AGE_MS = 30_000;
+
+export function setMoncashVerifyPending(): void {
+  try { sessionStorage.setItem(VERIFY_PENDING_KEY, String(Date.now())); } catch { /* ignore */ }
+}
+
+export function clearMoncashVerifyPending(): void {
+  try { sessionStorage.removeItem(VERIFY_PENDING_KEY); } catch { /* ignore */ }
+}
+
+export function isMoncashVerifyPending(): boolean {
+  let raw: string | null = null;
+  try { raw = sessionStorage.getItem(VERIFY_PENDING_KEY); } catch { return false; }
+  if (!raw) return false;
+  const setAt = Number(raw);
+  if (!Number.isFinite(setAt) || Date.now() - setAt > VERIFY_PENDING_MAX_AGE_MS) {
+    clearMoncashVerifyPending();
+    return false;
+  }
+  return true;
+}
