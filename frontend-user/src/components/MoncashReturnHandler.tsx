@@ -183,16 +183,50 @@ export default function MoncashReturnHandler() {
   return null;
 }
 
+// Toast DOM brut (pas de dépendance MUI/notistack) — cette fonction tourne
+// parfois pour un visiteur sans session/contexte React complet (retour
+// MonCash d'une autre app), donc volontairement autonome. Design aligné sur
+// PaymentVerifyingScreen (carte sombre translucide, glassmorphism) plutôt
+// que l'ancien rectangle plein vert/rouge — cohérent avec le reste de
+// l'écran de retour, et responsive (largeur bornée + marges sur mobile,
+// jamais de débordement horizontal).
 function showToast(message: string, type: 'success' | 'error') {
-  const div         = document.createElement('div');
-  div.textContent   = message;
+  if (!document.getElementById('dp-toast-style')) {
+    const style = document.createElement('style');
+    style.id = 'dp-toast-style';
+    style.textContent = `
+      @keyframes dp-toast-in { from { opacity:0; margin-bottom:-12px; } to { opacity:1; margin-bottom:0; } }
+      @keyframes dp-toast-out { from { opacity:1; margin-bottom:0; } to { opacity:0; margin-bottom:-12px; } }
+    `;
+    document.head.appendChild(style);
+  }
+
+  const accent = type === 'success' ? '#34D399' : '#F87171';
+  const iconPath = type === 'success'
+    ? '<path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/>'
+    : '<path d="M12 2 1 21h22L12 2zm1 14h-2v2h2v-2zm0-6h-2v4h2v-4z"/>';
+
+  const div = document.createElement('div');
+  div.setAttribute('role', 'status');
   div.style.cssText = `
-    position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
-    background:${type === 'success' ? '#2e7d32' : '#c62828'};
-    color:white;padding:14px 24px;border-radius:10px;
-    font-family:Inter,sans-serif;font-size:15px;font-weight:600;
-    z-index:99999;box-shadow:0 4px 20px rgba(0,0,0,.3);
+    position:fixed;bottom:max(20px,env(safe-area-inset-bottom));left:50%;
+    transform:translateX(-50%);
+    display:flex;align-items:center;gap:10px;
+    max-width:min(92vw,380px);width:max-content;
+    background:rgba(15,18,32,0.92);backdrop-filter:blur(16px);
+    border:1px solid rgba(255,255,255,0.1);
+    color:#fff;padding:12px 18px;border-radius:14px;
+    font-family:Inter,system-ui,sans-serif;font-size:13.5px;font-weight:600;line-height:1.4;
+    z-index:99999;box-shadow:0 12px 32px rgba(0,0,0,0.45);
+    animation:dp-toast-in 0.25s ease-out;
   `;
+  div.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="${accent}" style="flex-shrink:0">${iconPath}</svg>`;
+  const textSpan = document.createElement('span');
+  textSpan.textContent = message; // jamais via innerHTML — message peut inclure du texte renvoyé par le backend
+  div.appendChild(textSpan);
   document.body.appendChild(div);
-  setTimeout(() => div.remove(), 5000);
+  setTimeout(() => {
+    div.style.animation = 'dp-toast-out 0.25s ease-in forwards';
+    setTimeout(() => div.remove(), 250);
+  }, 4500);
 }
